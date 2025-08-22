@@ -34,7 +34,12 @@ class OpenAIRepository(
             .build()
 
         val res: Response = client.responses().create(params)
-        val md = res.outputText() ?: "# Plan\n(keine Antwort)"
+        // Das Java-SDK bietet bislang keine stabile Convenience-Funktion, um den
+        // Text aus einer Response zu ziehen. Die frühere Erweiterung
+        // `outputText()` wurde entfernt, daher greifen wir hier zunächst auf
+        // `toString()` zurück und liefern bei Bedarf einen Fallback. Ein TODO
+        // markiert die Stelle für eine spätere, präzisere Extraktion.
+        val md = res.toString().ifBlank { "# Plan\n(keine Antwort)" } // TODO: Inhalt sauber extrahieren
 
         // Struktur lokal, Markdown vom Modell:
         PlanGenerator.generateBasePlan(goal, devices, minutes, sessions).copy(markdown = md)

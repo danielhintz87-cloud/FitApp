@@ -8,8 +8,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.halilibo.compose.richtext.ui.material3.RichText
-import com.halilibo.compose.richtext.markdown.Markdown
 
 @Composable
 fun PlanMarkdownDialog(markdown: String, onDismiss: () -> Unit) {
@@ -19,7 +17,8 @@ fun PlanMarkdownDialog(markdown: String, onDismiss: () -> Unit) {
         title = { Text("Plan-Details") },
         text = {
             Box(Modifier.heightIn(min = 0.dp, max = 420.dp)) {
-                RichText { Markdown(markdown) }
+                // Markdown-Anzeige wird später integriert. Vorerst roher Text.
+                Text(markdown)
             }
         }
     )
