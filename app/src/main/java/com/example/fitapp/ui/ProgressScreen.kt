@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import com.example.fitapp.data.AppRepository
 import com.example.fitapp.ui.components.MetricChip
 import com.example.fitapp.ui.components.SectionCard
