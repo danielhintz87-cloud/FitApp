@@ -1,6 +1,5 @@
 package com.example.fitapp.data.ai
 
-import com.example.fitapp.BuildConfig  // <-- hinzufügen!
 import com.example.fitapp.data.*
 import com.example.fitapp.logic.PlanGenerator
 import com.openai.client.OpenAIClient
@@ -12,9 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class OpenAIRepository(
-    private val client: OpenAIClient = OpenAIOkHttpClient.builder()
-        .apiKey(BuildConfig.OPENAI_API_KEY)   // <-- statt fromEnv()
-        .build()
+    private val client: OpenAIClient = OpenAIOkHttpClient.fromEnv()
 ) : AiCoach {
 
     override suspend fun generateBasePlan(
@@ -37,18 +34,24 @@ class OpenAIRepository(
             .build()
 
         val res: Response = client.responses().create(params)
-        // TODO: sauber parsen, solange nutzen wir einen Fallback:
-        val md = res.toString().ifBlank { "# Plan\n(keine Antwort)" }
+        val md = res.toString().ifBlank { "# Plan\n(keine Antwort)" } // TODO: Text parsing schärfen
 
         PlanGenerator.generateBasePlan(goal, devices, minutes, sessions).copy(markdown = md)
     }
 
-    override suspend fun suggestAlternative(goal: Goal, deviceHint: String, minutes: Int) =
-        withContext(Dispatchers.IO) { PlanGenerator.alternativeForToday(goal, deviceHint, minutes) }
+    override suspend fun suggestAlternative(goal: Goal, deviceHint: String, minutes: Int): WorkoutDay =
+        withContext(Dispatchers.IO) {
+            PlanGenerator.alternativeForToday(goal, deviceHint, minutes)
+        }
 
-    override suspend fun suggestRecipes(prefs: RecipePrefs, count: Int) =
-        withContext(Dispatchers.IO) { emptyList<Recipe>() }
+    override suspend fun suggestRecipes(prefs: RecipePrefs, count: Int): List<Recipe> =
+        withContext(Dispatchers.IO) {
+            // TODO: echte Prompt-Implementierung
+            emptyList()
+        }
 
-    override suspend fun estimateCaloriesFromPhoto(imageBytes: ByteArray) =
-        withContext(Dispatchers.IO) { CalorieEstimate("Foto-Mahlzeit", 450, 0.4f, "Konservative MVP-Schätzung") }
+    override suspend fun estimateCaloriesFromPhoto(imageBytes: ByteArray): CalorieEstimate =
+        withContext(Dispatchers.IO) {
+            CalorieEstimate("Foto-Mahlzeit", 450, 0.4f, "Konservative MVP-Schätzung")
+        }
 }

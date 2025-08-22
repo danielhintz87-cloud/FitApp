@@ -1,112 +1,106 @@
 package com.example.fitapp.ui
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.fitapp.data.AppRepository
-import com.example.fitapp.ui.components.SectionCard
-import com.example.fitapp.ui.components.FilterChip as AppFilterChip  // <- explizit DEINE Chip-Variante
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
-private data class RecipeUi(
-    val title: String,
-    val minutes: Int,
-    val kcal: Int,
-    val ingredients: List<Pair<String, String>>,
-    val markdown: String,
-    var favorite: Boolean = false
-)
+import com.example.fitapp.data.*
+import com.example.fitapp.data.ai.Ai
+import com.example.fitapp.ui.components.*
+import com.example.fitapp.ui.design.Spacing
+
+// WICHTIG: unseren FilterChip klar vom M3-FilterChip unterscheiden
+import com.example.fitapp.ui.components.FilterChip as AppFilterChip
 
 @Composable
 fun NutritionScreen() {
-    var lowCarb by remember { mutableStateOf(true) }
-    var highProtein by remember { mutableStateOf(true) }
+    var lowCarb by remember { mutableStateOf(false) }
+    var highProtein by remember { mutableStateOf(false) }
     var vegetarian by remember { mutableStateOf(false) }
     var vegan by remember { mutableStateOf(false) }
 
-    var recipes by remember { mutableStateOf<List<RecipeUi>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var recipes by remember { mutableStateOf<List<Recipe>>(emptyList()) }
+
+    val scope = rememberCoroutineScope()
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 96.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(Spacing.md)
     ) {
         item {
             SectionCard(title = "Filter") {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AppFilterChip(text = "Low-Carb", selected = lowCarb, onClick = { lowCarb = !lowCarb })
-                    AppFilterChip(text = "High-Protein", selected = highProtein, onClick = { highProtein = !highProtein })
-                    AppFilterChip(text = "Vegetarisch", selected = vegetarian, onClick = { vegetarian = !vegetarian })
-                    AppFilterChip(text = "Vegan", selected = vegan, onClick = { vegan = !vegan })
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    AppFilterChip("Low-Carb", lowCarb) { lowCarb = !lowCarb }
+                    AppFilterChip("High-Protein", highProtein) { highProtein = !highProtein }
+                    AppFilterChip("Vegetarisch", vegetarian) { vegetarian = !vegetarian }
+                    AppFilterChip("Vegan", vegan) { vegan = !vegan }
                 }
-                Spacer(Modifier.height(8.dp))
-                Button(onClick = { recipes = sampleRecipes(lowCarb, highProtein, vegetarian, vegan) }) {
-                    Text("Rezepte generieren")
-                }
+
+                Spacer(Modifier.height(Spacing.md))
+                PrimaryButton(
+                    label = if (isLoading) "Generiere…" else "Rezepte generieren",
+                    onClick = {
+                        if (isLoading) return@PrimaryButton
+                        isLoading = true
+                        val prefs = RecipePrefs(
+                            lowCarb = lowCarb,
+                            highProtein = highProtein,
+                            vegetarian = vegetarian,
+                            vegan = vegan
+                        )
+                        scope.launch {
+                            try {
+                                recipes = Ai.coach.suggestRecipes(prefs, count = 5)
+                            } finally {
+                                isLoading = false
+                            }
+                        }
+                    }
+                )
             }
         }
 
-        items(recipes, key = { it.title }) { r ->
+        items(recipes, key = { it.id }) { r ->
             SectionCard(
                 title = r.title,
-                subtitle = "${r.minutes} min • ${r.kcal} kcal"
+                subtitle = "${r.timeMin} min · ${r.calories} kcal"
             ) {
-                // Favorit-Toggle (kein trailing-Slot nötig)
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TextButton(onClick = { r.favorite = !r.favorite }) {
-                        Text(if (r.favorite) "★ Favorit" else "☆ Favorit")
+                if (!r.markdown.isNullOrBlank()) {
+                    MarkdownText(r.markdown!!)
+                    Spacer(Modifier.height(Spacing.sm))
+                } else {
+                    // Fallback kompakt
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Zutaten:", style = MaterialTheme.typography.titleSmall)
+                        r.ingredients.forEach { ing -> Text("• ${ing.name} — ${ing.amount}") }
                     }
+                    Spacer(Modifier.height(Spacing.sm))
                 }
-                Spacer(Modifier.height(8.dp))
 
-                Text("Zutaten:")
-                Spacer(Modifier.height(6.dp))
-                r.ingredients.forEach { (name, qty) -> Text("• $name — $qty") }
-
-                Spacer(Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { AppRepository.logFood(r.title, r.kcal) }) {
-                        Text("In Kalorien loggen")
+                InlineActions(
+                    primaryLabel = "In Kalorien loggen",
+                    onPrimary = { AppRepository.logFood(r.title, r.calories) },
+                    secondaryLabel = "Zur Einkaufsliste",
+                    onSecondary = {
+                        val pairs = r.ingredients.map { it.name to it.amount }
+                        AppRepository.addShoppingItems(pairs)
                     }
-                    Button(onClick = { AppRepository.addShoppingItems(r.ingredients) }) {
-                        Text("Zur Einkaufsliste")
-                    }
-                }
+                )
             }
         }
-    }
-}
 
-/** Einfacher lokaler Generator – später AiCoach.suggestRecipes(...) */
-private fun sampleRecipes(lowCarb: Boolean, highProtein: Boolean, veg: Boolean, vegan: Boolean): List<RecipeUi> {
-    val list = mutableListOf<RecipeUi>()
-    if (vegan || veg) {
-        list += RecipeUi(
-            "Tofu-Brokkoli-Bowl",
-            minutes = 20, kcal = 520,
-            ingredients = listOf("Tofu" to "250 g", "Brokkoli" to "300 g", "Sojasauce" to "2 EL", "Sesam" to "1 EL"),
-            markdown = "## Schritte\n1. Tofu anbraten …\n2. Brokkoli dämpfen …"
-        )
+        // Abstand unterhalb der Bottom Bar
+        item { Spacer(Modifier.height(96.dp)) }
     }
-    if (!vegan && !veg && highProtein) {
-        list += RecipeUi(
-            "Hähnchen-Bowl (Low-Carb)",
-            minutes = 20, kcal = 540,
-            ingredients = listOf("Hähnchenbrust" to "250 g", "Paprika" to "1", "Zucchini" to "1", "Öl" to "1 EL"),
-            markdown = "## Schritte\n1. Hähnchen würzen …\n2. Gemüse anbraten …"
-        )
-    }
-    list += RecipeUi(
-        "Skyr-Beeren-Snack",
-        minutes = 5, kcal = 220,
-        ingredients = listOf("Skyr" to "250 g", "Beeren" to "150 g", "Nüsse" to "20 g"),
-        markdown = "## Schritte\n1. Alles mischen …"
-    )
-    return list
 }

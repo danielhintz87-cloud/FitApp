@@ -20,6 +20,7 @@ import com.example.fitapp.ui.components.MetricChip
 import com.example.fitapp.ui.components.SectionCard
 import java.time.LocalDate
 
+
 @Composable
 fun TodayScreen() {
     val ps by AppRepository.planState.collectAsState()

@@ -33,6 +33,8 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 
 
+
+
 @Composable
 fun ProgressScreen() {
     val exerciseLogs by AppRepository.exerciseLogs.collectAsState()
