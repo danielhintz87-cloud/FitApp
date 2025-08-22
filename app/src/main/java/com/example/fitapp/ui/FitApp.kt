@@ -10,6 +10,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+import com.example.fitapp.ui.CalorieScreen
+import com.example.fitapp.ui.NutritionScreen
+import com.example.fitapp.ui.ProgressScreen
+import com.example.fitapp.ui.ShoppingListScreen
+import com.example.fitapp.ui.TrainingSetupScreen
+import com.example.fitapp.ui.WorkoutScreen
+
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
-@Composable fun TrainingSetupScreen()  = PlaceholderScreen("Training Setup")
 @Composable fun DailyWorkoutScreen()   = PlaceholderScreen("Daily Workout")
 @Composable fun CalorieScreen()        = PlaceholderScreen("Kalorien")
 @Composable fun NutritionScreen()      = PlaceholderScreen("Ernährung")
