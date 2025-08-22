@@ -15,7 +15,6 @@ import com.example.fitapp.ui.NutritionScreen
 import com.example.fitapp.ui.ProgressScreen
 import com.example.fitapp.ui.ShoppingListScreen
 import com.example.fitapp.ui.TrainingSetupScreen
-import com.example.fitapp.ui.WorkoutScreen
 
 
 @OptIn(ExperimentalFoundationApi::class)
