@@ -52,7 +52,14 @@ android {
 
     // Wichtig: KEINE kotlinCompilerExtensionVersion setzen (Kotlin 2.x + Compose-Plugin)
     packaging {
-        resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+        resources { excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "META-INF/DEPENDENCIES"
+            // optional (empfohlen, falls ähnliche Konflikte auftauchen):
+            excludes += "META-INF/NOTICE"
+            excludes += "META-INF/NOTICE.txt"
+            excludes += "META-INF/LICENSE"
+            excludes += "META-INF/LICENSE.txt"
+        }
     }
 }
 
@@ -75,7 +82,11 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("com.halilibo.compose-richtext:richtext-commonmark:1.0.0-alpha03")
     implementation("com.halilibo.compose-richtext:richtext-ui-material3-android:1.0.0-alpha03")
-    implementation("com.openai:openai-java:3.1.2")
+    implementation("com.openai:openai-java-client-okhttp:3.1.2")
+    implementation("com.halilibo.compose-richtext:richtext-commonmark:1.0.0-alpha03")
+    implementation("com.halilibo.compose-richtext:richtext-ui-material3-android:1.0.0-alpha03")
+
+
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

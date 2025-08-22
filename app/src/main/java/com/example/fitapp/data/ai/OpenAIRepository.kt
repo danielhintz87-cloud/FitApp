@@ -1,5 +1,6 @@
 package com.example.fitapp.data.ai
 
+import com.example.fitapp.BuildConfig  // <-- hinzufügen!
 import com.example.fitapp.data.*
 import com.example.fitapp.logic.PlanGenerator
 import com.openai.client.OpenAIClient
@@ -11,7 +12,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class OpenAIRepository(
-    private val client: OpenAIClient = OpenAIOkHttpClient.fromEnv()
+    private val client: OpenAIClient = OpenAIOkHttpClient.builder()
+        .apiKey(BuildConfig.OPENAI_API_KEY)   // <-- statt fromEnv()
+        .build()
 ) : AiCoach {
 
     override suspend fun generateBasePlan(
@@ -34,25 +37,18 @@ class OpenAIRepository(
             .build()
 
         val res: Response = client.responses().create(params)
-        // Das Java-SDK bietet bislang keine stabile Convenience-Funktion, um den
-        // Text aus einer Response zu ziehen. Die frühere Erweiterung
-        // `outputText()` wurde entfernt, daher greifen wir hier zunächst auf
-        // `toString()` zurück und liefern bei Bedarf einen Fallback. Ein TODO
-        // markiert die Stelle für eine spätere, präzisere Extraktion.
-        val md = res.toString().ifBlank { "# Plan\n(keine Antwort)" } // TODO: Inhalt sauber extrahieren
+        // TODO: sauber parsen, solange nutzen wir einen Fallback:
+        val md = res.toString().ifBlank { "# Plan\n(keine Antwort)" }
 
-        // Struktur lokal, Markdown vom Modell:
         PlanGenerator.generateBasePlan(goal, devices, minutes, sessions).copy(markdown = md)
     }
 
-    override suspend fun suggestAlternative(goal: Goal, deviceHint: String, minutes: Int): WorkoutDay =
-        withContext(Dispatchers.IO) {
-            PlanGenerator.alternativeForToday(goal, deviceHint, minutes)
-        }
+    override suspend fun suggestAlternative(goal: Goal, deviceHint: String, minutes: Int) =
+        withContext(Dispatchers.IO) { PlanGenerator.alternativeForToday(goal, deviceHint, minutes) }
 
-    override suspend fun suggestRecipes(prefs: RecipePrefs, count: Int): List<Recipe> =
-        withContext(Dispatchers.IO) { emptyList() } // folgt später
+    override suspend fun suggestRecipes(prefs: RecipePrefs, count: Int) =
+        withContext(Dispatchers.IO) { emptyList<Recipe>() }
 
-    override suspend fun estimateCaloriesFromPhoto(imageBytes: ByteArray): CalorieEstimate =
+    override suspend fun estimateCaloriesFromPhoto(imageBytes: ByteArray) =
         withContext(Dispatchers.IO) { CalorieEstimate("Foto-Mahlzeit", 450, 0.4f, "Konservative MVP-Schätzung") }
 }
