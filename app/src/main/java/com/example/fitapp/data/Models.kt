@@ -49,13 +49,18 @@ data class FoodLog(
     val caloriesIn: Int
 )
 
+data class RecipeIngredient(
+    val name: String,
+    val amount: String
+)
+
 data class Recipe(
+    val id: String,
     val title: String,
-    val minutes: Int,
+    val timeMin: Int,
     val calories: Int,
-    val tags: List<String>,
-    val ingredients: List<Pair<String, String>>, // name -> qty (z.B. "Hähnchen" to "300g")
-    val steps: List<String>
+    val markdown: String? = null,
+    val ingredients: List<RecipeIngredient> = emptyList()
 )
 
 data class ShoppingItem(

@@ -25,7 +25,6 @@ fun FilterChip(
     text: String,
     selected: Boolean,
     onClick: () -> Unit,
-    label: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(20.dp)
