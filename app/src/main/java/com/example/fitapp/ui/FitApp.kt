@@ -1,5 +1,6 @@
 package com.example.fitapp.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -27,6 +28,7 @@ private enum class NavItem(val label: String) {
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 fun FitApp() {
     val items = listOf(
         NavItem.Today, NavItem.Training, NavItem.Nutrition, NavItem.Shopping, NavItem.Progress
