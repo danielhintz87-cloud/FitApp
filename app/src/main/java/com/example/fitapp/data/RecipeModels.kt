@@ -1,20 +1,23 @@
 package com.example.fitapp.data
 
-/**
- * Nutzerpräferenzen fürs Rezepte-Generating (MVP).
- * Diese Datei enthält KEINE Recipe-Klasse mehr (vermeidet Redeclaration).
- */
-data class RecipePrefs(
-    val lowCarb: Boolean = false,
-    val highProtein: Boolean = false,
-    val vegetarian: Boolean = false,
-    val vegan: Boolean = false
-)
+data class RecipeIngredient(val name: String, val amount: String)
+data class RecipeInstruction(val step: Int, val text: String)
 
-/** Ergebnis einer groben Foto-Kalorien-Schätzung. */
-data class CalorieEstimate(
+data class Recipe(
+    val id: String,
     val title: String,
     val calories: Int,
-    val confidence: Float,
-    val note: String? = null
+    val tags: List<String> = emptyList(),
+    val ingredients: List<RecipeIngredient> = emptyList(),
+    val steps: List<RecipeInstruction> = emptyList(),
+    val markdown: String? = null
+)
+
+/** Präferenzen für generierte Rezepte. */
+data class RecipePrefs(
+    val vegetarian: Boolean = false,
+    val highProtein: Boolean = false,
+    val lowCarb: Boolean = false,
+    val avoid: List<String> = emptyList(),
+    val targetCalories: Int? = null
 )

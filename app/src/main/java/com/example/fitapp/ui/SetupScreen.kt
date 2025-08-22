@@ -4,8 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -14,12 +14,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.example.fitapp.data.*
+import com.example.fitapp.data.ai.AiGenerateBasePlan
 import com.example.fitapp.logic.PlanGenerator
-import com.example.fitapp.ui.components.*
+import com.example.fitapp.ui.components.AppFilterChip
+import com.example.fitapp.ui.components.InlineActions
+import com.example.fitapp.ui.components.NumberField
+import com.example.fitapp.ui.components.SectionCard
 import com.example.fitapp.ui.design.Spacing
-
-// WICHTIG: unseren FilterChip klar vom M3-FilterChip unterscheiden
-import com.example.fitapp.ui.components.FilterChip as AppFilterChip
 
 @Composable
 fun TrainingSetupScreen() {
@@ -34,17 +35,12 @@ fun TrainingSetupScreen() {
     var showAddDevice by remember { mutableStateOf(false) }
     var newDeviceName by remember { mutableStateOf("") }
 
-    // --- Sektion: Ziel & Geräte ---
     SectionCard(title = "Ziel & Geräte") {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
             Text("Ziel", style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                Goal.values().forEach { g ->
-                    AppFilterChip(
-                        text = g.name,
-                        selected = goal == g,
-                        onClick = { goal = g }
-                    )
+                Goal.values().forEach {
+                    AppFilterChip(text = it.name, selected = goal == it, onClick = { goal = it })
                 }
             }
 
@@ -55,13 +51,10 @@ fun TrainingSetupScreen() {
                 onToggle = { name -> AppRepository.toggleDevice(name) }
             )
 
-            TextButton(onClick = { showAddDevice = true }) {
-                Text("+ Gerät hinzufügen")
-            }
+            TextButton(onClick = { showAddDevice = true }) { Text("+ Gerät hinzufügen") }
         }
     }
 
-    // --- Sektion: Zeit & Kalorien ---
     SectionCard(title = "Zeit & Kalorien") {
         NumberField(label = "Minuten pro Einheit", value = timePerUnit, onValueChange = { timePerUnit = it })
         Spacer(Modifier.height(Spacing.md))
@@ -70,34 +63,30 @@ fun TrainingSetupScreen() {
         NumberField(label = "Tägliches Kalorienbudget", value = budget, onValueChange = { budget = it })
     }
 
-    // --- Aktionen: Plan generieren / Alternative ---
     InlineActions(
         primaryLabel = "Grundplan generieren",
         onPrimary = {
             val selectedDevices = AppRepository.getSelectedDevices().ifEmpty { listOf(Device("Körpergewicht")) }
-            val plan = PlanGenerator.generateBasePlan(
-                goal = goal,
-                devices = selectedDevices,
-                timeBudgetMin = timePerUnit.toIntOrNull() ?: 30,
-                sessionsPerWeek = sessions.toIntOrNull() ?: 3
-            )
-            AppRepository.setPlan(plan)
-            AppRepository.setCalorieSettings(CalorieSettings(goal, budget.toIntOrNull() ?: 2000))
+            // OpenAI (oder Mock) über Ai.kt – blockierend im MVP via LaunchedEffect/rememberCoroutineScope
+            val minutes = timePerUnit.toIntOrNull() ?: 30
+            val sess = sessions.toIntOrNull() ?: 3
+            // Für einen Click-Handler: LaunchedEffect-Block
+            LaunchedEffect(goal, selectedDevices, minutes, sess) {
+                val plan = runCatching {
+                    AiGenerateBasePlan(goal, selectedDevices, minutes, sess, null)
+                }.getOrElse {
+                    // Fallback lokal, falls Netzwerk/SDK zickt:
+                    PlanGenerator.generateBasePlan(goal, selectedDevices, minutes, sess)
+                }
+                AppRepository.setPlan(plan)
+                AppRepository.setCalorieSettings(CalorieSettings(goal, budget.toIntOrNull() ?: 2000))
+            }
         },
-        secondaryLabel = "Alternative für heute",
-        onSecondary = {
-            val p = AppRepository.plan.value ?: return@InlineActions
-            val alt = PlanGenerator.alternativeForToday(
-                goal = p.goal,
-                deviceHint = p.devices.firstOrNull()?.name ?: "Körpergewicht",
-                timeMin = p.timeBudgetMin
-            )
-            AppRepository.logExercise(alt.title, alt.durationMin, alt.durationMin * 6)
-        },
+        secondaryLabel = null,
+        onSecondary = null,
         modifier = Modifier.padding(horizontal = Spacing.lg)
     )
 
-    // --- Sektion: Dein Plan (kompakt) ---
     val plan by AppRepository.plan.collectAsState()
     SectionCard(
         title = "Dein Plan",
@@ -105,26 +94,19 @@ fun TrainingSetupScreen() {
     ) {
         val p = plan
         if (p == null) {
-            Text(
-                "Lege Ziel, Zeit & Geräte fest und tippe auf „Grundplan generieren“.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text("Lege Ziel, Zeit & Geräte fest und tippe auf „Grundplan generieren“.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                p.week.forEach { day ->
-                    Text("• ${day.title} – ${day.durationMin} min")
-                }
+                p.week.forEach { day -> Text("• ${day.title} – ${day.durationMin} min") }
             }
             Spacer(Modifier.height(Spacing.sm))
-            Text(
-                "Geräte: ${p.devices.joinToString { it.name }}",
+            Text("Geräte: ${p.devices.joinToString { it.name }}",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 
-    // --- Dialog: neues Gerät hinzufügen ---
     if (showAddDevice) {
         AlertDialog(
             onDismissRequest = { showAddDevice = false },
@@ -133,15 +115,15 @@ fun TrainingSetupScreen() {
                 OutlinedTextField(
                     value = newDeviceName,
                     onValueChange = { newDeviceName = it },
-                    singleLine = true,
-                    label = { Text("Name") }
+                    singleLine = true
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
-                    AppRepository.addDevice(newDeviceName)
-                    newDeviceName = ""
+                    val n = newDeviceName.trim()
+                    if (n.isNotEmpty()) AppRepository.addDevice(n)
                     showAddDevice = false
+                    newDeviceName = ""
                 }) { Text("Hinzufügen") }
             },
             dismissButton = {
@@ -151,7 +133,7 @@ fun TrainingSetupScreen() {
     }
 }
 
-/** Chips im Zeilen-Wrap (einfacher Flow) */
+/** simple „wrap“-Chips */
 @Composable
 private fun FlowChips(
     items: List<String>,
@@ -162,11 +144,11 @@ private fun FlowChips(
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         rows.forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                row.forEach { name ->
+                row.forEach { txt ->
                     AppFilterChip(
-                        text = name,
-                        selected = selected.contains(name),
-                        onClick = { onToggle(name) }
+                        text = txt,
+                        selected = selected.contains(txt),
+                        onClick = { onToggle(txt) }
                     )
                 }
             }

@@ -4,103 +4,85 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.rememberCoroutineScope
-
-import com.example.fitapp.data.*
-import com.example.fitapp.data.ai.Ai
-import com.example.fitapp.ui.components.*
+import com.example.fitapp.data.RecipePrefs
+import com.example.fitapp.data.ai.AiSuggestRecipes
+import com.example.fitapp.ui.components.AppFilterChip
+import com.example.fitapp.ui.components.SectionCard
 import com.example.fitapp.ui.design.Spacing
-
-// WICHTIG: unseren FilterChip klar vom M3-FilterChip unterscheiden
-import com.example.fitapp.ui.components.FilterChip as AppFilterChip
+import com.example.fitapp.ui.model.UiRecipe
+import com.example.fitapp.ui.model.toUi
+import kotlinx.coroutines.launch
 
 @Composable
 fun NutritionScreen() {
-    var lowCarb by remember { mutableStateOf(false) }
-    var highProtein by remember { mutableStateOf(false) }
     var vegetarian by remember { mutableStateOf(false) }
-    var vegan by remember { mutableStateOf(false) }
-
-    var isLoading by remember { mutableStateOf(false) }
-    var recipes by remember { mutableStateOf<List<Recipe>>(emptyList()) }
-
+    var highProtein by remember { mutableStateOf(false) }
+    var lowCarb by remember { mutableStateOf(false) }
+    var recipes by remember { mutableStateOf<List<UiRecipe>>(emptyList()) }
     val scope = rememberCoroutineScope()
 
-    LazyColumn(
+    Column(
+        modifier = Modifier
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = Spacing.lg, vertical = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.md)
     ) {
-        item {
-            SectionCard(title = "Filter") {
+        SectionCard(title = "Rezepte generieren", subtitle = "Mit deinen Präferenzen") {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                    AppFilterChip("Low-Carb", lowCarb) { lowCarb = !lowCarb }
-                    AppFilterChip("High-Protein", highProtein) { highProtein = !highProtein }
-                    AppFilterChip("Vegetarisch", vegetarian) { vegetarian = !vegetarian }
-                    AppFilterChip("Vegan", vegan) { vegan = !vegan }
+                    AppFilterChip("Vegetarisch", vegetarian, { vegetarian = !vegetarian })
+                    AppFilterChip("High Protein", highProtein, { highProtein = !highProtein })
+                    AppFilterChip("Low Carb", lowCarb, { lowCarb = !lowCarb })
                 }
-
-                Spacer(Modifier.height(Spacing.md))
-                PrimaryButton(
-                    label = if (isLoading) "Generiere…" else "Rezepte generieren",
-                    onClick = {
-                        if (isLoading) return@PrimaryButton
-                        isLoading = true
+                Spacer(Modifier.height(Spacing.sm))
+                Button(onClick = {
+                    scope.launch {
                         val prefs = RecipePrefs(
-                            lowCarb = lowCarb,
-                            highProtein = highProtein,
                             vegetarian = vegetarian,
-                            vegan = vegan
+                            highProtein = highProtein,
+                            lowCarb = lowCarb
                         )
-                        scope.launch {
-                            try {
-                                recipes = Ai.coach.suggestRecipes(prefs, count = 5)
-                            } finally {
-                                isLoading = false
-                            }
-                        }
+                        val list = AiSuggestRecipes(prefs, count = 3).map { it.toUi() }
+                        recipes = list
                     }
-                )
+                }) { Text("Vorschläge holen") }
             }
         }
 
-        items(recipes, key = { it.id }) { r ->
-            SectionCard(
-                title = r.title,
-                subtitle = "${r.timeMin} min · ${r.calories} kcal"
+        recipes.forEach { r ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
-                if (!r.markdown.isNullOrBlank()) {
-                    MarkdownText(r.markdown!!)
-                    Spacer(Modifier.height(Spacing.sm))
-                } else {
-                    // Fallback kompakt
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Zutaten:", style = MaterialTheme.typography.titleSmall)
-                        r.ingredients.forEach { ing -> Text("• ${ing.name} — ${ing.amount}") }
+                Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(r.title, style = MaterialTheme.typography.titleMedium)
+                    Text("${r.calories} kcal · ${r.tagsLine}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (!r.markdown.isNullOrBlank()) {
+                        Spacer(Modifier.height(Spacing.xs))
+                        Text(r.markdown!!, style = MaterialTheme.typography.bodySmall)
                     }
                     Spacer(Modifier.height(Spacing.sm))
+                    Text("Zutaten", style = MaterialTheme.typography.titleSmall)
+                    Text(r.ingredientsText)
+                    Spacer(Modifier.height(Spacing.sm))
+                    Text("Zubereitung", style = MaterialTheme.typography.titleSmall)
+                    Text(r.stepsText)
                 }
-
-                InlineActions(
-                    primaryLabel = "In Kalorien loggen",
-                    onPrimary = { AppRepository.logFood(r.title, r.calories) },
-                    secondaryLabel = "Zur Einkaufsliste",
-                    onSecondary = {
-                        val pairs = r.ingredients.map { it.name to it.amount }
-                        AppRepository.addShoppingItems(pairs)
-                    }
-                )
             }
         }
-
-        // Abstand unterhalb der Bottom Bar
-        item { Spacer(Modifier.height(96.dp)) }
     }
 }

@@ -1,14 +1,14 @@
 import java.util.Properties
 
-        plugins {
-            id("com.android.application")
-            id("org.jetbrains.kotlin.android")
-            id("org.jetbrains.kotlin.plugin.compose")
-        }
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
+}
 
 android {
     namespace = "com.example.fitapp"
-    compileSdk = 36
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.fitapp"
@@ -20,7 +20,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
 
-        // BuildConfig.OPENAI_API_KEY: zuerst Gradle-Property, dann local.properties, sonst ""
+        // BuildConfig.OPENAI_API_KEY (Gradle-Property > local.properties > "")
         val gradleKey: String? = providers.gradleProperty("OPENAI_API_KEY").orNull
         val localKey: String? = run {
             val f = rootProject.file("local.properties")
@@ -50,15 +50,15 @@ android {
     buildFeatures { compose = true }
     android.buildFeatures.buildConfig = true
 
-    // Wichtig: KEINE kotlinCompilerExtensionVersion setzen (Kotlin 2.x + Compose-Plugin)
     packaging {
-        resources { excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        resources {
+            // Zusätzlich zu euren bisherigen Excludes:
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "META-INF/DEPENDENCIES"
-            // optional (empfohlen, falls ähnliche Konflikte auftauchen):
-            excludes += "META-INF/NOTICE"
-            excludes += "META-INF/NOTICE.txt"
-            excludes += "META-INF/LICENSE"
-            excludes += "META-INF/LICENSE.txt"
+            excludes += "META-INF/LICENSE*"
+            excludes += "META-INF/NOTICE*"
+            excludes += "META-INF/README*"
+            excludes += "META-INF/CHANGES*"
         }
     }
 }
@@ -80,13 +80,9 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("com.google.android.material:material:1.12.0")
-    implementation("com.halilibo.compose-richtext:richtext-commonmark:1.0.0-alpha03")
-    implementation("com.halilibo.compose-richtext:richtext-ui-material3-android:1.0.0-alpha03")
-    implementation("com.openai:openai-java-client-okhttp:3.1.2")
-    implementation("com.halilibo.compose-richtext:richtext-commonmark:1.0.0-alpha03")
-    implementation("com.halilibo.compose-richtext:richtext-ui-material3-android:1.0.0-alpha03")
 
-
+    // OpenAI Java SDK (offiziell)
+    implementation("com.openai:openai-java:2.3.1")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

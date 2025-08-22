@@ -1,9 +1,6 @@
-// app/src/main/java/com/example/fitapp/ui/FitApp.kt
 package com.example.fitapp.ui
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -11,7 +8,13 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.launch
 
@@ -23,36 +26,45 @@ private enum class NavItem(val label: String) {
     Progress("Fortschritt")
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FitApp() {
-    val items = remember { NavItem.values().toList() }
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { items.size })
+    val items = listOf(
+        NavItem.Today, NavItem.Training, NavItem.Nutrition, NavItem.Shopping, NavItem.Progress
+    )
+
+    var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
+    val pagerState = rememberPagerState(initialPage = selectedIndex, pageCount = { items.size })
     val scope = rememberCoroutineScope()
+
+    // Pager <-> BottomBar synchronisieren
+    LaunchedEffect(selectedIndex) { pagerState.animateScrollToPage(selectedIndex) }
+    LaunchedEffect(pagerState.currentPage) { selectedIndex = pagerState.currentPage }
 
     Scaffold(
         bottomBar = {
             NavigationBar {
-                items.forEachIndexed { index, item ->
+                items.forEachIndexed { idx, item ->
                     NavigationBarItem(
-                        selected = pagerState.currentPage == index,
-                        onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                        icon = {},
+                        selected = selectedIndex == idx,
+                        onClick = { scope.launch { pagerState.animateScrollToPage(idx) } },
+                        icon = { /* bewusst ohne Icon */ },
                         label = { Text(item.label) }
                     )
                 }
             }
         }
     ) { innerPadding ->
-        Box(Modifier.fillMaxSize().padding(innerPadding)) {
-            HorizontalPager(state = pagerState) { page ->
-                when (items[page]) {
-                    NavItem.Today -> TodayScreen()
-                    NavItem.Training -> TrainingSetupScreen()
-                    NavItem.Nutrition -> NutritionScreen()
-                    NavItem.Shopping -> ShoppingListScreen()
-                    NavItem.Progress -> ProgressScreen()
-                }
+        HorizontalPager(
+            state = pagerState,
+            beyondBoundsPageCount = 1, // sanftes Wischen
+            modifier = Modifier.padding(innerPadding)
+        ) { page ->
+            when (items[page]) {
+                NavItem.Today -> TodayScreen()
+                NavItem.Training -> TrainingSetupScreen()
+                NavItem.Nutrition -> NutritionScreen()
+                NavItem.Shopping -> ShoppingListScreen()
+                NavItem.Progress -> ProgressScreen()
             }
         }
     }

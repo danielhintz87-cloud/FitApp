@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/fitapp/data/ai/OpenAIRepository.kt
 package com.example.fitapp.data.ai
 
 import com.example.fitapp.data.*
@@ -11,8 +12,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class OpenAIRepository(
-    private val client: OpenAIClient = OpenAIOkHttpClient.fromEnv()
+    private val client: OpenAIClient
 ) : AiCoach {
+
+    companion object {
+        /** Bequeme Factory: baut den offiziellen OkHttp-Client mit API-Key. */
+        fun fromApiKey(apiKey: String): OpenAIRepository {
+            // Falls dein openai-java SDK die builder-API anbietet:
+            val client = OpenAIOkHttpClient.builder()
+                .apiKey(apiKey)              // <- hier wird „hart“ der Key gesetzt
+                .build()
+            return OpenAIRepository(client)
+        }
+    }
 
     override suspend fun generateBasePlan(
         goal: Goal,
@@ -34,8 +46,11 @@ class OpenAIRepository(
             .build()
 
         val res: Response = client.responses().create(params)
-        val md = res.toString().ifBlank { "# Plan\n(keine Antwort)" } // TODO: Text parsing schärfen
 
+        // TODO: saubere Text-Extraktion sobald das SDK eine bequeme Methode bereitstellt.
+        val md = res.toString().ifBlank { "# Plan\n(keine Antwort)" }
+
+        // Struktur lokal, Markdown vom Modell:
         PlanGenerator.generateBasePlan(goal, devices, minutes, sessions).copy(markdown = md)
     }
 
@@ -45,13 +60,8 @@ class OpenAIRepository(
         }
 
     override suspend fun suggestRecipes(prefs: RecipePrefs, count: Int): List<Recipe> =
-        withContext(Dispatchers.IO) {
-            // TODO: echte Prompt-Implementierung
-            emptyList()
-        }
+        withContext(Dispatchers.IO) { emptyList() } // folgt später
 
     override suspend fun estimateCaloriesFromPhoto(imageBytes: ByteArray): CalorieEstimate =
-        withContext(Dispatchers.IO) {
-            CalorieEstimate("Foto-Mahlzeit", 450, 0.4f, "Konservative MVP-Schätzung")
-        }
+        withContext(Dispatchers.IO) { CalorieEstimate("Foto-Mahlzeit", 450, 0.4f, "Konservative MVP-Schätzung") }
 }
