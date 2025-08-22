@@ -5,7 +5,7 @@
 /.idea/
 .DS_Store
 /build/
-/captures/
+ /captures/
 .externalNativeBuild/
 .cxx/
 gradle/wrapper/gradle-wrapper.jar
