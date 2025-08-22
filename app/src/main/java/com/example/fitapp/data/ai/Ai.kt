@@ -2,24 +2,23 @@ package com.example.fitapp.data.ai
 
 import com.example.fitapp.BuildConfig
 import com.example.fitapp.data.*
-import com.openai.client.OpenAIClient
-import com.openai.client.okhttp.OpenAIOkHttpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/**
+ * Zentraler Zugriffspunkt für AI-Funktionalität. Wählt je nach vorhandener
+ * API-Schlüssel-Konfiguration entweder das OpenAI-Backend oder die Mock-Implementierung.
+ */
 object Ai {
-    val repo: AiCoach by lazy {
+    /** Fauler Initialisierer: Verwendet echten OpenAI-Client, falls API-Key vorhanden, sonst Mock. */
+    val coach: AICoach by lazy {
         val key = BuildConfig.OPENAI_API_KEY ?: ""
         if (key.isNotBlank()) {
-            // OpenAI erzwingen – Client mit API-Key initialisieren
             OpenAIRepository.fromApiKey(key)
         } else {
             MockAiRepository()
         }
     }
-}
-
-    val coach: AICoach get() = coachImpl
 }
 
 /* ---------- Bequeme Delegations (optional) ---------- */

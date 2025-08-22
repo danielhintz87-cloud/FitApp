@@ -21,6 +21,7 @@ import com.example.fitapp.ui.components.InlineActions
 import com.example.fitapp.ui.components.NumberField
 import com.example.fitapp.ui.components.SectionCard
 import com.example.fitapp.ui.design.Spacing
+import kotlinx.coroutines.launch
 
 @Composable
 fun TrainingSetupScreen() {
@@ -34,6 +35,7 @@ fun TrainingSetupScreen() {
 
     var showAddDevice by remember { mutableStateOf(false) }
     var newDeviceName by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
 
     SectionCard(title = "Ziel & Geräte") {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
@@ -67,15 +69,12 @@ fun TrainingSetupScreen() {
         primaryLabel = "Grundplan generieren",
         onPrimary = {
             val selectedDevices = AppRepository.getSelectedDevices().ifEmpty { listOf(Device("Körpergewicht")) }
-            // OpenAI (oder Mock) über Ai.kt – blockierend im MVP via LaunchedEffect/rememberCoroutineScope
             val minutes = timePerUnit.toIntOrNull() ?: 30
             val sess = sessions.toIntOrNull() ?: 3
-            // Für einen Click-Handler: LaunchedEffect-Block
-            LaunchedEffect(goal, selectedDevices, minutes, sess) {
+            scope.launch {
                 val plan = runCatching {
                     AiGenerateBasePlan(goal, selectedDevices, minutes, sess, null)
                 }.getOrElse {
-                    // Fallback lokal, falls Netzwerk/SDK zickt:
                     PlanGenerator.generateBasePlan(goal, selectedDevices, minutes, sess)
                 }
                 AppRepository.setPlan(plan)
