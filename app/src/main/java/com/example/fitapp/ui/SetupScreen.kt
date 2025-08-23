@@ -1,9 +1,11 @@
 package com.example.fitapp.ui
 
+import androidx.compose.foundation.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
@@ -14,9 +16,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.data.*
@@ -27,6 +31,7 @@ import com.example.fitapp.ui.components.SectionCard
 import com.example.fitapp.ui.design.Spacing
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TrainingSetupScreen() {
     var goal by remember { mutableStateOf(Goal.Abnehmen) }
@@ -104,7 +109,8 @@ fun TrainingSetupScreen() {
             val selectedDevices = AppRepository.getSelectedDevices().ifEmpty { listOf(Device("Körpergewicht")) }
             val minutes = timePerUnit.toIntOrNull() ?: 30
             val sess = sessions.toIntOrNull() ?: 3
-            scope.launch {
+            val scopeLocal = scope
+            scopeLocal.launch {
                 val plan = runCatching {
                     Ai.repo.generateBasePlan(goal, selectedDevices, minutes, sess)
                 }.getOrElse {
@@ -124,24 +130,24 @@ fun TrainingSetupScreen() {
             )
             AppRepository.logExercise(alt.title, alt.durationMin, alt.durationMin * 6)
         },
-        modifier = Modifier.padding(horizontal = Spacing.lg)
+        modifier = Modifier.padding(bottom = 96.dp, top = Spacing.md)
     )
 
     val plan by AppRepository.plan.collectAsState()
     SectionCard(
         title = "Dein Plan",
-        subtitle = if (plan == null) "Noch kein Plan generiert" else "${'$'}{plan!!.sessionsPerWeek} Einheiten · ${'$'}{plan!!.timeBudgetMin} min"
+        subtitle = if (plan == null) "Noch kein Plan generiert" else "${plan!!.sessionsPerWeek} Einheiten · ${plan!!.timeBudgetMin} min"
     ) {
         val p = plan
         if (p == null) {
-            Text("Lege Ziel, Zeit & Geräte fest und tippe auf „Grundplan generieren“.",
+            Text("Lege Ziel, Zeit & Geräte fest und tippe auf „Grundplan generieren“. ",
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                p.week.forEach { day -> Text("• ${'$'}{day.title} – ${'$'}{day.durationMin} min") }
+                p.week.forEach { day -> Text("• ${day.title} – ${day.durationMin} min") }
             }
             Spacer(Modifier.height(Spacing.sm))
-            Text("Geräte: ${'$'}{p.devices.joinToString { it.name }}",
+            Text("Geräte: ${p.devices.joinToString { it.name }}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

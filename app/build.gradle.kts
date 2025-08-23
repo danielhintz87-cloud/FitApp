@@ -20,9 +20,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
 
-        // BuildConfig.OPENAI_API_KEY (Gradle-Property > local.properties > "")
-        val gradleKey: String? = providers.gradleProperty("OPENAI_API_KEY").orNull
-        val localKey: String? = run {
+        // OPENAI_API_KEY aus Gradle-Property ODER local.properties einlesen
+        val gradleKey = providers.gradleProperty("OPENAI_API_KEY").orNull
+        val localKey = run {
             val f = rootProject.file("local.properties")
             if (f.exists()) Properties().apply { load(f.inputStream()) }.getProperty("OPENAI_API_KEY")
             else null
@@ -62,7 +62,6 @@ android {
 }
 
 dependencies {
-    // Compose BOM
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
@@ -76,10 +75,16 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
     implementation("androidx.navigation:navigation-compose:2.7.7")
+
+    // Pager (HorizontalPager ist im foundation-Paket enthalten)
+    implementation("androidx.compose.foundation:foundation")
+
+    // Bilder (optional für spätere Food-Fotos)
     implementation("io.coil-kt:coil-compose:2.4.0")
+
     implementation("com.google.android.material:material:1.12.0")
 
-    // OpenAI Java SDK (offiziell)
+    // OpenAI Java SDK
     implementation("com.openai:openai-java:2.3.1")
 
     testImplementation("junit:junit:4.13.2")
