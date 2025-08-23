@@ -1,7 +1,5 @@
 package com.example.fitapp.ui
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -14,7 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.launch
@@ -28,11 +26,8 @@ private enum class NavItem(val label: String) {
 }
 
 @Composable
-@OptIn(ExperimentalFoundationApi::class)
 fun FitApp() {
-    val items = listOf(
-        NavItem.Today, NavItem.Training, NavItem.Nutrition, NavItem.Shopping, NavItem.Progress
-    )
+    val items = NavItem.values().toList()
 
     var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
     val pagerState = rememberPagerState(initialPage = selectedIndex, pageCount = { items.size })
@@ -49,7 +44,7 @@ fun FitApp() {
                     NavigationBarItem(
                         selected = selectedIndex == idx,
                         onClick = { scope.launch { pagerState.animateScrollToPage(idx) } },
-                        icon = { /* bewusst ohne Icon */ },
+                        icon = {},
                         label = { Text(item.label) }
                     )
                 }
