@@ -13,7 +13,6 @@ data class Recipe(
     val markdown: String? = null
 )
 
-/** Präferenzen für generierte Rezepte. */
 data class RecipePrefs(
     val vegetarian: Boolean = false,
     val highProtein: Boolean = false,

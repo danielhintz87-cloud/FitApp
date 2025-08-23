@@ -28,12 +28,10 @@ private enum class NavItem(val label: String) {
 @Composable
 fun FitApp() {
     val items = NavItem.values().toList()
-
     var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
     val pagerState = rememberPagerState(initialPage = selectedIndex, pageCount = { items.size })
     val scope = rememberCoroutineScope()
 
-    // Pager <-> BottomBar synchronisieren
     LaunchedEffect(selectedIndex) { pagerState.animateScrollToPage(selectedIndex) }
     LaunchedEffect(pagerState.currentPage) { selectedIndex = pagerState.currentPage }
 
@@ -53,7 +51,7 @@ fun FitApp() {
     ) { innerPadding ->
         HorizontalPager(
             state = pagerState,
-            beyondBoundsPageCount = 1, // sanftes Wischen
+            beyondBoundsPageCount = 1,
             modifier = Modifier.padding(innerPadding)
         ) { page ->
             when (items[page]) {

@@ -1,46 +1,78 @@
 package com.example.fitapp.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.Divider
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.collectAsState
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.example.fitapp.data.AppRepository
-import com.example.fitapp.ui.components.EmptyState
-import com.example.fitapp.ui.components.SectionCard
 import com.example.fitapp.ui.design.Spacing
 
 @Composable
 fun ShoppingListScreen() {
     val items by AppRepository.shopping.collectAsState()
+    var newName by remember { mutableStateOf("") }
+    var newQty by remember { mutableStateOf("") }
 
-    if (items.isEmpty()) {
-        EmptyState(title = "Einkaufsliste ist leer", message = "Füge Zutaten über Rezepte hinzu oder lege manuell los.")
-        return
-    }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = Spacing.lg)
+            .padding(bottom = 96.dp)
+    ) {
+        Text("Einkaufsliste", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = Spacing.md))
+        Spacer(Modifier.height(Spacing.sm))
 
-    SectionCard(title = "Einkauf") {
-        items.forEach { item ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = Spacing.sm),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row {
-                    Checkbox(checked = item.checked, onCheckedChange = { AppRepository.toggleShoppingChecked(item.id) })
-                    Text("${item.name}  ${if (item.quantity.isNotBlank()) "– ${item.quantity}" else ""}")
-                }
-                IconButton(onClick = { AppRepository.removeShoppingItem(item.id) }) {
-                    androidx.compose.material3.Icon(Icons.Default.Delete, contentDescription = "Löschen")
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            OutlinedTextField(
+                value = newName,
+                onValueChange = { newName = it },
+                label = { Text("Produkt") },
+                singleLine = true,
+                modifier = Modifier.weight(1f)
+            )
+            OutlinedTextField(
+                value = newQty,
+                onValueChange = { newQty = it },
+                label = { Text("Menge") },
+                singleLine = true,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Spacer(Modifier.height(Spacing.sm))
+        TextButton(onClick = {
+            val n = newName.trim()
+            if (n.isNotEmpty()) {
+                AppRepository.addShoppingItem(n, newQty.trim())
+                newName = ""; newQty = ""
+            }
+        }) { Text("+ Hinzufügen") }
+
+        Spacer(Modifier.height(Spacing.md))
+        Divider()
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(vertical = Spacing.md)
+        ) {
+            items(items, key = { it.id }) { it ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = Spacing.xs),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+                ) {
+                    Checkbox(checked = it.checked, onCheckedChange = { AppRepository.toggleShoppingChecked(it.id) })
+                    Text("${it.name} – ${it.quantity}")
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = { AppRepository.removeShoppingItem(it.id) }) { Text("Entfernen") }
                 }
             }
         }

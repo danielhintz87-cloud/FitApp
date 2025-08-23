@@ -53,7 +53,6 @@ data class ShoppingItem(
     val checked: Boolean
 )
 
-/** Für Vision/Schätzergebnisse (Foto → grobe kcal). */
 data class CalorieEstimate(
     val label: String,
     val calories: Int,

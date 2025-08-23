@@ -36,7 +36,6 @@ fun NutritionScreen() {
     var prefs by remember { mutableStateOf(RecipePrefs()) }
     var recipes by remember { mutableStateOf<List<UiRecipe>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
-
     val scope = rememberCoroutineScope()
 
     Column(
@@ -98,7 +97,7 @@ fun NutritionScreen() {
                             verticalArrangement = Arrangement.spacedBy(Spacing.sm)
                         ) {
                             Text(r.title, style = MaterialTheme.typography.titleMedium)
-                            Text("${'$'}{r.calories} kcal · ${'$'}{r.tagsLine}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("${r.calories} kcal · ${r.tagsLine}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("Zutaten:", style = MaterialTheme.typography.titleSmall)
                             Text(r.ingredientsText)
                             Text("Zubereitung:", style = MaterialTheme.typography.titleSmall)

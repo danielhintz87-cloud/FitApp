@@ -40,7 +40,7 @@ class MockAiRepository : AICoach {
                         prefs.vegetarian -> "Veggie-Pasta $idx"
                         else -> "Schnelle Bowl $idx"
                     },
-                    calories = prefs.targetCalories ?: 500,
+                    calories = prefs.targetCalories ?: 520,
                     tags = buildList {
                         if (prefs.vegetarian) add("Vegetarisch")
                         if (prefs.highProtein) add("High Protein")

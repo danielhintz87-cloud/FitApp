@@ -8,58 +8,28 @@ import java.util.concurrent.atomic.AtomicLong
 
 object AppRepository {
 
-    /* ----------------------------- Settings ----------------------------- */
     private val _calorieSettings = MutableStateFlow(CalorieSettings())
     val calorieSettings: StateFlow<CalorieSettings> = _calorieSettings.asStateFlow()
     fun setCalorieSettings(new: CalorieSettings) { _calorieSettings.value = new }
 
-    /* ----------------------- PlanState + Legacy Plan -------------------- */
-    private val _planState = MutableStateFlow<PlanState?>(null)
-    val planState: StateFlow<PlanState?> = _planState.asStateFlow()
+    private val _plan = MutableStateFlow<Plan?>(null)
+    val plan: StateFlow<Plan?> = _plan.asStateFlow()
+    fun setPlan(plan: Plan) { _plan.value = plan }
 
-    // Legacy-Kompatibilität: einige Screens lesen noch "plan"
-    private val _planLegacy = MutableStateFlow<Plan?>(null)
-    val plan: StateFlow<Plan?> = _planLegacy.asStateFlow()
-
-    fun setBasePlan(plan: Plan) {
-        val old = _planState.value
-        _planState.value = PlanState(base = plan, overrides = old?.overrides ?: emptyMap())
-        _planLegacy.value = plan
-    }
-    /** Für alten Code: ruft setBasePlan auf. */
-    fun setPlan(plan: Plan) = setBasePlan(plan)
-
-    /** Nur heute (oder beliebiges Datum) überschreiben – Baseplan bleibt erhalten. */
-    fun setOverrideFor(date: LocalDate, replacement: WorkoutDay, reason: OverrideReason) {
-        val ps = _planState.value ?: return
-        _planState.value = ps.copy(
-            overrides = ps.overrides.toMutableMap().apply { put(date, DayOverride(date, replacement, reason)) }
-        )
-    }
-    fun clearOverride(date: LocalDate) {
-        val ps = _planState.value ?: return
-        _planState.value = ps.copy(
-            overrides = ps.overrides.toMutableMap().apply { remove(date) }
-        )
-    }
-
-    /* ------------------------------ Logs -------------------------------- */
     private val _exerciseLogs = MutableStateFlow<List<ExerciseLog>>(emptyList())
     val exerciseLogs: StateFlow<List<ExerciseLog>> = _exerciseLogs.asStateFlow()
 
     private val _foodLogs = MutableStateFlow<List<FoodLog>>(emptyList())
     val foodLogs: StateFlow<List<FoodLog>> = _foodLogs.asStateFlow()
 
-    fun logExercise(title: String, durationMin: Int, caloriesOut: Int = 0) {
-        val log = ExerciseLog(LocalDate.now(), title, durationMin, caloriesOut)
-        _exerciseLogs.value = _exerciseLogs.value + log
-    }
-    fun logFood(title: String, caloriesIn: Int) {
-        val log = FoodLog(LocalDate.now(), title, caloriesIn)
-        _foodLogs.value = _foodLogs.value + log
+    fun logExercise(title: String, durationMin: Int, caloriesOut: Int) {
+        _exerciseLogs.value = _exerciseLogs.value + ExerciseLog(LocalDate.now(), title, durationMin, caloriesOut)
     }
 
-    /* ---------------------------- Shopping ------------------------------ */
+    fun logFood(title: String, caloriesIn: Int) {
+        _foodLogs.value = _foodLogs.value + FoodLog(LocalDate.now(), title, caloriesIn)
+    }
+
     private val _shopping = MutableStateFlow<List<ShoppingItem>>(emptyList())
     val shopping: StateFlow<List<ShoppingItem>> = _shopping.asStateFlow()
     private val idGen = AtomicLong(1)
@@ -93,33 +63,25 @@ object AppRepository {
     fun removeShoppingItem(id: Long) { _shopping.value = _shopping.value.filterNot { it.id == id } }
     fun clearShopping() { _shopping.value = emptyList() }
 
-    /* ----------------------------- Devices ------------------------------ */
-    private val _devices = MutableStateFlow<List<Device>>(
-        listOf(
-            Device("Kurzhantel"),
-            Device("Kettlebell"),
-            Device("Bänder"),
-            Device("Klimmzugstange"),
-            Device("Rudergerät"),
-            Device("Laufband"),
-            Device("Matte")
-        )
-    )
+    private val _devices = MutableStateFlow(listOf(
+        Device("Kurzhantel"), Device("Kettlebell"), Device("Bänder"),
+        Device("Klimmzugstange"), Device("Rudergerät"), Device("Laufband"), Device("Matte")
+    ))
     val devices: StateFlow<List<Device>> = _devices.asStateFlow()
-
     private val _selectedDeviceNames = MutableStateFlow<Set<String>>(emptySet())
     val selectedDeviceNames: StateFlow<Set<String>> = _selectedDeviceNames.asStateFlow()
 
     fun addDevice(name: String) {
-        val trimmed = name.trim(); if (trimmed.isEmpty()) return
-        if (_devices.value.any { it.name.equals(trimmed, ignoreCase = true) }) return
-        _devices.value = _devices.value + Device(trimmed)
-        _selectedDeviceNames.value = _selectedDeviceNames.value + trimmed
+        val trimmed = name.trim()
+        if (trimmed.isNotEmpty() && _devices.value.none { it.name.equals(trimmed, true) }) {
+            _devices.value = _devices.value + Device(trimmed)
+            _selectedDeviceNames.value = _selectedDeviceNames.value + trimmed
+        }
     }
     fun toggleDevice(name: String) {
-        val cur = _selectedDeviceNames.value.toMutableSet()
-        if (cur.contains(name)) cur.remove(name) else cur.add(name)
-        _selectedDeviceNames.value = cur
+        val set = _selectedDeviceNames.value.toMutableSet()
+        if (set.contains(name)) set.remove(name) else set.add(name)
+        _selectedDeviceNames.value = set
     }
     fun getSelectedDevices(): List<Device> =
         _devices.value.filter { _selectedDeviceNames.value.contains(it.name) }

@@ -15,13 +15,12 @@ class OpenAIRepository(
 ) : AICoach {
 
     companion object {
-        /** Baut den Client mit API-Key und gibt Repository zurück. */
         fun fromApiKey(apiKey: String): OpenAIRepository {
             val client = OpenAIOkHttpClient.builder()
                 .apiKey(apiKey)
                 .build()
             return OpenAIRepository(client)
-            }
+        }
     }
 
     override suspend fun generateBasePlan(
@@ -51,17 +50,19 @@ class OpenAIRepository(
 
     override suspend fun suggestAlternative(goal: Goal, deviceHint: String, minutes: Int): WorkoutDay =
         withContext(Dispatchers.IO) {
+            // Für MVP lokal generiert; kann später via KI verfeinert werden
             PlanGenerator.alternativeForToday(goal, deviceHint, minutes)
         }
 
     override suspend fun suggestRecipes(prefs: RecipePrefs, count: Int): List<Recipe> =
         withContext(Dispatchers.IO) {
-            // TODO: Implementiere echtes Prompting für Rezepte (Structured Output)
+            // TODO: Prompt für strukturierte Rezept-Ausgabe
             emptyList()
         }
 
     override suspend fun estimateCaloriesFromPhoto(imageBytes: ByteArray): CalorieEstimate =
         withContext(Dispatchers.IO) {
+            // TODO: Vision-API nutzen; bis dahin konservativ
             CalorieEstimate("Foto-Mahlzeit", 450, 0.4f, "Konservative MVP-Schätzung")
         }
 }
