@@ -3,9 +3,12 @@ package com.example.fitapp.ui.screens
 import androidx.compose.foundation.ExperimentalLayoutApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,15 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.data.AppRepository
 import com.example.fitapp.data.Recipe
-import com.example.fitapp.data.RecipeIngredient
-import com.example.fitapp.data.RecipeInstruction
 import com.example.fitapp.data.RecipePrefs
 import com.example.fitapp.ui.CalorieScreen
 import com.example.fitapp.ui.coach.CoachLocalStore
 import com.example.fitapp.ui.coach.SavedRecipe
 import com.example.fitapp.ui.design.Spacing
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -101,7 +101,7 @@ fun NutritionScreenRoot() {
                         scope.launch {
                             var results = com.example.fitapp.data.ai.Ai.repo.suggestRecipes(prefs, count = 3)
                             if (results.isEmpty()) {
-                                // Fallback: lokale Mock-Daten nutzen, falls KI keine Ergebnisse liefert:contentReference[oaicite:2]{index=2}
+                                // Fallback: lokale Mock-Daten nutzen, falls KI keine Ergebnisse liefert
                                 results = com.example.fitapp.data.ai.MockAiRepository().suggestRecipes(prefs, count = 3)
                             }
                             recipeSuggestions = results

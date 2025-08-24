@@ -25,10 +25,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.fitapp.ui.screens.CoachScreen
+import com.example.fitapp.ui.coach.CoachScreen
 import com.example.fitapp.ui.screens.HomeScreen
 import com.example.fitapp.ui.screens.NutritionScreenRoot
-import com.example.fitapp.ui.screens.ProgressScreen
+import com.example.fitapp.ui.ProgressScreen
 import com.example.fitapp.ui.screens.TrainingScreen
 import com.example.fitapp.ui.ShoppingListScreen
 
