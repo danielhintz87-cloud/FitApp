@@ -29,6 +29,26 @@ android {
         }
         val key = gradleKey ?: localKey ?: ""
         buildConfigField("String", "OPENAI_API_KEY", "\"$key\"")
+
+        // GEMINI_API_KEY
+        val geminiGradleKey = providers.gradleProperty("GEMINI_API_KEY").orNull
+        val geminiLocalKey = run {
+            val f = rootProject.file("local.properties")
+            if (f.exists()) Properties().apply { load(f.inputStream()) }.getProperty("GEMINI_API_KEY")
+            else null
+        }
+        val geminiKey = geminiGradleKey ?: geminiLocalKey ?: ""
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
+
+        // DEEPSEEK_API_KEY
+        val deepseekGradleKey = providers.gradleProperty("DEEPSEEK_API_KEY").orNull
+        val deepseekLocalKey = run {
+            val f = rootProject.file("local.properties")
+            if (f.exists()) Properties().apply { load(f.inputStream()) }.getProperty("DEEPSEEK_API_KEY")
+            else null
+        }
+        val deepseekKey = deepseekGradleKey ?: deepseekLocalKey ?: ""
+        buildConfigField("String", "DEEPSEEK_API_KEY", "\"$deepseekKey\"")
     }
 
     buildTypes {

@@ -39,14 +39,13 @@ object AppAi {
 
     suspend fun chatOnce(userText: String): String = withContext(Dispatchers.IO) {
         when (currentProvider) {
-            Provider.OpenAI    -> openAiResponse(userText)
-            Provider.Gemini    -> geminiResponse(userText)
-            Provider.DeepSeek  -> deepSeekResponse(userText)
+            Provider.OpenAI -> openAiResponse(userText)
+            Provider.Gemini -> geminiResponse(userText)
+            Provider.DeepSeek -> deepSeekResponse(userText)
             Provider.Perplexity,
-            Provider.Copilot   -> {
+            Provider.Copilot -> {
                 delay(200)
-                "ℹ️ ${currentProvider.display} ist vorbereitet. " +
-                        "Hinterlege bei Bedarf den API‑Key & Endpoint – oder nutze vorerst OpenAI."
+                "ℹ️ ${currentProvider.display} ist vorbereitet. Hinterlege bei Bedarf den API‑Key & Endpoint – oder nutze vorerst OpenAI."
             }
         }
     }
@@ -63,13 +62,11 @@ object AppAi {
         // OpenAI Chat-Completions API Request
         val url = "https://api.openai.com/v1/chat/completions"
         val bodyJson = JSONObject().apply {
-            put("model", "gpt-3.5-turbo")  // oder "gpt-4" falls verfügbar
+            put("model", "gpt-3.5-turbo")
             put("messages", JSONArray().apply {
-                // System-Rolle: KI als Fitness-Coach instruieren
                 put(JSONObject().put("role", "system").put("content",
                     "Du bist mein persönlicher Fitness- und Ernährungscoach. " +
-                            "Antworte knapp, strukturiert, auf Deutsch."))
-                // User-Eingabe
+                    "Antworte knapp, strukturiert, auf Deutsch."))
                 put(JSONObject().put("role", "user").put("content", prompt))
             })
             put("temperature", 0.6)
@@ -108,9 +105,7 @@ object AppAi {
             delay(200)
             return "🔐 Gemini‑Key nicht gesetzt. Lege in local.properties `GEMINI_API_KEY=...` ab."
         }
-        // Google Generative Language API (Gemini) Request
         val url = "https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=$key"
-        // Hinweis: 'text-bison-001' als Platzhalter-Modellname (Gemini noch Beta)
         val bodyJson = JSONObject().apply {
             put("prompt", JSONObject().put("text", prompt))
             put("temperature", 0.7)
@@ -128,7 +123,6 @@ object AppAi {
             val raw = resp.body?.string().orEmpty()
             return try {
                 val root = JSONObject(raw)
-                // 'candidates'[0].'output' enthält den generierten Text (bei PaLM API)
                 root.getJSONArray("candidates")
                     .getJSONObject(0)
                     .getString("output")

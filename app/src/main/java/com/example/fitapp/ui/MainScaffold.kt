@@ -1,7 +1,19 @@
 package com.example.fitapp.ui
 
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -20,7 +32,6 @@ import androidx.navigation.compose.rememberNavController
 import com.example.fitapp.ui.coach.CoachScreen
 import com.example.fitapp.ui.screens.HomeScreen
 import com.example.fitapp.ui.screens.NutritionScreenRoot
-import com.example.fitapp.ui.screens.ProgressScreen
 import com.example.fitapp.ui.screens.TrainingScreen
 import com.example.fitapp.ui.ShoppingListScreen
 
@@ -32,57 +43,52 @@ enum class RootDest(val route: String) {
     Coach("coach")
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffold() {
     val navController = rememberNavController()
     var overflowOpen by remember { mutableStateOf(false) }
-    val currentRoute = currentRoute(navController) ?: ""
-    val titleText = when (currentRoute) {
-        RootDest.Home.route -> "Heute"
-        RootDest.Training.route -> "Training"
-        RootDest.Nutrition.route -> "Ernährung"
-        RootDest.Progress.route -> "Fortschritt"
-        "shopping" -> "Einkaufsliste"
-        else -> ""
-    }
 
     Scaffold(
         topBar = {
-            if (currentRoute != RootDest.Coach.route) {
-                TopAppBar(
-                    modifier = Modifier.statusBarsPadding(),
-                    title = { Text(titleText) },
-                    actions = {
-                        IconButton(onClick = { overflowOpen = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Menü öffnen")
-                        }
-                        DropdownMenu(expanded = overflowOpen, onDismissRequest = { overflowOpen = false }) {
-                            DropdownMenuItem(
-                                text = { Text("Setup & Einstellungen") },
-                                onClick = {
-                                    overflowOpen = false
-                                    navController.safeNavigate(RootDest.Training.route)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Einkaufsliste") },
-                                onClick = {
-                                    overflowOpen = false
-                                    navController.safeNavigate("shopping")
-                                }
-                            )
-                            Divider()
-                            DropdownMenuItem(
-                                text = { Text("Über/Datenschutz") },
-                                onClick = { overflowOpen = false }
-                            )
-                        }
+            TopAppBar(
+                modifier = Modifier.statusBarsPadding(),
+                title = { Text("") },
+                actions = {
+                    // Overflow-Menü in der AppBar
+                    IconButton(onClick = { overflowOpen = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Menü öffnen")
                     }
-                )
-            }
+                    DropdownMenu(expanded = overflowOpen, onDismissRequest = { overflowOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Setup & Einstellungen") },
+                            onClick = {
+                            overflowOpen = false
+                            // Navigiere zur Trainings/Setup-Ansicht
+                            navController.safeNavigate(RootDest.Training.route)
+                        }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Einkaufsliste") },
+                            onClick = {
+                            overflowOpen = false
+                            // Navigiere zur Einkaufsliste
+                            navController.safeNavigate("shopping")
+                        }
+                        )
+                        Divider()
+                        DropdownMenuItem(
+                            text = { Text("Über/Datenschutz") },
+                            onClick = { overflowOpen = false }
+                        )
+                    }
+                }
+            )
         },
         bottomBar = {
-            NavigationBar(modifier = Modifier.navigationBarsPadding()) {
+            NavigationBar(
+                modifier = Modifier.navigationBarsPadding()
+            ) {
                 val current = currentRoute(navController)
                 NavigationBarItem(
                     selected = current == RootDest.Home.route,
@@ -131,19 +137,18 @@ fun MainScaffold() {
             composable(RootDest.Home.route) { HomeScreen() }
             composable(RootDest.Training.route) { TrainingScreen() }
             composable(RootDest.Nutrition.route) { NutritionScreenRoot() }
-            composable(RootDest.Progress.route) { ProgressScreen() }
-            composable(RootDest.Coach.route) { CoachScreen(navController = navController) }
-            // Zusätzliches Ziel für die Einkaufsliste (über das Menü)
+            composable(RootDest.Coach.route) { CoachScreen() }
+            // Zusätzliches Ziel für die Einkaufsliste (aus dem Menü erreichbar)
             composable("shopping") { ShoppingListScreen() }
         }
     }
 }
 
-// Hilfsfunktion: aktuelle Route ermitteln
+// Helfer: aktuell aktive Route ermitteln
 private fun currentRoute(navController: NavHostController): String? =
     navController.currentBackStackEntry?.destination?.route
 
-// Extension: Navigation ohne duplizierten Back-Stack
+// Erweiterung: Navigation ohne Duplizieren des Back-Stacks
 private fun NavHostController.safeNavigate(route: String) {
     navigate(route) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
