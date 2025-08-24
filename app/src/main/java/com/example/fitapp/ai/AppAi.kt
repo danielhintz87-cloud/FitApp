@@ -1,7 +1,8 @@
 package com.example.fitapp.ai
 
 import android.util.Log
-import com.example.fitapp.BuildConfig
+import com.example.fitapp.ai.AiConfig.apiKey
+import com.example.fitapp.ai.AiConfig.baseUrl
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -13,8 +14,6 @@ import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
 
 private const val TAG = "AppAi"
-
-enum class AiProvider { OpenAI, Gemini, DeepSeek }
 
 object AppAi {
 
@@ -113,7 +112,7 @@ object AppAi {
     }
 
     private fun openAiChat(prompt: String): String {
-        val key = BuildConfig.OPENAI_API_KEY
+        val key = apiKey(AiProvider.OpenAI)
         require(key.isNotEmpty()) { "OPENAI_API_KEY fehlt" }
 
         val body = json.encodeToString(
@@ -121,7 +120,7 @@ object AppAi {
             ChatReq(messages = listOf(ChatMsg("user", prompt)))
         )
         val req = Request.Builder()
-            .url("${'$'}{BuildConfig.OPENAI_BASE_URL}/v1/chat/completions")
+            .url("${'$'}{baseUrl(AiProvider.OpenAI)}/v1/chat/completions")
             .header("Authorization", "Bearer $key")
             .post(body.toRequestBody("application/json".toMediaType()))
             .build()
@@ -146,9 +145,9 @@ object AppAi {
     )
 
     private fun gemini(prompt: String): String {
-        val key = BuildConfig.GEMINI_API_KEY
+        val key = apiKey(AiProvider.Gemini)
         if (key.isEmpty()) return "ℹ️ Gemini: API‑Key noch nicht hinterlegt."
-        val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=$key"
+        val url = "${'$'}{baseUrl(AiProvider.Gemini)}/v1beta/models/gemini-1.5-flash-latest:generateContent?key=$key"
         val body = """
             {"contents":[{"parts":[{"text":${'$'}{json.encodeToString(String.serializer(), prompt)}}]}]}
         """.trimIndent()
@@ -170,13 +169,13 @@ object AppAi {
 
     // ---------- DeepSeek (optional) ----------
     private fun deepSeek(prompt: String): String {
-        val key = BuildConfig.DEEPSEEK_API_KEY
+        val key = apiKey(AiProvider.DeepSeek)
         if (key.isEmpty()) return "ℹ️ DeepSeek: API‑Key noch nicht hinterlegt."
         val body = """
             {"model":"deepseek-chat","messages":[{"role":"user","content":${'$'}{json.encodeToString(String.serializer(), prompt)}}]}
         """.trimIndent()
         val req = Request.Builder()
-            .url("${'$'}{BuildConfig.DEEPSEEK_BASE_URL}/v1/chat/completions")
+            .url("${'$'}{baseUrl(AiProvider.DeepSeek)}/v1/chat/completions")
             .header("Authorization", "Bearer $key")
             .post(body.toRequestBody("application/json".toMediaType()))
             .build()
