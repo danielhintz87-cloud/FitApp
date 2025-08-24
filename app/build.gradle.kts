@@ -1,9 +1,7 @@
-import java.util.Properties
-
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.compose")
+    kotlin("android")
+    kotlin("plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -17,100 +15,56 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables { useSupportLibrary = true }
-
-        // OPENAI_API_KEY aus Gradle-Property ODER local.properties einlesen
-        val gradleKey = providers.gradleProperty("OPENAI_API_KEY").orNull
-        val localKey = run {
-            val f = rootProject.file("local.properties")
-            if (f.exists()) Properties().apply { load(f.inputStream()) }.getProperty("OPENAI_API_KEY")
-            else null
-        }
-        val key = gradleKey ?: localKey ?: ""
-        buildConfigField("String", "OPENAI_API_KEY", "\"$key\"")
-
-        // GEMINI_API_KEY
-        val geminiGradleKey = providers.gradleProperty("GEMINI_API_KEY").orNull
-        val geminiLocalKey = run {
-            val f = rootProject.file("local.properties")
-            if (f.exists()) Properties().apply { load(f.inputStream()) }.getProperty("GEMINI_API_KEY")
-            else null
-        }
-        val geminiKey = geminiGradleKey ?: geminiLocalKey ?: ""
-        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
-
-        // DEEPSEEK_API_KEY
-        val deepseekGradleKey = providers.gradleProperty("DEEPSEEK_API_KEY").orNull
-        val deepseekLocalKey = run {
-            val f = rootProject.file("local.properties")
-            if (f.exists()) Properties().apply { load(f.inputStream()) }.getProperty("DEEPSEEK_API_KEY")
-            else null
-        }
-        val deepseekKey = deepseekGradleKey ?: deepseekLocalKey ?: ""
-        buildConfigField("String", "DEEPSEEK_API_KEY", "\"$deepseekKey\"")
+        // API Keys aus gradle.properties -> BuildConfig
+        buildConfigField("String", "OPENAI_API_KEY", "\"${project.findProperty("OPENAI_API_KEY") ?: ""}\"")
+        buildConfigField("String", "OPENAI_BASE_URL", "\"${project.findProperty("OPENAI_BASE_URL") ?: "https://api.openai.com"}\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"${project.findProperty("GEMINI_API_KEY") ?: ""}\"")
+        buildConfigField("String", "DEEPSEEK_API_KEY", "\"${project.findProperty("DEEPSEEK_API_KEY") ?: ""}\"")
+        buildConfigField("String", "DEEPSEEK_BASE_URL", "\"${project.findProperty("DEEPSEEK_BASE_URL") ?: "https://api.deepseek.com"}\"")
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
+    buildFeatures { compose = true
+    buildConfig = true
+}
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.10" }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-
-    buildFeatures { compose = true }
-    android.buildFeatures.buildConfig = true
-
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            excludes += "META-INF/DEPENDENCIES"
-            excludes += "META-INF/LICENSE*"
-            excludes += "META-INF/NOTICE*"
-            excludes += "META-INF/README*"
-        }
-    }
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
+    val composeBom = platform("androidx.compose:compose-bom:2024.08.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.foundation:foundation")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material")
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.compose.material3:material3:1.3.0")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.activity:activity-compose:1.9.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
-    implementation("androidx.navigation:navigation-compose:2.7.7")
-
-    // Bilder (optional für spätere Food-Fotos)
-    implementation("io.coil-kt:coil-compose:2.4.0")
-
-    implementation("com.google.android.material:material:1.12.0")
-
-    // OpenAI Java SDK
-    implementation("com.openai:openai-java:2.3.1")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    implementation("androidx.navigation:navigation-compose:2.8.0")
+
+    // Insets padding
+    implementation("androidx.compose.foundation:foundation")
+
+    // Markdown (leichtgewichtig)
+    implementation("io.noties.markwon:core:4.6.2")
+
+    // Networking
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+
+    // CameraX (FoodScan)
+    implementation("androidx.camera:camera-core:1.3.4")
+    implementation("androidx.camera:camera-camera2:1.3.4")
+    implementation("androidx.camera:camera-lifecycle:1.3.4")
+    implementation("androidx.camera:camera-view:1.3.4")
+
+    // Coil für Bilder
+    implementation("io.coil-kt:coil-compose:2.6.0")
 }

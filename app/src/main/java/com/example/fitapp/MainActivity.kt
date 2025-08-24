@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.navigation.compose.rememberNavController
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.fitapp.ui.MainScaffold
@@ -24,7 +25,8 @@ class MainActivity : ComponentActivity() {
                     isAppearanceLightNavigationBars = !isDark
                 }
                 // Haupt-Gerüst der App (Navigation + Screens)
-                MainScaffold()
+                val nav = rememberNavController()
+                MainScaffold(nav)
             }
         }
     }
