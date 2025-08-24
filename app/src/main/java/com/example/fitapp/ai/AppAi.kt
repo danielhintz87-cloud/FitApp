@@ -1,175 +1,192 @@
 package com.example.fitapp.ai
 
+import android.util.Log
 import com.example.fitapp.BuildConfig
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
-import org.json.JSONObject
+import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
 
-/**
- * Leichtgewichtiges AI-Gateway für mehrere Provider.
- * Aktuell: OpenAI produktiv; andere werden via API angebunden (sofern Key vorhanden).
- */
+private const val TAG = "AppAi"
+
+enum class AiProvider { OpenAI, Gemini, DeepSeek }
+
 object AppAi {
 
-    enum class Provider(val display: String) {
-        OpenAI("OpenAI (GPT‑4/3.5)"),
-        Gemini("Google Gemini"),
-        Perplexity("Perplexity"),
-        Copilot("Copilot"),
-        DeepSeek("DeepSeek")
+    // ---------- Public API ----------
+
+    suspend fun generate12WeekPlan(
+        goal: String,
+        daysPerWeek: Int,
+        intensity: String,
+        equipment: List<String>,
+        provider: AiProvider = AiProvider.OpenAI
+    ): String {
+        val prompt = """
+            Erstelle einen durchgehenden 12‑Wochen-Trainingsplan (Kalender-Format, Woche 1–12).
+            Parameter:
+            - Ziel: $goal
+            - Einheiten pro Woche: $daysPerWeek
+            - Intensität: $intensity
+            - Equipment: ${equipment.joinToString()}
+            
+            Format (Markdown, **ohne** Codeblock):
+            ## Woche 1
+            - Tag 1 (Dauer: 45): Übung A – Sätze×Wdh …
+            …
+            ## Woche 12
+            …
+        """.trimIndent()
+        return callTextModel(prompt, provider)
     }
 
-    @Volatile
-    var currentProvider: Provider = Provider.OpenAI
+    suspend fun suggestAlternativeAndLog(
+        todaysPlanMarkdown: String,
+        constraints: String,
+        provider: AiProvider = AiProvider.OpenAI
+    ): String {
+        val prompt = """
+            Nutzer möchte eine Alternative zum heutigen Plan, die sich gut einfügt.
+            Bedingungen: $constraints
+            Ursprünglicher Plan (Markdown):
+            $todaysPlanMarkdown
 
-    private val client: OkHttpClient by lazy {
+            Gib NUR einen kurzen Ersatz-Block (Markdown, ohne Codeblock) + kurze Begründung in 1 Satz.
+        """.trimIndent()
+        return callTextModel(prompt, provider)
+    }
+
+    suspend fun generateRecipes(
+        preferences: String,
+        count: Int = 10,
+        provider: AiProvider = AiProvider.OpenAI
+    ): String {
+        val prompt = """
+            Generiere $count abwechslungsreiche Rezepte passend zu:
+            $preferences
+            Ausgabe als Markdown-Liste:
+            ### Titel – (Zeit min / kcal geschätzt)
+            Zutaten:
+            - …
+            Schritte:
+            1. …
+        """.trimIndent()
+        return callTextModel(prompt, provider)
+    }
+
+    // ---------- Core ----------
+
+    private val json = Json { ignoreUnknownKeys = true }
+
+    private val http: OkHttpClient by lazy {
+        val log = HttpLoggingInterceptor { msg -> Log.d(TAG, msg) }
+        log.level = HttpLoggingInterceptor.Level.BASIC
         OkHttpClient.Builder()
-            .callTimeout(60, TimeUnit.SECONDS)
-            .connectTimeout(20, TimeUnit.SECONDS)
+            .addInterceptor(log)
+            .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .build()
     }
 
-    suspend fun chatOnce(userText: String): String = withContext(Dispatchers.IO) {
-        when (currentProvider) {
-            Provider.OpenAI -> openAiResponse(userText)
-            Provider.Gemini -> geminiResponse(userText)
-            Provider.DeepSeek -> deepSeekResponse(userText)
-            Provider.Perplexity,
-            Provider.Copilot -> {
-                delay(200)
-                "ℹ️ ${currentProvider.display} ist vorbereitet. Hinterlege bei Bedarf den API‑Key & Endpoint – oder nutze vorerst OpenAI."
-            }
+    private suspend fun callTextModel(prompt: String, provider: AiProvider): String {
+        return when (provider) {
+            AiProvider.OpenAI -> openAiChat(prompt)
+            AiProvider.Gemini -> gemini(prompt)
+            AiProvider.DeepSeek -> deepSeek(prompt)
         }
     }
 
     // ---------- OpenAI ----------
-    private fun openAiApiKey(): String = BuildConfig.OPENAI_API_KEY ?: ""
-
-    private suspend fun openAiResponse(prompt: String): String {
-        val key = openAiApiKey()
-        if (key.isBlank()) {
-            delay(200)
-            return "🔐 OpenAI‑Key nicht gesetzt. Lege in local.properties `OPENAI_API_KEY=...` ab."
-        }
-        // OpenAI Chat-Completions API Request
-        val url = "https://api.openai.com/v1/chat/completions"
-        val bodyJson = JSONObject().apply {
-            put("model", "gpt-3.5-turbo")
-            put("messages", JSONArray().apply {
-                put(JSONObject().put("role", "system").put("content",
-                    "Du bist mein persönlicher Fitness- und Ernährungscoach. " +
-                    "Antworte knapp, strukturiert, auf Deutsch."))
-                put(JSONObject().put("role", "user").put("content", prompt))
-            })
-            put("temperature", 0.6)
-            put("max_tokens", 600)
-        }
-        val req = Request.Builder()
-            .url(url)
-            .header("Authorization", "Bearer $key")
-            .header("Content-Type", "application/json")
-            .post(bodyJson.toString().toRequestBody("application/json".toMediaType()))
-            .build()
-        client.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) {
-                return "❌ OpenAI: ${resp.code} – ${resp.message}"
-            }
-            val raw = resp.body?.string().orEmpty()
-            return try {
-                val root = JSONObject(raw)
-                root.getJSONArray("choices")
-                    .getJSONObject(0)
-                    .getJSONObject("message")
-                    .getString("content")
-                    .trim()
-            } catch (_: Throwable) {
-                raw.take(2000)
-            }
-        }
+    @Serializable private data class ChatReq(
+        val model: String = "gpt-4o-mini",
+        val messages: List<ChatMsg>,
+        val temperature: Double = 0.7
+    )
+    @Serializable private data class ChatMsg(val role: String, val content: String)
+    @Serializable private data class ChatResp(val choices: List<Choice>) {
+        @Serializable data class Choice(val message: ChatMsg)
     }
 
-    // ---------- Gemini (Google PaLM API) ----------
-    private fun geminiApiKey(): String = BuildConfig.GEMINI_API_KEY ?: ""
+    private fun openAiChat(prompt: String): String {
+        val key = BuildConfig.OPENAI_API_KEY
+        require(key.isNotEmpty()) { "OPENAI_API_KEY fehlt" }
 
-    private suspend fun geminiResponse(prompt: String): String {
-        val key = geminiApiKey()
-        if (key.isBlank()) {
-            delay(200)
-            return "🔐 Gemini‑Key nicht gesetzt. Lege in local.properties `GEMINI_API_KEY=...` ab."
-        }
-        val url = "https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=$key"
-        val bodyJson = JSONObject().apply {
-            put("prompt", JSONObject().put("text", prompt))
-            put("temperature", 0.7)
-            put("candidateCount", 1)
-        }
+        val body = json.encodeToString(
+            ChatReq.serializer(),
+            ChatReq(messages = listOf(ChatMsg("user", prompt)))
+        )
         val req = Request.Builder()
-            .url(url)
-            .header("Content-Type", "application/json")
-            .post(bodyJson.toString().toRequestBody("application/json".toMediaType()))
+            .url("${'$'}{BuildConfig.OPENAI_BASE_URL}/v1/chat/completions")
+            .header("Authorization", "Bearer $key")
+            .post(body.toRequestBody("application/json".toMediaType()))
             .build()
-        client.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) {
-                return "❌ Gemini: ${resp.code} – ${resp.message}"
-            }
-            val raw = resp.body?.string().orEmpty()
-            return try {
-                val root = JSONObject(raw)
-                root.getJSONArray("candidates")
-                    .getJSONObject(0)
-                    .getString("output")
-                    .trim()
-            } catch (_: Throwable) {
-                raw.take(2000)
-            }
+
+        val resp = http.newCall(req).execute()
+        if (!resp.isSuccessful) {
+            val code = resp.code
+            val msg = resp.body?.string().orEmpty()
+            Log.e(TAG, "OpenAI Fehler $code: $msg")
+            return "❌ OpenAI: $code – ${'$'}{msg.take(250)}"
         }
+        val parsed = json.decodeFromString(ChatResp.serializer(), resp.body!!.string())
+        return parsed.choices.firstOrNull()?.message?.content?.trim().orEmpty()
     }
 
-    // ---------- DeepSeek ----------
-    private fun deepSeekApiKey(): String = BuildConfig.DEEPSEEK_API_KEY ?: ""
+    // ---------- Gemini ----------
+    @Serializable private data class GeminiReq(
+        val contents: List<Map<String, List<Map<String, String>>>> // minimal
+    )
+    @Serializable private data class GeminiResp(
+        val candidates: List<Map<String, Map<String, String>>>? = null
+    )
 
-    private suspend fun deepSeekResponse(prompt: String): String {
-        val key = deepSeekApiKey()
-        if (key.isBlank()) {
-            delay(200)
-            return "🔐 DeepSeek‑Key nicht gesetzt. Lege in local.properties `DEEPSEEK_API_KEY=...` ab."
-        }
-        val url = "https://api.deepseek.com/chat/completions"
-        val bodyJson = JSONObject().apply {
-            put("model", "deepseek-chat")
-            put("messages", JSONArray().put(
-                JSONObject().put("role", "user").put("content", prompt)
-            ))
-        }
+    private fun gemini(prompt: String): String {
+        val key = BuildConfig.GEMINI_API_KEY
+        if (key.isEmpty()) return "ℹ️ Gemini: API‑Key noch nicht hinterlegt."
+        val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=$key"
+        val body = """
+            {"contents":[{"parts":[{"text":${'$'}{json.encodeToString(String.serializer(), prompt)}}]}]}
+        """.trimIndent()
         val req = Request.Builder()
             .url(url)
-            .header("Authorization", "Bearer $key")
-            .header("Content-Type", "application/json")
-            .post(bodyJson.toString().toRequestBody("application/json".toMediaType()))
+            .post(body.toRequestBody("application/json".toMediaType()))
             .build()
-        client.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) {
-                return "❌ DeepSeek: ${resp.code} – ${resp.message}"
-            }
-            val raw = resp.body?.string().orEmpty()
-            return try {
-                val root = JSONObject(raw)
-                root.getJSONArray("choices")
-                    .getJSONObject(0)
-                    .getJSONObject("message")
-                    .getString("content")
-                    .trim()
-            } catch (_: Throwable) {
-                raw.take(2000)
-            }
+        val resp = http.newCall(req).execute()
+        if (!resp.isSuccessful) {
+            val code = resp.code; val msg = resp.body?.string().orEmpty()
+            Log.e(TAG, "Gemini Fehler $code: $msg")
+            return "❌ Gemini: $code – ${'$'}{msg.take(250)}"
         }
+        val parsed = json.decodeFromString(GeminiResp.serializer(), resp.body!!.string())
+        val text = parsed.candidates?.firstOrNull()
+            ?.get("content")?.get("parts")?.toString() ?: ""
+        return if (text.isBlank()) "ℹ️ Gemini: keine Antwort" else text
+    }
+
+    // ---------- DeepSeek (optional) ----------
+    private fun deepSeek(prompt: String): String {
+        val key = BuildConfig.DEEPSEEK_API_KEY
+        if (key.isEmpty()) return "ℹ️ DeepSeek: API‑Key noch nicht hinterlegt."
+        val body = """
+            {"model":"deepseek-chat","messages":[{"role":"user","content":${'$'}{json.encodeToString(String.serializer(), prompt)}}]}
+        """.trimIndent()
+        val req = Request.Builder()
+            .url("${'$'}{BuildConfig.DEEPSEEK_BASE_URL}/v1/chat/completions")
+            .header("Authorization", "Bearer $key")
+            .post(body.toRequestBody("application/json".toMediaType()))
+            .build()
+        val resp = http.newCall(req).execute()
+        if (!resp.isSuccessful) {
+            val code = resp.code; val msg = resp.body?.string().orEmpty()
+            Log.e(TAG, "DeepSeek Fehler $code: $msg")
+            return "❌ DeepSeek: $code – ${'$'}{msg.take(250)}"
+        }
+        val parsed = json.decodeFromString(ChatResp.serializer(), resp.body!!.string())
+        return parsed.choices.firstOrNull()?.message?.content?.trim().orEmpty()
     }
 }
