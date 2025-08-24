@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Material3, DayNight, ohne alte NoActionBar-Varianten -->
-    <style name="Theme.FitApp" parent="android:Theme.Material3.DayNight">
+    <style name="Theme.FitApp" parent="Theme.Material3.DayNight">
         <!-- Edge-to-Edge: transparente Systemleisten; Kontrast steuern wir in MainActivity -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
