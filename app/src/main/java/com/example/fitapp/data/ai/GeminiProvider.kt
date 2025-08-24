@@ -3,7 +3,7 @@ package com.example.fitapp.data.ai
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -35,5 +35,4 @@ class GeminiProvider(ctx: Context) : AiProvider {
         }
     }
 
-    private fun String.toMediaType() = MediaType.parse(this)!!
 }

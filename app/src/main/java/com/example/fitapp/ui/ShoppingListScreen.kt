@@ -62,17 +62,20 @@ fun ShoppingListScreen() {
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(vertical = Spacing.md)
         ) {
-            items(items, key = { it.id }) { it ->
+            items(items, key = { it.id }) { item ->
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .padding(vertical = Spacing.xs),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
                 ) {
-                    Checkbox(checked = it.checked, onCheckedChange = { AppRepository.toggleShoppingChecked(it.id) })
-                    Text("${it.name} – ${it.quantity}")
+                    Checkbox(
+                        checked = item.checked,
+                        onCheckedChange = { AppRepository.toggleShoppingChecked(item.id) }
+                    )
+                    Text("${item.name} – ${item.quantity}")
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { AppRepository.removeShoppingItem(it.id) }) { Text("Entfernen") }
+                    TextButton(onClick = { AppRepository.removeShoppingItem(item.id) }) { Text("Entfernen") }
                 }
             }
         }
