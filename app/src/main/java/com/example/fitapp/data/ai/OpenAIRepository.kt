@@ -5,11 +5,6 @@ import com.example.fitapp.logic.PlanGenerator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/**
- * Lightweight placeholder implementation of [AICoach] that falls back to
- * locally generated results. This avoids compile-time issues when the OpenAI
- * SDK is unavailable or its API changes.
- */
 class OpenAIRepository private constructor() : AICoach {
 
     companion object {
@@ -25,13 +20,16 @@ class OpenAIRepository private constructor() : AICoach {
     ): Plan = withContext(Dispatchers.IO) {
         PlanGenerator.generateBasePlan(goal, devices, minutes, sessions)
     }
-    
+
     override suspend fun suggestAlternative(goal: Goal, deviceHint: String, minutes: Int): WorkoutDay =
         withContext(Dispatchers.IO) {
             PlanGenerator.alternativeForToday(goal, deviceHint, minutes)
         }
 
-    override suspend fun suggestRecipes(prefs: RecipePrefs, count: Int): List<Recipe> = emptyList()
+    override suspend fun suggestRecipes(prefs: RecipePrefs, count: Int): List<Recipe> = withContext(Dispatchers.IO) {
+        // TODO: Echte OpenAI-Anbindung implementieren; vorerst lokale Mock-Daten nutzen
+        MockAiRepository().suggestRecipes(prefs, count)
+    }
 
     override suspend fun estimateCaloriesFromPhoto(imageBytes: ByteArray): CalorieEstimate =
         CalorieEstimate("Foto-Mahlzeit", 450, 0.4f, "Konservative Schätzung")

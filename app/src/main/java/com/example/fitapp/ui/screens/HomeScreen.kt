@@ -1,6 +1,8 @@
 package com.example.fitapp.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
@@ -22,6 +24,7 @@ fun HomeScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = Spacing.lg)
             .padding(bottom = 96.dp, top = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.md)
@@ -43,17 +46,15 @@ fun HomeScreen() {
                     } else {
                         Text(day.title, style = MaterialTheme.typography.titleMedium)
                         Spacer(Modifier.height(Spacing.xs))
-                        Text("Dauer: ${day.durationMin} min")
+                        Text("Dauer: ${'$'}{day.durationMin} min")
                         Spacer(Modifier.height(Spacing.sm))
                         day.exercises.forEach {
-                            // Übungen mit Satz-/Wiederholungsinfo auflisten
-                            val repsInfo = if (it.sets != null) " – ${it.sets}×${it.reps ?: "-"}" else ""
-                            Text("• ${it.name}$repsInfo")
+                            val repsInfo = if (it.sets != null) " – ${'$'}{it.sets}×${'$'}{it.reps ?: "-"}" else ""
+                            Text("• ${'$'}{it.name}${'$'}repsInfo")
                         }
                         Spacer(Modifier.height(Spacing.sm))
                         Button(onClick = {
                             scope.launch {
-                                // Alternative Einheit für heute vorschlagen (KI oder lokal)
                                 val alternative = runCatching {
                                     Ai.repo.suggestAlternative(
                                         plan!!.goal,
@@ -67,7 +68,6 @@ fun HomeScreen() {
                                         timeMin = plan!!.timeBudgetMin
                                     )
                                 }
-                                // Alternative als absolviertes Training ins Log eintragen
                                 AppRepository.logExercise(alternative.title, alternative.durationMin, alternative.durationMin * 6)
                             }
                         }) {

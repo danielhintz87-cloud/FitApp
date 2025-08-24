@@ -1,24 +1,16 @@
 package com.example.fitapp.ui.coach
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -29,12 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,12 +30,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fitapp.ai.AppAi
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import com.example.fitapp.ui.RootDest
+import androidx.navigation.NavHostController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CoachScreen(
+    navController: NavHostController,
     vm: CoachViewModel = viewModel()
 ) {
     val msgs by vm.messages.collectAsState()
@@ -57,13 +45,13 @@ fun CoachScreen(
     val fm = LocalFocusManager.current
 
     var providerOpen by remember { mutableStateOf(false) }
+    var menuOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text("Coach", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                },
+                modifier = Modifier.statusBarsPadding(),
+                title = { Text("Coach", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 actions = {
                     IconButton(onClick = { providerOpen = true }) {
                         Icon(Icons.Default.Settings, contentDescription = "Provider wählen")
@@ -71,8 +59,35 @@ fun CoachScreen(
                     IconButton(onClick = { vm.clear() }) {
                         Icon(Icons.Default.Delete, contentDescription = "Verlauf löschen")
                     }
-                    IconButton(onClick = { /* Reserve für Drei-Punkte Menü */ }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Mehr")
+                    IconButton(onClick = { menuOpen = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Menü öffnen")
+                    }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Setup & Einstellungen") },
+                            leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                            onClick = {
+                                menuOpen = false
+                                navController.safeNavigate(RootDest.Training.route)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Einkaufsliste") },
+                            leadingIcon = { Icon(Icons.Default.ShoppingCart, contentDescription = null) },
+                            onClick = {
+                                menuOpen = false
+                                navController.safeNavigate("shopping")
+                            }
+                        )
+                        Divider()
+                        DropdownMenuItem(
+                            text = { Text("Über/Datenschutz") },
+                            leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) },
+                            onClick = {
+                                menuOpen = false
+                                // (Optional) About/Datenschutz anzeigen
+                            }
+                        )
                     }
                 }
             )
@@ -98,15 +113,19 @@ fun CoachScreen(
                 Button(
                     onClick = {
                         input.trim().takeIf { it.isNotEmpty() }?.let {
-                            vm.send(it); input = ""; fm.clearFocus()
+                            vm.send(it)
+                            input = ""
+                            fm.clearFocus()
                         }
                     },
                     enabled = !busy
-                ) { Text(if (busy) "…" else "Senden") }
+                ) {
+                    Text(if (busy) "…" else "Senden")
+                }
             }
         }
-    ) { inner ->
-        Column(Modifier.fillMaxSize().padding(inner)) {
+    ) { innerPadding ->
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
 
             // Prompt-Chips (Shortcuts)
             FlowRow(
@@ -124,8 +143,7 @@ fun CoachScreen(
 
             // Chat-Verlauf
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 reverseLayout = true,
                 contentPadding = PaddingValues(vertical = 16.dp, horizontal = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -151,12 +169,10 @@ fun CoachScreen(
     }
 }
 
+// Hilfs-Composables:
 @Composable
 private fun SuggestChip(text: String, onClick: () -> Unit) {
-    AssistChip(
-        onClick = onClick,
-        label = { Text(text) }
-    )
+    AssistChip(onClick = onClick, label = { Text(text) })
 }
 
 @Composable
@@ -172,13 +188,11 @@ private fun MessageBubble(
     ) {
         Column(
             modifier = Modifier
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 16.dp, topEnd = 16.dp,
-                        bottomEnd = if (isMe) 2.dp else 16.dp,
-                        bottomStart = if (isMe) 16.dp else 2.dp
-                    )
-                )
+                .clip(RoundedCornerShape(
+                    topStart = 16.dp, topEnd = 16.dp,
+                    bottomEnd = if (isMe) 2.dp else 16.dp,
+                    bottomStart = if (isMe) 16.dp else 2.dp
+                ))
                 .background(if (isMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
                 .padding(12.dp)
                 .fillMaxWidth(0.9f)
@@ -188,7 +202,6 @@ private fun MessageBubble(
                 color = if (isMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.bodyMedium
             )
-
             if (!isMe) {
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -200,3 +213,11 @@ private fun MessageBubble(
     }
 }
 
+// Erweiterung: Navigation ohne doppelten Back-Stack
+private fun NavHostController.safeNavigate(route: String) {
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
