@@ -1,15 +1,15 @@
 package com.example.fitapp.ui
 
-import androidx.compose.material.BottomNavigation
-import androidx.compose.material.BottomNavigationItem
-import androidx.compose.material.DropdownMenu
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
-import androidx.compose.material.TopAppBar
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -17,23 +17,20 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.NavHostController
 import com.example.fitapp.ui.screens.CoachScreen
 import com.example.fitapp.ui.screens.HomeScreen
 import com.example.fitapp.ui.screens.NutritionScreenRoot
 import com.example.fitapp.ui.screens.ProgressScreen
 import com.example.fitapp.ui.screens.TrainingScreen
+import com.example.fitapp.ui.ShoppingListScreen
 
 enum class RootDest(val route: String) {
     Home("home"),
@@ -44,88 +41,106 @@ enum class RootDest(val route: String) {
 }
 
 @Composable
-fun MainScaffold(
-    onOpenProfile: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenShopping: () -> Unit,
-    onOpenModelPicker: () -> Unit
-) {
-    val nav = rememberNavController()
+fun MainScaffold() {
+    val navController = rememberNavController()
     var overflowOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                elevation = 0.dp,
                 title = { Text("") },
+                elevation = 0.dp,
                 actions = {
-                    ProfileAvatar(onClick = onOpenProfile)
+                    // Overflow-Menü in der AppBar
                     IconButton(onClick = { overflowOpen = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Mehr")
+                        Icon(Icons.Default.MoreVert, contentDescription = "Menü öffnen")
                     }
                     DropdownMenu(expanded = overflowOpen, onDismissRequest = { overflowOpen = false }) {
-                        DropdownMenuItem(onClick = { overflowOpen = false; onOpenSettings() }) {
+                        DropdownMenuItem(onClick = {
+                            overflowOpen = false
+                            // Navigiere zur Trainings/Setup-Ansicht
+                            navController.safeNavigate(RootDest.Training.route)
+                        }) {
                             Text("Setup & Einstellungen")
                         }
-                        DropdownMenuItem(onClick = { overflowOpen = false; onOpenShopping() }) {
+                        DropdownMenuItem(onClick = {
+                            overflowOpen = false
+                            // Navigiere zur Einkaufsliste
+                            navController.safeNavigate("shopping")
+                        }) {
                             Text("Einkaufsliste")
                         }
-                        DropdownMenuItem(onClick = { overflowOpen = false; onOpenModelPicker() }) {
-                            Text("KI‑Modell wählen")
+                        Divider()
+                        DropdownMenuItem(onClick = { overflowOpen = false }) {
+                            Text("Über/Datenschutz")
                         }
-                        androidx.compose.material.Divider()
-                        DropdownMenuItem(onClick = { overflowOpen = false }) { Text("Über/Datenschutz") }
                     }
                 }
             )
         },
         bottomBar = {
-            BottomNavigation {
-                val current = currentRoute(nav)
-                BottomItem(RootDest.Home, current) { nav.safeNavigate(RootDest.Home.route) }
-                BottomItem(RootDest.Training, current) { nav.safeNavigate(RootDest.Training.route) }
-                BottomItem(RootDest.Nutrition, current) { nav.safeNavigate(RootDest.Nutrition.route) }
-                BottomItem(RootDest.Progress, current) { nav.safeNavigate(RootDest.Progress.route) }
-                BottomItem(RootDest.Coach, current) { nav.safeNavigate(RootDest.Coach.route) }
+            NavigationBar {
+                val current = currentRoute(navController)
+                NavigationBarItem(
+                    selected = current == RootDest.Home.route,
+                    onClick = { navController.safeNavigate(RootDest.Home.route) },
+                    icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                    label = null,
+                    alwaysShowLabel = false
+                )
+                NavigationBarItem(
+                    selected = current == RootDest.Training.route,
+                    onClick = { navController.safeNavigate(RootDest.Training.route) },
+                    icon = { Icon(Icons.Default.FitnessCenter, contentDescription = "Training") },
+                    label = null,
+                    alwaysShowLabel = false
+                )
+                NavigationBarItem(
+                    selected = current == RootDest.Nutrition.route,
+                    onClick = { navController.safeNavigate(RootDest.Nutrition.route) },
+                    icon = { Icon(Icons.Default.Restaurant, contentDescription = "Ernährung") },
+                    label = null,
+                    alwaysShowLabel = false
+                )
+                NavigationBarItem(
+                    selected = current == RootDest.Progress.route,
+                    onClick = { navController.safeNavigate(RootDest.Progress.route) },
+                    icon = { Icon(Icons.Default.BarChart, contentDescription = "Fortschritt") },
+                    label = null,
+                    alwaysShowLabel = false
+                )
+                NavigationBarItem(
+                    selected = current == RootDest.Coach.route,
+                    onClick = { navController.safeNavigate(RootDest.Coach.route) },
+                    icon = { Icon(Icons.Default.Message, contentDescription = "Coach") },
+                    label = null,
+                    alwaysShowLabel = false
+                )
             }
         }
-    ) { padding ->
-        NavHost(navController = nav, startDestination = RootDest.Home.route, modifier = Modifier.padding(padding)) {
+    ) { innerPadding ->
+        // NavHost für die Hauptbereiche der App
+        NavHost(
+            navController = navController,
+            startDestination = RootDest.Home.route,
+            modifier = Modifier.padding(innerPadding)
+        ) {
             composable(RootDest.Home.route) { HomeScreen() }
             composable(RootDest.Training.route) { TrainingScreen() }
             composable(RootDest.Nutrition.route) { NutritionScreenRoot() }
             composable(RootDest.Progress.route) { ProgressScreen() }
             composable(RootDest.Coach.route) { CoachScreen() }
+            // Zusätzliches Ziel für die Einkaufsliste (aus dem Menü erreichbar)
+            composable("shopping") { ShoppingListScreen() }
         }
     }
 }
 
-@Composable
-private fun BottomItem(dest: RootDest, current: String?, onClick: () -> Unit) {
-    val (icon, _) = when (dest) {
-        RootDest.Home -> Icons.Default.Home to "Home"
-        RootDest.Training -> Icons.Default.FitnessCenter to "Training"
-        RootDest.Nutrition -> Icons.Default.Restaurant to "Ernährung"
-        RootDest.Progress -> Icons.Default.BarChart to "Fortschritt"
-        RootDest.Coach -> Icons.Default.Message to "Coach"
-    }
-    BottomNavigationItem(
-        selected = current == dest.route,
-        onClick = onClick,
-        icon = { Icon(icon, contentDescription = null) },
-        label = null,
-        alwaysShowLabel = false
-    )
-}
+// Helfer: aktuell aktive Route ermitteln
+private fun currentRoute(navController: NavHostController): String? =
+    navController.currentBackStackEntry?.destination?.route
 
-@Composable
-private fun ProfileAvatar(onClick: () -> Unit) {
-    TextButton(onClick = onClick) { Text("Ich") }
-}
-
-private fun currentRoute(nav: NavHostController): String? =
-    nav.currentBackStackEntry?.destination?.route
-
+// Erweiterung: Navigation ohne Duplizieren des Back-Stacks
 private fun NavHostController.safeNavigate(route: String) {
     navigate(route) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
@@ -133,4 +148,3 @@ private fun NavHostController.safeNavigate(route: String) {
         restoreState = true
     }
 }
-

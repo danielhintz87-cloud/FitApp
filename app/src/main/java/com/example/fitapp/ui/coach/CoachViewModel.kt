@@ -3,6 +3,7 @@ package com.example.fitapp.ui.coach
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fitapp.ai.AppAi
+import com.example.fitapp.data.AppRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -31,32 +32,36 @@ class CoachViewModel : ViewModel() {
         }
     }
 
-    fun clear() { _messages.value = emptyList() }
+    fun clear() {
+        _messages.value = emptyList()
+    }
 
-    // ------- Actions auf AI-Antworten -------
+    // ------- Aktionen für KI-Antworten -------
     fun saveAiAsRecipe(msg: ChatMessage, title: String = "Coach‑Rezept") {
-        val rec = SavedRecipe(title = title, markdown = msg.text, tags = listOf("AI"))
-        CoachLocalStore.addRecipe(rec)
+        val recipe = SavedRecipe(title = title, markdown = msg.text, tags = listOf("AI"))
+        CoachLocalStore.addRecipe(recipe)
     }
 
     fun toggleFavoriteForRecipe(id: String) = CoachLocalStore.toggleFav(id)
 
     fun parseIngredientsToShopping(msg: ChatMessage) {
-        // Super simpler Parser: sucht Bullet‑Zeilen („- “, „• “) oder format „Name — Menge“
+        // Zutaten aus KI-Antwort als Einkaufspositionen parsen und zur Haupt-Einkaufsliste hinzufügen
         val lines = msg.text.lines()
-        val items = mutableListOf<ShoppingItem>()
-        for (l in lines) {
-            val t = l.trimStart()
-            val isBullet = t.startsWith("- ") || t.startsWith("• ")
-            if (isBullet) {
+        val items = mutableListOf<Pair<String, String>>()
+        for (line in lines) {
+            val t = line.trimStart()
+            if (t.startsWith("- ") || t.startsWith("• ")) {
                 val content = t.drop(2).trim()
                 val split = content.split("—", " - ", "–").map { it.trim() }
                 val name = split.firstOrNull().orEmpty()
-                val amount = split.getOrNull(1)
-                if (name.isNotEmpty()) items += ShoppingItem(name = name, amount = amount)
+                val quantity = split.getOrNull(1) ?: ""
+                if (name.isNotEmpty()) {
+                    items += (name to quantity)
+                }
             }
         }
-        if (items.isNotEmpty()) CoachLocalStore.addShoppingItems(items)
+        if (items.isNotEmpty()) {
+            AppRepository.addShoppingItems(items)
+        }
     }
 }
-
