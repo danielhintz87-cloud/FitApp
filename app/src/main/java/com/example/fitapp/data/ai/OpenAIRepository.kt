@@ -25,15 +25,7 @@ class OpenAIRepository private constructor() : AICoach {
     ): Plan = withContext(Dispatchers.IO) {
         PlanGenerator.generateBasePlan(goal, devices, minutes, sessions)
     }
-
-    override suspend fun suggestBasePlan(
-        goal: Goal,
-        devices: List<Device>,
-        minutes: Int,
-        sessions: Int,
-        level: String?
-    ): Plan = generateBasePlan(goal, devices, minutes, sessions, level)
-
+    
     override suspend fun suggestAlternative(goal: Goal, deviceHint: String, minutes: Int): WorkoutDay =
         withContext(Dispatchers.IO) {
             PlanGenerator.alternativeForToday(goal, deviceHint, minutes)
