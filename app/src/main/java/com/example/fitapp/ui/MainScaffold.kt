@@ -132,7 +132,6 @@ fun MainScaffold() {
             composable(RootDest.Home.route) { HomeScreen() }
             composable(RootDest.Training.route) { TrainingScreen() }
             composable(RootDest.Nutrition.route) { NutritionScreenRoot() }
-            composable(RootDest.Progress.route) { ProgressScreen() }
             composable(RootDest.Coach.route) { CoachScreen() }
             // Zusätzliches Ziel für die Einkaufsliste (aus dem Menü erreichbar)
             composable("shopping") { ShoppingListScreen() }
