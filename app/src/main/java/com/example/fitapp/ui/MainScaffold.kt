@@ -1,12 +1,13 @@
 package com.example.fitapp.ui
 
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -49,31 +50,33 @@ fun MainScaffold() {
         topBar = {
             TopAppBar(
                 title = { Text("") },
-                elevation = 0.dp,
                 actions = {
                     // Overflow-Menü in der AppBar
                     IconButton(onClick = { overflowOpen = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "Menü öffnen")
                     }
                     DropdownMenu(expanded = overflowOpen, onDismissRequest = { overflowOpen = false }) {
-                        DropdownMenuItem(onClick = {
+                        DropdownMenuItem(
+                            text = { Text("Setup & Einstellungen") },
+                            onClick = {
                             overflowOpen = false
                             // Navigiere zur Trainings/Setup-Ansicht
                             navController.safeNavigate(RootDest.Training.route)
-                        }) {
-                            Text("Setup & Einstellungen")
                         }
-                        DropdownMenuItem(onClick = {
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Einkaufsliste") },
+                            onClick = {
                             overflowOpen = false
                             // Navigiere zur Einkaufsliste
                             navController.safeNavigate("shopping")
-                        }) {
-                            Text("Einkaufsliste")
                         }
+                        )
                         Divider()
-                        DropdownMenuItem(onClick = { overflowOpen = false }) {
-                            Text("Über/Datenschutz")
-                        }
+                        DropdownMenuItem(
+                            text = { Text("Über/Datenschutz") },
+                            onClick = { overflowOpen = false }
+                        )
                     }
                 }
             )

@@ -1,6 +1,5 @@
 package com.example.fitapp.ui.screens
 
-import androidx.compose.foundation.ExperimentalLayoutApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.FlowRow
@@ -31,7 +30,6 @@ import com.example.fitapp.ui.coach.SavedRecipe
 import com.example.fitapp.ui.design.Spacing
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NutritionScreenRoot() {
     var showRecipes by remember { mutableStateOf(false) }
@@ -140,43 +138,45 @@ fun NutritionScreenRoot() {
                                     Icon(Icons.Default.MoreVert, contentDescription = "Aktionen")
                                 }
                                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                                    DropdownMenuItem(onClick = {
-                                        menuOpen = false
-                                        // Alle Zutaten des Rezepts zur Einkaufsliste hinzufügen
-                                        if (recipe.ingredients.isNotEmpty()) {
-                                            val items = recipe.ingredients.map { it.name to it.amount }
-                                            AppRepository.addShoppingItems(items)
-                                        } else if (recipe.markdown != null) {
-                                            // Falls keine strukturierte Zutatenliste vorhanden, Markdown-Text nach Aufzählungen parsen
-                                            val lines = recipe.markdown.lines()
-                                            val items = mutableListOf<Pair<String, String>>()
-                                            for (l in lines) {
-                                                val t = l.trimStart()
-                                                if (t.startsWith("- ") || t.startsWith("• ")) {
-                                                    val content = t.drop(2).trim()
-                                                    val split = content.split("—", " - ", "–").map { it.trim() }
-                                                    val name = split.firstOrNull().orEmpty()
-                                                    val qty = split.getOrNull(1) ?: ""
-                                                    if (name.isNotEmpty()) items += (name to qty)
+                                    DropdownMenuItem(
+                                        text = { Text("Zutaten zur Einkaufsliste") },
+                                        onClick = {
+                                            menuOpen = false
+                                            // Alle Zutaten des Rezepts zur Einkaufsliste hinzufügen
+                                            if (recipe.ingredients.isNotEmpty()) {
+                                                val items = recipe.ingredients.map { it.name to it.amount }
+                                                AppRepository.addShoppingItems(items)
+                                            } else if (recipe.markdown != null) {
+                                                // Falls keine strukturierte Zutatenliste vorhanden, Markdown-Text nach Aufzählungen parsen
+                                                val lines = recipe.markdown.lines()
+                                                val items = mutableListOf<Pair<String, String>>()
+                                                for (l in lines) {
+                                                    val t = l.trimStart()
+                                                    if (t.startsWith("- ") || t.startsWith("• ")) {
+                                                        val content = t.drop(2).trim()
+                                                        val split = content.split("—", " - ", "–").map { it.trim() }
+                                                        val name = split.firstOrNull().orEmpty()
+                                                        val qty = split.getOrNull(1) ?: ""
+                                                        if (name.isNotEmpty()) items += (name to qty)
+                                                    }
                                                 }
+                                                if (items.isNotEmpty()) AppRepository.addShoppingItems(items)
                                             }
-                                            if (items.isNotEmpty()) AppRepository.addShoppingItems(items)
                                         }
-                                    }) {
-                                        Text("Zutaten zur Einkaufsliste")
-                                    }
-                                    DropdownMenuItem(onClick = {
-                                        menuOpen = false
-                                        // Rezept lokal speichern (mit AI-Tag)
-                                        val saved = SavedRecipe(
-                                            title = recipe.title,
-                                            markdown = recipe.markdown ?: "(kein Detail)",
-                                            tags = listOf("AI")
-                                        )
-                                        CoachLocalStore.addRecipe(saved)
-                                    }) {
-                                        Text("Rezept speichern")
-                                    }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Rezept speichern") },
+                                        onClick = {
+                                            menuOpen = false
+                                            // Rezept lokal speichern (mit AI-Tag)
+                                            val saved = SavedRecipe(
+                                                title = recipe.title,
+                                                markdown = recipe.markdown ?: "(kein Detail)",
+                                                tags = listOf("AI")
+                                            )
+                                            CoachLocalStore.addRecipe(saved)
+                                        }
+                                    )
                                 }
                             }
                         }

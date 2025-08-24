@@ -1,6 +1,5 @@
 package com.example.fitapp.ui
 
-import androidx.compose.foundation.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -31,7 +30,6 @@ import com.example.fitapp.ui.components.SectionCard
 import com.example.fitapp.ui.design.Spacing
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TrainingSetupScreen() {
     var goal by remember { mutableStateOf(Goal.Abnehmen) }
