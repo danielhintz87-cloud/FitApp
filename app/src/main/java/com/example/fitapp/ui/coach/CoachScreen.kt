@@ -2,6 +2,8 @@ package com.example.fitapp.ui.coach
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -9,8 +11,9 @@ import androidx.compose.ui.unit.dp
 import com.example.fitapp.ai.AiProvider
 import com.example.fitapp.ai.AppAi
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CoachScreen() {
     var provider by remember { mutableStateOf(AiProvider.OpenAI) }
