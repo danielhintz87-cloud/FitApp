@@ -24,6 +24,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -57,6 +59,7 @@ fun CoachScreen(
     val fm = LocalFocusManager.current
 
     var providerOpen by remember { mutableStateOf(false) }
+    var menuOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -71,8 +74,14 @@ fun CoachScreen(
                     IconButton(onClick = { vm.clear() }) {
                         Icon(Icons.Default.Delete, contentDescription = "Verlauf löschen")
                     }
-                    IconButton(onClick = { /* Reserve für Drei-Punkte Menü */ }) {
+                    IconButton(onClick = { menuOpen = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "Mehr")
+                    }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Über/Datenschutz") },
+                            onClick = { menuOpen = false }
+                        )
                     }
                 }
             )

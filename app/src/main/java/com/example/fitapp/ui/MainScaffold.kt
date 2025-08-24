@@ -1,6 +1,8 @@
 package com.example.fitapp.ui
 
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -50,6 +52,7 @@ fun MainScaffold() {
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.statusBarsPadding(),
                 title = { Text("") },
                 actions = {
                     // Overflow-Menü in der AppBar
@@ -83,7 +86,9 @@ fun MainScaffold() {
             )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                modifier = Modifier.navigationBarsPadding()
+            ) {
                 val current = currentRoute(navController)
                 NavigationBarItem(
                     selected = current == RootDest.Home.route,
