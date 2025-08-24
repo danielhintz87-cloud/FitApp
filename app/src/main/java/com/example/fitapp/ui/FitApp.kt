@@ -1,25 +1,20 @@
 package com.example.fitapp.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import kotlinx.coroutines.launch
+import com.example.fitapp.ui.coach.CoachScreen
 
 private enum class NavItem(val label: String) {
     Today("Heute"),
     Training("Training"),
+    Coach("Coach"),
     Nutrition("Ernährung"),
     Shopping("Einkauf"),
     Progress("Fortschritt")
@@ -27,21 +22,18 @@ private enum class NavItem(val label: String) {
 
 @Composable
 fun FitApp() {
-    val items = NavItem.values().toList()
-    var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
-    val pagerState = rememberPagerState(initialPage = selectedIndex, pageCount = { items.size })
-    val scope = rememberCoroutineScope()
-
-    LaunchedEffect(selectedIndex) { pagerState.animateScrollToPage(selectedIndex) }
-    LaunchedEffect(pagerState.currentPage) { selectedIndex = pagerState.currentPage }
+    val items = listOf(
+        NavItem.Today, NavItem.Training, NavItem.Coach, NavItem.Nutrition, NavItem.Shopping, NavItem.Progress
+    )
+    var selected by rememberSaveable { mutableStateOf(NavItem.Today) }
 
     Scaffold(
         bottomBar = {
             NavigationBar {
-                items.forEachIndexed { idx, item ->
+                items.forEach { item ->
                     NavigationBarItem(
-                        selected = selectedIndex == idx,
-                        onClick = { scope.launch { pagerState.animateScrollToPage(idx) } },
+                        selected = selected == item,
+                        onClick = { selected = item },
                         icon = {},
                         label = { Text(item.label) }
                     )
@@ -49,14 +41,11 @@ fun FitApp() {
             }
         }
     ) { innerPadding ->
-        HorizontalPager(
-            state = pagerState,
-            beyondBoundsPageCount = 1,
-            modifier = Modifier.padding(innerPadding)
-        ) { page ->
-            when (items[page]) {
+        Box(Modifier.fillMaxSize().padding(innerPadding)) {
+            when (selected) {
                 NavItem.Today -> TodayScreen()
                 NavItem.Training -> TrainingSetupScreen()
+                NavItem.Coach -> CoachScreen()
                 NavItem.Nutrition -> NutritionScreen()
                 NavItem.Shopping -> ShoppingListScreen()
                 NavItem.Progress -> ProgressScreen()
@@ -64,3 +53,4 @@ fun FitApp() {
         }
     }
 }
+
