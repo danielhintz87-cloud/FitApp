@@ -1,7 +1,9 @@
 plugins {
     id("com.android.application")
     kotlin("android")
-    kotlin("plugin.serialization") version "1.9.22"
+    // Required for Kotlin 2.0 Compose compiler
+    id("org.jetbrains.kotlin.plugin.compose")
+    kotlin("plugin.serialization") version "2.0.20"
 }
 
 android {
