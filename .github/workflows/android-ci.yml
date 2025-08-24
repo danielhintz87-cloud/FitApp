@@ -1,0 +1,82 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      # <-- WICHTIG: ggf. an dein Projekt anpassen
+      COMPILE_SDK: "34"
+      BUILD_TOOLS: "34.0.0"
+      # AGP 8.x benötigt Java 17
+      JAVA_VERSION: "17"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Install Android SDK (cmdline-tools)
+        uses: android-actions/setup-android@v3
+
+      - name: Accept licenses & install packages
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-${{ env.COMPILE_SDK }}" "build-tools;${{ env.BUILD_TOOLS }}"
+
+      - name: Gradle setup (cache)
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Verify Gradle Wrapper
+        run: ./gradlew --version
+
+      - name: Build, Lint & Unit Tests (Debug)
+        run: |
+          ./gradlew \
+            clean \
+            :app:lintDebug \
+            :app:testDebugUnitTest \
+            :app:assembleDebug \
+            --stacktrace --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Upload Lint Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-debug.html
+          if-no-files-found: ignore
+
+      - name: Upload Unit Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: app/build/test-results/testDebugUnitTest/
+          if-no-files-found: ignore
