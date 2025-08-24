@@ -49,8 +49,9 @@ fun HomeScreen() {
                         Text("Dauer: ${'$'}{day.durationMin} min")
                         Spacer(Modifier.height(Spacing.sm))
                         day.exercises.forEach {
-                            val repsInfo = if (it.sets != null) " – ${'$'}{it.sets}×${'$'}{it.reps ?: "-"}" else ""
-                            Text("• ${'$'}{it.name}${'$'}repsInfo")
+                            val repsDisplay = it.reps?.toString() ?: "-"
+                            val repsInfo = if (it.sets != null) " – ${it.sets}×$repsDisplay" else ""
+                            Text("• ${it.name}$repsInfo")
                         }
                         Spacer(Modifier.height(Spacing.sm))
                         Button(onClick = {
