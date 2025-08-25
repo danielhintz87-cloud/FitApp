@@ -5,6 +5,27 @@
 /.idea/
 .DS_Store
 /build/
+/app/build/
 /captures/
 .externalNativeBuild/
 .cxx/
+
+# Kotlin
+*.kotlin_module
+
+# Generated files
+bin/
+gen/
+out/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Editor
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
