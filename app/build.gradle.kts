@@ -68,6 +68,6 @@ dependencies {
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.6.0")
 
-    // Photo picker for food scan
-    implementation("androidx.activity:activity-compose:1.9.2")
+    // Photo picker and activity result
+    implementation("androidx.activity:activity-ktx:1.9.2")
 }
