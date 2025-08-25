@@ -26,7 +26,7 @@ fun FoodScanScreen(contentPadding: PaddingValues) {
     var imageUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var result by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
-    var provider by remember { mutableStateOf(AiProvider.OPENAI) }
+    var provider by remember { mutableStateOf(AiProvider.OpenAI) }
 
     val picker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -43,9 +43,9 @@ fun FoodScanScreen(contentPadding: PaddingValues) {
         Text("Food Scan", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = provider == AiProvider.OPENAI, onClick = { provider = AiProvider.OPENAI }, label = { Text("OpenAI") })
-            FilterChip(selected = provider == AiProvider.GEMINI, onClick = { provider = AiProvider.GEMINI }, label = { Text("Gemini") })
-            FilterChip(selected = provider == AiProvider.DEEPSEEK, onClick = { provider = AiProvider.DEEPSEEK }, label = { Text("DeepSeek") })
+            FilterChip(selected = provider == AiProvider.OpenAI, onClick = { provider = AiProvider.OpenAI }, label = { Text("OpenAI") })
+            FilterChip(selected = provider == AiProvider.Gemini, onClick = { provider = AiProvider.Gemini }, label = { Text("Gemini") })
+            FilterChip(selected = provider == AiProvider.DeepSeek, onClick = { provider = AiProvider.DeepSeek }, label = { Text("DeepSeek") })
         }
         Spacer(Modifier.height(12.dp))
         Button(onClick = {

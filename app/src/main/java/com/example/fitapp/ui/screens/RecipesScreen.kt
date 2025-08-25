@@ -22,7 +22,7 @@ fun NutritionScreen(contentPadding: PaddingValues) {
     var count by remember { mutableStateOf("10") }
     var result by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
-    var provider by remember { mutableStateOf(AiProvider.OPENAI) }
+    var provider by remember { mutableStateOf(AiProvider.OpenAI) }
 
     Column(
         modifier = Modifier
@@ -35,9 +35,9 @@ fun NutritionScreen(contentPadding: PaddingValues) {
         Spacer(Modifier.height(16.dp))
         
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = provider == AiProvider.OPENAI, onClick = { provider = AiProvider.OPENAI }, label = { Text("OpenAI") })
-            FilterChip(selected = provider == AiProvider.GEMINI, onClick = { provider = AiProvider.GEMINI }, label = { Text("Gemini") })
-            FilterChip(selected = provider == AiProvider.DEEPSEEK, onClick = { provider = AiProvider.DEEPSEEK }, label = { Text("DeepSeek") })
+            FilterChip(selected = provider == AiProvider.OpenAI, onClick = { provider = AiProvider.OpenAI }, label = { Text("OpenAI") })
+            FilterChip(selected = provider == AiProvider.Gemini, onClick = { provider = AiProvider.Gemini }, label = { Text("Gemini") })
+            FilterChip(selected = provider == AiProvider.DeepSeek, onClick = { provider = AiProvider.DeepSeek }, label = { Text("DeepSeek") })
         }
         
         Spacer(Modifier.height(16.dp))

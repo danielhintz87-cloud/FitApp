@@ -7,7 +7,7 @@ import com.example.fitapp.data.db.AiLog
 import com.example.fitapp.data.db.AiLogDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
+import org.json.JSONObject
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -15,7 +15,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
 
-enum class AiProvider { OPENAI, GEMINI, DEEPSEEK }
+enum class AiProvider { OpenAI, Gemini, DeepSeek }
 
 data class PlanRequest(
     val goal: String,
@@ -41,8 +41,6 @@ class AiCore(private val logDao: AiLogDao) {
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    private val json = Json { ignoreUnknownKeys = true }
-
     suspend fun generatePlan(provider: AiProvider, req: PlanRequest): Result<String> =
         callText(provider,
             "Erzeuge einen **12-Wochen-Trainingsplan** in Markdown. " +
@@ -63,9 +61,9 @@ class AiCore(private val logDao: AiLogDao) {
             val prompt = "Schätze Kalorien des gezeigten Essens. Antworte knapp: 'kcal: <Zahl>', 'confidence: <0-100>' und 1 Satz."
             val started = System.currentTimeMillis()
             val r = when (provider) {
-                AiProvider.OPENAI -> openAiVision(prompt, bitmap)
-                AiProvider.GEMINI -> geminiVision(prompt, bitmap)
-                AiProvider.DEEPSEEK -> deepseekVision(prompt, bitmap)
+                AiProvider.OpenAI -> openAiVision(prompt, bitmap)
+                AiProvider.Gemini -> geminiVision(prompt, bitmap)
+                AiProvider.DeepSeek -> deepseekVision(prompt, bitmap)
             }
             val took = System.currentTimeMillis() - started
             r.onSuccess {
@@ -80,9 +78,9 @@ class AiCore(private val logDao: AiLogDao) {
         withContext(Dispatchers.IO) {
             val started = System.currentTimeMillis()
             val result = when (provider) {
-                AiProvider.OPENAI -> openAiChat(prompt)
-                AiProvider.GEMINI -> geminiText(prompt)
-                AiProvider.DEEPSEEK -> deepseekText(prompt)
+                AiProvider.OpenAI -> openAiChat(prompt)
+                AiProvider.Gemini -> geminiText(prompt)
+                AiProvider.DeepSeek -> deepseekText(prompt)
             }
             val took = System.currentTimeMillis() - started
             result.onSuccess {
@@ -110,9 +108,12 @@ class AiCore(private val logDao: AiLogDao) {
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) error("OpenAI ${resp.code}")
             val txt = resp.body!!.string()
-            val root = json.parseToJsonElement(txt).jsonObject
-            val content = root["choices"]!!.jsonArray[0].jsonObject["message"]!!
-                .jsonObject["content"].toString().trim('"')
+            // Manual JSON parsing for simplicity
+            val contentStart = txt.indexOf("\"content\":\"") + 11
+            val contentEnd = txt.indexOf("\"", contentStart)
+            val content = if (contentStart > 10 && contentEnd > contentStart) {
+                txt.substring(contentStart, contentEnd).replace("\\\"", "\"").replace("\\n", "\n")
+            } else "Error parsing response"
             content
         }
     }
@@ -139,9 +140,12 @@ class AiCore(private val logDao: AiLogDao) {
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) error("OpenAI ${resp.code}")
             val txt = resp.body!!.string()
-            val text = json.parseToJsonElement(txt).jsonObject["choices"]!!
-                .jsonArray[0].jsonObject["message"]!!.jsonObject["content"]
-                .toString().trim('"')
+            // Manual JSON parsing for vision response
+            val contentStart = txt.indexOf("\"content\":\"") + 11
+            val contentEnd = txt.indexOf("\"", contentStart)
+            val text = if (contentStart > 10 && contentEnd > contentStart) {
+                txt.substring(contentStart, contentEnd).replace("\\\"", "\"").replace("\\n", "\n")
+            } else "Error parsing response"
             parseCalories(text)
         }
     }
@@ -160,10 +164,12 @@ class AiCore(private val logDao: AiLogDao) {
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) error("Gemini ${resp.code}")
             val txt = resp.body!!.string()
-            val root = json.parseToJsonElement(txt).jsonObject
-            val content = root["candidates"]!!.jsonArray[0].jsonObject["content"]!!
-                .jsonObject["parts"]!!.jsonArray[0].jsonObject["text"]
-                .toString().trim('"')
+            // Manual JSON parsing for Gemini
+            val textStart = txt.indexOf("\"text\":\"") + 8
+            val textEnd = txt.indexOf("\"", textStart)
+            val content = if (textStart > 7 && textEnd > textStart) {
+                txt.substring(textStart, textEnd).replace("\\\"", "\"").replace("\\n", "\n")
+            } else "Error parsing response"
             content
         }
     }
@@ -185,9 +191,12 @@ class AiCore(private val logDao: AiLogDao) {
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) error("Gemini ${resp.code}")
             val txt = resp.body!!.string()
-            val text = json.parseToJsonElement(txt).jsonObject["candidates"]!!
-                .jsonArray[0].jsonObject["content"]!!.jsonObject["parts"]!!
-                .jsonArray[0].jsonObject["text"].toString().trim('"')
+            // Manual JSON parsing for Gemini vision
+            val textStart = txt.indexOf("\"text\":\"") + 8
+            val textEnd = txt.indexOf("\"", textStart)
+            val text = if (textStart > 7 && textEnd > textStart) {
+                txt.substring(textStart, textEnd).replace("\\\"", "\"").replace("\\n", "\n")
+            } else "Error parsing response"
             parseCalories(text)
         }
     }
@@ -208,9 +217,12 @@ class AiCore(private val logDao: AiLogDao) {
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) error("DeepSeek ${resp.code}")
             val txt = resp.body!!.string()
-            val root = json.parseToJsonElement(txt).jsonObject
-            val content = root["choices"]!!.jsonArray[0].jsonObject["message"]!!
-                .jsonObject["content"].toString().trim('"')
+            // Manual JSON parsing for DeepSeek
+            val contentStart = txt.indexOf("\"content\":\"") + 11
+            val contentEnd = txt.indexOf("\"", contentStart)
+            val content = if (contentStart > 10 && contentEnd > contentStart) {
+                txt.substring(contentStart, contentEnd).replace("\\\"", "\"").replace("\\n", "\n")
+            } else "Error parsing response"
             content
         }
     }
@@ -231,7 +243,7 @@ class AiCore(private val logDao: AiLogDao) {
         return CaloriesEstimate(kcal, conf.coerceIn(0, 100), text.take(600))
     }
 
-    private fun String.json(): String = Json.encodeToString(this)
+    private fun String.json(): String = "\"${this.replace("\"", "\\\"").replace("\n", "\\n")}\""
 
     private fun Bitmap.toJpegBytes(quality: Int = 90): ByteArray =
         ByteArrayOutputStream().use { bos ->
