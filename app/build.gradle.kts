@@ -1,11 +1,7 @@
-plugins {
-    id("com.android.application")
-    kotlin("android")
-    // Required for Kotlin 2.0 Compose compiler
-    id("org.jetbrains.kotlin.plugin.compose")
-    kotlin("plugin.serialization") version "2.0.20"
-    kotlin("kapt")
-}
+apply(plugin = "com.android.application")
+apply(plugin = "kotlin-android")
+apply(plugin = "kotlinx-serialization")
+apply(plugin = "kotlin-kapt")
 
 android {
     namespace = "com.example.fitapp"
@@ -26,10 +22,11 @@ android {
         buildConfigField("String", "DEEPSEEK_BASE_URL", "\"${project.findProperty("DEEPSEEK_BASE_URL") ?: "https://api.deepseek.com"}\"")
     }
 
-    buildFeatures { compose = true
-    buildConfig = true
-}
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.10" }
+    buildFeatures { 
+        compose = true
+        buildConfig = true
+    }
+    composeOptions { kotlinCompilerExtensionVersion = "1.4.6" }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -39,40 +36,34 @@ android {
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2024.08.00")
+    val composeBom = platform("androidx.compose:compose-bom:2023.05.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.activity:activity-compose:1.9.2")
+    implementation("androidx.core:core-ktx:1.10.1")
+    implementation("androidx.activity:activity-compose:1.7.2")
     implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.material3:material3:1.3.0")
+    implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("androidx.navigation:navigation-compose:2.8.0")
+    implementation("androidx.navigation:navigation-compose:2.6.0")
 
     // Insets padding
     implementation("androidx.compose.foundation:foundation")
 
-    // Markdown (leichtgewichtig)
-    implementation("io.noties.markwon:core:4.6.2")
+    // Photo Picker
+    implementation("androidx.activity:activity-compose:1.7.2")
 
     // Networking
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
 
-    // CameraX (FoodScan)
-    implementation("androidx.camera:camera-core:1.3.4")
-    implementation("androidx.camera:camera-camera2:1.3.4")
-    implementation("androidx.camera:camera-lifecycle:1.3.4")
-    implementation("androidx.camera:camera-view:1.3.4")
-
-    // Coil für Bilder
-    implementation("io.coil-kt:coil-compose:2.6.0")
+    // Coil for images
+    implementation("io.coil-kt:coil-compose:2.4.0")
 
     // Room database
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-runtime:2.5.2")
+    implementation("androidx.room:room-ktx:2.5.2")
+    kapt("androidx.room:room-compiler:2.5.2")
 }
