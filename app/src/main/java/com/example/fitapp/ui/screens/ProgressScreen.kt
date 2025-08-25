@@ -7,18 +7,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun TodayScreen(contentPadding: PaddingValues) {
+fun ProgressScreen(contentPadding: PaddingValues) {
     Column(
         modifier = Modifier
             .padding(contentPadding)
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("Heute", style = MaterialTheme.typography.titleLarge)
+        Text("Progress", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(16.dp))
         Card {
             Text(
-                "Dein heutiges Training und deine Ernährung auf einen Blick.",
+                "Deine Fortschritte und Statistiken werden hier angezeigt.",
                 modifier = Modifier.padding(16.dp)
             )
         }

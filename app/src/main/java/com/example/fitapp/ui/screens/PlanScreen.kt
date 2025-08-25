@@ -10,16 +10,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.ai.AiProvider
 import com.example.fitapp.ai.AppAi
-import com.example.fitapp.ai.RecipeRequest
+import com.example.fitapp.ai.PlanRequest
 import kotlinx.coroutines.launch
 
 @Composable
-fun NutritionScreen(contentPadding: PaddingValues) {
+fun PlanScreen(contentPadding: PaddingValues) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
-    var preferences by remember { mutableStateOf("Vegetarisch, 500-700 kcal, 20-30 Min") }
-    var diet by remember { mutableStateOf("Ausgewogen") }
-    var count by remember { mutableStateOf("10") }
+    var goal by remember { mutableStateOf("Muskelaufbau") }
+    var sessions by remember { mutableStateOf("3") }
+    var minutes by remember { mutableStateOf("60") }
+    var equipment by remember { mutableStateOf("Hanteln, Klimmzugstange") }
     var result by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var provider by remember { mutableStateOf(AiProvider.OpenAI) }
@@ -31,7 +32,7 @@ fun NutritionScreen(contentPadding: PaddingValues) {
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        Text("Rezepte", style = MaterialTheme.typography.titleLarge)
+        Text("12-Wochen-Trainingsplan", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(16.dp))
         
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -43,25 +44,33 @@ fun NutritionScreen(contentPadding: PaddingValues) {
         Spacer(Modifier.height(16.dp))
         
         OutlinedTextField(
-            value = preferences,
-            onValueChange = { preferences = it },
-            label = { Text("Präferenzen") },
+            value = goal,
+            onValueChange = { goal = it },
+            label = { Text("Ziel") },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(8.dp))
         
         OutlinedTextField(
-            value = diet,
-            onValueChange = { diet = it },
-            label = { Text("Diät-Typ") },
+            value = sessions,
+            onValueChange = { sessions = it },
+            label = { Text("Sessions pro Woche") },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(8.dp))
         
         OutlinedTextField(
-            value = count,
-            onValueChange = { count = it },
-            label = { Text("Anzahl Rezepte") },
+            value = minutes,
+            onValueChange = { minutes = it },
+            label = { Text("Minuten pro Session") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(8.dp))
+        
+        OutlinedTextField(
+            value = equipment,
+            onValueChange = { equipment = it },
+            label = { Text("Verfügbare Geräte") },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(16.dp))
@@ -72,12 +81,14 @@ fun NutritionScreen(contentPadding: PaddingValues) {
                 scope.launch {
                     busy = true
                     result = try {
-                        val req = RecipeRequest(
-                            preferences = preferences,
-                            diet = diet,
-                            count = count.toIntOrNull() ?: 10
+                        val req = PlanRequest(
+                            goal = goal,
+                            weeks = 12,
+                            sessionsPerWeek = sessions.toIntOrNull() ?: 3,
+                            minutesPerSession = minutes.toIntOrNull() ?: 60,
+                            equipment = equipment.split(",").map { it.trim() }
                         )
-                        AppAi.recipes(ctx, provider, req).getOrThrow()
+                        AppAi.plan(ctx, provider, req).getOrThrow()
                     } catch (e: Exception) {
                         "Fehler: ${e.message}"
                     } finally {
@@ -86,7 +97,7 @@ fun NutritionScreen(contentPadding: PaddingValues) {
                 }
             }
         ) {
-            Text(if (busy) "Generiere..." else "Rezepte erstellen")
+            Text(if (busy) "Generiere..." else "Plan erstellen")
         }
         
         if (result.isNotBlank()) {
