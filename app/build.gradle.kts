@@ -1,7 +1,9 @@
-apply(plugin = "com.android.application")
-apply(plugin = "kotlin-android")
-apply(plugin = "kotlinx-serialization")
-apply(plugin = "kotlin-kapt")
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.serialization")
+    id("kotlin-kapt")
+}
 
 android {
     namespace = "com.example.fitapp"
@@ -22,7 +24,7 @@ android {
         buildConfigField("String", "DEEPSEEK_BASE_URL", "\"${project.findProperty("DEEPSEEK_BASE_URL") ?: "https://api.deepseek.com"}\"")
     }
 
-    buildFeatures { 
+    buildFeatures {
         compose = true
         buildConfig = true
     }
