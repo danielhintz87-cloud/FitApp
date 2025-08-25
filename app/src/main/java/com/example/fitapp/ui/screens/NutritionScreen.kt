@@ -10,7 +10,7 @@ import com.example.fitapp.ai.AppAi
 import kotlinx.coroutines.launch
 
 @Composable
-fun RecipesScreen() {
+fun NutritionScreen() {
     var query by remember { mutableStateOf("Low‑Carb, 20–35 Min, 500–700 kcal") }
     var result by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()

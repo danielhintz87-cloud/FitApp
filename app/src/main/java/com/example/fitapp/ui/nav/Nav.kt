@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.fitapp.ui.AiLogsScreen
 import com.example.fitapp.ui.coach.CoachScreen
 import com.example.fitapp.ui.screens.*
 
@@ -18,11 +19,12 @@ sealed class Dest(val route: String, val label: String) {
 
 @Composable
 fun AppNavHost(nav: NavHostController, modifier: Modifier = Modifier) {
-    NavHost(navController = nav, startDestination = Dest.Plan.route, modifier = modifier) {
-        composable(Dest.Plan.route) { PlanBuilderScreen() }
+    NavHost(navController = nav, startDestination = Dest.Today.route, modifier = modifier) {
+        composable(Dest.Plan.route) { PlanScreen() }
         composable(Dest.Today.route) { TodayScreen() }
-        composable(Dest.Recipes.route) { RecipesScreen() }
+        composable(Dest.Recipes.route) { NutritionScreen() }
         composable(Dest.FoodScan.route) { FoodScanScreen() }
         composable(Dest.Coach.route) { CoachScreen() }
+        composable("ai_logs") { AiLogsScreen() }
     }
 }

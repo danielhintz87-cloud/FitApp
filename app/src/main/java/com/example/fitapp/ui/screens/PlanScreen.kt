@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun PlanBuilderScreen() {
+fun PlanScreen() {
     var goal by remember { mutableStateOf("Abnehmen") }
     var days by remember { mutableStateOf(4f) }
     var intensity by remember { mutableStateOf("mittel") }
