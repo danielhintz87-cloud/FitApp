@@ -1,9 +1,7 @@
 plugins {
     id("com.android.application")
     kotlin("android")
-    // Required for Kotlin 2.0 Compose compiler
-    id("org.jetbrains.kotlin.plugin.compose")
-    kotlin("plugin.serialization") version "2.0.20"
+    kotlin("plugin.serialization")
     kotlin("kapt")
 }
 
@@ -26,10 +24,13 @@ android {
         buildConfigField("String", "DEEPSEEK_BASE_URL", "\"${project.findProperty("DEEPSEEK_BASE_URL") ?: "https://api.deepseek.com"}\"")
     }
 
-    buildFeatures { compose = true
-    buildConfig = true
-}
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.10" }
+    buildFeatures { 
+        compose = true
+        buildConfig = true
+    }
+    composeOptions { 
+        kotlinCompilerExtensionVersion = "1.5.10"
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
