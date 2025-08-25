@@ -14,6 +14,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.parseToJsonElement
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -244,7 +245,7 @@ class AiCore(private val context: Context) {
         {
           "model": "gpt-4o-mini",
           "messages": [
-            {"role": "user", "content": ${json.encodeToString(kotlinx.serialization.serializer(), prompt)}}
+            {"role": "user", "content": ${json.encodeToString(kotlinx.serialization.serializer<String>(), prompt)}}
           ],
           "temperature": 0.7
         }
@@ -259,7 +260,7 @@ class AiCore(private val context: Context) {
             {
               "role": "user",
               "content": [
-                {"type": "text", "text": ${json.encodeToString(kotlinx.serialization.serializer(), prompt)}},
+                {"type": "text", "text": ${json.encodeToString(kotlinx.serialization.serializer<String>(), prompt)}},
                 {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,$base64Image"}}
               ]
             }
@@ -273,7 +274,7 @@ class AiCore(private val context: Context) {
         return """
         {
           "contents": [
-            {"parts": [{"text": ${json.encodeToString(kotlinx.serialization.serializer(), prompt)}}]}
+            {"parts": [{"text": ${json.encodeToString(kotlinx.serialization.serializer<String>(), prompt)}}]}
           ]
         }
         """.trimIndent()
@@ -285,7 +286,7 @@ class AiCore(private val context: Context) {
           "contents": [
             {
               "parts": [
-                {"text": ${json.encodeToString(kotlinx.serialization.serializer(), prompt)}},
+                {"text": ${json.encodeToString(kotlinx.serialization.serializer<String>(), prompt)}},
                 {"inline_data": {"mime_type": "image/jpeg", "data": "$base64Image"}}
               ]
             }
