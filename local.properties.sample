@@ -1,0 +1,20 @@
+## Android SDK Path
+sdk.dir=/path/to/android/sdk
+
+## AI Provider API Keys
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_BASE_URL=https://api.openai.com
+
+# Google Gemini Configuration  
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# DeepSeek Configuration
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+
+## Instructions
+# 1. Copy this file to 'local.properties'
+# 2. Replace the placeholder values with your actual API keys
+# 3. Add your Android SDK path
+# 4. Never commit local.properties to version control

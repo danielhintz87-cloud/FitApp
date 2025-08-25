@@ -1,21 +1,22 @@
 package com.example.fitapp.ai
 
+import android.graphics.Bitmap
 import android.util.Log
-import com.example.fitapp.ai.AiConfig.apiKey
-import com.example.fitapp.ai.AiConfig.baseUrl
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.logging.HttpLoggingInterceptor
-import java.util.concurrent.TimeUnit
+import com.example.fitapp.data.db.AppDatabase
 
 private const val TAG = "AppAi"
 
+/**
+ * Public API for AI functionality - wrapper around AiCore
+ * Provides convenient methods for common AI tasks
+ */
 object AppAi {
+
+    private var aiCore: AiCore? = null
+
+    fun initialize(database: AppDatabase) {
+        aiCore = AiCore(database.aiLogDao())
+    }
 
     // ---------- Public API ----------
 
@@ -41,7 +42,10 @@ object AppAi {
             ## Woche 12
             …
         """.trimIndent()
-        return callTextModel(prompt, provider)
+        
+        return aiCore?.generateText(prompt, provider)?.getOrElse { 
+            "❌ Fehler beim Generieren des Plans: ${it.message}"
+        } ?: "❌ AI nicht initialisiert"
     }
 
     suspend fun suggestAlternativeAndLog(
@@ -57,7 +61,10 @@ object AppAi {
 
             Gib NUR einen kurzen Ersatz-Block (Markdown, ohne Codeblock) + kurze Begründung in 1 Satz.
         """.trimIndent()
-        return callTextModel(prompt, provider)
+        
+        return aiCore?.generateText(prompt, provider)?.getOrElse { 
+            "❌ Fehler beim Generieren der Alternative: ${it.message}"
+        } ?: "❌ AI nicht initialisiert"
     }
 
     suspend fun generateRecipes(
@@ -75,30 +82,19 @@ object AppAi {
             Schritte:
             1. …
         """.trimIndent()
-        return callTextModel(prompt, provider)
+        
+        return aiCore?.generateText(prompt, provider)?.getOrElse { 
+            "❌ Fehler beim Generieren der Rezepte: ${it.message}"
+        } ?: "❌ AI nicht initialisiert"
     }
 
-    // ---------- Core ----------
-
-    private val json = Json { ignoreUnknownKeys = true }
-
-    private val http: OkHttpClient by lazy {
-        val log = HttpLoggingInterceptor { msg -> Log.d(TAG, msg) }
-        log.level = HttpLoggingInterceptor.Level.BASIC
-        OkHttpClient.Builder()
-            .addInterceptor(log)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .build()
+    suspend fun analyzeFood(
+        bitmap: Bitmap,
+        provider: AiProvider = AiProvider.OpenAI
+    ): AiCore.CalorieEstimation? {
+        return aiCore?.analyzeImageForCalories(bitmap, provider)?.getOrNull()
     }
-
-    private suspend fun callTextModel(prompt: String, provider: AiProvider): String {
-        return when (provider) {
-            AiProvider.OpenAI -> openAiChat(prompt)
-            AiProvider.Gemini -> gemini(prompt)
-            AiProvider.DeepSeek -> deepSeek(prompt)
-        }
-    }
+}
 
     // ---------- OpenAI ----------
     @Serializable private data class ChatReq(

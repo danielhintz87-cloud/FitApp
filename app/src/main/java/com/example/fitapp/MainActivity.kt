@@ -7,12 +7,19 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.navigation.compose.rememberNavController
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.example.fitapp.ai.AppAi
+import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.ui.MainScaffold
 import com.example.fitapp.ui.theme.FitAppTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Initialize AI system with database
+        val database = AppDatabase.get(this)
+        AppAi.initialize(database)
+        
         // Edge-to-edge Darstellung aktivieren
         WindowCompat.setDecorFitsSystemWindows(window, false)
 

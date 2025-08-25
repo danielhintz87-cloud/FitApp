@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.fitapp.ui.AiLogsScreen
 import com.example.fitapp.ui.coach.CoachScreen
 import com.example.fitapp.ui.screens.*
 
@@ -24,5 +25,20 @@ fun AppNavHost(nav: NavHostController, modifier: Modifier = Modifier) {
         composable(Dest.Recipes.route) { RecipesScreen() }
         composable(Dest.FoodScan.route) { FoodScanScreen() }
         composable(Dest.Coach.route) { CoachScreen() }
+        
+        // Additional screens
+        composable("ai_logs") { AiLogsScreen() }
+        composable("settings") { SettingsScreen() }
+        composable("about") { AboutScreen() }
     }
+}
+
+@Composable
+private fun SettingsScreen() {
+    ProgressScreen()
+}
+
+@Composable
+private fun AboutScreen() {
+    ProgressScreen()
 }
