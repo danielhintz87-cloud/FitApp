@@ -1,16 +1,17 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.fitapp-mergeDebugResources-53:/values-v16/values-v16.xml",
+            "outputFile": "com.example.fitapp-mergeDebugResources-61:/values-v16/values-v16.xml",
             "map": [
                 {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/bea9ce1898501ced1fdbee5ab9d6ebca/transformed/core-1.10.1/res/values-v16/values-v16.xml",
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/6e56d6f176c2b884e162fb99b6308d32/transformed/appcompat-1.7.0/res/values-v16/values-v16.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
                         "startOffsets": "55",
-                        "endColumns": "65",
-                        "endOffsets": "116"
+                        "endLines": "5",
+                        "endColumns": "12",
+                        "endOffsets": "223"
                     }
                 }
             ]

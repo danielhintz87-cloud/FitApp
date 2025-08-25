@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:ns1="http://schemas.android.com/tools">
+<resources>
     <color name="my_light_on_primary">#FFFFFFFF</color>
     <color name="my_light_on_secondary">#FF000000</color>
     <color name="my_light_primary">#FF6200EE</color>
@@ -7,25 +7,8 @@
     <color name="my_light_secondary">#FF03DAC6</color>
     <color name="my_light_secondary_variant">#FF018786</color>
     <string name="app_name">FitApp</string>
-    <style name="Theme.FitApp" parent="Theme.Material3.DayNight">
-        
+    <style name="Theme.FitApp" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-
-        
-        
     </style>
-    <style name="Theme.MyApp" parent="Theme.Material3.DayNight.NoActionBar">
-            
-            <item name="colorPrimary">@color/my_light_primary</item>
-            <item name="colorPrimaryVariant">@color/my_light_primary_variant</item>
-            <item name="colorOnPrimary">@color/my_light_on_primary</item>
-            
-            <item name="colorSecondary">@color/my_light_secondary</item>
-            <item name="colorSecondaryVariant">@color/my_light_secondary_variant</item>
-            <item name="colorOnSecondary">@color/my_light_on_secondary</item>
-            
-            <item name="android:statusBarColor" ns1:targetApi="l">?attr/colorPrimaryVariant</item>
-            
-        </style>
 </resources>

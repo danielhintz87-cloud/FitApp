@@ -14,9 +14,17 @@ public final class BuildConfig {
   // Field from default config.
   public static final String DEEPSEEK_BASE_URL = "https://api.deepseek.com";
   // Field from default config.
+  public static final String DEEPSEEK_MODEL = "deepseek-chat";
+  // Field from default config.
   public static final String GEMINI_API_KEY = "";
+  // Field from default config.
+  public static final String GEMINI_BASE_URL = "https://generativelanguage.googleapis.com";
+  // Field from default config.
+  public static final String GEMINI_MODEL = "gemini-1.5-pro";
   // Field from default config.
   public static final String OPENAI_API_KEY = "";
   // Field from default config.
   public static final String OPENAI_BASE_URL = "https://api.openai.com";
+  // Field from default config.
+  public static final String OPENAI_MODEL = "gpt-4o-mini";
 }

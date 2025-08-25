@@ -13,4 +13,3 @@ drawable ic_recipes
 drawable ic_today
 string app_name
 style Theme.FitApp
-style Theme.MyApp

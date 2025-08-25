@@ -1,8 +1,8 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.serialization")
-    id("kotlin-kapt")
+    kotlin("android")
+    kotlin("plugin.serialization")
+    kotlin("kapt")
 }
 
 android {
@@ -16,56 +16,78 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // API Keys aus gradle.properties -> BuildConfig
+        // Aus local.properties (nicht committen!)
         buildConfigField("String", "OPENAI_API_KEY", "\"${project.findProperty("OPENAI_API_KEY") ?: ""}\"")
-        buildConfigField("String", "OPENAI_BASE_URL", "\"${project.findProperty("OPENAI_BASE_URL") ?: "https://api.openai.com"}\"")
         buildConfigField("String", "GEMINI_API_KEY", "\"${project.findProperty("GEMINI_API_KEY") ?: ""}\"")
         buildConfigField("String", "DEEPSEEK_API_KEY", "\"${project.findProperty("DEEPSEEK_API_KEY") ?: ""}\"")
+
+        buildConfigField("String", "OPENAI_BASE_URL", "\"${project.findProperty("OPENAI_BASE_URL") ?: "https://api.openai.com"}\"")
+        buildConfigField("String", "GEMINI_BASE_URL", "\"${project.findProperty("GEMINI_BASE_URL") ?: "https://generativelanguage.googleapis.com"}\"")
         buildConfigField("String", "DEEPSEEK_BASE_URL", "\"${project.findProperty("DEEPSEEK_BASE_URL") ?: "https://api.deepseek.com"}\"")
+
+        buildConfigField("String", "OPENAI_MODEL", "\"${project.findProperty("OPENAI_MODEL") ?: "gpt-4o-mini"}\"")
+        buildConfigField("String", "GEMINI_MODEL", "\"${project.findProperty("GEMINI_MODEL") ?: "gemini-1.5-pro"}\"")
+        buildConfigField("String", "DEEPSEEK_MODEL", "\"${project.findProperty("DEEPSEEK_MODEL") ?: "deepseek-chat"}\"")
     }
 
-    buildFeatures {
+    buildFeatures { 
         compose = true
         buildConfig = true
     }
-    composeOptions { kotlinCompilerExtensionVersion = "1.4.6" }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.6" }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+
+    packaging {
+        resources.excludes += setOf(
+            "META-INF/DEPENDENCIES",
+            "META-INF/LICENSE*",
+            "META-INF/AL2.0",
+            "META-INF/LGPL2.1"
+        )
+    }
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2023.05.01")
+    val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
-    implementation("androidx.core:core-ktx:1.10.1")
-    implementation("androidx.activity:activity-compose:1.7.2")
+    // Compose
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("androidx.navigation:navigation-compose:2.6.0")
 
-    // Insets padding
-    implementation("androidx.compose.foundation:foundation")
+    // AppCompat (for theme compatibility)
+    implementation("androidx.appcompat:appcompat:1.7.0")
 
-    // Photo Picker
-    implementation("androidx.activity:activity-compose:1.7.2")
+    // Material Icons (stabil & hübsch)
+    implementation("androidx.compose.material:material-icons-extended")
 
-    // Networking
-    implementation("com.squareup.okhttp3:okhttp:4.11.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+    // Navigation
+    implementation("androidx.navigation:navigation-compose:2.8.2")
 
-    // Coil for images
-    implementation("io.coil-kt:coil-compose:2.4.0")
+    // Activity (Compose + Photo Picker)
+    implementation("androidx.activity:activity-compose:1.9.2")
+    implementation("androidx.activity:activity-ktx:1.9.2")
 
-    // Room database
-    implementation("androidx.room:room-runtime:2.5.2")
-    implementation("androidx.room:room-ktx:2.5.2")
-    kapt("androidx.room:room-compiler:2.5.2")
+    // Lifecycle/Coroutines
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    // Room (AI-Logs)
+    implementation("androidx.room:room-ktx:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
+
+    // Networking & JSON
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+
+    // Coil (Vorschau des gewählten Bildes)
+    implementation("io.coil-kt:coil-compose:2.7.0")
 }
