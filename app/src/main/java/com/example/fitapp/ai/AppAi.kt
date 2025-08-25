@@ -1,21 +1,28 @@
 package com.example.fitapp.ai
 
+import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
-import com.example.fitapp.ai.AiConfig.apiKey
-import com.example.fitapp.ai.AiConfig.baseUrl
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.logging.HttpLoggingInterceptor
-import java.util.concurrent.TimeUnit
+import com.example.fitapp.data.db.AiLog
+import com.example.fitapp.data.db.AppDatabase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 private const val TAG = "AppAi"
 
+/**
+ * Public API for AI functionality with automatic logging to Room database.
+ * This is a wrapper around AiCore that adds logging and context management.
+ */
 object AppAi {
+
+    private var appContext: Context? = null
+    private val database get() = appContext?.let { AppDatabase.get(it) }
+
+    fun initialize(context: Context) {
+        appContext = context.applicationContext
+    }
 
     // ---------- Public API ----------
 
@@ -41,7 +48,8 @@ object AppAi {
             ## Woche 12
             …
         """.trimIndent()
-        return callTextModel(prompt, provider)
+        
+        return callTextModelWithLogging(prompt, provider, "12week_plan")
     }
 
     suspend fun suggestAlternativeAndLog(
@@ -57,7 +65,8 @@ object AppAi {
 
             Gib NUR einen kurzen Ersatz-Block (Markdown, ohne Codeblock) + kurze Begründung in 1 Satz.
         """.trimIndent()
-        return callTextModel(prompt, provider)
+        
+        return callTextModelWithLogging(prompt, provider, "alternative_plan")
     }
 
     suspend fun generateRecipes(
@@ -75,117 +84,140 @@ object AppAi {
             Schritte:
             1. …
         """.trimIndent()
-        return callTextModel(prompt, provider)
+        
+        return callTextModelWithLogging(prompt, provider, "recipes")
     }
 
-    // ---------- Core ----------
-
-    private val json = Json { ignoreUnknownKeys = true }
-
-    private val http: OkHttpClient by lazy {
-        val log = HttpLoggingInterceptor { msg -> Log.d(TAG, msg) }
-        log.level = HttpLoggingInterceptor.Level.BASIC
-        OkHttpClient.Builder()
-            .addInterceptor(log)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .build()
-    }
-
-    private suspend fun callTextModel(prompt: String, provider: AiProvider): String {
-        return when (provider) {
-            AiProvider.OpenAI -> openAiChat(prompt)
-            AiProvider.Gemini -> gemini(prompt)
-            AiProvider.DeepSeek -> deepSeek(prompt)
+    suspend fun analyzeImageForCalories(
+        bitmap: Bitmap,
+        provider: AiProvider = AiProvider.OpenAI
+    ): String {
+        val startTime = System.currentTimeMillis()
+        
+        return try {
+            val result = AiCore.analyzeImageForCalories(bitmap, provider)
+            
+            if (result.isSuccess) {
+                val analysis = result.getOrThrow()
+                val response = """
+                    🍽️ Erkannte Lebensmittel:
+                    ${analysis.foods.joinToString("\n") { "• $it" }}
+                    
+                    📊 Geschätzte Kalorien: ${analysis.totalCalories} kcal
+                    🎯 Konfidenz: ${analysis.confidence}%
+                    
+                    💡 ${analysis.explanation}
+                """.trimIndent()
+                
+                logInteraction(
+                    provider = provider.name,
+                    requestType = "vision",
+                    prompt = "Food calorie analysis from image",
+                    response = response,
+                    isSuccess = true,
+                    confidenceScore = analysis.confidence
+                )
+                
+                response
+            } else {
+                val error = result.exceptionOrNull()?.message ?: "Unknown error"
+                logInteraction(
+                    provider = provider.name,
+                    requestType = "vision",
+                    prompt = "Food calorie analysis from image",
+                    response = "",
+                    isSuccess = false,
+                    errorMessage = error
+                )
+                "❌ Fehler bei der Bildanalyse: $error"
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in image analysis", e)
+            logInteraction(
+                provider = provider.name,
+                requestType = "vision",
+                prompt = "Food calorie analysis from image",
+                response = "",
+                isSuccess = false,
+                errorMessage = e.message
+            )
+            "❌ Fehler bei der Bildanalyse: ${e.message}"
         }
     }
 
-    // ---------- OpenAI ----------
-    @Serializable private data class ChatReq(
-        val model: String = "gpt-4o-mini",
-        val messages: List<ChatMsg>,
-        val temperature: Double = 0.7
-    )
-    @Serializable private data class ChatMsg(val role: String, val content: String)
-    @Serializable private data class ChatResp(val choices: List<Choice>) {
-        @Serializable data class Choice(val message: ChatMsg)
+    // ---------- Core Methods ----------
+
+    private suspend fun callTextModelWithLogging(
+        prompt: String,
+        provider: AiProvider,
+        requestType: String
+    ): String {
+        return try {
+            val result = AiCore.generateText(prompt, provider)
+            
+            if (result.isSuccess) {
+                val response = result.getOrThrow()
+                logInteraction(
+                    provider = provider.name,
+                    requestType = requestType,
+                    prompt = prompt,
+                    response = response,
+                    isSuccess = true
+                )
+                response
+            } else {
+                val error = result.exceptionOrNull()?.message ?: "Unknown error"
+                logInteraction(
+                    provider = provider.name,
+                    requestType = requestType,
+                    prompt = prompt,
+                    response = "",
+                    isSuccess = false,
+                    errorMessage = error
+                )
+                "❌ Fehler bei $provider: $error"
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in text generation", e)
+            logInteraction(
+                provider = provider.name,
+                requestType = requestType,
+                prompt = prompt,
+                response = "",
+                isSuccess = false,
+                errorMessage = e.message
+            )
+            "❌ Fehler bei $provider: ${e.message}"
+        }
     }
 
-    private fun openAiChat(prompt: String): String {
-        val key = apiKey(AiProvider.OpenAI)
-        require(key.isNotEmpty()) { "OPENAI_API_KEY fehlt" }
-
-        val body = json.encodeToString(
-            ChatReq.serializer(),
-            ChatReq(messages = listOf(ChatMsg("user", prompt)))
-        )
-        val req = Request.Builder()
-            .url("${'$'}{baseUrl(AiProvider.OpenAI)}/v1/chat/completions")
-            .header("Authorization", "Bearer $key")
-            .post(body.toRequestBody("application/json".toMediaType()))
-            .build()
-
-        val resp = http.newCall(req).execute()
-        if (!resp.isSuccessful) {
-            val code = resp.code
-            val msg = resp.body?.string().orEmpty()
-            Log.e(TAG, "OpenAI Fehler $code: $msg")
-            return "❌ OpenAI: $code – ${'$'}{msg.take(250)}"
+    private fun logInteraction(
+        provider: String,
+        requestType: String,
+        prompt: String,
+        response: String,
+        isSuccess: Boolean,
+        errorMessage: String? = null,
+        confidenceScore: Int? = null
+    ) {
+        database?.let { db ->
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    db.aiLogDao().insert(
+                        AiLog(
+                            provider = provider,
+                            requestType = requestType,
+                            prompt = prompt.take(500), // Limit prompt length
+                            response = response.take(2000), // Limit response length
+                            isSuccess = isSuccess,
+                            errorMessage = errorMessage,
+                            confidenceScore = confidenceScore
+                        )
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error logging AI interaction", e)
+                }
+            }
         }
-        val parsed = json.decodeFromString(ChatResp.serializer(), resp.body!!.string())
-        return parsed.choices.firstOrNull()?.message?.content?.trim().orEmpty()
-    }
-
-    // ---------- Gemini ----------
-    @Serializable private data class GeminiReq(
-        val contents: List<Map<String, List<Map<String, String>>>> // minimal
-    )
-    @Serializable private data class GeminiResp(
-        val candidates: List<Map<String, Map<String, String>>>? = null
-    )
-
-    private fun gemini(prompt: String): String {
-        val key = apiKey(AiProvider.Gemini)
-        if (key.isEmpty()) return "ℹ️ Gemini: API‑Key noch nicht hinterlegt."
-        val url = "${'$'}{baseUrl(AiProvider.Gemini)}/v1beta/models/gemini-1.5-flash-latest:generateContent?key=$key"
-        val body = """
-            {"contents":[{"parts":[{"text":${'$'}{json.encodeToString(String.serializer(), prompt)}}]}]}
-        """.trimIndent()
-        val req = Request.Builder()
-            .url(url)
-            .post(body.toRequestBody("application/json".toMediaType()))
-            .build()
-        val resp = http.newCall(req).execute()
-        if (!resp.isSuccessful) {
-            val code = resp.code; val msg = resp.body?.string().orEmpty()
-            Log.e(TAG, "Gemini Fehler $code: $msg")
-            return "❌ Gemini: $code – ${'$'}{msg.take(250)}"
-        }
-        val parsed = json.decodeFromString(GeminiResp.serializer(), resp.body!!.string())
-        val text = parsed.candidates?.firstOrNull()
-            ?.get("content")?.get("parts")?.toString() ?: ""
-        return if (text.isBlank()) "ℹ️ Gemini: keine Antwort" else text
-    }
-
-    // ---------- DeepSeek (optional) ----------
-    private fun deepSeek(prompt: String): String {
-        val key = apiKey(AiProvider.DeepSeek)
-        if (key.isEmpty()) return "ℹ️ DeepSeek: API‑Key noch nicht hinterlegt."
-        val body = """
-            {"model":"deepseek-chat","messages":[{"role":"user","content":${'$'}{json.encodeToString(String.serializer(), prompt)}}]}
-        """.trimIndent()
-        val req = Request.Builder()
-            .url("${'$'}{baseUrl(AiProvider.DeepSeek)}/v1/chat/completions")
-            .header("Authorization", "Bearer $key")
-            .post(body.toRequestBody("application/json".toMediaType()))
-            .build()
-        val resp = http.newCall(req).execute()
-        if (!resp.isSuccessful) {
-            val code = resp.code; val msg = resp.body?.string().orEmpty()
-            Log.e(TAG, "DeepSeek Fehler $code: $msg")
-            return "❌ DeepSeek: $code – ${'$'}{msg.take(250)}"
-        }
-        val parsed = json.decodeFromString(ChatResp.serializer(), resp.body!!.string())
-        return parsed.choices.firstOrNull()?.message?.content?.trim().orEmpty()
     }
 }
