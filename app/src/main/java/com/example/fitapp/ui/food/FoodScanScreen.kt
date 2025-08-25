@@ -1,86 +1,80 @@
 package com.example.fitapp.ui.food
 
-import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
-import com.example.fitapp.ai.AiProvider
-import com.example.fitapp.ai.AppAi
+import com.example.fitapp.ai.AiGateway
+import com.example.fitapp.data.db.AppDatabase
+import com.example.fitapp.data.repo.NutritionRepository
+import com.example.fitapp.ui.components.BudgetBar
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.ZoneId
 
 @Composable
 fun FoodScanScreen(contentPadding: PaddingValues) {
     val ctx = LocalContext.current
+    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
     val scope = rememberCoroutineScope()
-    var imageUri by remember { mutableStateOf<android.net.Uri?>(null) }
-    var result by remember { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf(false) }
-    var provider by remember { mutableStateOf(AiProvider.OpenAI) }
+    var picked by remember { mutableStateOf<Uri?>(null) }
+    var estimate by remember { mutableStateOf<com.example.fitapp.ai.CalorieEstimate?>(null) }
+    var loading by remember { mutableStateOf(false) }
+    val todayEpoch = remember { LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond() }
+    val goal by repo.goalFlow(LocalDate.now()).collectAsState(initial = null)
+    val entries by repo.dayEntriesFlow(todayEpoch).collectAsState(initial = emptyList())
+    val consumed = entries.sumOf { it.kcal }
+    val target = goal?.targetKcal ?: 2000
 
-    val picker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> imageUri = uri }
-    )
+    val picker = rememberLauncherForActivityResult(contract = ActivityResultContracts.PickVisualMedia()) { uri -> picked = uri }
 
     Column(
         modifier = Modifier
             .padding(contentPadding)
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text("Food Scan", style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.height(12.dp))
+        BudgetBar(consumed = consumed, target = target)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = provider == AiProvider.OpenAI, onClick = { provider = AiProvider.OpenAI }, label = { Text("OpenAI") })
-            FilterChip(selected = provider == AiProvider.Gemini, onClick = { provider = AiProvider.Gemini }, label = { Text("Gemini") })
-            FilterChip(selected = provider == AiProvider.DeepSeek, onClick = { provider = AiProvider.DeepSeek }, label = { Text("DeepSeek") })
-        }
-        Spacer(Modifier.height(12.dp))
-        Button(onClick = {
-            picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-        }) { Text("Foto auswählen") }
-
-        imageUri?.let { uri ->
-            Spacer(Modifier.height(12.dp))
-            Image(
-                painter = rememberAsyncImagePainter(uri),
-                contentDescription = null,
-                modifier = Modifier.fillMaxWidth().height(240.dp),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(Modifier.height(12.dp))
-            Button(enabled = !busy, onClick = {
+            Button(onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) { Text("Foto wählen") }
+            OutlinedButton(enabled = picked != null && !loading, onClick = {
+                val uri = picked ?: return@OutlinedButton
+                loading = true
                 scope.launch {
-                    busy = true
-                    result = try {
-                        val input = ctx.contentResolver.openInputStream(uri)!!
-                        val bytes = input.readBytes()
-                        val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                        val r = AppAi.calories(ctx, provider, bmp, "FoodScan").getOrThrow()
-                        "≈ ${r.kcal} kcal (≈${r.confidence}% sicher)\n${r.text}"
+                    try {
+                        estimate = repo.analyzeFoodImage(ctx, uri, AiGateway.Provider.OPENAI)
                     } catch (e: Exception) {
-                        "Fehler: ${e.message}"
+                        estimate = com.example.fitapp.ai.CalorieEstimate(0, "niedrig", "Analyse fehlgeschlagen: ${'$'}{e.message}")
                     } finally {
-                        busy = false
+                        loading = false
                     }
                 }
-            }) { Text(if (busy) "Analysiere…" else "Kalorien schätzen") }
+            }) { Text(if (loading) "Analysiere…" else "Kalorien schätzen") }
         }
-        result?.let {
-            Spacer(Modifier.height(12.dp))
-            Card { Text(it, Modifier.padding(16.dp)) }
+        picked?.let { Text("Bild: $it", style = MaterialTheme.typography.bodySmall) }
+        estimate?.let { e ->
+            ElevatedCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Schätzung: ${'$'}{e.kcal} kcal (${e.confidence})", style = MaterialTheme.typography.titleMedium)
+                    Text(e.details, style = MaterialTheme.typography.bodyMedium)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { scope.launch { repo.logIntake(e.kcal, "Essen (Foto)", "PHOTO") } }) { Text("Buchen") }
+                        OutlinedButton(onClick = { estimate = null; picked = null }) { Text("Zurücksetzen") }
+                    }
+                }
+            }
         }
+        Spacer(Modifier.height(96.dp))
     }
 }
