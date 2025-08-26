@@ -16,7 +16,7 @@ import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.launch
 
 @Composable
-fun PlanScreen(contentPadding: PaddingValues) {
+fun PlanScreen(contentPadding: PaddingValues, provider: AiProvider) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
@@ -26,7 +26,6 @@ fun PlanScreen(contentPadding: PaddingValues) {
     var equipment by remember { mutableStateOf("Hanteln, Klimmzugstange") }
     var result by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
-    var provider by remember { mutableStateOf(AiProvider.OpenAI) }
     var saveStatus by remember { mutableStateOf("") }
 
     Column(
@@ -37,14 +36,6 @@ fun PlanScreen(contentPadding: PaddingValues) {
             .padding(16.dp)
     ) {
         Text("12-Wochen-Trainingsplan", style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.height(16.dp))
-        
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = provider == AiProvider.OpenAI, onClick = { provider = AiProvider.OpenAI }, label = { Text("OpenAI") })
-            FilterChip(selected = provider == AiProvider.Gemini, onClick = { provider = AiProvider.Gemini }, label = { Text("Gemini") })
-            FilterChip(selected = provider == AiProvider.DeepSeek, onClick = { provider = AiProvider.DeepSeek }, label = { Text("DeepSeek") })
-        }
-        
         Spacer(Modifier.height(16.dp))
         
         OutlinedTextField(
