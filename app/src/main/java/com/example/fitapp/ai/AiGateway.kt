@@ -194,7 +194,7 @@ object AiGateway {
             .put(JSONObject(mapOf("role" to "user", "content" to user)))
         val body = JSONObject(mapOf("model" to deepSeekModel(), "messages" to messages)).toString()
         val req = Request.Builder()
-            .url("${BuildConfig.DEEPSEEK_BASE_URL}/v1/chat/completions")
+            .url("${getNormalizedDeepSeekBaseUrl()}/v1/chat/completions")
             .addHeader("Authorization", "Bearer ${deepSeekKey()}")
             .post(body.toRequestBody("application/json".toMediaType()))
             .build()
