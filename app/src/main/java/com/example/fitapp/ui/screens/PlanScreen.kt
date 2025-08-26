@@ -5,7 +5,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -31,14 +30,11 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
     var busy by remember { mutableStateOf(false) }
     var saveStatus by remember { mutableStateOf("") }
     
-    // Listen for equipment changes from equipment selection screen
-    navController?.currentBackStackEntry?.savedStateHandle?.let { savedStateHandle ->
-        val updatedEquipment by savedStateHandle.getLiveData<String>("equipment").observeAsState()
-        LaunchedEffect(updatedEquipment) {
-            updatedEquipment?.let {
-                if (it.isNotBlank() && it != equipment) {
-                    equipment = it
-                }
+    // Listen for equipment changes from equipment selection screen using a side effect
+    LaunchedEffect(navController?.currentBackStackEntry) {
+        navController?.currentBackStackEntry?.savedStateHandle?.get<String>("equipment")?.let { updatedEquipment ->
+            if (updatedEquipment.isNotBlank() && updatedEquipment != equipment) {
+                equipment = updatedEquipment
             }
         }
     }
