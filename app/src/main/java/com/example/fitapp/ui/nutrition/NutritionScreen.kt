@@ -4,10 +4,14 @@ import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.ai.UiRecipe
 import com.example.fitapp.data.db.AppDatabase
@@ -56,7 +60,7 @@ fun NutritionScreen() {
             } })
             1 -> RecipeList("Favoriten", favorites) { id, fav -> scope.launch { repo.setFavorite(id, fav) } }
             2 -> RecipeList("Historie", history) { id, fav -> scope.launch { repo.setFavorite(id, fav) } }
-            3 -> ShoppingListScreen(repo)
+            3 -> SimpleShoppingListTab(repo)
         }
     }
 }
@@ -73,6 +77,9 @@ private fun GenerateTab(
     onToShopping: (String) -> Unit,
     onLog: (UiRecipe) -> Unit
 ) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    
     Column(Modifier.fillMaxSize()) {
         OutlinedTextField(
             value = prompt,
@@ -226,4 +233,74 @@ private fun extractDifficulty(markdown: String): String? {
 private fun extractServings(markdown: String): Int? {
     val servingsRegex = Regex("""(\d+)\s*(portion|portionen|serving|servings)""", RegexOption.IGNORE_CASE)
     return servingsRegex.find(markdown)?.groupValues?.get(1)?.toIntOrNull()
+}
+
+@Composable
+private fun SimpleShoppingListTab(repo: NutritionRepository) {
+    val items by repo.shoppingItems().collectAsState(initial = emptyList())
+    val scope = rememberCoroutineScope()
+    
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item { 
+            Text("Einkaufsliste", style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(8.dp))
+        }
+        
+        items(items) { item ->
+            Card {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = item.checked,
+                        onCheckedChange = { checked ->
+                            scope.launch {
+                                repo.setItemChecked(item.id, checked)
+                            }
+                        }
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = item.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            textDecoration = if (item.checked) TextDecoration.LineThrough else null
+                        )
+                        item.quantity?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                repo.deleteItem(item.id)
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Löschen")
+                    }
+                }
+            }
+        }
+        
+        if (items.isEmpty()) {
+            item {
+                Text(
+                    "Keine Artikel in der Einkaufsliste",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(32.dp)
+                )
+            }
+        }
+    }
 }

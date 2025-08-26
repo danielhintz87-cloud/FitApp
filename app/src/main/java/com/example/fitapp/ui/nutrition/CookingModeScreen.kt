@@ -21,6 +21,7 @@ import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CookingModeScreen(
     recipe: SavedRecipeEntity,

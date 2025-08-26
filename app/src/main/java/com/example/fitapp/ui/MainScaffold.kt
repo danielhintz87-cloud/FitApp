@@ -26,7 +26,6 @@ import androidx.navigation.compose.rememberNavController
 import com.example.fitapp.ui.AiLogsScreen
 import com.example.fitapp.ui.food.FoodScanScreen
 import com.example.fitapp.ui.nutrition.CookingModeScreen
-import com.example.fitapp.ui.nutrition.EnhancedShoppingListScreen
 import com.example.fitapp.ui.nutrition.NutritionScreen
 import com.example.fitapp.ui.nutrition.SavedRecipesScreen
 import com.example.fitapp.ui.screens.PlanScreen
@@ -194,7 +193,7 @@ fun MainScaffold() {
                     )
                 }
                 composable("shopping_list") {
-                    EnhancedShoppingListScreen()
+                    com.example.fitapp.ui.nutrition.EnhancedShoppingListScreen()
                 }
 
             }

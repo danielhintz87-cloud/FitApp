@@ -18,7 +18,7 @@ import com.example.fitapp.data.db.ShoppingItemEntity
 import kotlinx.coroutines.launch
 
 @Composable
-fun ShoppingListScreen() {
+fun EnhancedShoppingListScreen() {
     val ctx = LocalContext.current
     val db = remember { AppDatabase.get(ctx) }
     val scope = rememberCoroutineScope()
@@ -203,6 +203,7 @@ fun ShoppingListScreen() {
                                     ShoppingItemEntity(
                                         name = newItemName,
                                         quantity = newItemQuantity.takeIf { it.isNotBlank() },
+                                        unit = null,
                                         category = category
                                     )
                                 )
