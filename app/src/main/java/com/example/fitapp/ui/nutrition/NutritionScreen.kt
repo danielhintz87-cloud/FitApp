@@ -31,7 +31,7 @@ fun NutritionScreen() {
     val tabs = listOf("Generieren", "Favoriten", "Historie", "Einkaufsliste")
 
     Column(Modifier.fillMaxSize()) {
-        TabRow(selectedTabIndex = tab) {
+        ScrollableTabRow(selectedTabIndex = tab) {
             tabs.forEachIndexed { i, title ->
                 Tab(selected = tab == i, onClick = { tab = i }, text = { Text(title) })
             }
@@ -44,7 +44,10 @@ fun NutritionScreen() {
                     catch (_: Throwable) { results = emptyList() }
                     finally { generating = false }
                 }
-            }, onFav = { id, fav -> scope.launch { repo.setFavorite(id, fav) } }, onToShopping = { id -> scope.launch { repo.addRecipeToShoppingList(id) } }, onLog = { r -> scope.launch { repo.logIntake(r.calories ?: 0, "Rezept: ${'$'}{r.title}", "RECIPE", r.id) } })
+            }, onFav = { id, fav -> scope.launch { repo.setFavorite(id, fav) } }, onToShopping = { id -> scope.launch { repo.addRecipeToShoppingList(id) } }, onLog = { r -> scope.launch { 
+                repo.logIntake(r.calories ?: 0, "Rezept: ${'$'}{r.title}", "RECIPE", r.id)
+                repo.adjustDailyGoal(java.time.LocalDate.now())
+            } })
             1 -> RecipeList("Favoriten", favorites) { id, fav -> scope.launch { repo.setFavorite(id, fav) } }
             2 -> RecipeList("Historie", history) { id, fav -> scope.launch { repo.setFavorite(id, fav) } }
             3 -> ShoppingListScreen(repo)

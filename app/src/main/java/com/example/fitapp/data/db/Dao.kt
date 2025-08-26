@@ -87,3 +87,21 @@ interface ShoppingDao {
     suspend fun setChecked(id: Long, checked: Boolean)
 }
 
+@Dao
+interface PlanDao {
+    @Insert
+    suspend fun insert(plan: PlanEntity): Long
+
+    @Query("SELECT * FROM training_plans ORDER BY createdAt DESC")
+    fun plansFlow(): Flow<List<PlanEntity>>
+
+    @Query("SELECT * FROM training_plans WHERE id = :id")
+    suspend fun getPlan(id: Long): PlanEntity?
+
+    @Query("SELECT * FROM training_plans ORDER BY createdAt DESC LIMIT 1")
+    suspend fun getLatestPlan(): PlanEntity?
+
+    @Query("DELETE FROM training_plans WHERE id = :id")
+    suspend fun delete(id: Long)
+}
+

@@ -11,12 +11,15 @@ import androidx.compose.ui.unit.dp
 import com.example.fitapp.ai.AiProvider
 import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.PlanRequest
+import com.example.fitapp.data.db.AppDatabase
+import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.launch
 
 @Composable
 fun PlanScreen(contentPadding: PaddingValues) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
+    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
     var goal by remember { mutableStateOf("Muskelaufbau") }
     var sessions by remember { mutableStateOf("3") }
     var minutes by remember { mutableStateOf("60") }
@@ -24,6 +27,7 @@ fun PlanScreen(contentPadding: PaddingValues) {
     var result by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var provider by remember { mutableStateOf(AiProvider.OpenAI) }
+    var saveStatus by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -88,8 +92,23 @@ fun PlanScreen(contentPadding: PaddingValues) {
                             minutesPerSession = minutes.toIntOrNull() ?: 60,
                             equipment = equipment.split(",").map { it.trim() }
                         )
-                        AppAi.plan(ctx, provider, req).getOrThrow()
+                        val planContent = AppAi.plan(ctx, provider, req).getOrThrow()
+                        
+                        // Save the plan to database
+                        val planId = repo.savePlan(
+                            title = "12-Wochen-Trainingsplan: $goal",
+                            content = planContent,
+                            goal = goal,
+                            weeks = 12,
+                            sessionsPerWeek = req.sessionsPerWeek,
+                            minutesPerSession = req.minutesPerSession,
+                            equipment = req.equipment
+                        )
+                        saveStatus = "✓ Plan gespeichert (ID: $planId)"
+                        
+                        planContent
                     } catch (e: Exception) {
+                        saveStatus = ""
                         "Fehler: ${e.message}"
                     } finally {
                         busy = false
@@ -98,6 +117,11 @@ fun PlanScreen(contentPadding: PaddingValues) {
             }
         ) {
             Text(if (busy) "Generiere..." else "Plan erstellen")
+        }
+        
+        if (saveStatus.isNotBlank()) {
+            Spacer(Modifier.height(8.dp))
+            Text(saveStatus, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
         }
         
         if (result.isNotBlank()) {
