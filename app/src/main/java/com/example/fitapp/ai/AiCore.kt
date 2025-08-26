@@ -316,8 +316,8 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
         }
     }
 
-    private suspend fun deepseekVision(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> {
-        // Fallback: viele Modelle sind text-first. Wir liefern eine Textschätzung mit Hinweis.
+    private suspend fun deepseekVision(prompt: String, @Suppress("UNUSED_PARAMETER") bitmap: Bitmap): Result<CaloriesEstimate> {
+        // Fallback: DeepSeek doesn't support vision. We provide a text-based estimation with note.
         val text = deepseekText("$prompt (Hinweis: Falls Vision nicht unterstützt, grobe Schätzung anhand Standardportion)").getOrThrow()
         return runCatching { parseCalories(text) }
     }
