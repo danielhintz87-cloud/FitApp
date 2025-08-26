@@ -12,12 +12,13 @@ import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.PlanRequest
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
+import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
-fun PlanScreen(contentPadding: PaddingValues) {
+fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = null) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
@@ -145,7 +146,10 @@ fun PlanScreen(contentPadding: PaddingValues) {
         // Equipment selection button
         OutlinedButton(
             onClick = {
-                // TODO: Navigate to detailed equipment selection screen
+                navController?.let { nav ->
+                    nav.currentBackStackEntry?.savedStateHandle?.set("equipment", equipment)
+                    nav.navigate("equipment")
+                }
             },
             modifier = Modifier.fillMaxWidth()
         ) {

@@ -11,12 +11,13 @@ import androidx.compose.ui.unit.dp
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.ui.components.BudgetBar
+import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
 
 @Composable
-fun TodayScreen(contentPadding: PaddingValues) {
+fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = null) {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
     val scope = rememberCoroutineScope()
@@ -105,7 +106,7 @@ fun TodayScreen(contentPadding: PaddingValues) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             onClick = { 
-                                // TODO: Navigate to today's training customization
+                                navController?.navigate("todaytraining")
                             }
                         ) {
                             Text("Heutiges Training anpassen")
