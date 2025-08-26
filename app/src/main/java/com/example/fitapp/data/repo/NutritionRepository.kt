@@ -5,7 +5,9 @@ import android.net.Uri
 import android.graphics.Bitmap
 import com.example.fitapp.ai.AiGateway
 import com.example.fitapp.ai.AiProvider
+import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.CalorieEstimate
+import com.example.fitapp.ai.RecipeRequest
 import com.example.fitapp.ai.UiRecipe
 import com.example.fitapp.data.db.*
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +18,27 @@ import java.time.ZoneId
 class NutritionRepository(private val db: AppDatabase) {
     fun favorites(): Flow<List<RecipeEntity>> = db.recipeDao().favoritesFlow()
     fun history(): Flow<List<RecipeEntity>> = db.recipeDao().historyFlow()
+
+    suspend fun generateAndStoreOptimal(context: Context, prompt: String): List<UiRecipe> {
+        val req = RecipeRequest(preferences = prompt, diet = "", count = 10)
+        val result = AppAi.recipesWithOptimalProvider(context, req).getOrThrow()
+        
+        // Parse the result string into UiRecipe list (same logic as in AiGateway)
+        val list = parseMarkdownRecipes(result)
+        
+        list.forEach { r ->
+            db.recipeDao().upsertAndAddToHistory(
+                RecipeEntity(
+                    id = r.id,
+                    title = r.title,
+                    markdown = r.markdown,
+                    calories = r.calories,
+                    imageUrl = r.imageUrl
+                )
+            )
+        }
+        return list
+    }
 
     suspend fun generateAndStore(context: Context, prompt: String, provider: AiProvider): List<UiRecipe> {
         val list = AiGateway.generateRecipes(context, prompt, provider.toGateway())
@@ -117,5 +140,16 @@ class NutritionRepository(private val db: AppDatabase) {
         AiProvider.DeepSeek -> AiGateway.Provider.DEEPSEEK
         AiProvider.Claude -> AiGateway.Provider.CLAUDE
         else -> AiGateway.Provider.OPENAI
+    }
+
+    private fun parseMarkdownRecipes(markdown: String): List<UiRecipe> {
+        val blocks = markdown.split("\n## ").mapIndexed { idx, block ->
+            if (idx == 0 && block.startsWith("## ")) block.removePrefix("## ") else block
+        }.filter { it.isNotBlank() }
+        return blocks.map { raw ->
+            val title = raw.lineSequence().firstOrNull()?.trim() ?: "Rezept"
+            val kcal = Regex("""Kalorien:\s*(\d{2,5})\s*kcal""", RegexOption.IGNORE_CASE).find(raw)?.groupValues?.get(1)?.toIntOrNull()
+            UiRecipe(title = title, markdown = "## $raw".trim(), calories = kcal)
+        }
     }
 }

@@ -8,7 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.fitapp.ai.AiProvider
 import com.example.fitapp.ai.UiRecipe
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.RecipeEntity
@@ -16,7 +15,7 @@ import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.launch
 
 @Composable
-fun NutritionScreen(provider: AiProvider) {
+fun NutritionScreen() {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
     val scope = rememberCoroutineScope()
@@ -42,7 +41,7 @@ fun NutritionScreen(provider: AiProvider) {
                 generating = true
                 scope.launch {
                     try {
-                        results = repo.generateAndStore(ctx, prompt, provider)
+                        results = repo.generateAndStoreOptimal(ctx, prompt)
                         error = null
                     } catch (e: Exception) {
                         results = emptyList()

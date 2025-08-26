@@ -4,11 +4,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.*
@@ -19,7 +17,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.fitapp.ai.AiProvider
 import com.example.fitapp.ui.AiLogsScreen
 import com.example.fitapp.ui.food.FoodScanScreen
 import com.example.fitapp.ui.nutrition.NutritionScreen
@@ -37,8 +34,6 @@ fun MainScaffold() {
     val nav = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    var showMenu by remember { mutableStateOf(false) }
-    var provider by remember { mutableStateOf(AiProvider.OpenAI) }
 
     val destinations = listOf(
         Destination("plan", "Plan", Icons.Filled.Timeline),
@@ -71,32 +66,6 @@ fun MainScaffold() {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Filled.Menu, contentDescription = "Menü")
                         }
-                    },
-                    actions = {
-                        IconButton(onClick = { showMenu = !showMenu }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Mehr")
-                        }
-                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                            DropdownMenuItem(
-                                text = { Text("OpenAI") },
-                                onClick = { provider = AiProvider.OpenAI; showMenu = false },
-                                trailingIcon = { if (provider == AiProvider.OpenAI) Icon(Icons.Filled.Check, null) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Gemini") },
-                                onClick = { provider = AiProvider.Gemini; showMenu = false },
-                                trailingIcon = { if (provider == AiProvider.Gemini) Icon(Icons.Filled.Check, null) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("DeepSeek") },
-                                onClick = { provider = AiProvider.DeepSeek; showMenu = false },
-                                trailingIcon = { if (provider == AiProvider.DeepSeek) Icon(Icons.Filled.Check, null) }
-                            )
-                            Divider()
-                            DropdownMenuItem(text = { Text("Food Scan") }, onClick = { showMenu = false; nav.navigate("foodscan") })
-                            DropdownMenuItem(text = { Text("AI-Logs") }, onClick = { showMenu = false; nav.navigate("logs") })
-                            DropdownMenuItem(text = { Text("Über") }, onClick = { showMenu = false })
-                        }
                     }
                 )
             },
@@ -121,12 +90,12 @@ fun MainScaffold() {
             }
         ) { padding ->
             NavHost(navController = nav, startDestination = "plan", modifier = Modifier.fillMaxSize()) {
-                composable("plan") { PlanScreen(padding, provider) }
+                composable("plan") { PlanScreen(padding) }
                 composable("today") { TodayScreen(padding) }
-                composable("nutrition") { NutritionScreen(provider) }
+                composable("nutrition") { NutritionScreen() }
                 composable("progress") { ProgressScreen(padding) }
                 composable("foodscan") {
-                    FoodScanScreen(padding, provider) { nav.navigate("plan") }
+                    FoodScanScreen(padding) { nav.navigate("plan") }
                 }
                 composable("logs") {
                     AiLogsScreen(padding)
