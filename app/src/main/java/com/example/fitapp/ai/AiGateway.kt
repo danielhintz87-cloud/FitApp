@@ -108,7 +108,7 @@ object AiGateway {
                 user = "Schätze grob die Kalorien des Essens auf einem Foto. Hinweis: DeepSeek unterstützt eventuell keine Bildanalyse, schätze daher basierend auf allgemeinem Wissen.",
             )
         }
-        val kcal = Regex("(\d{2,5})\s*kcal", RegexOption.IGNORE_CASE)
+        val kcal = Regex("""(\d{2,5})\s*kcal""", RegexOption.IGNORE_CASE)
             .find(text)
             ?.groupValues
             ?.get(1)
@@ -190,6 +190,11 @@ object AiGateway {
 
     private fun deepSeekKey() = BuildConfig.DEEPSEEK_API_KEY
     private fun deepSeekModel() = BuildConfig.DEEPSEEK_MODEL.ifBlank { "deepseek-chat" }
+
+    private fun getNormalizedDeepSeekBaseUrl(): String {
+        val base = BuildConfig.DEEPSEEK_BASE_URL.trim()
+        return if (base.endsWith("/")) base.dropLast(1) else base
+    }
 
     @WorkerThread
     private fun deepseekChat(system: String, user: String): String {
