@@ -4,7 +4,6 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.time.Instant
 import java.time.LocalDate
 
 @Entity(tableName = "recipes")
@@ -14,7 +13,7 @@ data class RecipeEntity(
     val markdown: String,
     val calories: Int?,
     val imageUrl: String?,
-    val createdAt: Long = Instant.now().epochSecond
+    val createdAt: Long = System.currentTimeMillis() / 1000
 )
 
 @Entity(
@@ -32,7 +31,7 @@ data class RecipeEntity(
 )
 data class RecipeFavoriteEntity(
     val recipeId: String,
-    val savedAt: Long = Instant.now().epochSecond
+    val savedAt: Long = System.currentTimeMillis() / 1000
 )
 
 @Entity(
@@ -50,13 +49,13 @@ data class RecipeFavoriteEntity(
 data class RecipeHistoryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val recipeId: String,
-    val createdAt: Long = Instant.now().epochSecond
+    val createdAt: Long = System.currentTimeMillis() / 1000
 )
 
 @Entity(tableName = "intake_entries")
 data class IntakeEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val timestamp: Long = Instant.now().epochSecond,
+    val timestamp: Long = System.currentTimeMillis() / 1000,
     val label: String,
     val kcal: Int,
     val source: String,
@@ -76,7 +75,7 @@ data class ShoppingItemEntity(
     val quantity: String?,
     val unit: String?,
     val checked: Boolean = false,
-    val createdAt: Long = Instant.now().epochSecond
+    val createdAt: Long = System.currentTimeMillis() / 1000
 )
 
 @Entity(tableName = "training_plans")
@@ -89,6 +88,6 @@ data class PlanEntity(
     val sessionsPerWeek: Int,
     val minutesPerSession: Int,
     val equipment: String, // JSON array as string
-    val createdAt: Long = Instant.now().epochSecond
+    val createdAt: Long = System.currentTimeMillis() / 1000
 )
 
