@@ -17,7 +17,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
 
-enum class AiProvider { OpenAI, Gemini, DeepSeek, Claude }
+enum class AiProvider { OpenAI, Gemini, DeepSeek }
 
 data class PlanRequest(
     val goal: String,
@@ -96,7 +96,6 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 AiProvider.OpenAI -> openAiVision(prompt, bitmap)
                 AiProvider.Gemini -> geminiVision(prompt, bitmap)
                 AiProvider.DeepSeek -> deepseekVision(prompt, bitmap)
-                AiProvider.Claude -> claudeVision(prompt, bitmap)
             }
             val took = System.currentTimeMillis() - started
             r.onSuccess {
@@ -114,7 +113,6 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 AiProvider.OpenAI -> openAiChat(prompt)
                 AiProvider.Gemini -> geminiText(prompt)
                 AiProvider.DeepSeek -> deepseekText(prompt)
-                AiProvider.Claude -> claudeChat(prompt)
             }
             val took = System.currentTimeMillis() - started
             result.onSuccess {
@@ -342,107 +340,6 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
     private fun ByteArray.b64(): String = Base64.encodeToString(this, Base64.NO_WRAP)
 
-    // -------- Claude Implementation --------
-
-    private suspend fun claudeChat(prompt: String): Result<String> = runCatching {
-        val apiKey = ApiKeys.getClaudeKey(context)
-        if (apiKey.isBlank()) {
-            throw IllegalStateException("Claude API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
-        }
-
-        val model = BuildConfig.CLAUDE_MODEL.ifBlank { "claude-3-5-sonnet-20241022" }
-        val body = """
-            {
-                "model": "$model",
-                "max_tokens": 4000,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": ${prompt.json()}
-                    }
-                ]
-            }
-        """.trimIndent().toRequestBody("application/json".toMediaType())
-
-        val req = Request.Builder()
-            .url("${BuildConfig.CLAUDE_BASE_URL}/v1/messages")
-            .header("x-api-key", apiKey)
-            .header("anthropic-version", "2023-06-01")
-            .post(body)
-            .build()
-
-        http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) {
-                val errorBody = resp.body?.string() ?: "Kein Fehlertext verfügbar"
-                if (resp.code == 401) {
-                    error("Claude 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                } else {
-                    error("Claude ${resp.code}: $errorBody")
-                }
-            }
-            val txt = resp.body!!.string()
-            val json = JSONObject(txt)
-            json.getJSONArray("content").getJSONObject(0).getString("text")
-        }
-    }
-
-    private suspend fun claudeVision(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> = runCatching {
-        val apiKey = ApiKeys.getClaudeKey(context)
-        if (apiKey.isBlank()) {
-            throw IllegalStateException("Claude API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
-        }
-
-        val model = BuildConfig.CLAUDE_MODEL.ifBlank { "claude-3-5-sonnet-20241022" }
-        val b64 = bitmap.toJpegBytes().b64()
-        val body = """
-            {
-                "model": "$model",
-                "max_tokens": 4000,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": ${prompt.json()}
-                            },
-                            {
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": "image/jpeg",
-                                    "data": "$b64"
-                                }
-                            }
-                        ]
-                    }
-                ]
-            }
-        """.trimIndent().toRequestBody("application/json".toMediaType())
-
-        val req = Request.Builder()
-            .url("${BuildConfig.CLAUDE_BASE_URL}/v1/messages")
-            .header("x-api-key", apiKey)
-            .header("anthropic-version", "2023-06-01")
-            .post(body)
-            .build()
-
-        http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) {
-                val errorBody = resp.body?.string() ?: "Kein Fehlertext verfügbar"
-                if (resp.code == 401) {
-                    error("Claude 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                } else {
-                    error("Claude ${resp.code}: $errorBody")
-                }
-            }
-            val txt = resp.body!!.string()
-            val json = JSONObject(txt)
-            val content = json.getJSONArray("content").getJSONObject(0).getString("text")
-            parseCalories(content)
-        }
-    }
-
     // -------- Provider Selection & Fallback Logic --------
 
     companion object {
@@ -454,23 +351,20 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             
             return when (taskType) {
                 TaskType.TRAINING_PLAN -> {
-                    // Claude > GPT-4o > Gemini > DeepSeek for complex reasoning
-                    availableProviders.firstOrNull { it == AiProvider.Claude }
-                        ?: availableProviders.firstOrNull { it == AiProvider.OpenAI }
+                    // GPT-4o > Gemini > DeepSeek for complex reasoning
+                    availableProviders.firstOrNull { it == AiProvider.OpenAI }
                         ?: availableProviders.firstOrNull { it == AiProvider.Gemini }
                         ?: availableProviders.first()
                 }
                 TaskType.CALORIE_ESTIMATION -> {
-                    // GPT-4o Vision > Claude > Gemini > DeepSeek for vision tasks
+                    // GPT-4o Vision > Gemini > DeepSeek for vision tasks
                     availableProviders.firstOrNull { it == AiProvider.OpenAI }
-                        ?: availableProviders.firstOrNull { it == AiProvider.Claude }
                         ?: availableProviders.firstOrNull { it == AiProvider.Gemini }
                         ?: availableProviders.first()
                 }
                 TaskType.RECIPE_GENERATION -> {
-                    // Claude > GPT-4o > Gemini > DeepSeek for structured output
-                    availableProviders.firstOrNull { it == AiProvider.Claude }
-                        ?: availableProviders.firstOrNull { it == AiProvider.OpenAI }
+                    // GPT-4o > Gemini > DeepSeek for structured output
+                    availableProviders.firstOrNull { it == AiProvider.OpenAI }
                         ?: availableProviders.firstOrNull { it == AiProvider.Gemini }
                         ?: availableProviders.first()
                 }
@@ -482,10 +376,9 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
          */
         fun getFallbackChain(primary: AiProvider): List<AiProvider> {
             return when (primary) {
-                AiProvider.OpenAI -> listOf(AiProvider.Claude, AiProvider.Gemini, AiProvider.DeepSeek)
-                AiProvider.Claude -> listOf(AiProvider.OpenAI, AiProvider.Gemini, AiProvider.DeepSeek)
-                AiProvider.Gemini -> listOf(AiProvider.OpenAI, AiProvider.Claude, AiProvider.DeepSeek)
-                AiProvider.DeepSeek -> listOf(AiProvider.OpenAI, AiProvider.Claude, AiProvider.Gemini)
+                AiProvider.OpenAI -> listOf(AiProvider.Gemini, AiProvider.DeepSeek)
+                AiProvider.Gemini -> listOf(AiProvider.OpenAI, AiProvider.DeepSeek)
+                AiProvider.DeepSeek -> listOf(AiProvider.OpenAI, AiProvider.Gemini)
             }
         }
     }
