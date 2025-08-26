@@ -56,8 +56,21 @@ object AiGateway {
         parseMarkdownRecipes(text)
     }
 
-    suspend fun analyzeFoodImage(context: Context, imageUri: Uri, provider: Provider = Provider.OPENAI): CalorieEstimate = withContext(Dispatchers.IO) {
-        val base64 = loadBitmapBase64(context.contentResolver, imageUri)
+    suspend fun analyzeFoodImage(context: Context, imageUri: Uri, provider: Provider = Provider.OPENAI): CalorieEstimate =
+        withContext(Dispatchers.IO) {
+            val base64 = loadBitmapBase64(context.contentResolver, imageUri)
+            analyzeFoodBase64(base64, provider)
+        }
+
+    suspend fun analyzeFoodBitmap(bitmap: Bitmap, provider: Provider = Provider.OPENAI): CalorieEstimate =
+        withContext(Dispatchers.IO) {
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+            val base64 = Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+            analyzeFoodBase64(base64, provider)
+        }
+
+    private suspend fun analyzeFoodBase64(base64: String, provider: Provider): CalorieEstimate {
         val raw = when (provider) {
             Provider.OPENAI -> {
                 val content = JSONArray().apply {
@@ -76,7 +89,7 @@ object AiGateway {
             "niedrig" in text.lowercase() || "unsicher" in text.lowercase() -> "niedrig"
             else -> "mittel"
         }
-        CalorieEstimate(kcal, confidence, text)
+        return CalorieEstimate(kcal, confidence, text)
     }
 
     // --- OpenAI ---

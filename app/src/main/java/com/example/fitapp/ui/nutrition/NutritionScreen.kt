@@ -8,7 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.fitapp.ai.AiGateway
+import com.example.fitapp.ai.AiProvider
 import com.example.fitapp.ai.UiRecipe
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.RecipeEntity
@@ -16,7 +16,7 @@ import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.launch
 
 @Composable
-fun NutritionScreen() {
+fun NutritionScreen(provider: AiProvider) {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
     val scope = rememberCoroutineScope()
@@ -25,6 +25,7 @@ fun NutritionScreen() {
     var prompt by remember { mutableStateOf("10 Rezepte für Abnehmen, High-Protein, 500-700 kcal pro Portion") }
     var generating by remember { mutableStateOf(false) }
     var results by remember { mutableStateOf<List<UiRecipe>>(emptyList()) }
+    var error by remember { mutableStateOf<String?>(null) }
 
     val favorites by repo.favorites().collectAsState(initial = emptyList())
     val history by repo.history().collectAsState(initial = emptyList())
@@ -37,14 +38,18 @@ fun NutritionScreen() {
             }
         }
         when (tab) {
-            0 -> GenerateTab(prompt, { prompt = it }, generating, results, onGenerate = {
+            0 -> GenerateTab(prompt, { prompt = it }, generating, results, error, onGenerate = {
                 generating = true
                 scope.launch {
-                    try { results = repo.generateAndStore(prompt, AiGateway.Provider.OPENAI) }
-                    catch (_: Throwable) { results = emptyList() }
-                    finally { generating = false }
+                    try {
+                        results = repo.generateAndStore(prompt, provider)
+                        error = null
+                    } catch (e: Exception) {
+                        results = emptyList()
+                        error = e.message
+                    } finally { generating = false }
                 }
-            }, onFav = { id, fav -> scope.launch { repo.setFavorite(id, fav) } }, onToShopping = { id -> scope.launch { repo.addRecipeToShoppingList(id) } }, onLog = { r -> scope.launch { 
+            }, onFav = { id, fav -> scope.launch { repo.setFavorite(id, fav) } }, onToShopping = { id -> scope.launch { repo.addRecipeToShoppingList(id) } }, onLog = { r -> scope.launch {
                 repo.logIntake(r.calories ?: 0, "Rezept: ${'$'}{r.title}", "RECIPE", r.id)
                 repo.adjustDailyGoal(java.time.LocalDate.now())
             } })
@@ -61,6 +66,7 @@ private fun GenerateTab(
     onPromptChange: (String) -> Unit,
     generating: Boolean,
     results: List<UiRecipe>,
+    error: String?,
     onGenerate: () -> Unit,
     onFav: (String, Boolean) -> Unit,
     onToShopping: (String) -> Unit,
@@ -78,6 +84,7 @@ private fun GenerateTab(
                 Text(if (generating) "Generiere…" else "Rezepte generieren")
             }
         }
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
         LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp,16.dp,16.dp,96.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(results) { r ->
                 ElevatedCard {
