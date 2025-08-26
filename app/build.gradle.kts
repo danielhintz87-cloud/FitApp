@@ -17,9 +17,9 @@ android {
         versionName = "1.0"
 
         // Direct API key placeholders - edit these values directly
-        buildConfigField("String", "OPENAI_API_KEY", "\"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\"")
-        buildConfigField("String", "GEMINI_API_KEY", "\"AIzaSyBvqPCG17SaKJBRSghTpoEcs_EQfOfQVOs\"")
-        buildConfigField("String", "DEEPSEEK_API_KEY", "\"sk-06acf33d0fa2411cafeb7eace7b0fd83\"")
+        buildConfigField("String", "OPENAI_API_KEY", "\"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\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"AIzaSyDVx1Em9s5IcVm_9YVXKEn4Y7w7i5QqBrI\"")
+        buildConfigField("String", "DEEPSEEK_API_KEY", "\"sk-a41a78a9e4354bb98c2b5a23c56070d7\"")
 
         // Recommended base URLs
         buildConfigField("String", "OPENAI_BASE_URL", "\"https://api.openai.com\"")
