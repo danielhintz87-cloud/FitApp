@@ -17,7 +17,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
 
-enum class AiProvider { OpenAI, Gemini, DeepSeek, Claude }
+enum class AiProvider { Auto, OpenAI, Gemini, DeepSeek, Claude }
 
 data class PlanRequest(
     val goal: String,
@@ -97,6 +97,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 AiProvider.Gemini -> geminiVision(prompt, bitmap)
                 AiProvider.DeepSeek -> deepseekVision(prompt, bitmap)
                 AiProvider.Claude -> claudeVision(prompt, bitmap)
+                AiProvider.Auto -> error("Auto provider should not be passed to internal functions")
             }
             val took = System.currentTimeMillis() - started
             r.onSuccess {
@@ -115,6 +116,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 AiProvider.Gemini -> geminiText(prompt)
                 AiProvider.DeepSeek -> deepseekText(prompt)
                 AiProvider.Claude -> claudeChat(prompt)
+                AiProvider.Auto -> error("Auto provider should not be passed to internal functions")
             }
             val took = System.currentTimeMillis() - started
             result.onSuccess {
@@ -484,6 +486,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 AiProvider.Claude -> listOf(AiProvider.OpenAI, AiProvider.Gemini, AiProvider.DeepSeek)
                 AiProvider.Gemini -> listOf(AiProvider.OpenAI, AiProvider.Claude, AiProvider.DeepSeek)
                 AiProvider.DeepSeek -> listOf(AiProvider.OpenAI, AiProvider.Claude, AiProvider.Gemini)
+                AiProvider.Auto -> listOf(AiProvider.OpenAI, AiProvider.Claude, AiProvider.Gemini, AiProvider.DeepSeek)
             }
         }
     }

@@ -94,6 +94,7 @@ object AppAi {
             providers.add(AiProvider.Claude)
         }
         
+        // Note: Auto is not included in available providers as it's a selection method, not a provider
         return providers
     }
 }

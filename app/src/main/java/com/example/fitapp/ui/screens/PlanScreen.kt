@@ -83,7 +83,11 @@ fun PlanScreen(contentPadding: PaddingValues, provider: AiProvider) {
                             minutesPerSession = minutes.toIntOrNull() ?: 60,
                             equipment = equipment.split(",").map { it.trim() }
                         )
-                        val planContent = AppAi.plan(ctx, provider, req).getOrThrow()
+                        val planContent = if (provider == AiProvider.Auto) {
+                            AppAi.planWithOptimalProvider(ctx, req).getOrThrow()
+                        } else {
+                            AppAi.plan(ctx, provider, req).getOrThrow()
+                        }
                         
                         // Save the plan to database
                         val planId = repo.savePlan(

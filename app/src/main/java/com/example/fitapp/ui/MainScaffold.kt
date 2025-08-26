@@ -38,7 +38,7 @@ fun MainScaffold() {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showMenu by remember { mutableStateOf(false) }
-    var provider by remember { mutableStateOf(AiProvider.OpenAI) }
+    var provider by remember { mutableStateOf(AiProvider.Auto) }
 
     val destinations = listOf(
         Destination("plan", "Plan", Icons.Filled.Timeline),
@@ -78,6 +78,12 @@ fun MainScaffold() {
                         }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                             DropdownMenuItem(
+                                text = { Text("Auto (Optimal)") },
+                                onClick = { provider = AiProvider.Auto; showMenu = false },
+                                trailingIcon = { if (provider == AiProvider.Auto) Icon(Icons.Filled.Check, null) }
+                            )
+                            Divider()
+                            DropdownMenuItem(
                                 text = { Text("OpenAI") },
                                 onClick = { provider = AiProvider.OpenAI; showMenu = false },
                                 trailingIcon = { if (provider == AiProvider.OpenAI) Icon(Icons.Filled.Check, null) }
@@ -91,6 +97,11 @@ fun MainScaffold() {
                                 text = { Text("DeepSeek") },
                                 onClick = { provider = AiProvider.DeepSeek; showMenu = false },
                                 trailingIcon = { if (provider == AiProvider.DeepSeek) Icon(Icons.Filled.Check, null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Claude") },
+                                onClick = { provider = AiProvider.Claude; showMenu = false },
+                                trailingIcon = { if (provider == AiProvider.Claude) Icon(Icons.Filled.Check, null) }
                             )
                             Divider()
                             DropdownMenuItem(text = { Text("Food Scan") }, onClick = { showMenu = false; nav.navigate("foodscan") })

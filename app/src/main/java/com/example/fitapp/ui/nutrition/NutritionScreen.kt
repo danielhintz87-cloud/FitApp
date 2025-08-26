@@ -42,7 +42,11 @@ fun NutritionScreen(provider: AiProvider) {
                 generating = true
                 scope.launch {
                     try {
-                        results = repo.generateAndStore(ctx, prompt, provider)
+                        results = if (provider == AiProvider.Auto) {
+                            repo.generateAndStoreWithOptimalProvider(ctx, prompt)
+                        } else {
+                            repo.generateAndStore(ctx, prompt, provider)
+                        }
                         error = null
                     } catch (e: Exception) {
                         results = emptyList()

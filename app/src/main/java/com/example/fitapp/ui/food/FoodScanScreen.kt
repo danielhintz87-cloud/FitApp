@@ -125,8 +125,20 @@ fun FoodScanScreen(
                     scope.launch {
                         try {
                             estimate = when {
-                                captured != null -> repo.analyzeFoodBitmap(ctx, captured!!, provider)
-                                picked != null -> repo.analyzeFoodImage(ctx, picked!!, provider)
+                                captured != null -> {
+                                    if (provider == AiProvider.Auto) {
+                                        repo.analyzeFoodBitmapWithOptimalProvider(ctx, captured!!)
+                                    } else {
+                                        repo.analyzeFoodBitmap(ctx, captured!!, provider)
+                                    }
+                                }
+                                picked != null -> {
+                                    if (provider == AiProvider.Auto) {
+                                        repo.analyzeFoodImageWithOptimalProvider(ctx, picked!!)
+                                    } else {
+                                        repo.analyzeFoodImage(ctx, picked!!, provider)
+                                    }
+                                }
                                 else -> null
                             }
                         } catch (e: Exception) {

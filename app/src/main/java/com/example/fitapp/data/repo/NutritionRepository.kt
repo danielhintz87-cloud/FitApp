@@ -5,7 +5,10 @@ import android.net.Uri
 import android.graphics.Bitmap
 import com.example.fitapp.ai.AiGateway
 import com.example.fitapp.ai.AiProvider
+import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.CalorieEstimate
+import com.example.fitapp.ai.CaloriesEstimate
+import com.example.fitapp.ai.RecipeRequest
 import com.example.fitapp.ai.UiRecipe
 import com.example.fitapp.data.db.*
 import kotlinx.coroutines.flow.Flow
@@ -33,6 +36,35 @@ class NutritionRepository(private val db: AppDatabase) {
         return list
     }
 
+    /**
+     * Generate recipes using automatic provider selection
+     */
+    suspend fun generateAndStoreWithOptimalProvider(context: Context, prompt: String): List<UiRecipe> {
+        val req = RecipeRequest(preferences = prompt, diet = "")
+        val result = AppAi.recipesWithOptimalProvider(context, req)
+        
+        return if (result.isSuccess) {
+            // Parse the result similar to AiGateway.parseMarkdownRecipes
+            val content = result.getOrThrow()
+            val recipes = parseRecipesFromMarkdown(content)
+            
+            recipes.forEach { r ->
+                db.recipeDao().upsertAndAddToHistory(
+                    RecipeEntity(
+                        id = r.id,
+                        title = r.title,
+                        markdown = r.markdown,
+                        calories = r.calories,
+                        imageUrl = r.imageUrl
+                    )
+                )
+            }
+            recipes
+        } else {
+            throw result.exceptionOrNull() ?: Exception("Failed to generate recipes")
+        }
+    }
+
     suspend fun setFavorite(recipeId: String, fav: Boolean) {
         if (fav) db.recipeDao().addFavorite(RecipeFavoriteEntity(recipeId))
         else db.recipeDao().removeFavorite(recipeId)
@@ -53,6 +85,38 @@ class NutritionRepository(private val db: AppDatabase) {
 
     suspend fun analyzeFoodBitmap(context: Context, bitmap: Bitmap, provider: AiProvider): CalorieEstimate {
         return AiGateway.analyzeFoodBitmap(context, bitmap, provider.toGateway())
+    }
+
+    /**
+     * Analyze food image using automatic provider selection
+     */
+    suspend fun analyzeFoodImageWithOptimalProvider(ctx: Context, uri: Uri): CalorieEstimate {
+        // Convert URI to bitmap first to use the optimized calorie estimation
+        val bitmap = loadBitmapFromUri(ctx, uri)
+        return analyzeFoodBitmapWithOptimalProvider(ctx, bitmap)
+    }
+
+    /**
+     * Analyze food bitmap using automatic provider selection
+     */
+    suspend fun analyzeFoodBitmapWithOptimalProvider(context: Context, bitmap: Bitmap): CalorieEstimate {
+        val result = AppAi.caloriesWithOptimalProvider(context, bitmap)
+        
+        return if (result.isSuccess) {
+            // Convert CaloriesEstimate (from AiCore) to CalorieEstimate (from AiGateway)
+            val estimate = result.getOrThrow()
+            CalorieEstimate(
+                kcal = estimate.kcal,
+                confidence = when {
+                    estimate.confidence >= 80 -> "hoch"
+                    estimate.confidence >= 50 -> "mittel"
+                    else -> "niedrig"
+                },
+                details = estimate.text
+            )
+        } else {
+            throw result.exceptionOrNull() ?: Exception("Failed to analyze food image")
+        }
     }
 
     suspend fun logIntake(kcal: Int, label: String, source: String, refId: String? = null) {
@@ -116,6 +180,33 @@ class NutritionRepository(private val db: AppDatabase) {
         AiProvider.Gemini -> AiGateway.Provider.GEMINI
         AiProvider.DeepSeek -> AiGateway.Provider.DEEPSEEK
         AiProvider.Claude -> AiGateway.Provider.CLAUDE
+        AiProvider.Auto -> AiGateway.Provider.OPENAI // Default fallback for legacy compatibility
         else -> AiGateway.Provider.OPENAI
+    }
+
+    /**
+     * Parse recipes from markdown content (similar to AiGateway.parseMarkdownRecipes)
+     */
+    private fun parseRecipesFromMarkdown(content: String): List<UiRecipe> {
+        val blocks = content.split(Regex("(?=^## )", RegexOption.MULTILINE)).mapIndexed { idx, block ->
+            if (idx == 0 && block.startsWith("## ")) block.removePrefix("## ") else block
+        }.filter { it.isNotBlank() }
+        
+        return blocks.map { raw ->
+            val title = raw.lineSequence().firstOrNull()?.trim() ?: "Rezept"
+            val kcal = Regex("""Kalorien:\s*(\d{2,5})\s*kcal""", RegexOption.IGNORE_CASE)
+                .find(raw)?.groupValues?.get(1)?.toIntOrNull()
+            UiRecipe(title = title, markdown = "## $raw".trim(), calories = kcal)
+        }
+    }
+
+    /**
+     * Load bitmap from URI
+     */
+    private suspend fun loadBitmapFromUri(context: Context, uri: Uri): Bitmap {
+        // Simple implementation - in production you might want more robust error handling
+        val inputStream = context.contentResolver.openInputStream(uri)
+        return android.graphics.BitmapFactory.decodeStream(inputStream)
+            ?: throw IllegalArgumentException("Unable to decode image from URI")
     }
 }
