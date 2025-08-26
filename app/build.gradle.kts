@@ -25,9 +25,14 @@ android {
         buildConfigField("String", "GEMINI_BASE_URL", "\"${project.findProperty("GEMINI_BASE_URL") ?: "https://generativelanguage.googleapis.com"}\"")
         buildConfigField("String", "DEEPSEEK_BASE_URL", "\"${project.findProperty("DEEPSEEK_BASE_URL") ?: "https://api.deepseek.com"}\"")
 
-        buildConfigField("String", "OPENAI_MODEL", "\"${project.findProperty("OPENAI_MODEL") ?: "gpt-4o-mini"}\"")
+        buildConfigField("String", "OPENAI_MODEL", "\"${project.findProperty("OPENAI_MODEL") ?: "gpt-4o"}\"")
         buildConfigField("String", "GEMINI_MODEL", "\"${project.findProperty("GEMINI_MODEL") ?: "gemini-1.5-pro"}\"")
         buildConfigField("String", "DEEPSEEK_MODEL", "\"${project.findProperty("DEEPSEEK_MODEL") ?: "deepseek-chat"}\"")
+        
+        // Claude configuration
+        buildConfigField("String", "CLAUDE_API_KEY", "\"${project.findProperty("CLAUDE_API_KEY") ?: ""}\"")
+        buildConfigField("String", "CLAUDE_BASE_URL", "\"${project.findProperty("CLAUDE_BASE_URL") ?: "https://api.anthropic.com"}\"")
+        buildConfigField("String", "CLAUDE_MODEL", "\"${project.findProperty("CLAUDE_MODEL") ?: "claude-3-5-sonnet-20241022"}\"")
     }
 
     buildFeatures { 

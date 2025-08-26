@@ -13,6 +13,7 @@ object ApiKeys {
     private const val KEY_OPENAI = "openai_api_key"
     private const val KEY_GEMINI = "gemini_api_key"
     private const val KEY_DEEPSEEK = "deepseek_api_key"
+    private const val KEY_CLAUDE = "claude_api_key"
 
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -30,6 +31,10 @@ object ApiKeys {
         getPrefs(context).edit().putString(KEY_DEEPSEEK, key).apply()
     }
 
+    fun saveClaudeKey(context: Context, key: String) {
+        getPrefs(context).edit().putString(KEY_CLAUDE, key).apply()
+    }
+
     fun getOpenAiKey(context: Context): String {
         val stored = getPrefs(context).getString(KEY_OPENAI, "")
         return if (stored.isNullOrBlank()) BuildConfig.OPENAI_API_KEY else stored
@@ -45,6 +50,11 @@ object ApiKeys {
         return if (stored.isNullOrBlank()) BuildConfig.DEEPSEEK_API_KEY else stored
     }
 
+    fun getClaudeKey(context: Context): String {
+        val stored = getPrefs(context).getString(KEY_CLAUDE, "")
+        return if (stored.isNullOrBlank()) BuildConfig.CLAUDE_API_KEY else stored
+    }
+
     fun getStoredOpenAiKey(context: Context): String {
         return getPrefs(context).getString(KEY_OPENAI, "") ?: ""
     }
@@ -55,5 +65,9 @@ object ApiKeys {
 
     fun getStoredDeepSeekKey(context: Context): String {
         return getPrefs(context).getString(KEY_DEEPSEEK, "") ?: ""
+    }
+
+    fun getStoredClaudeKey(context: Context): String {
+        return getPrefs(context).getString(KEY_CLAUDE, "") ?: ""
     }
 }

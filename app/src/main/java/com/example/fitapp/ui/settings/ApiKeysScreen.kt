@@ -21,6 +21,7 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
     var openAiKey by remember { mutableStateOf(ApiKeys.getStoredOpenAiKey(context)) }
     var geminiKey by remember { mutableStateOf(ApiKeys.getStoredGeminiKey(context)) }
     var deepSeekKey by remember { mutableStateOf(ApiKeys.getStoredDeepSeekKey(context)) }
+    var claudeKey by remember { mutableStateOf(ApiKeys.getStoredClaudeKey(context)) }
     
     var showPasswords by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(false) }
@@ -82,6 +83,18 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
             supportingText = { Text("Für DeepSeek AI Features") }
         )
 
+        // Claude Key
+        OutlinedTextField(
+            value = claudeKey,
+            onValueChange = { claudeKey = it; saved = false },
+            label = { Text("Claude API Key") },
+            placeholder = { Text("sk-ant-...") },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = if (showPasswords) VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            supportingText = { Text("Für Claude 3.5 Sonnet Features") }
+        )
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -98,6 +111,7 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
                     ApiKeys.saveOpenAiKey(context, openAiKey.trim())
                     ApiKeys.saveGeminiKey(context, geminiKey.trim())
                     ApiKeys.saveDeepSeekKey(context, deepSeekKey.trim())
+                    ApiKeys.saveClaudeKey(context, claudeKey.trim())
                     saved = true
                 },
                 modifier = Modifier.weight(1f)

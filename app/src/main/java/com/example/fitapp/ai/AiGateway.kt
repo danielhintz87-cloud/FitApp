@@ -38,27 +38,42 @@ data class CalorieEstimate(
 )
 
 object AiGateway {
-    enum class Provider { OPENAI, GEMINI, DEEPSEEK }
+    enum class Provider { OPENAI, GEMINI, DEEPSEEK, CLAUDE }
 
     private val http = OkHttpClient()
 
     suspend fun generateRecipes(context: Context, prompt: String, provider: Provider = Provider.OPENAI): List<UiRecipe> =
         withContext(Dispatchers.IO) {
+            val enhancedPrompt = "Erstelle 10 **nutritionsoptimierte Rezepte** als präzise Markdown-Liste für: $prompt\n\n" +
+                "**Anforderungen pro Rezept:**\n" +
+                "- Titel (## Format)\n" +
+                "- Zutatenliste mit exakten Gramm-Angaben (nicht 'eine Tasse' sondern '150g')\n" +
+                "- Schritt-für-Schritt Zubereitung (nummeriert)\n" +
+                "- **Präzise Nährwerte:** Kalorien, Protein, Kohlenhydrate, Fett (jeweils in g), Ballaststoffe\n" +
+                "- Portionsgröße und Anzahl Portionen\n" +
+                "- Zubereitungszeit & Schwierigkeitsgrad\n\n" +
+                "**Kalkulationsbasis:** Verwende USDA-Nährwertdatenbank-Standards für genaue Berechnungen."
+            
             val text = when (provider) {
                 Provider.OPENAI -> openAiChat(
                     context,
-                    system = "Du bist ein erfahrener Koch und Ernährungscoach. Antworte IMMER als Markdown mit 10 Rezepten. Pro Rezept: Überschrift '## Titel', dann Zutatenliste (Bullet Points), Zubereitungsschritte (nummeriert), grobe Kalorienzahl 'Kalorien: XYZ kcal'.",
-                    user = prompt
+                    system = "Du bist ein erfahrener Koch und zertifizierter Ernährungscoach. Antworte IMMER als präzises Markdown mit exakten Nährwertangaben.",
+                    user = enhancedPrompt
                 )
                 Provider.GEMINI -> geminiText(
                     context,
-                    system = "Du bist ein erfahrener Koch und Ernährungscoach.",
-                    user = "Erzeuge 10 passende Rezepte als Markdown wie beschrieben: $prompt"
+                    system = "Du bist ein erfahrener Koch und zertifizierter Ernährungscoach.",
+                    user = enhancedPrompt
                 )
                 Provider.DEEPSEEK -> deepseekChat(
                     context,
-                    system = "Du bist ein erfahrener Koch und Ernährungscoach.",
-                    user = "Erzeuge 10 passende Rezepte als Markdown wie beschrieben: $prompt"
+                    system = "Du bist ein erfahrener Koch und zertifizierter Ernährungscoach.",
+                    user = enhancedPrompt
+                )
+                Provider.CLAUDE -> claudeChat(
+                    context,
+                    system = "Du bist ein erfahrener Koch und zertifizierter Ernährungscoach.",
+                    user = enhancedPrompt
                 )
             }
             parseMarkdownRecipes(text)
@@ -79,6 +94,17 @@ object AiGateway {
         }
 
     private suspend fun analyzeFoodBase64(context: Context, base64: String, provider: Provider): CalorieEstimate {
+        val enhancedPrompt = "Analysiere das Bild und schätze präzise die Kalorien des gezeigten Essens.\n\n" +
+            "**Analyseschritte:**\n" +
+            "1. Identifiziere alle sichtbaren Lebensmittel/Getränke\n" +
+            "2. Schätze Portionsgrößen anhand von Referenzobjekten (Teller ≈ 25cm, Gabel ≈ 20cm, Hand ≈ 18cm)\n" +
+            "3. Berücksichtige Zubereitungsart (frittiert +30%, gedämpft -20%)\n" +
+            "4. Kalkuliere Gesamtkalorien mit USDA-Nährwertstandards\n\n" +
+            "**Antwortformat:**\n" +
+            "Schätzung: <Zahl> kcal\n" +
+            "Begründung: [Lebensmittel] ca. [Gramm]g = [kcal]kcal, [weitere Komponenten]\n" +
+            "Unsicherheitsfaktoren: [versteckte Fette, Portionsgröße, etc.]"
+        
         val text = when (provider) {
             Provider.OPENAI -> {
                 val content = JSONArray().apply {
@@ -86,7 +112,7 @@ object AiGateway {
                         JSONObject(
                             mapOf(
                                 "type" to "text",
-                                "text" to "Schätze Kalorien des Essens auf dem Foto. Antworte kurz: 'Schätzung: <ZAHL> kcal'. Nenne zusätzlich eine kurze Begründung und Unsicherheit."
+                                "text" to enhancedPrompt
                             )
                         )
                     )
@@ -103,7 +129,7 @@ object AiGateway {
                 extractContentText(raw)
             }
             Provider.GEMINI -> {
-                val raw = geminiVision(context, base64, "Schätze Kalorien des Essens. Formatiere: Schätzung: <ZAHL> kcal. Begründung + Unsicherheit.")
+                val raw = geminiVision(context, base64, enhancedPrompt)
                 extractContentText(raw)
             }
             Provider.DEEPSEEK -> deepseekChat(
@@ -111,6 +137,10 @@ object AiGateway {
                 system = "Du bist ein erfahrener Ernährungscoach.",
                 user = "Schätze grob die Kalorien des Essens auf einem Foto. Hinweis: DeepSeek unterstützt eventuell keine Bildanalyse, schätze daher basierend auf allgemeinem Wissen.",
             )
+            Provider.CLAUDE -> {
+                val raw = claudeVision(context, base64, enhancedPrompt)
+                extractContentText(raw)
+            }
         }
         val kcal = Regex("""(\d{2,5})\s*kcal""", RegexOption.IGNORE_CASE)
             .find(text)
@@ -311,6 +341,89 @@ object AiGateway {
             val title = raw.lineSequence().firstOrNull()?.trim() ?: "Rezept"
             val kcal = Regex("""Kalorien:\s*(\d{2,5})\s*kcal""", RegexOption.IGNORE_CASE).find(raw)?.groupValues?.get(1)?.toIntOrNull()
             UiRecipe(title = title, markdown = "## $raw".trim(), calories = kcal)
+        }
+    }
+
+    // --- Claude ---
+
+    private fun claudeKey(context: Context) = ApiKeys.getClaudeKey(context)
+    private fun claudeModel() = BuildConfig.CLAUDE_MODEL.ifBlank { "claude-3-5-sonnet-20241022" }
+
+    @WorkerThread
+    private fun claudeChat(context: Context, system: String, user: String): String {
+        val apiKey = claudeKey(context)
+        if (apiKey.isBlank()) {
+            throw IllegalStateException("Claude API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+        }
+        
+        val body = JSONObject(mapOf(
+            "model" to claudeModel(),
+            "max_tokens" to 4000,
+            "messages" to JSONArray().put(
+                JSONObject(mapOf(
+                    "role" to "user",
+                    "content" to "$system\n\n$user"
+                ))
+            )
+        )).toString()
+        
+        val req = Request.Builder()
+            .url("${BuildConfig.CLAUDE_BASE_URL}/v1/messages")
+            .addHeader("x-api-key", apiKey)
+            .addHeader("anthropic-version", "2023-06-01")
+            .post(body.toRequestBody("application/json".toMediaType()))
+            .build()
+        
+        http.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) {
+                if (resp.code == 401) throw IllegalStateException("Claude 401: API-Schlüssel ungültig oder fehlt")
+                else throw IllegalStateException("Claude HTTP ${resp.code}: ${resp.body?.string()}")
+            }
+            val json = JSONObject(resp.body!!.string())
+            return json.getJSONArray("content").getJSONObject(0).getString("text")
+        }
+    }
+
+    @WorkerThread
+    private fun claudeVision(context: Context, base64: String, prompt: String): JSONObject {
+        val apiKey = claudeKey(context)
+        if (apiKey.isBlank()) {
+            throw IllegalStateException("Claude API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+        }
+        
+        val body = JSONObject(mapOf(
+            "model" to claudeModel(),
+            "max_tokens" to 4000,
+            "messages" to JSONArray().put(
+                JSONObject(mapOf(
+                    "role" to "user",
+                    "content" to JSONArray()
+                        .put(JSONObject(mapOf("type" to "text", "text" to prompt)))
+                        .put(JSONObject(mapOf(
+                            "type" to "image",
+                            "source" to JSONObject(mapOf(
+                                "type" to "base64",
+                                "media_type" to "image/jpeg",
+                                "data" to base64
+                            ))
+                        )))
+                ))
+            )
+        )).toString()
+        
+        val req = Request.Builder()
+            .url("${BuildConfig.CLAUDE_BASE_URL}/v1/messages")
+            .addHeader("x-api-key", apiKey)
+            .addHeader("anthropic-version", "2023-06-01")
+            .post(body.toRequestBody("application/json".toMediaType()))
+            .build()
+        
+        http.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) {
+                if (resp.code == 401) throw IllegalStateException("Claude 401: API-Schlüssel ungültig oder fehlt")
+                else throw IllegalStateException("Claude HTTP ${resp.code}: ${resp.body?.string()}")
+            }
+            return JSONObject(resp.body!!.string())
         }
     }
 }
