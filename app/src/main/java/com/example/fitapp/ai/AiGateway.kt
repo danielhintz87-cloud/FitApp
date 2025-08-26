@@ -67,6 +67,13 @@ object AiGateway {
             analyzeFoodBase64(base64, provider)
         }
 
+
+    suspend fun analyzeFoodImage(context: Context, imageUri: Uri, provider: Provider = Provider.OPENAI): CalorieEstimate =
+        withContext(Dispatchers.IO) {
+            val base64 = loadBitmapBase64(context.contentResolver, imageUri)
+            analyzeFoodBase64(base64, provider)
+        }
+
     suspend fun analyzeFoodBitmap(bitmap: Bitmap, provider: Provider = Provider.OPENAI): CalorieEstimate =
         withContext(Dispatchers.IO) {
             val stream = ByteArrayOutputStream()
@@ -76,7 +83,11 @@ object AiGateway {
         }
 
     private suspend fun analyzeFoodBase64(base64: String, provider: Provider): CalorieEstimate {
+
         val text = when (provider) {
+
+        val raw = when (provider) {
+
             Provider.OPENAI -> {
                 val content = JSONArray().apply {
                     put(

@@ -125,7 +125,9 @@ fun MainScaffold() {
                 composable("foodscan") {
                     FoodScanScreen(padding, provider) { nav.navigate("plan") }
                 }
-                composable("logs") { AiLogsScreen(padding) }
+
+                composable("foodscan") { FoodScanScreen(padding, provider) }
+
             }
         }
     }
