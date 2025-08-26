@@ -26,10 +26,10 @@ android {
         buildConfigField("String", "GEMINI_BASE_URL", "\"https://generativelanguage.googleapis.com\"")
         buildConfigField("String", "DEEPSEEK_BASE_URL", "\"https://api.deepseek.com\"")
 
-        // Default model configurations - Updated to latest free models
-        buildConfigField("String", "OPENAI_MODEL", "\"gpt-4o\"")
-        buildConfigField("String", "GEMINI_MODEL", "\"gemini-2.0-flash-exp\"")
-        buildConfigField("String", "DEEPSEEK_MODEL", "\"deepseek-v3\"")
+        // Default model configurations - Using stable free models
+        buildConfigField("String", "OPENAI_MODEL", "\"gpt-4o-mini\"")
+        buildConfigField("String", "GEMINI_MODEL", "\"gemini-1.5-flash\"")
+        buildConfigField("String", "DEEPSEEK_MODEL", "\"deepseek-chat\"")
         
 
     }

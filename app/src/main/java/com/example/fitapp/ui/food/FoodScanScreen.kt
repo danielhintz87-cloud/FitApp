@@ -36,8 +36,7 @@ import java.time.ZoneId
 @Composable
 fun FoodScanScreen(
     contentPadding: PaddingValues,
-    onLogged: () -> Unit = {},
-    onBackPressed: (() -> Unit)? = null
+    onLogged: () -> Unit = {}
 ) {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
@@ -71,31 +70,15 @@ fun FoodScanScreen(
         if (granted) camera.launch(null)
     }
 
-    Column(Modifier.fillMaxSize()) {
-        // Top App Bar - only show if onBackPressed is provided
-        onBackPressed?.let { backHandler ->
-            TopAppBar(
-                title = { Text("Food Scan") },
-                navigationIcon = {
-                    IconButton(onClick = backHandler) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück")
-                    }
-                }
-            )
-        }
-
-        Column(
-            modifier = Modifier
-                .padding(if (onBackPressed != null) PaddingValues(0.dp) else contentPadding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Only show title if no TopAppBar
-            if (onBackPressed == null) {
-                Text("Food Scan", style = MaterialTheme.typography.titleLarge)
-            }
+    Column(
+        modifier = Modifier
+            .padding(contentPadding)
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text("Food Scan", style = MaterialTheme.typography.titleLarge)
 
         // Daily Goal Setting
         Card {
@@ -537,6 +520,5 @@ fun FoodScanScreen(
                 }
             }
         )
-        }
     }
 }
