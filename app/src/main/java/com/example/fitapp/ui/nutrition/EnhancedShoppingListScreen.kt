@@ -45,21 +45,33 @@ fun EnhancedShoppingListScreen(padding: PaddingValues = PaddingValues(0.dp)) {
             // Process voice input with AI to extract shopping items
             scope.launch {
                 try {
-                    val prompt = "Analysiere folgenden gesprochenen Text und extrahiere Einkaufsliste-Items: '$spokenText'. " +
-                            "Gib eine Liste zurück im Format: 'Item1|Menge1, Item2|Menge2, ...' " +
-                            "Beispiel: 'Äpfel|2kg, Milch|1L, Brot|1 Stück'. " +
-                            "Wenn keine Menge genannt wird, lasse das Menge-Feld leer: 'Bananen|'"
+                    // Use the new shopping list parsing AI method
+                    val aiResponse = AppAi.parseShoppingListWithOptimalProvider(ctx, spokenText).getOrNull()
                     
-                    val aiResponse = AppAi.planWithOptimalProvider(ctx, com.example.fitapp.ai.PlanRequest(
-                        goal = prompt,
-                        weeks = 1,
-                        sessionsPerWeek = 1,
-                        minutesPerSession = 5
-                    )).getOrNull()
-                    
-                    // Simple parsing - in real implementation, would use proper AI text processing
-                    if (aiResponse != null && spokenText.isNotBlank()) {
-                        // For now, simple parsing of the spoken text
+                    if (aiResponse != null && aiResponse.isNotBlank()) {
+                        // Parse the AI response format: "Item1|Menge1\nItem2|Menge2\n..."
+                        val lines = aiResponse.split("\n").filter { it.isNotBlank() }
+                        lines.forEach { line ->
+                            val parts = line.split("|")
+                            if (parts.isNotEmpty()) {
+                                val itemName = parts[0].trim()
+                                val quantity = if (parts.size > 1 && parts[1].isNotBlank()) parts[1].trim() else null
+                                
+                                if (itemName.isNotBlank()) {
+                                    val category = categorizeItem(itemName)
+                                    db.shoppingDao().insert(
+                                        ShoppingItemEntity(
+                                            name = itemName,
+                                            quantity = quantity,
+                                            unit = null,
+                                            category = category
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        // If AI parsing fails, fall back to simple parsing
                         val items = spokenText.split(",", "und", "&").map { it.trim() }
                         items.forEach { item ->
                             if (item.isNotBlank()) {

@@ -22,6 +22,9 @@ object AppAi {
      */
     suspend fun planWithOptimalProvider(context: Context, req: PlanRequest): Result<String> {
         val availableProviders = getAvailableProviders(context)
+        if (availableProviders.isEmpty()) {
+            return Result.failure(IllegalStateException("Keine AI-Provider konfiguriert. Bitte unter Einstellungen → API-Schlüssel mindestens einen API-Schlüssel eingeben."))
+        }
         val optimal = AiCore.selectOptimalProvider(TaskType.TRAINING_PLAN, availableProviders)
         
         return tryWithFallback(context, optimal, TaskType.TRAINING_PLAN) { provider ->
@@ -34,6 +37,9 @@ object AppAi {
      */
     suspend fun recipesWithOptimalProvider(context: Context, req: RecipeRequest): Result<String> {
         val availableProviders = getAvailableProviders(context)
+        if (availableProviders.isEmpty()) {
+            return Result.failure(IllegalStateException("Keine AI-Provider konfiguriert. Bitte unter Einstellungen → API-Schlüssel mindestens einen API-Schlüssel eingeben."))
+        }
         val optimal = AiCore.selectOptimalProvider(TaskType.RECIPE_GENERATION, availableProviders)
         
         return tryWithFallback(context, optimal, TaskType.RECIPE_GENERATION) { provider ->
@@ -46,10 +52,28 @@ object AppAi {
      */
     suspend fun caloriesWithOptimalProvider(context: Context, bitmap: Bitmap, note: String = ""): Result<CaloriesEstimate> {
         val availableProviders = getAvailableProviders(context)
+        if (availableProviders.isEmpty()) {
+            return Result.failure(IllegalStateException("Keine AI-Provider konfiguriert. Bitte unter Einstellungen → API-Schlüssel mindestens einen API-Schlüssel eingeben."))
+        }
         val optimal = AiCore.selectOptimalProvider(TaskType.CALORIE_ESTIMATION, availableProviders)
         
         return tryWithFallback(context, optimal, TaskType.CALORIE_ESTIMATION) { provider ->
             core(context).estimateCaloriesFromPhoto(provider, bitmap, note)
+        }
+    }
+
+    /**
+     * Automatically selects the best provider for shopping list parsing with fallback
+     */
+    suspend fun parseShoppingListWithOptimalProvider(context: Context, spokenText: String): Result<String> {
+        val availableProviders = getAvailableProviders(context)
+        if (availableProviders.isEmpty()) {
+            return Result.failure(IllegalStateException("Keine AI-Provider konfiguriert. Bitte unter Einstellungen → API-Schlüssel mindestens einen API-Schlüssel eingeben."))
+        }
+        val optimal = AiCore.selectOptimalProvider(TaskType.SHOPPING_LIST_PARSING, availableProviders)
+        
+        return tryWithFallback(context, optimal, TaskType.SHOPPING_LIST_PARSING) { provider ->
+            core(context).parseShoppingList(provider, spokenText)
         }
     }
 
