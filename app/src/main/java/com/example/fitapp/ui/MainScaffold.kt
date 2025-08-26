@@ -4,16 +4,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -22,7 +25,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.fitapp.ui.AiLogsScreen
 import com.example.fitapp.ui.food.FoodScanScreen
+import com.example.fitapp.ui.nutrition.CookingModeScreen
+import com.example.fitapp.ui.nutrition.EnhancedShoppingListScreen
 import com.example.fitapp.ui.nutrition.NutritionScreen
+import com.example.fitapp.ui.nutrition.SavedRecipesScreen
 import com.example.fitapp.ui.screens.PlanScreen
 import com.example.fitapp.ui.screens.ProgressScreen
 import com.example.fitapp.ui.screens.TodayScreen
@@ -57,6 +63,8 @@ fun MainScaffold() {
                 NavigationDrawerItem(label = { Text("Heute") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("today") })
                 NavigationDrawerItem(label = { Text("Rezepte") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("nutrition") })
                 NavigationDrawerItem(label = { Text("Progress") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("progress") })
+                NavigationDrawerItem(label = { Text("Gespeicherte Rezepte") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("saved_recipes") })
+                NavigationDrawerItem(label = { Text("Einkaufsliste") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("shopping_list") })
                 NavigationDrawerItem(label = { Text("Food Scan") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("foodscan") })
                 NavigationDrawerItem(label = { Text("AI-Logs") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("logs") })
                 NavigationDrawerItem(label = { Text("API-Schlüssel") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("apikeys") })
@@ -81,6 +89,26 @@ fun MainScaffold() {
                             expanded = showOverflowMenu,
                             onDismissRequest = { showOverflowMenu = false }
                         ) {
+                            DropdownMenuItem(
+                                text = { Text("Gespeicherte Rezepte") },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    nav.navigate("saved_recipes")
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Bookmark, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Einkaufsliste") },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    nav.navigate("shopping_list")
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.ShoppingCart, contentDescription = null)
+                                }
+                            )
                             DropdownMenuItem(
                                 text = { Text("Essen fotografieren") },
                                 onClick = {
@@ -144,8 +172,63 @@ fun MainScaffold() {
                         onBackPressed = { nav.popBackStack() }
                     )
                 }
+                composable("saved_recipes") {
+                    SavedRecipesScreen(
+                        onBackPressed = { nav.popBackStack() },
+                        onRecipeClick = { recipe ->
+                            // Navigate to recipe details or cooking mode
+                            nav.navigate("cooking_mode/${recipe.id}")
+                        },
+                        onCookRecipe = { recipe ->
+                            nav.navigate("cooking_mode/${recipe.id}")
+                        }
+                    )
+                }
+                composable("cooking_mode/{recipeId}") { backStackEntry ->
+                    val recipeId = backStackEntry.arguments?.getString("recipeId") ?: ""
+                    // We need to get the recipe from the database
+                    CookingModeFromId(
+                        recipeId = recipeId,
+                        onBackPressed = { nav.popBackStack() },
+                        onFinishCooking = { nav.popBackStack() }
+                    )
+                }
+                composable("shopping_list") {
+                    EnhancedShoppingListScreen()
+                }
 
             }
+        }
+    }
+}
+
+@Composable
+private fun CookingModeFromId(
+    recipeId: String,
+    onBackPressed: () -> Unit,
+    onFinishCooking: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val db = remember { com.example.fitapp.data.db.AppDatabase.get(ctx) }
+    var recipe by remember { mutableStateOf<com.example.fitapp.data.db.SavedRecipeEntity?>(null) }
+    
+    LaunchedEffect(recipeId) {
+        recipe = db.savedRecipeDao().getRecipe(recipeId)
+    }
+    
+    recipe?.let {
+        CookingModeScreen(
+            recipe = it,
+            onBackPressed = onBackPressed,
+            onFinishCooking = onFinishCooking
+        )
+    } ?: run {
+        // Loading or error state
+        androidx.compose.foundation.layout.Box(
+            modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+            contentAlignment = androidx.compose.ui.Alignment.Center
+        ) {
+            androidx.compose.material3.CircularProgressIndicator()
         }
     }
 }

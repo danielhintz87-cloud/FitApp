@@ -75,6 +75,8 @@ data class ShoppingItemEntity(
     val quantity: String?,
     val unit: String?,
     val checked: Boolean = false,
+    val category: String? = null, // "Obst & Gemüse", "Fleisch & Fisch", etc.
+    val fromRecipeId: String? = null, // reference to recipe if added from recipe
     val createdAt: Long = System.currentTimeMillis() / 1000
 )
 
@@ -89,5 +91,28 @@ data class PlanEntity(
     val minutesPerSession: Int,
     val equipment: String, // JSON array as string
     val createdAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(tableName = "saved_recipes")
+data class SavedRecipeEntity(
+    @PrimaryKey val id: String,
+    val title: String,
+    val markdown: String,
+    val calories: Int?,
+    val imageUrl: String?,
+    val ingredients: String, // JSON array as string
+    val tags: String, // comma-separated tags like "vegetarian,high-protein,low-carb"
+    val prepTime: Int?, // minutes
+    val difficulty: String?, // "easy", "medium", "hard"
+    val servings: Int?,
+    val isFavorite: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis() / 1000,
+    val lastCookedAt: Long? = null
+)
+
+@Entity(tableName = "shopping_list_categories")
+data class ShoppingCategoryEntity(
+    @PrimaryKey val name: String,
+    val order: Int // for supermarket sorting
 )
 

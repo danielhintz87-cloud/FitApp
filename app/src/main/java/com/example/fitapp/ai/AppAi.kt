@@ -90,9 +90,6 @@ object AppAi {
         if (ApiKeys.getDeepSeekKey(context).isNotBlank()) {
             providers.add(AiProvider.DeepSeek)
         }
-        if (ApiKeys.getClaudeKey(context).isNotBlank()) {
-            providers.add(AiProvider.Claude)
-        }
         
         return providers
     }
