@@ -11,6 +11,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,10 +32,12 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FoodScanScreen(
     contentPadding: PaddingValues,
-    onLogged: () -> Unit
+    onLogged: () -> Unit = {},
+    onBackPressed: (() -> Unit)? = null
 ) {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
@@ -67,15 +71,31 @@ fun FoodScanScreen(
         if (granted) camera.launch(null)
     }
 
-    Column(
-        modifier = Modifier
-            .padding(contentPadding)
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text("Food Scan", style = MaterialTheme.typography.titleLarge)
+    Column(Modifier.fillMaxSize()) {
+        // Top App Bar - only show if onBackPressed is provided
+        onBackPressed?.let { backHandler ->
+            TopAppBar(
+                title = { Text("Food Scan") },
+                navigationIcon = {
+                    IconButton(onClick = backHandler) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück")
+                    }
+                }
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .padding(if (onBackPressed != null) PaddingValues(0.dp) else contentPadding)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Only show title if no TopAppBar
+            if (onBackPressed == null) {
+                Text("Food Scan", style = MaterialTheme.typography.titleLarge)
+            }
 
         // Daily Goal Setting
         Card {
@@ -105,41 +125,43 @@ fun FoodScanScreen(
             }
         }
 
-        // Custom prompt input section
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(Modifier.padding(16.dp)) {
-                Text(
-                    "Zusätzliche Informationen für die AI",
-                    style = MaterialTheme.typography.titleSmall
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = customPrompt,
-                    onValueChange = { customPrompt = it },
-                    label = { Text("Was ist auf dem Bild? (optional)") },
-                    placeholder = { Text("z.B. 'Ein Apfel mit 200g' oder 'Pasta mit Tomatensauce'") },
-                    modifier = Modifier.fillMaxWidth(),
-                    maxLines = 3
-                )
-                if (customPrompt.isNotBlank()) {
+        // Custom prompt input section - only show after image is selected
+        if (picked != null || captured != null) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text(
+                        "Zusätzliche Informationen für die AI",
+                        style = MaterialTheme.typography.titleSmall
+                    )
                     Spacer(Modifier.height(8.dp))
-                    Row {
-                        OutlinedButton(
-                            onClick = { customPrompt = "" },
-                            modifier = Modifier.size(32.dp),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("×", style = MaterialTheme.typography.labelLarge)
+                    OutlinedTextField(
+                        value = customPrompt,
+                        onValueChange = { customPrompt = it },
+                        label = { Text("Was ist auf dem Bild? (optional)") },
+                        placeholder = { Text("z.B. 'Ein Apfel mit 200g' oder 'Pasta mit Tomatensauce'") },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3
+                    )
+                    if (customPrompt.isNotBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        Row {
+                            OutlinedButton(
+                                onClick = { customPrompt = "" },
+                                modifier = Modifier.size(32.dp),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text("×", style = MaterialTheme.typography.labelLarge)
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Diese Informationen helfen der AI bei einer genaueren Analyse",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Diese Informationen helfen der AI bei einer genaueren Analyse",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
             }
@@ -494,5 +516,6 @@ fun FoodScanScreen(
                 }
             }
         )
+        }
     }
 }

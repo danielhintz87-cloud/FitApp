@@ -149,7 +149,11 @@ fun MainScaffold() {
                 composable("nutrition") { NutritionScreen() }
                 composable("progress") { ProgressScreen(padding) }
                 composable("foodscan") {
-                    FoodScanScreen(padding) { nav.navigate("plan") }
+                    FoodScanScreen(
+                        contentPadding = padding,
+                        onLogged = { /* onLogged - could navigate back */ },
+                        onBackPressed = { nav.popBackStack() }
+                    )
                 }
                 composable("logs") {
                     AiLogsScreen(padding)
