@@ -20,6 +20,8 @@ import com.example.fitapp.data.db.SavedRecipeEntity
 import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import android.app.Activity
+import android.view.WindowManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,9 +47,15 @@ fun CookingModeScreen(
     
     // Keep screen on in cooking mode
     DisposableEffect(keepScreenOn) {
-        // This would require activity reference to set FLAG_KEEP_SCREEN_ON
-        // For now, just a placeholder
-        onDispose { }
+        val activity = ctx as? Activity
+        if (keepScreenOn) {
+            activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose { 
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -188,6 +196,7 @@ fun CookingModeScreen(
                                                 com.example.fitapp.data.db.ShoppingItemEntity(
                                                     name = ingredient,
                                                     quantity = null,
+                                                    unit = null,
                                                     category = category,
                                                     fromRecipeId = recipe.id
                                                 )
@@ -240,6 +249,7 @@ fun CookingModeScreen(
                                                     com.example.fitapp.data.db.ShoppingItemEntity(
                                                         name = ingredients[index],
                                                         quantity = null,
+                                                        unit = null,
                                                         category = category,
                                                         fromRecipeId = recipe.id
                                                     )

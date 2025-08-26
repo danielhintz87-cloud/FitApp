@@ -17,6 +17,8 @@ import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.PlanEntity
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import android.app.Activity
+import android.view.WindowManager
 
 data class ExerciseStep(
     val name: String,
@@ -46,6 +48,21 @@ fun TrainingExecutionScreen(
     var isResting by remember { mutableStateOf(false) }
     var restTimeRemaining by remember { mutableStateOf(0) }
     var guidedMode by remember { mutableStateOf(false) }
+    var keepScreenOn by remember { mutableStateOf(false) }
+    
+    // Keep screen on during training
+    DisposableEffect(keepScreenOn || isInTraining) {
+        val activity = ctx as? Activity
+        val shouldKeepOn = keepScreenOn || isInTraining
+        if (shouldKeepOn) {
+            activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose { 
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
     
     // Timer for rest periods
     LaunchedEffect(isResting, restTimeRemaining) {
@@ -80,12 +97,21 @@ fun TrainingExecutionScreen(
                 }
             },
             actions = {
-                IconButton(onClick = { guidedMode = !guidedMode }) {
-                    Icon(
-                        if (guidedMode) Icons.Filled.School else Icons.Filled.DirectionsRun,
-                        contentDescription = "Geführter Modus",
-                        tint = if (guidedMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                    )
+                Row {
+                    IconButton(onClick = { keepScreenOn = !keepScreenOn }) {
+                        Icon(
+                            if (keepScreenOn) Icons.Filled.ScreenLockPortrait else Icons.Filled.ScreenLockRotation,
+                            contentDescription = "Display an/aus",
+                            tint = if (keepScreenOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    IconButton(onClick = { guidedMode = !guidedMode }) {
+                        Icon(
+                            if (guidedMode) Icons.Filled.School else Icons.Filled.DirectionsRun,
+                            contentDescription = "Geführter Modus",
+                            tint = if (guidedMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
         )

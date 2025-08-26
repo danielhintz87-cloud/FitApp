@@ -68,6 +68,7 @@ fun EnhancedShoppingListScreen() {
                                     ShoppingItemEntity(
                                         name = item,
                                         quantity = null,
+                                        unit = null,
                                         category = category
                                     )
                                 )
@@ -82,6 +83,7 @@ fun EnhancedShoppingListScreen() {
                             ShoppingItemEntity(
                                 name = spokenText,
                                 quantity = null,
+                                unit = null,
                                 category = category
                             )
                         )
