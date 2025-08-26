@@ -80,11 +80,62 @@ interface ShoppingDao {
     @Query("DELETE FROM shopping_items WHERE id = :id")
     suspend fun delete(id: Long)
 
-    @Query("SELECT * FROM shopping_items ORDER BY createdAt DESC")
+    @Query("SELECT * FROM shopping_items ORDER BY category, name")
     fun itemsFlow(): Flow<List<ShoppingItemEntity>>
+    
+    @Query("SELECT * FROM shopping_items ORDER BY checked, createdAt DESC")
+    fun itemsFlowByDate(): Flow<List<ShoppingItemEntity>>
 
     @Query("UPDATE shopping_items SET checked = :checked WHERE id = :id")
     suspend fun setChecked(id: Long, checked: Boolean)
+    
+    @Query("DELETE FROM shopping_items WHERE checked = 1")
+    suspend fun deleteCheckedItems()
+}
+
+@Dao
+interface SavedRecipeDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(recipe: SavedRecipeEntity)
+
+    @Update
+    suspend fun update(recipe: SavedRecipeEntity)
+
+    @Query("DELETE FROM saved_recipes WHERE id = :id")
+    suspend fun delete(id: String)
+
+    @Query("SELECT * FROM saved_recipes ORDER BY createdAt DESC")
+    fun allRecipesFlow(): Flow<List<SavedRecipeEntity>>
+
+    @Query("SELECT * FROM saved_recipes WHERE isFavorite = 1 ORDER BY createdAt DESC")
+    fun favoriteRecipesFlow(): Flow<List<SavedRecipeEntity>>
+
+    @Query("SELECT * FROM saved_recipes WHERE tags LIKE '%' || :tag || '%' ORDER BY createdAt DESC")
+    fun recipesByTagFlow(tag: String): Flow<List<SavedRecipeEntity>>
+
+    @Query("SELECT * FROM saved_recipes WHERE title LIKE '%' || :query || '%' OR tags LIKE '%' || :query || '%' ORDER BY createdAt DESC")
+    fun searchRecipesFlow(query: String): Flow<List<SavedRecipeEntity>>
+
+    @Query("SELECT * FROM saved_recipes WHERE id = :id")
+    suspend fun getRecipe(id: String): SavedRecipeEntity?
+
+    @Query("UPDATE saved_recipes SET isFavorite = :favorite WHERE id = :id")
+    suspend fun setFavorite(id: String, favorite: Boolean)
+
+    @Query("UPDATE saved_recipes SET lastCookedAt = :timestamp WHERE id = :id")
+    suspend fun markAsCooked(id: String, timestamp: Long = System.currentTimeMillis() / 1000)
+}
+
+@Dao
+interface ShoppingCategoryDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(category: ShoppingCategoryEntity)
+
+    @Query("SELECT * FROM shopping_list_categories ORDER BY \"order\"")
+    fun categoriesFlow(): Flow<List<ShoppingCategoryEntity>>
+
+    @Query("SELECT * FROM shopping_list_categories ORDER BY \"order\"")
+    suspend fun getCategories(): List<ShoppingCategoryEntity>
 }
 
 @Dao

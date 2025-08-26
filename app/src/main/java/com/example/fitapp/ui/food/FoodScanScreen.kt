@@ -167,6 +167,18 @@ fun FoodScanScreen(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Schätzung: ${e.kcal} kcal (${e.confidence}%)", style = MaterialTheme.typography.titleMedium)
                     Text(e.text, style = MaterialTheme.typography.bodyMedium)
+                    
+                    // Show uncertainty warning if confidence is low
+                    if (e.confidence < 70) {
+                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                            Column(Modifier.padding(8.dp)) {
+                                Text("⚠️ Unsichere Schätzung", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onErrorContainer)
+                                Text("Die AI ist unsicher bei dieser Analyse. Bitte prüfen Sie die Kalorien und korrigieren Sie sie wenn nötig.", 
+                                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
+                            }
+                        }
+                    }
+                    
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = {
                             editedKcal = e.kcal.toString()
@@ -189,19 +201,34 @@ fun FoodScanScreen(
             onDismissRequest = { showConfirmDialog = false },
             title = { Text("Kalorien bestätigen") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Bitte bestätigen oder korrigieren Sie die Werte:")
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Bitte bestätigen oder korrigieren Sie die erkannten Werte:")
+                    
+                    // Show detected food description if available
+                    estimate?.let { e ->
+                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                            Column(Modifier.padding(8.dp)) {
+                                Text("Erkanntes Essen:", style = MaterialTheme.typography.labelMedium)
+                                Text(e.text.take(100) + if (e.text.length > 100) "..." else "", 
+                                     style = MaterialTheme.typography.bodySmall)
+                                Text("Vertrauen: ${e.confidence}%", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                    
                     OutlinedTextField(
                         value = editedKcal,
                         onValueChange = { editedKcal = it },
                         label = { Text("Kalorien") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        supportingText = { Text("Korrigieren Sie die Kalorienzahl falls nötig") }
                     )
                     OutlinedTextField(
                         value = editedLabel,
                         onValueChange = { editedLabel = it },
                         label = { Text("Bezeichnung") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        supportingText = { Text("Beschreibung für das Ernährungstagebuch") }
                     )
                 }
             },

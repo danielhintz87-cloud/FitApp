@@ -31,10 +31,7 @@ android {
         buildConfigField("String", "GEMINI_MODEL", "\"gemini-1.5-pro\"")
         buildConfigField("String", "DEEPSEEK_MODEL", "\"deepseek-chat\"")
         
-        // Claude configuration
-        buildConfigField("String", "CLAUDE_API_KEY", "\"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\"")
-        buildConfigField("String", "CLAUDE_BASE_URL", "\"https://api.anthropic.com\"")
-        buildConfigField("String", "CLAUDE_MODEL", "\"claude-3-5-sonnet-20241022\"")
+
     }
 
     buildFeatures { 

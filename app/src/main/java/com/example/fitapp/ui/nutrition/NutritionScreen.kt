@@ -1,16 +1,22 @@
 package com.example.fitapp.ui.nutrition
 
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.ai.UiRecipe
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.RecipeEntity
+import com.example.fitapp.data.db.SavedRecipeEntity
 import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.launch
 
@@ -54,7 +60,7 @@ fun NutritionScreen() {
             } })
             1 -> RecipeList("Favoriten", favorites) { id, fav -> scope.launch { repo.setFavorite(id, fav) } }
             2 -> RecipeList("Historie", history) { id, fav -> scope.launch { repo.setFavorite(id, fav) } }
-            3 -> ShoppingListScreen(repo)
+            3 -> SimpleShoppingListTab(repo)
         }
     }
 }
@@ -71,6 +77,9 @@ private fun GenerateTab(
     onToShopping: (String) -> Unit,
     onLog: (UiRecipe) -> Unit
 ) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    
     Column(Modifier.fillMaxSize()) {
         OutlinedTextField(
             value = prompt,
@@ -96,6 +105,15 @@ private fun GenerateTab(
                             OutlinedButton(onClick = { onToShopping(r.id) }) { Text("Zutaten → Einkaufsliste") }
                             Button(onClick = { onLog(r) }) { Text("In Tagesbilanz buchen") }
                             FilledTonalButton(onClick = { fav = !fav; onFav(r.id, fav) }) { Text(if (fav) "Favorit ✓" else "Als Favorit speichern") }
+                            OutlinedButton(
+                                onClick = { 
+                                    scope.launch {
+                                        saveToSavedRecipes(ctx, r)
+                                    }
+                                }
+                            ) { 
+                                Text("Dauerhaft speichern") 
+                            }
                         }
                     }
                 }
@@ -137,6 +155,151 @@ private fun RecipeList(title: String, items: List<RecipeEntity>, onFavClick: (St
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+suspend fun saveToSavedRecipes(context: Context, recipe: UiRecipe) {
+    val db = AppDatabase.get(context)
+    
+    // Parse recipe details for better categorization
+    val tags = mutableListOf<String>()
+    val markdown = recipe.markdown.lowercase()
+    
+    // Detect dietary tags
+    if (markdown.contains("vegetarisch") || markdown.contains("vegetarian")) tags.add("vegetarian")
+    if (markdown.contains("vegan")) tags.add("vegan")
+    if (markdown.contains("protein") || markdown.contains("eiweiß")) tags.add("high-protein")
+    if (markdown.contains("low-carb") || markdown.contains("kohlenhydratarm")) tags.add("low-carb")
+    if (markdown.contains("low-fat") || markdown.contains("fettarm")) tags.add("low-fat")
+    if (markdown.contains("glutenfrei") || markdown.contains("gluten-free")) tags.add("gluten-free")
+    
+    // Parse ingredients from markdown
+    val ingredients = extractIngredients(recipe.markdown)
+    
+    // Parse prep time and difficulty
+    val prepTime = extractPrepTime(recipe.markdown)
+    val difficulty = extractDifficulty(recipe.markdown)
+    val servings = extractServings(recipe.markdown)
+    
+    val savedRecipe = SavedRecipeEntity(
+        id = recipe.id,
+        title = recipe.title,
+        markdown = recipe.markdown,
+        calories = recipe.calories,
+        imageUrl = recipe.imageUrl,
+        ingredients = ingredients.joinToString(","),
+        tags = tags.joinToString(","),
+        prepTime = prepTime,
+        difficulty = difficulty,
+        servings = servings
+    )
+    
+    db.savedRecipeDao().insert(savedRecipe)
+}
+
+private fun extractIngredients(markdown: String): List<String> {
+    val ingredients = mutableListOf<String>()
+    val lines = markdown.lines()
+    var inIngredients = false
+    
+    for (line in lines) {
+        when {
+            line.contains("Zutaten", ignoreCase = true) || line.contains("Ingredients", ignoreCase = true) -> {
+                inIngredients = true
+            }
+            line.startsWith("##") && inIngredients -> {
+                break
+            }
+            inIngredients && (line.startsWith("- ") || line.startsWith("* ")) -> {
+                ingredients.add(line.substring(2).trim())
+            }
+        }
+    }
+    return ingredients
+}
+
+private fun extractPrepTime(markdown: String): Int? {
+    val timeRegex = Regex("""(\d+)\s*(min|minute|minuten)""", RegexOption.IGNORE_CASE)
+    return timeRegex.find(markdown)?.groupValues?.get(1)?.toIntOrNull()
+}
+
+private fun extractDifficulty(markdown: String): String? {
+    val difficultyRegex = Regex("""(einfach|leicht|mittel|schwer|schwierig|easy|medium|hard)""", RegexOption.IGNORE_CASE)
+    return difficultyRegex.find(markdown)?.value?.lowercase()
+}
+
+private fun extractServings(markdown: String): Int? {
+    val servingsRegex = Regex("""(\d+)\s*(portion|portionen|serving|servings)""", RegexOption.IGNORE_CASE)
+    return servingsRegex.find(markdown)?.groupValues?.get(1)?.toIntOrNull()
+}
+
+@Composable
+private fun SimpleShoppingListTab(repo: NutritionRepository) {
+    val items by repo.shoppingItems().collectAsState(initial = emptyList())
+    val scope = rememberCoroutineScope()
+    
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item { 
+            Text("Einkaufsliste", style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(8.dp))
+        }
+        
+        items(items) { item ->
+            Card {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = item.checked,
+                        onCheckedChange = { checked ->
+                            scope.launch {
+                                repo.setItemChecked(item.id, checked)
+                            }
+                        }
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = item.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            textDecoration = if (item.checked) TextDecoration.LineThrough else null
+                        )
+                        item.quantity?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                repo.deleteItem(item.id)
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Löschen")
+                    }
+                }
+            }
+        }
+        
+        if (items.isEmpty()) {
+            item {
+                Text(
+                    "Keine Artikel in der Einkaufsliste",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(32.dp)
+                )
             }
         }
     }

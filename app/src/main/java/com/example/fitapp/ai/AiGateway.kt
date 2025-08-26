@@ -38,7 +38,7 @@ data class CalorieEstimate(
 )
 
 object AiGateway {
-    enum class Provider { OPENAI, GEMINI, DEEPSEEK, CLAUDE }
+    enum class Provider { OPENAI, GEMINI, DEEPSEEK }
 
     private val http = OkHttpClient()
 
@@ -66,11 +66,6 @@ object AiGateway {
                     user = enhancedPrompt
                 )
                 Provider.DEEPSEEK -> deepseekChat(
-                    context,
-                    system = "Du bist ein erfahrener Koch und zertifizierter Ernährungscoach.",
-                    user = enhancedPrompt
-                )
-                Provider.CLAUDE -> claudeChat(
                     context,
                     system = "Du bist ein erfahrener Koch und zertifizierter Ernährungscoach.",
                     user = enhancedPrompt
@@ -137,10 +132,6 @@ object AiGateway {
                 system = "Du bist ein erfahrener Ernährungscoach.",
                 user = "Schätze grob die Kalorien des Essens auf einem Foto. Hinweis: DeepSeek unterstützt eventuell keine Bildanalyse, schätze daher basierend auf allgemeinem Wissen.",
             )
-            Provider.CLAUDE -> {
-                val raw = claudeVision(context, base64, enhancedPrompt)
-                extractContentText(raw)
-            }
         }
         val kcal = Regex("""(\d{2,5})\s*kcal""", RegexOption.IGNORE_CASE)
             .find(text)
@@ -344,86 +335,4 @@ object AiGateway {
         }
     }
 
-    // --- Claude ---
-
-    private fun claudeKey(context: Context) = ApiKeys.getClaudeKey(context)
-    private fun claudeModel() = BuildConfig.CLAUDE_MODEL.ifBlank { "claude-3-5-sonnet-20241022" }
-
-    @WorkerThread
-    private fun claudeChat(context: Context, system: String, user: String): String {
-        val apiKey = claudeKey(context)
-        if (apiKey.isBlank()) {
-            throw IllegalStateException("Claude API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
-        }
-        
-        val body = JSONObject(mapOf(
-            "model" to claudeModel(),
-            "max_tokens" to 4000,
-            "messages" to JSONArray().put(
-                JSONObject(mapOf(
-                    "role" to "user",
-                    "content" to "$system\n\n$user"
-                ))
-            )
-        )).toString()
-        
-        val req = Request.Builder()
-            .url("${BuildConfig.CLAUDE_BASE_URL}/v1/messages")
-            .addHeader("x-api-key", apiKey)
-            .addHeader("anthropic-version", "2023-06-01")
-            .post(body.toRequestBody("application/json".toMediaType()))
-            .build()
-        
-        http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) {
-                if (resp.code == 401) throw IllegalStateException("Claude 401: API-Schlüssel ungültig oder fehlt")
-                else throw IllegalStateException("Claude HTTP ${resp.code}: ${resp.body?.string()}")
-            }
-            val json = JSONObject(resp.body!!.string())
-            return json.getJSONArray("content").getJSONObject(0).getString("text")
-        }
-    }
-
-    @WorkerThread
-    private fun claudeVision(context: Context, base64: String, prompt: String): JSONObject {
-        val apiKey = claudeKey(context)
-        if (apiKey.isBlank()) {
-            throw IllegalStateException("Claude API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
-        }
-        
-        val body = JSONObject(mapOf(
-            "model" to claudeModel(),
-            "max_tokens" to 4000,
-            "messages" to JSONArray().put(
-                JSONObject(mapOf(
-                    "role" to "user",
-                    "content" to JSONArray()
-                        .put(JSONObject(mapOf("type" to "text", "text" to prompt)))
-                        .put(JSONObject(mapOf(
-                            "type" to "image",
-                            "source" to JSONObject(mapOf(
-                                "type" to "base64",
-                                "media_type" to "image/jpeg",
-                                "data" to base64
-                            ))
-                        )))
-                ))
-            )
-        )).toString()
-        
-        val req = Request.Builder()
-            .url("${BuildConfig.CLAUDE_BASE_URL}/v1/messages")
-            .addHeader("x-api-key", apiKey)
-            .addHeader("anthropic-version", "2023-06-01")
-            .post(body.toRequestBody("application/json".toMediaType()))
-            .build()
-        
-        http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) {
-                if (resp.code == 401) throw IllegalStateException("Claude 401: API-Schlüssel ungültig oder fehlt")
-                else throw IllegalStateException("Claude HTTP ${resp.code}: ${resp.body?.string()}")
-            }
-            return JSONObject(resp.body!!.string())
-        }
-    }
 }
