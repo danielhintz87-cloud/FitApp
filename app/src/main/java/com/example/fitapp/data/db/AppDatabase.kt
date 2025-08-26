@@ -13,9 +13,10 @@ import androidx.room.RoomDatabase
         RecipeHistoryEntity::class,
         IntakeEntryEntity::class,
         DailyGoalEntity::class,
-        ShoppingItemEntity::class
+        ShoppingItemEntity::class,
+        PlanEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -24,6 +25,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun intakeDao(): IntakeDao
     abstract fun goalDao(): GoalDao
     abstract fun shoppingDao(): ShoppingDao
+    abstract fun planDao(): PlanDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null

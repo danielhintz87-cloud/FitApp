@@ -79,3 +79,16 @@ data class ShoppingItemEntity(
     val createdAt: Long = Instant.now().epochSecond
 )
 
+@Entity(tableName = "training_plans")
+data class PlanEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String,
+    val content: String,
+    val goal: String,
+    val weeks: Int,
+    val sessionsPerWeek: Int,
+    val minutesPerSession: Int,
+    val equipment: String, // JSON array as string
+    val createdAt: Long = Instant.now().epochSecond
+)
+

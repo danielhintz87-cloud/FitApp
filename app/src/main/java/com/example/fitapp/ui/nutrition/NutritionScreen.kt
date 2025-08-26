@@ -31,7 +31,7 @@ fun NutritionScreen() {
     val tabs = listOf("Generieren", "Favoriten", "Historie", "Einkaufsliste")
 
     Column(Modifier.fillMaxSize()) {
-        TabRow(selectedTabIndex = tab) {
+        ScrollableTabRow(selectedTabIndex = tab) {
             tabs.forEachIndexed { i, title ->
                 Tab(selected = tab == i, onClick = { tab = i }, text = { Text(title) })
             }

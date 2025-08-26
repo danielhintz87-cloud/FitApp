@@ -64,4 +64,23 @@ class NutritionRepository(private val db: AppDatabase) {
     fun shoppingItems() = db.shoppingDao().itemsFlow()
     suspend fun setItemChecked(id: Long, checked: Boolean) = db.shoppingDao().setChecked(id, checked)
     suspend fun deleteItem(id: Long) = db.shoppingDao().delete(id)
+
+    // Plan related methods
+    suspend fun savePlan(title: String, content: String, goal: String, weeks: Int, sessionsPerWeek: Int, minutesPerSession: Int, equipment: List<String>): Long {
+        val plan = PlanEntity(
+            title = title,
+            content = content,
+            goal = goal,
+            weeks = weeks,
+            sessionsPerWeek = sessionsPerWeek,
+            minutesPerSession = minutesPerSession,
+            equipment = equipment.joinToString(",")
+        )
+        return db.planDao().insert(plan)
+    }
+
+    fun plansFlow() = db.planDao().plansFlow()
+    suspend fun getLatestPlan() = db.planDao().getLatestPlan()
+    suspend fun getPlan(id: Long) = db.planDao().getPlan(id)
+    suspend fun deletePlan(id: Long) = db.planDao().delete(id)
 }

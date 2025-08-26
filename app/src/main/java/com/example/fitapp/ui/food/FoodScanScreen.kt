@@ -45,6 +45,35 @@ fun FoodScanScreen(contentPadding: PaddingValues) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text("Food Scan", style = MaterialTheme.typography.titleLarge)
+        
+        // Daily Goal Setting
+        Card {
+            Column(Modifier.padding(16.dp)) {
+                Text("Tagesziel", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    var newTarget by remember { mutableStateOf(target.toString()) }
+                    OutlinedTextField(
+                        value = newTarget,
+                        onValueChange = { newTarget = it },
+                        label = { Text("Kalorien") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Button(onClick = {
+                        val targetValue = newTarget.toIntOrNull()
+                        if (targetValue != null && targetValue > 0) {
+                            scope.launch {
+                                repo.setDailyGoal(java.time.LocalDate.now(), targetValue)
+                            }
+                        }
+                    }) {
+                        Text("Setzen")
+                    }
+                }
+            }
+        }
+        
         BudgetBar(consumed = consumed, target = target)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) { Text("Foto wählen") }

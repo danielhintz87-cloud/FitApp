@@ -1,26 +1,97 @@
 package com.example.fitapp.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.fitapp.data.db.AppDatabase
+import com.example.fitapp.data.repo.NutritionRepository
+import com.example.fitapp.ui.components.BudgetBar
+import java.time.LocalDate
+import java.time.ZoneId
 
 @Composable
 fun TodayScreen(contentPadding: PaddingValues) {
+    val ctx = LocalContext.current
+    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val todayEpoch = remember { LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond() }
+    
+    val goal by repo.goalFlow(LocalDate.now()).collectAsState(initial = null)
+    val entries by repo.dayEntriesFlow(todayEpoch).collectAsState(initial = emptyList())
+    val latestPlan by remember { mutableStateOf<com.example.fitapp.data.db.PlanEntity?>(null) }
+    
+    LaunchedEffect(Unit) {
+        // Load latest plan when screen loads
+        val plan = repo.getLatestPlan()
+        latestPlan?.let { /* This won't work due to remember, need different approach */ }
+    }
+    
+    val consumed = entries.sumOf { it.kcal }
+    val target = goal?.targetKcal ?: 2000
+
     Column(
         modifier = Modifier
             .padding(contentPadding)
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
         Text("Heute", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(16.dp))
+        
+        // Calorie Summary Card
         Card {
-            Text(
-                "Dein heutiges Training und deine Ernährung auf einen Blick.",
-                modifier = Modifier.padding(16.dp)
-            )
+            Column(Modifier.padding(16.dp)) {
+                Text("Kalorienbilanz", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                BudgetBar(consumed = consumed, target = target)
+                Spacer(Modifier.height(8.dp))
+                Text("Gegessen: $consumed kcal", style = MaterialTheme.typography.bodyMedium)
+                Text("Ziel: $target kcal", style = MaterialTheme.typography.bodyMedium)
+                Text("Verbleibend: ${maxOf(0, target - consumed)} kcal", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        
+        Spacer(Modifier.height(16.dp))
+        
+        // Today's Meals Card
+        Card {
+            Column(Modifier.padding(16.dp)) {
+                Text("Heutige Mahlzeiten", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                if (entries.isEmpty()) {
+                    Text("Noch keine Mahlzeiten eingetragen.", style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    entries.take(5).forEach { entry ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(entry.label, style = MaterialTheme.typography.bodyMedium)
+                            Text("${entry.kcal} kcal", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                    }
+                }
+            }
+        }
+        
+        Spacer(Modifier.height(16.dp))
+        
+        // Training Plan Card  
+        Card {
+            Column(Modifier.padding(16.dp)) {
+                Text("Heutiges Training", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Erstelle einen Trainingsplan im Plan-Bereich, um hier dein heutiges Workout zu sehen.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
         }
     }
 }

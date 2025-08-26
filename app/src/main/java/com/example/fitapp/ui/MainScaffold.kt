@@ -67,7 +67,7 @@ fun MainScaffold() {
                     },
                     actions = {
                         IconButton(onClick = { showMenu = !showMenu }) {
-                            Icon(Icons.Filled.Insights, contentDescription = "Mehr")
+                            Icon(Icons.Default.MoreVert, contentDescription = "Mehr")
                         }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                             DropdownMenuItem(text = { Text("Food Scan") }, onClick = { showMenu = false; nav.navigate("foodscan") })
