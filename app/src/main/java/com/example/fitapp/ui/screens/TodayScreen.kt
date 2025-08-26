@@ -3,6 +3,8 @@ package com.example.fitapp.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -107,16 +109,45 @@ fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = n
                         Button(
                             onClick = { 
                                 navController?.navigate("todaytraining")
-                            }
+                            },
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Text("Heutiges Training anpassen")
+                            Icon(Icons.Filled.Edit, contentDescription = null)
+                            Spacer(Modifier.width(4.dp))
+                            Text("Anpassen")
                         }
+                        Button(
+                            onClick = {
+                                navController?.navigate("training_execution/${latestPlan.id}")
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                            Spacer(Modifier.width(4.dp))
+                            Text("Training starten")
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
                             onClick = {
                                 // TODO: Mark today's training as completed
-                            }
+                            },
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Text("Training abgeschlossen")
+                            Icon(Icons.Filled.Check, contentDescription = null)
+                            Spacer(Modifier.width(4.dp))
+                            Text("Abgeschlossen")
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                // TODO: Skip today's training
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Filled.SkipNext, contentDescription = null)
+                            Spacer(Modifier.width(4.dp))
+                            Text("Überspringen")
                         }
                     }
                 } else {
