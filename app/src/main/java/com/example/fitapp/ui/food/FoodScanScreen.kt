@@ -42,6 +42,10 @@ fun FoodScanScreen(
     var captured by remember { mutableStateOf<Bitmap?>(null) }
     var estimate by remember { mutableStateOf<CalorieEstimate?>(null) }
     var loading by remember { mutableStateOf(false) }
+    var showConfirmDialog by remember { mutableStateOf(false) }
+    var editedKcal by remember { mutableStateOf("") }
+    var editedLabel by remember { mutableStateOf("") }
+    
     val todayEpoch = remember { LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond() }
     val goal by repo.goalFlow(LocalDate.now()).collectAsState(initial = null)
     val entries by repo.dayEntriesFlow(todayEpoch).collectAsState(initial = emptyList())
@@ -121,7 +125,7 @@ fun FoodScanScreen(
                     scope.launch {
                         try {
                             estimate = when {
-                                captured != null -> repo.analyzeFoodBitmap(captured!!, provider)
+                                captured != null -> repo.analyzeFoodBitmap(ctx, captured!!, provider)
                                 picked != null -> repo.analyzeFoodImage(ctx, picked!!, provider)
                                 else -> null
                             }
@@ -162,12 +166,10 @@ fun FoodScanScreen(
                     Text(e.details, style = MaterialTheme.typography.bodyMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = {
-                            scope.launch {
-                                repo.logIntake(e.kcal, "Essen (Foto)", "PHOTO")
-                                repo.adjustDailyGoal(LocalDate.now())
-                                onLogged()
-                            }
-                        }) { Text("Buchen") }
+                            editedKcal = e.kcal.toString()
+                            editedLabel = "Essen (Foto)"
+                            showConfirmDialog = true
+                        }) { Text("Bestätigen & Buchen") }
                         OutlinedButton(onClick = { estimate = null; picked = null; captured = null }) {
                             Text("Zurücksetzen")
                         }
@@ -176,5 +178,53 @@ fun FoodScanScreen(
             }
         }
         Spacer(Modifier.height(96.dp))
+    }
+    
+    // Confirmation Dialog
+    if (showConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmDialog = false },
+            title = { Text("Kalorien bestätigen") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Bitte bestätigen oder korrigieren Sie die Werte:")
+                    OutlinedTextField(
+                        value = editedKcal,
+                        onValueChange = { editedKcal = it },
+                        label = { Text("Kalorien") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = editedLabel,
+                        onValueChange = { editedLabel = it },
+                        label = { Text("Bezeichnung") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            val kcal = editedKcal.toIntOrNull() ?: 0
+                            repo.logIntake(kcal, editedLabel, "PHOTO")
+                            repo.adjustDailyGoal(LocalDate.now())
+                            showConfirmDialog = false
+                            estimate = null
+                            picked = null
+                            captured = null
+                            onLogged()
+                        }
+                    }
+                ) {
+                    Text("Buchen")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showConfirmDialog = false }) {
+                    Text("Abbrechen")
+                }
+            }
+        )
     }
 }

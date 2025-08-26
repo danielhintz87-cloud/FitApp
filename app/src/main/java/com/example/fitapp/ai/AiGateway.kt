@@ -10,7 +10,7 @@ import android.provider.MediaStore
 import android.util.Base64
 import androidx.annotation.WorkerThread
 import com.example.fitapp.BuildConfig
-import com.example.fitapp.ui.settings.getApiKey
+import com.example.fitapp.data.prefs.ApiKeys
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -42,21 +42,21 @@ object AiGateway {
 
     private val http = OkHttpClient()
 
-    suspend fun generateRecipes(ctx: Context, prompt: String, provider: Provider = Provider.OPENAI): List<UiRecipe> =
+    suspend fun generateRecipes(context: Context, prompt: String, provider: Provider = Provider.OPENAI): List<UiRecipe> =
         withContext(Dispatchers.IO) {
             val text = when (provider) {
                 Provider.OPENAI -> openAiChat(
-                    ctx,
+                    context,
                     system = "Du bist ein erfahrener Koch und Ernährungscoach. Antworte IMMER als Markdown mit 10 Rezepten. Pro Rezept: Überschrift '## Titel', dann Zutatenliste (Bullet Points), Zubereitungsschritte (nummeriert), grobe Kalorienzahl 'Kalorien: XYZ kcal'.",
                     user = prompt
                 )
                 Provider.GEMINI -> geminiText(
-                    ctx,
+                    context,
                     system = "Du bist ein erfahrener Koch und Ernährungscoach.",
                     user = "Erzeuge 10 passende Rezepte als Markdown wie beschrieben: $prompt"
                 )
                 Provider.DEEPSEEK -> deepseekChat(
-                    ctx,
+                    context,
                     system = "Du bist ein erfahrener Koch und Ernährungscoach.",
                     user = "Erzeuge 10 passende Rezepte als Markdown wie beschrieben: $prompt"
                 )
@@ -127,13 +127,17 @@ object AiGateway {
     }
 
     // --- OpenAI ---
-    @WorkerThread
-    private fun openAiChat(ctx: Context, system: String, user: String): String {
-        val apiKey = getApiKey(ctx, AiProvider.OpenAI)
-        if (apiKey.isBlank()) {
-            throw IllegalStateException("OpenAI API-Schlüssel fehlt. Bitte in den Einstellungen konfigurieren.")
-        }
 
+    private fun openAiKey(context: Context) = ApiKeys.getOpenAiKey(context)
+    private fun openAiModel() = BuildConfig.OPENAI_MODEL.ifBlank { "gpt-4o-mini" }
+
+    @WorkerThread
+    private fun openAiChat(context: Context, system: String, user: String): String {
+        val apiKey = openAiKey(context)
+        if (apiKey.isBlank()) {
+            throw IllegalStateException("OpenAI API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+        }
+        
         val messages = JSONArray()
             .put(JSONObject(mapOf("role" to "system", "content" to system)))
             .put(JSONObject(mapOf("role" to "user", "content" to user)))
@@ -155,12 +159,12 @@ object AiGateway {
     }
 
     @WorkerThread
-    private fun openAiChatRaw(ctx: Context, messages: List<JSONObject>): JSONObject {
-        val apiKey = getApiKey(ctx, AiProvider.OpenAI)
+    private fun openAiChatRaw(context: Context, messages: List<JSONObject>): JSONObject {
+        val apiKey = openAiKey(context)
         if (apiKey.isBlank()) {
-            throw IllegalStateException("OpenAI API-Schlüssel fehlt. Bitte in den Einstellungen konfigurieren.")
+            throw IllegalStateException("OpenAI API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
         }
-
+        
         val body = JSONObject(mapOf("model" to openAiModel(), "messages" to JSONArray(messages), "temperature" to 0.2)).toString()
         val req = Request.Builder()
             .url("${BuildConfig.OPENAI_BASE_URL}/v1/chat/completions")
@@ -178,13 +182,16 @@ object AiGateway {
     }
 
     // --- Gemini ---
-    @WorkerThread
-    private fun geminiText(ctx: Context, system: String, user: String): String {
-        val apiKey = getApiKey(ctx, AiProvider.Gemini)
-        if (apiKey.isBlank()) {
-            throw IllegalStateException("Gemini API-Schlüssel fehlt. Bitte in den Einstellungen konfigurieren.")
-        }
 
+    private fun geminiKey(context: Context) = ApiKeys.getGeminiKey(context)
+
+    @WorkerThread
+    private fun geminiText(context: Context, system: String, user: String): String {
+        val apiKey = geminiKey(context)
+        if (apiKey.isBlank()) {
+            throw IllegalStateException("Gemini API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+        }
+        
         val model = BuildConfig.GEMINI_MODEL.ifBlank { "gemini-1.5-pro" }
         val body = JSONObject(mapOf("contents" to JSONArray().put(JSONObject(mapOf("parts" to JSONArray().put(JSONObject(mapOf("text" to "$system\n\n$user")))))))).toString()
         val req = Request.Builder()
@@ -192,20 +199,69 @@ object AiGateway {
             .post(body.toRequestBody("application/json".toMediaType()))
             .build()
         http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) throw IllegalStateException("Gemini HTTP ${resp.code}: ${resp.body?.string()}")
+            if (!resp.isSuccessful) {
+                if (resp.code == 401) throw IllegalStateException("Gemini 401: API-Schlüssel ungültig oder fehlt")
+                else throw IllegalStateException("Gemini HTTP ${resp.code}: ${resp.body?.string()}")
+            }
             val json = JSONObject(resp.body!!.string())
             return json.getJSONArray("candidates").getJSONObject(0).getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text")
         }
     }
 
-    // --- DeepSeek ---
     @WorkerThread
-    private fun deepseekChat(ctx: Context, system: String, user: String): String {
-        val apiKey = getApiKey(ctx, AiProvider.DeepSeek)
+    private fun geminiVision(context: Context, base64: String, prompt: String): JSONObject {
+        val apiKey = geminiKey(context)
         if (apiKey.isBlank()) {
-            throw IllegalStateException("DeepSeek API-Schlüssel fehlt. Bitte in den Einstellungen konfigurieren.")
+            throw IllegalStateException("Gemini API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
         }
+        
+        val model = BuildConfig.GEMINI_MODEL.ifBlank { "gemini-1.5-pro" }
+        val body = JSONObject(mapOf(
+            "contents" to JSONArray().put(
+                JSONObject(mapOf(
+                    "parts" to JSONArray()
+                        .put(JSONObject(mapOf("text" to prompt)))
+                        .put(JSONObject(mapOf(
+                            "inline_data" to JSONObject(mapOf(
+                                "mime_type" to "image/jpeg",
+                                "data" to base64
+                            ))
+                        )))
+                ))
+            )
+        )).toString()
+        
+        val req = Request.Builder()
+            .url("${BuildConfig.GEMINI_BASE_URL}/v1beta/models/$model:generateContent?key=$apiKey")
+            .post(body.toRequestBody("application/json".toMediaType()))
+            .build()
+        
+        http.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) {
+                if (resp.code == 401) throw IllegalStateException("Gemini 401: API-Schlüssel ungültig oder fehlt")
+                else throw IllegalStateException("Gemini HTTP ${resp.code}: ${resp.body?.string()}")
+            }
+            return JSONObject(resp.body!!.string())
+        }
+    }
 
+    // --- DeepSeek ---
+
+    private fun deepSeekKey(context: Context) = ApiKeys.getDeepSeekKey(context)
+    private fun deepSeekModel() = BuildConfig.DEEPSEEK_MODEL.ifBlank { "deepseek-chat" }
+
+    private fun getNormalizedDeepSeekBaseUrl(): String {
+        val base = BuildConfig.DEEPSEEK_BASE_URL.trim()
+        return if (base.endsWith("/")) base.dropLast(1) else base
+    }
+
+    @WorkerThread
+    private fun deepseekChat(context: Context, system: String, user: String): String {
+        val apiKey = deepSeekKey(context)
+        if (apiKey.isBlank()) {
+            throw IllegalStateException("DeepSeek API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+        }
+        
         val messages = JSONArray()
             .put(JSONObject(mapOf("role" to "system", "content" to system)))
             .put(JSONObject(mapOf("role" to "user", "content" to user)))
@@ -217,5 +273,44 @@ object AiGateway {
             .build()
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) {
-                val msg = resp.body?.string()
-                if (resp.code == 401) throw IllegalStateException("
+                if (resp.code == 401) throw IllegalStateException("DeepSeek 401: API-Schlüssel ungültig oder fehlt")
+                else throw IllegalStateException("DeepSeek HTTP ${resp.code}: ${resp.body?.string()}")
+            }
+            val json = JSONObject(resp.body!!.string())
+            return json.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
+        }
+    }
+
+    // --- helpers ---
+
+    private fun extractContentText(json: JSONObject): String {
+        return when {
+            json.has("choices") -> json.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
+            json.has("candidates") -> json.getJSONArray("candidates").getJSONObject(0).getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text")
+            else -> ""
+        }
+    }
+
+    private fun loadBitmapBase64(cr: ContentResolver, uri: Uri): String {
+        val bmp: Bitmap = if (Build.VERSION.SDK_INT >= 28) {
+            ImageDecoder.decodeBitmap(ImageDecoder.createSource(cr, uri))
+        } else {
+            @Suppress("DEPRECATION")
+            MediaStore.Images.Media.getBitmap(cr, uri)
+        }
+        val stream = ByteArrayOutputStream()
+        bmp.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+        return Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+    }
+
+    private fun parseMarkdownRecipes(markdown: String): List<UiRecipe> {
+        val blocks = markdown.split("\n## ").mapIndexed { idx, block ->
+            if (idx == 0 && block.startsWith("## ")) block.removePrefix("## ") else block
+        }.filter { it.isNotBlank() }
+        return blocks.map { raw ->
+            val title = raw.lineSequence().firstOrNull()?.trim() ?: "Rezept"
+            val kcal = Regex("""Kalorien:\s*(\d{2,5})\s*kcal""", RegexOption.IGNORE_CASE).find(raw)?.groupValues?.get(1)?.toIntOrNull()
+            UiRecipe(title = title, markdown = "## $raw".trim(), calories = kcal)
+        }
+    }
+}
