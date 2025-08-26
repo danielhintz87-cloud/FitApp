@@ -17,7 +17,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
 
-enum class AiProvider { OpenAI, Gemini, DeepSeek }
+enum class AiProvider { OpenAI, Gemini, DeepSeek, Claude }
 
 data class PlanRequest(
     val goal: String,
@@ -45,27 +45,58 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
     suspend fun generatePlan(provider: AiProvider, req: PlanRequest): Result<String> =
         callText(provider,
-            "Erzeuge einen **12-Wochen-Trainingsplan** in Markdown. " +
-            "Ziel: ${req.goal}. Wochen: ${req.weeks}. Einheiten/Woche: ${req.sessionsPerWeek}. Minuten/Einheit: ${req.minutesPerSession}. " +
-            "Geräte: ${req.equipment.joinToString()}. " +
-            "Struktur: Für jede Woche Überschrift (H2), Tage mit Übungen (Sätze/Wdh/Tempo/RPE), Progression, optional Deload in Woche 4/8/12. " +
-            "Kompakt, gut lesbar."
+            "Erstelle einen wissenschaftlich fundierten **${req.weeks}-Wochen-Trainingsplan** in Markdown. " +
+            "Ziel: ${req.goal}. Trainingsfrequenz: ${req.sessionsPerWeek} Einheiten/Woche, ${req.minutesPerSession} Min/Einheit. " +
+            "Verfügbare Geräte: ${req.equipment.joinToString()}. " +
+            "\n\n**Medizinische Anforderungen:**\n" +
+            "- Progressive Überlastung mit 5-10% Steigerung alle 2 Wochen\n" +
+            "- Deload-Wochen alle 4 Wochen (50-60% Intensität)\n" +
+            "- RPE-Skala (6-20) für Intensitätskontrolle\n" +
+            "- Mindestens 48h Pause zwischen gleichen Muskelgruppen\n" +
+            "- Aufwärm- und Cool-Down-Protokolle\n" +
+            "\n**Struktur:** Jede Woche mit H2-Überschrift, dann Trainingstage mit:\n" +
+            "- Aufwärmung (5-10 Min)\n" +
+            "- Hauptübungen: Übung | Sätze x Wiederholungen | Tempo (1-2-1-0) | RPE | Pausenzeit\n" +
+            "- Cool-Down & Mobility (5-10 Min)\n" +
+            "- Progressionshinweise für nächste Woche\n" +
+            "- Anpassungen bei Beschwerden oder Stagnation"
         )
 
     suspend fun generateRecipes(provider: AiProvider, req: RecipeRequest): Result<String> =
         callText(provider,
-            "Erzeuge ${req.count} **Rezepte** als Markdown-Liste. Pro Rezept: Titel (H2), Zutaten mit Mengen, Schritte, Nährwerte (kcal, Protein, KH, Fett). " +
-            "Bevorzugungen: ${req.preferences}. Diät: ${req.diet}. Ausgabe kompakt."
+            "Erstelle ${req.count} **nutritionsoptimierte Rezepte** als präzise Markdown-Liste. " +
+            "Präferenzen: ${req.preferences}. Diätform: ${req.diet}. " +
+            "\n\n**Anforderungen pro Rezept:**\n" +
+            "- Titel (## Format)\n" +
+            "- Zutatenliste mit exakten Gramm-Angaben (nicht 'eine Tasse' sondern '150g')\n" +
+            "- Schritt-für-Schritt Zubereitung (nummeriert)\n" +
+            "- **Präzise Nährwerte:** Kalorien, Protein, Kohlenhydrate, Fett (jeweils in g), Ballaststoffe\n" +
+            "- Portionsgröße und Anzahl Portionen\n" +
+            "- Zubereitungszeit & Schwierigkeitsgrad\n" +
+            "- Mikronährstoff-Highlights (Vitamin C, Eisen, etc.)\n" +
+            "\n**Kalkulationsbasis:** Verwende USDA-Nährwertdatenbank-Standards für genaue Berechnungen. " +
+            "Achte auf realistische Portionsgrößen und präzise Makronährstoff-Verteilung."
         )
 
     suspend fun estimateCaloriesFromPhoto(provider: AiProvider, bitmap: Bitmap, note: String = ""): Result<CaloriesEstimate> =
         withContext(Dispatchers.IO) {
-            val prompt = "Schätze Kalorien des gezeigten Essens. Antworte knapp: 'kcal: <Zahl>', 'confidence: <0-100>' und 1 Satz zur Begründung."
+            val prompt = "Analysiere das Bild und schätze präzise die Kalorien des gezeigten Essens.\n\n" +
+                "**Analyseschritte:**\n" +
+                "1. Identifiziere alle sichtbaren Lebensmittel/Getränke\n" +
+                "2. Schätze Portionsgrößen anhand von Referenzobjekten (Teller ≈ 25cm, Gabel ≈ 20cm, Hand ≈ 18cm)\n" +
+                "3. Berücksictige Zubereitungsart (frittiert +30%, gedämpft -20%)\n" +
+                "4. Kalkuliere Gesamtkalorien mit USDA-Nährwertstandards\n\n" +
+                "**Antwortformat:**\n" +
+                "kcal: <Zahl>\n" +
+                "confidence: <0-100>\n" +
+                "Begründung: [Lebensmittel] ca. [Gramm]g = [kcal]kcal, [weitere Komponenten]\n" +
+                "Unsicherheitsfaktoren: [versteckte Fette, Portionsgröße, etc.]"
             val started = System.currentTimeMillis()
             val r = when (provider) {
                 AiProvider.OpenAI -> openAiVision(prompt, bitmap)
                 AiProvider.Gemini -> geminiVision(prompt, bitmap)
                 AiProvider.DeepSeek -> deepseekVision(prompt, bitmap)
+                AiProvider.Claude -> claudeVision(prompt, bitmap)
             }
             val took = System.currentTimeMillis() - started
             r.onSuccess {
@@ -83,6 +114,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 AiProvider.OpenAI -> openAiChat(prompt)
                 AiProvider.Gemini -> geminiText(prompt)
                 AiProvider.DeepSeek -> deepseekText(prompt)
+                AiProvider.Claude -> claudeChat(prompt)
             }
             val took = System.currentTimeMillis() - started
             result.onSuccess {
@@ -309,4 +341,156 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
         }
 
     private fun ByteArray.b64(): String = Base64.encodeToString(this, Base64.NO_WRAP)
+
+    // -------- Claude Implementation --------
+
+    private suspend fun claudeChat(prompt: String): Result<String> = runCatching {
+        val apiKey = ApiKeys.getClaudeKey(context)
+        if (apiKey.isBlank()) {
+            throw IllegalStateException("Claude API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+        }
+
+        val model = BuildConfig.CLAUDE_MODEL.ifBlank { "claude-3-5-sonnet-20241022" }
+        val body = """
+            {
+                "model": "$model",
+                "max_tokens": 4000,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": ${prompt.json()}
+                    }
+                ]
+            }
+        """.trimIndent().toRequestBody("application/json".toMediaType())
+
+        val req = Request.Builder()
+            .url("${BuildConfig.CLAUDE_BASE_URL}/v1/messages")
+            .header("x-api-key", apiKey)
+            .header("anthropic-version", "2023-06-01")
+            .post(body)
+            .build()
+
+        http.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) {
+                if (resp.code == 401) {
+                    error("Claude 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                } else {
+                    error("Claude ${resp.code}")
+                }
+            }
+            val txt = resp.body!!.string()
+            val json = JSONObject(txt)
+            json.getJSONArray("content").getJSONObject(0).getString("text")
+        }
+    }
+
+    private suspend fun claudeVision(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> = runCatching {
+        val apiKey = ApiKeys.getClaudeKey(context)
+        if (apiKey.isBlank()) {
+            throw IllegalStateException("Claude API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+        }
+
+        val model = BuildConfig.CLAUDE_MODEL.ifBlank { "claude-3-5-sonnet-20241022" }
+        val b64 = bitmap.toJpegBytes().b64()
+        val body = """
+            {
+                "model": "$model",
+                "max_tokens": 4000,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": ${prompt.json()}
+                            },
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": "image/jpeg",
+                                    "data": "$b64"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        """.trimIndent().toRequestBody("application/json".toMediaType())
+
+        val req = Request.Builder()
+            .url("${BuildConfig.CLAUDE_BASE_URL}/v1/messages")
+            .header("x-api-key", apiKey)
+            .header("anthropic-version", "2023-06-01")
+            .post(body)
+            .build()
+
+        http.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) {
+                if (resp.code == 401) {
+                    error("Claude 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                } else {
+                    error("Claude ${resp.code}")
+                }
+            }
+            val txt = resp.body!!.string()
+            val json = JSONObject(txt)
+            val content = json.getJSONArray("content").getJSONObject(0).getString("text")
+            parseCalories(content)
+        }
+    }
+
+    // -------- Provider Selection & Fallback Logic --------
+
+    companion object {
+        /**
+         * Selects optimal provider based on task type
+         */
+        fun selectOptimalProvider(taskType: TaskType, availableProviders: List<AiProvider>): AiProvider {
+            if (availableProviders.isEmpty()) return AiProvider.OpenAI
+            
+            return when (taskType) {
+                TaskType.TRAINING_PLAN -> {
+                    // Claude > GPT-4o > Gemini > DeepSeek for complex reasoning
+                    availableProviders.firstOrNull { it == AiProvider.Claude }
+                        ?: availableProviders.firstOrNull { it == AiProvider.OpenAI }
+                        ?: availableProviders.firstOrNull { it == AiProvider.Gemini }
+                        ?: availableProviders.first()
+                }
+                TaskType.CALORIE_ESTIMATION -> {
+                    // GPT-4o Vision > Claude > Gemini > DeepSeek for vision tasks
+                    availableProviders.firstOrNull { it == AiProvider.OpenAI }
+                        ?: availableProviders.firstOrNull { it == AiProvider.Claude }
+                        ?: availableProviders.firstOrNull { it == AiProvider.Gemini }
+                        ?: availableProviders.first()
+                }
+                TaskType.RECIPE_GENERATION -> {
+                    // Claude > GPT-4o > Gemini > DeepSeek for structured output
+                    availableProviders.firstOrNull { it == AiProvider.Claude }
+                        ?: availableProviders.firstOrNull { it == AiProvider.OpenAI }
+                        ?: availableProviders.firstOrNull { it == AiProvider.Gemini }
+                        ?: availableProviders.first()
+                }
+            }
+        }
+
+        /**
+         * Provides fallback chain for when primary provider fails
+         */
+        fun getFallbackChain(primary: AiProvider): List<AiProvider> {
+            return when (primary) {
+                AiProvider.OpenAI -> listOf(AiProvider.Claude, AiProvider.Gemini, AiProvider.DeepSeek)
+                AiProvider.Claude -> listOf(AiProvider.OpenAI, AiProvider.Gemini, AiProvider.DeepSeek)
+                AiProvider.Gemini -> listOf(AiProvider.OpenAI, AiProvider.Claude, AiProvider.DeepSeek)
+                AiProvider.DeepSeek -> listOf(AiProvider.OpenAI, AiProvider.Claude, AiProvider.Gemini)
+            }
+        }
+    }
+}
+
+enum class TaskType {
+    TRAINING_PLAN,
+    CALORIE_ESTIMATION,
+    RECIPE_GENERATION
 }
