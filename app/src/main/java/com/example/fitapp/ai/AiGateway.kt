@@ -103,10 +103,7 @@ object AiGateway {
                 val raw = geminiVision(base64, "Schätze Kalorien des Essens. Formatiere: Schätzung: <ZAHL> kcal. Begründung + Unsicherheit.")
                 extractContentText(raw)
             }
-            Provider.DEEPSEEK -> deepseekChat(
-                system = "Du bist ein erfahrener Ernährungscoach.",
-                user = "Schätze grob die Kalorien des Essens auf einem Foto. Hinweis: DeepSeek unterstützt eventuell keine Bildanalyse, schätze daher basierend auf allgemeinem Wissen."
-            )
+            Provider.DEEPSEEK -> "DeepSeek unterstützt keine Bildanalyse. Eine Kalorien-Schätzung ist ohne Bilddaten nicht möglich."
         }
         val kcal = Regex("""(\d{2,5})\s*kcal""", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)?.toIntOrNull() ?: 0
         val confidence = when {
