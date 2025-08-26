@@ -12,10 +12,13 @@ import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.PlanRequest
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
+import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
-fun PlanScreen(contentPadding: PaddingValues) {
+fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = null) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
@@ -26,6 +29,33 @@ fun PlanScreen(contentPadding: PaddingValues) {
     var result by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var saveStatus by remember { mutableStateOf("") }
+    
+    // Dropdown states
+    var goalExpanded by remember { mutableStateOf(false) }
+    var equipmentExpanded by remember { mutableStateOf(false) }
+    
+    // Predefined options
+    val goalOptions = listOf(
+        "Muskelaufbau", 
+        "Abnehmen", 
+        "Kraft steigern", 
+        "Ausdauer verbessern", 
+        "Körper definieren", 
+        "Allgemeine Fitness",
+        "Funktionelle Fitness",
+        "Beweglichkeit verbessern"
+    )
+    
+    val equipmentOptions = listOf(
+        "Nur Körpergewicht",
+        "Hanteln, Klimmzugstange", 
+        "Vollausstattung Fitnessstudio",
+        "Heimstudio (Hanteln, Bänke)",
+        "Kettlebells, Widerstandsbänder",
+        "Cardio-Geräte (Laufband, Fahrrad)",
+        "Functional Training (TRX, Medizinbälle)",
+        "Crossfit Equipment"
+    )
 
     Column(
         modifier = Modifier
@@ -37,12 +67,34 @@ fun PlanScreen(contentPadding: PaddingValues) {
         Text("12-Wochen-Trainingsplan", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(16.dp))
         
-        OutlinedTextField(
-            value = goal,
-            onValueChange = { goal = it },
-            label = { Text("Ziel") },
-            modifier = Modifier.fillMaxWidth()
-        )
+        // Goal Dropdown
+        ExposedDropdownMenuBox(
+            expanded = goalExpanded,
+            onExpandedChange = { goalExpanded = !goalExpanded }
+        ) {
+            OutlinedTextField(
+                value = goal,
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("Trainingsziel") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = goalExpanded) },
+                modifier = Modifier.fillMaxWidth().menuAnchor()
+            )
+            ExposedDropdownMenu(
+                expanded = goalExpanded,
+                onDismissRequest = { goalExpanded = false }
+            ) {
+                goalOptions.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = {
+                            goal = option
+                            goalExpanded = false
+                        }
+                    )
+                }
+            }
+        }
         Spacer(Modifier.height(8.dp))
         
         OutlinedTextField(
@@ -61,12 +113,48 @@ fun PlanScreen(contentPadding: PaddingValues) {
         )
         Spacer(Modifier.height(8.dp))
         
-        OutlinedTextField(
-            value = equipment,
-            onValueChange = { equipment = it },
-            label = { Text("Verfügbare Geräte") },
+        // Equipment Dropdown
+        ExposedDropdownMenuBox(
+            expanded = equipmentExpanded,
+            onExpandedChange = { equipmentExpanded = !equipmentExpanded }
+        ) {
+            OutlinedTextField(
+                value = equipment,
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("Verfügbare Geräte") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = equipmentExpanded) },
+                modifier = Modifier.fillMaxWidth().menuAnchor()
+            )
+            ExposedDropdownMenu(
+                expanded = equipmentExpanded,
+                onDismissRequest = { equipmentExpanded = false }
+            ) {
+                equipmentOptions.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = {
+                            equipment = option
+                            equipmentExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        
+        // Equipment selection button
+        OutlinedButton(
+            onClick = {
+                navController?.let { nav ->
+                    nav.currentBackStackEntry?.savedStateHandle?.set("equipment", equipment)
+                    nav.navigate("equipment")
+                }
+            },
             modifier = Modifier.fillMaxWidth()
-        )
+        ) {
+            Text("Detaillierte Geräteauswahl")
+        }
         Spacer(Modifier.height(16.dp))
         
         Button(

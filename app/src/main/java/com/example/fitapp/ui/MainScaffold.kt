@@ -7,11 +7,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -23,6 +26,8 @@ import com.example.fitapp.ui.nutrition.NutritionScreen
 import com.example.fitapp.ui.screens.PlanScreen
 import com.example.fitapp.ui.screens.ProgressScreen
 import com.example.fitapp.ui.screens.TodayScreen
+import com.example.fitapp.ui.screens.EquipmentSelectionScreen
+import com.example.fitapp.ui.screens.TodayTrainingScreen
 import com.example.fitapp.ui.settings.ApiKeysScreen
 import kotlinx.coroutines.launch
 
@@ -34,6 +39,7 @@ fun MainScaffold() {
     val nav = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    var showOverflowMenu by remember { mutableStateOf(false) }
 
     val destinations = listOf(
         Destination("plan", "Plan", Icons.Filled.Timeline),
@@ -66,6 +72,26 @@ fun MainScaffold() {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Filled.Menu, contentDescription = "Menü")
                         }
+                    },
+                    actions = {
+                        IconButton(onClick = { showOverflowMenu = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "Mehr Optionen")
+                        }
+                        DropdownMenu(
+                            expanded = showOverflowMenu,
+                            onDismissRequest = { showOverflowMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Essen fotografieren") },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    nav.navigate("foodscan")
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.PhotoCamera, contentDescription = null)
+                                }
+                            )
+                        }
                     }
                 )
             },
@@ -90,8 +116,8 @@ fun MainScaffold() {
             }
         ) { padding ->
             NavHost(navController = nav, startDestination = "plan", modifier = Modifier.fillMaxSize()) {
-                composable("plan") { PlanScreen(padding) }
-                composable("today") { TodayScreen(padding) }
+                composable("plan") { PlanScreen(padding, nav) }
+                composable("today") { TodayScreen(padding, nav) }
                 composable("nutrition") { NutritionScreen() }
                 composable("progress") { ProgressScreen(padding) }
                 composable("foodscan") {
@@ -102,6 +128,21 @@ fun MainScaffold() {
                 }
                 composable("apikeys") {
                     ApiKeysScreen(padding)
+                }
+                composable("equipment") { backStackEntry ->
+                    val currentEquipment = backStackEntry.savedStateHandle.get<String>("equipment") ?: ""
+                    EquipmentSelectionScreen(
+                        selectedEquipment = currentEquipment.split(",").filter { it.isNotBlank() },
+                        onEquipmentChanged = { newEquipment ->
+                            nav.previousBackStackEntry?.savedStateHandle?.set("equipment", newEquipment.joinToString(","))
+                        },
+                        onBackPressed = { nav.popBackStack() }
+                    )
+                }
+                composable("todaytraining") {
+                    TodayTrainingScreen(
+                        onBackPressed = { nav.popBackStack() }
+                    )
                 }
 
             }

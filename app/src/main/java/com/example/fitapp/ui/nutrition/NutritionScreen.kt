@@ -106,6 +106,10 @@ private fun GenerateTab(
 
 @Composable
 private fun RecipeList(title: String, items: List<RecipeEntity>, onFavClick: (String, Boolean) -> Unit) {
+    val ctx = LocalContext.current
+    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val scope = rememberCoroutineScope()
+    
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp,16.dp,16.dp,96.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Text(title, style = MaterialTheme.typography.titleLarge) }
         items(items) { r ->
@@ -117,6 +121,20 @@ private fun RecipeList(title: String, items: List<RecipeEntity>, onFavClick: (St
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilledTonalButton(onClick = { onFavClick(r.id, true) }) { Text("Favorit ✓") }
                         OutlinedButton(onClick = { onFavClick(r.id, false) }) { Text("Favorit entfernen") }
+                        Button(
+                            onClick = { 
+                                scope.launch {
+                                    repo.logIntake(
+                                        kcal = r.calories ?: 0,
+                                        label = "Gekocht: ${r.title}",
+                                        source = "RECIPE",
+                                        refId = r.id
+                                    )
+                                }
+                            }
+                        ) { 
+                            Text("Gekocht - zu Tagesbilanz hinzufügen") 
+                        }
                     }
                 }
             }
