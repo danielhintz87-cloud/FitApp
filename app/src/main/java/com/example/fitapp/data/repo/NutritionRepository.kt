@@ -113,7 +113,7 @@ class NutritionRepository(private val db: AppDatabase) {
     }
 
     private fun AiProvider.toGateway(): AiGateway.Provider = when (this) {
-        AiProvider.Gemini -> AiGateway.Provider.GEMIN
+        AiProvider.Gemini -> AiGateway.Provider.GEMINI
         AiProvider.DeepSeek -> AiGateway.Provider.DEEPSEEK
         else -> AiGateway.Provider.OPENAI
     }
