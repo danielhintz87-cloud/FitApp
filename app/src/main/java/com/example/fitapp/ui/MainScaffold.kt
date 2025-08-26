@@ -89,7 +89,7 @@ fun MainScaffold() {
                                 onClick = { provider = AiProvider.DeepSeek; showMenu = false },
                                 trailingIcon = { if (provider == AiProvider.DeepSeek) Icon(Icons.Filled.Check, null) }
                             )
-                            Divider()
+                            HorizontalDivider()
                             DropdownMenuItem(text = { Text("Food Scan") }, onClick = { showMenu = false; nav.navigate("foodscan") })
                             DropdownMenuItem(text = { Text("AI-Logs") }, onClick = { showMenu = false; nav.navigate("logs") })
                             DropdownMenuItem(text = { Text("Über") }, onClick = { showMenu = false })
