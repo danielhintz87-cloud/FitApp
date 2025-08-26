@@ -18,7 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.fitapp.ui.food.FoodScanScreen
-import com.example.fitapp.ui.screens.NutritionScreen
+import com.example.fitapp.ui.nutrition.NutritionScreen
 import com.example.fitapp.ui.screens.PlanScreen
 import com.example.fitapp.ui.screens.ProgressScreen
 import com.example.fitapp.ui.screens.TodayScreen
@@ -100,7 +100,7 @@ fun MainScaffold() {
             NavHost(navController = nav, startDestination = "plan", modifier = Modifier.fillMaxSize()) {
                 composable("plan") { PlanScreen(padding) }
                 composable("today") { TodayScreen(padding) }
-                composable("nutrition") { NutritionScreen(padding) }
+                composable("nutrition") { NutritionScreen() }
                 composable("progress") { ProgressScreen(padding) }
                 composable("foodscan") { FoodScanScreen(padding) }
                 composable("logs") { AiLogsScreen(padding) }
