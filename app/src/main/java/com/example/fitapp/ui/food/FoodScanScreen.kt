@@ -20,11 +20,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
-import com.example.fitapp.ai.AiProvider
-import com.example.fitapp.ai.CalorieEstimate
+import com.example.fitapp.ai.AppAi
+import com.example.fitapp.ai.CaloriesEstimate
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.ui.components.BudgetBar
+import com.example.fitapp.util.BitmapUtils
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
@@ -32,7 +33,6 @@ import java.time.ZoneId
 @Composable
 fun FoodScanScreen(
     contentPadding: PaddingValues,
-    provider: AiProvider,
     onLogged: () -> Unit
 ) {
     val ctx = LocalContext.current
@@ -40,7 +40,7 @@ fun FoodScanScreen(
     val scope = rememberCoroutineScope()
     var picked by remember { mutableStateOf<Uri?>(null) }
     var captured by remember { mutableStateOf<Bitmap?>(null) }
-    var estimate by remember { mutableStateOf<CalorieEstimate?>(null) }
+    var estimate by remember { mutableStateOf<CaloriesEstimate?>(null) }
     var loading by remember { mutableStateOf(false) }
     var showConfirmDialog by remember { mutableStateOf(false) }
     var editedKcal by remember { mutableStateOf("") }
@@ -125,12 +125,15 @@ fun FoodScanScreen(
                     scope.launch {
                         try {
                             estimate = when {
-                                captured != null -> repo.analyzeFoodBitmap(ctx, captured!!, provider)
-                                picked != null -> repo.analyzeFoodImage(ctx, picked!!, provider)
+                                captured != null -> AppAi.caloriesWithOptimalProvider(ctx, captured!!, "").getOrThrow()
+                                picked != null -> {
+                                    val bitmap = BitmapUtils.loadBitmapFromUri(ctx.contentResolver, picked!!)
+                                    AppAi.caloriesWithOptimalProvider(ctx, bitmap, "").getOrThrow()
+                                }
                                 else -> null
                             }
                         } catch (e: Exception) {
-                            estimate = CalorieEstimate(0, "niedrig", "Analyse fehlgeschlagen: ${e.message}")
+                            estimate = CaloriesEstimate(0, 60, "Analyse fehlgeschlagen: ${e.message}")
                         } finally {
                             loading = false
                         }
@@ -162,8 +165,8 @@ fun FoodScanScreen(
         estimate?.let { e ->
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Schätzung: ${e.kcal} kcal (${e.confidence})", style = MaterialTheme.typography.titleMedium)
-                    Text(e.details, style = MaterialTheme.typography.bodyMedium)
+                    Text("Schätzung: ${e.kcal} kcal (${e.confidence}%)", style = MaterialTheme.typography.titleMedium)
+                    Text(e.text, style = MaterialTheme.typography.bodyMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = {
                             editedKcal = e.kcal.toString()

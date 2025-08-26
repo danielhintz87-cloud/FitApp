@@ -8,7 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.fitapp.ai.AiProvider
 import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.PlanRequest
 import com.example.fitapp.data.db.AppDatabase
@@ -16,7 +15,7 @@ import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.launch
 
 @Composable
-fun PlanScreen(contentPadding: PaddingValues, provider: AiProvider) {
+fun PlanScreen(contentPadding: PaddingValues) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
@@ -83,7 +82,7 @@ fun PlanScreen(contentPadding: PaddingValues, provider: AiProvider) {
                             minutesPerSession = minutes.toIntOrNull() ?: 60,
                             equipment = equipment.split(",").map { it.trim() }
                         )
-                        val planContent = AppAi.plan(ctx, provider, req).getOrThrow()
+                        val planContent = AppAi.planWithOptimalProvider(ctx, req).getOrThrow()
                         
                         // Save the plan to database
                         val planId = repo.savePlan(

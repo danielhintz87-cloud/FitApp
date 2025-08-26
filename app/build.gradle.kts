@@ -16,23 +16,25 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // Aus local.properties (nicht committen!)
-        buildConfigField("String", "OPENAI_API_KEY", "\"${project.findProperty("OPENAI_API_KEY") ?: ""}\"")
-        buildConfigField("String", "GEMINI_API_KEY", "\"${project.findProperty("GEMINI_API_KEY") ?: ""}\"")
-        buildConfigField("String", "DEEPSEEK_API_KEY", "\"${project.findProperty("DEEPSEEK_API_KEY") ?: ""}\"")
+        // Direct API key placeholders - edit these values directly
+        buildConfigField("String", "OPENAI_API_KEY", "\"YOUR_OPENAI_API_KEY_HERE\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"YOUR_GEMINI_API_KEY_HERE\"")
+        buildConfigField("String", "DEEPSEEK_API_KEY", "\"YOUR_DEEPSEEK_API_KEY_HERE\"")
 
-        buildConfigField("String", "OPENAI_BASE_URL", "\"${project.findProperty("OPENAI_BASE_URL") ?: "https://api.openai.com"}\"")
-        buildConfigField("String", "GEMINI_BASE_URL", "\"${project.findProperty("GEMINI_BASE_URL") ?: "https://generativelanguage.googleapis.com"}\"")
-        buildConfigField("String", "DEEPSEEK_BASE_URL", "\"${project.findProperty("DEEPSEEK_BASE_URL") ?: "https://api.deepseek.com"}\"")
+        // Recommended base URLs
+        buildConfigField("String", "OPENAI_BASE_URL", "\"https://api.openai.com\"")
+        buildConfigField("String", "GEMINI_BASE_URL", "\"https://generativelanguage.googleapis.com\"")
+        buildConfigField("String", "DEEPSEEK_BASE_URL", "\"https://api.deepseek.com\"")
 
-        buildConfigField("String", "OPENAI_MODEL", "\"${project.findProperty("OPENAI_MODEL") ?: "gpt-4o"}\"")
-        buildConfigField("String", "GEMINI_MODEL", "\"${project.findProperty("GEMINI_MODEL") ?: "gemini-1.5-pro"}\"")
-        buildConfigField("String", "DEEPSEEK_MODEL", "\"${project.findProperty("DEEPSEEK_MODEL") ?: "deepseek-chat"}\"")
+        // Default model configurations
+        buildConfigField("String", "OPENAI_MODEL", "\"gpt-4o\"")
+        buildConfigField("String", "GEMINI_MODEL", "\"gemini-1.5-pro\"")
+        buildConfigField("String", "DEEPSEEK_MODEL", "\"deepseek-chat\"")
         
         // Claude configuration
-        buildConfigField("String", "CLAUDE_API_KEY", "\"${project.findProperty("CLAUDE_API_KEY") ?: ""}\"")
-        buildConfigField("String", "CLAUDE_BASE_URL", "\"${project.findProperty("CLAUDE_BASE_URL") ?: "https://api.anthropic.com"}\"")
-        buildConfigField("String", "CLAUDE_MODEL", "\"${project.findProperty("CLAUDE_MODEL") ?: "claude-3-5-sonnet-20241022"}\"")
+        buildConfigField("String", "CLAUDE_API_KEY", "\"YOUR_CLAUDE_API_KEY_HERE\"")
+        buildConfigField("String", "CLAUDE_BASE_URL", "\"https://api.anthropic.com\"")
+        buildConfigField("String", "CLAUDE_MODEL", "\"claude-3-5-sonnet-20241022\"")
     }
 
     buildFeatures { 
