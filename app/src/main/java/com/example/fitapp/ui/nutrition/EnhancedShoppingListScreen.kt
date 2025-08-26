@@ -23,7 +23,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Intent
 
 @Composable
-fun EnhancedShoppingListScreen() {
+fun EnhancedShoppingListScreen(padding: PaddingValues = PaddingValues(0.dp)) {
     val ctx = LocalContext.current
     val db = remember { AppDatabase.get(ctx) }
     val scope = rememberCoroutineScope()
@@ -111,7 +111,7 @@ fun EnhancedShoppingListScreen() {
         items.groupBy { if (it.checked) "Erledigt" else "Offen" }
     }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().padding(padding)) {
         // Header with actions
         Row(
             modifier = Modifier

@@ -194,7 +194,7 @@ fun MainScaffold() {
                     )
                 }
                 composable("shopping_list") {
-                    com.example.fitapp.ui.nutrition.EnhancedShoppingListScreen()
+                    com.example.fitapp.ui.nutrition.EnhancedShoppingListScreen(padding)
                 }
                 composable("training_execution/{planId}") { backStackEntry ->
                     val planId = backStackEntry.arguments?.getString("planId")?.toLongOrNull() ?: 0L
