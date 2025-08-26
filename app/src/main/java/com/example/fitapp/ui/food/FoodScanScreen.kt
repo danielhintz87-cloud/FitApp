@@ -1,27 +1,27 @@
 package com.example.fitapp.ui.food
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import android.Manifest
-import android.content.pm.PackageManager
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
-
 import com.example.fitapp.ai.AiProvider
+import com.example.fitapp.ai.CalorieEstimate
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.ui.components.BudgetBar
@@ -30,17 +30,17 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 @Composable
-
-fun FoodScanScreen(contentPadding: PaddingValues, provider: AiProvider, onLogged: () -> Unit) {
-
-fun FoodScanScreen(contentPadding: PaddingValues, provider: AiProvider) {
-
+fun FoodScanScreen(
+    contentPadding: PaddingValues,
+    provider: AiProvider,
+    onLogged: () -> Unit
+) {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
     val scope = rememberCoroutineScope()
     var picked by remember { mutableStateOf<Uri?>(null) }
     var captured by remember { mutableStateOf<Bitmap?>(null) }
-    var estimate by remember { mutableStateOf<com.example.fitapp.ai.CalorieEstimate?>(null) }
+    var estimate by remember { mutableStateOf<CalorieEstimate?>(null) }
     var loading by remember { mutableStateOf(false) }
     val todayEpoch = remember { LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond() }
     val goal by repo.goalFlow(LocalDate.now()).collectAsState(initial = null)
@@ -56,11 +56,9 @@ fun FoodScanScreen(contentPadding: PaddingValues, provider: AiProvider) {
         captured = bmp
         picked = null
     }
-
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) camera.launch(null)
     }
-
 
     Column(
         modifier = Modifier
@@ -71,13 +69,13 @@ fun FoodScanScreen(contentPadding: PaddingValues, provider: AiProvider) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text("Food Scan", style = MaterialTheme.typography.titleLarge)
-        
+
         // Daily Goal Setting
         Card {
             Column(Modifier.padding(16.dp)) {
                 Text("Tagesziel", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     var newTarget by remember { mutableStateOf(target.toString()) }
                     OutlinedTextField(
                         value = newTarget,
@@ -90,7 +88,7 @@ fun FoodScanScreen(contentPadding: PaddingValues, provider: AiProvider) {
                         val targetValue = newTarget.toIntOrNull()
                         if (targetValue != null && targetValue > 0) {
                             scope.launch {
-                                repo.setDailyGoal(java.time.LocalDate.now(), targetValue)
+                                repo.setDailyGoal(LocalDate.now(), targetValue)
                             }
                         }
                     }) {
@@ -99,63 +97,80 @@ fun FoodScanScreen(contentPadding: PaddingValues, provider: AiProvider) {
                 }
             }
         }
-        
+
         BudgetBar(consumed = consumed, target = target)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) { Text("Foto wählen") }
-
+            Button(onClick = {
+                picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            }) {
+                Text("Foto wählen")
+            }
             Button(onClick = {
                 if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                     camera.launch(null)
                 } else {
                     permissionLauncher.launch(Manifest.permission.CAMERA)
                 }
-            }) { Text("Foto aufnehmen") }
-
-            Button(onClick = { camera.launch(null) }) { Text("Foto aufnehmen") }
- main
-            OutlinedButton(enabled = (picked != null || captured != null) && !loading, onClick = {
-                loading = true
-                scope.launch {
-                    try {
-                        estimate = when {
-                            captured != null -> repo.analyzeFoodBitmap(captured!!, provider)
-                            picked != null -> repo.analyzeFoodImage(ctx, picked!!, provider)
-                            else -> null
+            }) {
+                Text("Foto aufnehmen")
+            }
+            OutlinedButton(
+                enabled = (picked != null || captured != null) && !loading,
+                onClick = {
+                    loading = true
+                    scope.launch {
+                        try {
+                            estimate = when {
+                                captured != null -> repo.analyzeFoodBitmap(captured!!, provider)
+                                picked != null -> repo.analyzeFoodImage(ctx, picked!!, provider)
+                                else -> null
+                            }
+                        } catch (e: Exception) {
+                            estimate = CalorieEstimate(0, "niedrig", "Analyse fehlgeschlagen: ${e.message}")
+                        } finally {
+                            loading = false
                         }
-                    } catch (e: Exception) {
-                        estimate = com.example.fitapp.ai.CalorieEstimate(0, "niedrig", "Analyse fehlgeschlagen: ${'$'}{e.message}")
-                    } finally {
-                        loading = false
                     }
                 }
-            }) { Text(if (loading) "Analysiere…" else "Kalorien schätzen") }
+            ) {
+                Text(if (loading) "Analysiere…" else "Kalorien schätzen")
+            }
         }
 
         picked?.let {
-            AsyncImage(model = it, contentDescription = "Selected food image for analysis", modifier = Modifier.fillMaxWidth().height(200.dp))
+            AsyncImage(
+                model = it,
+                contentDescription = "Selected food image for analysis",
+                modifier = Modifier.fillMaxWidth().height(200.dp)
+            )
         }
         captured?.let {
-            Image(bitmap = it.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxWidth().height(200.dp))
+            Image(
+                bitmap = it.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth().height(200.dp)
+            )
         }
 
         picked?.let { Text("Bild: $it", style = MaterialTheme.typography.bodySmall) }
         captured?.let { Text("Foto aufgenommen", style = MaterialTheme.typography.bodySmall) }
- 
+
         estimate?.let { e ->
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Schätzung: ${'$'}{e.kcal} kcal (${e.confidence})", style = MaterialTheme.typography.titleMedium)
+                    Text("Schätzung: ${e.kcal} kcal (${e.confidence})", style = MaterialTheme.typography.titleMedium)
                     Text(e.details, style = MaterialTheme.typography.bodyMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = {
                             scope.launch {
                                 repo.logIntake(e.kcal, "Essen (Foto)", "PHOTO")
-                                repo.adjustDailyGoal(java.time.LocalDate.now())
+                                repo.adjustDailyGoal(LocalDate.now())
                                 onLogged()
                             }
                         }) { Text("Buchen") }
-                        OutlinedButton(onClick = { estimate = null; picked = null; captured = null }) { Text("Zurücksetzen") }
+                        OutlinedButton(onClick = { estimate = null; picked = null; captured = null }) {
+                            Text("Zurücksetzen")
+                        }
                     }
                 }
             }

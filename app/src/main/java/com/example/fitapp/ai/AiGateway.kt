@@ -108,7 +108,11 @@ object AiGateway {
                 user = "Schätze grob die Kalorien des Essens auf einem Foto. Hinweis: DeepSeek unterstützt eventuell keine Bildanalyse, schätze daher basierend auf allgemeinem Wissen.",
             )
         }
-        val kcal = Regex(r"(\d{2,5})\s*kcal", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        val kcal = Regex("(\d{2,5})\s*kcal", RegexOption.IGNORE_CASE)
+            .find(text)
+            ?.groupValues
+            ?.get(1)
+            ?.toIntOrNull() ?: 0
         val confidence = when {
             "hoch" in text.lowercase() || "sicher" in text.lowercase() -> "hoch"
             "mittel" in text.lowercase() -> "mittel"
