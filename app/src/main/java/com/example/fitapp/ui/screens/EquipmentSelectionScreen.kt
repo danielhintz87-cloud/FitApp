@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -77,15 +78,19 @@ fun EquipmentSelectionScreen(
         EquipmentItem("Springdeil", "Zubehör", "Für Cardio-Training")
     )
     
-    val filteredEquipment = allEquipment.filter { equipment ->
-        val matchesCategory = selectedCategory == "Alle" || equipment.category == selectedCategory
-        val matchesSearch = searchQuery.isBlank() || 
-                          equipment.name.contains(searchQuery, ignoreCase = true) ||
-                          equipment.description.contains(searchQuery, ignoreCase = true)
-        matchesCategory && matchesSearch
+    val filteredEquipment = remember(selectedCategory, searchQuery) {
+        allEquipment.filter { equipment ->
+            val matchesCategory = selectedCategory == "Alle" || equipment.category == selectedCategory
+            val matchesSearch = searchQuery.isBlank() || 
+                              equipment.name.contains(searchQuery, ignoreCase = true) ||
+                              equipment.description.contains(searchQuery, ignoreCase = true)
+            matchesCategory && matchesSearch
+        }
     }
     
-    val mutableSelectedEquipment = remember(selectedEquipment) { selectedEquipment.toMutableList() }
+    val mutableSelectedEquipment = remember { 
+        mutableStateListOf<String>().apply { addAll(selectedEquipment) }
+    }
     
     Column(Modifier.fillMaxSize()) {
         // Top App Bar
@@ -97,13 +102,14 @@ fun EquipmentSelectionScreen(
                 }
             },
             actions = {
-                TextButton(
+                Button(
                     onClick = {
                         onEquipmentChanged(mutableSelectedEquipment.toList())
                         onBackPressed()
-                    }
+                    },
+                    modifier = Modifier.padding(end = 8.dp)
                 ) {
-                    Text("Fertig")
+                    Text("Fertig (${mutableSelectedEquipment.size})")
                 }
             }
         )
@@ -165,59 +171,70 @@ fun EquipmentSelectionScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(filteredEquipment) { equipment ->
-                val isSelected = equipment.name in mutableSelectedEquipment
-                
-                ElevatedCard(
-                    onClick = {
-                        if (isSelected) {
-                            mutableSelectedEquipment.remove(equipment.name)
-                        } else {
+            items(filteredEquipment, key = { it.name }) { equipment ->
+                EquipmentSelectionCard(
+                    equipment = equipment,
+                    isSelected = equipment.name in mutableSelectedEquipment,
+                    onSelectionChange = { selected ->
+                        if (selected) {
                             mutableSelectedEquipment.add(equipment.name)
-                        }
-                    },
-                    colors = if (isSelected) {
-                        CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    } else {
-                        CardDefaults.elevatedCardColors()
-                    }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                text = equipment.name,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = equipment.category,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.secondary
-                            )
-                            if (equipment.description.isNotBlank()) {
-                                Text(
-                                    text = equipment.description,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        
-                        if (isSelected) {
-                            Icon(
-                                Icons.Filled.Check,
-                                contentDescription = "Ausgewählt",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                        } else {
+                            mutableSelectedEquipment.remove(equipment.name)
                         }
                     }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EquipmentSelectionCard(
+    equipment: EquipmentItem,
+    isSelected: Boolean,
+    onSelectionChange: (Boolean) -> Unit
+) {
+    ElevatedCard(
+        onClick = { onSelectionChange(!isSelected) },
+        colors = if (isSelected) {
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        } else {
+            CardDefaults.elevatedCardColors()
+        }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = equipment.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = equipment.category,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+                if (equipment.description.isNotBlank()) {
+                    Text(
+                        text = equipment.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
+            }
+            
+            if (isSelected) {
+                Icon(
+                    Icons.Filled.Check,
+                    contentDescription = "Ausgewählt",
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
