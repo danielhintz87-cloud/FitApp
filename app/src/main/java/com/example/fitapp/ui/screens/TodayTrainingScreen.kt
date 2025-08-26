@@ -15,6 +15,7 @@ import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.PlanRequest
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
+import com.example.fitapp.data.prefs.UserPreferences
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,7 +51,13 @@ fun TodayTrainingScreen(
         currentPlan?.let { plan ->
             customGoal = "Angepasst: ${plan.goal}"
             customMinutes = plan.minutesPerSession.toString()
-            customEquipment = plan.equipment
+            // Load equipment from persistent storage instead of plan
+            val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
+            customEquipment = if (savedEquipment.isNotEmpty()) {
+                savedEquipment.joinToString(", ")
+            } else {
+                plan.equipment
+            }
         }
     }
     

@@ -197,18 +197,35 @@ fun FoodScanScreen(
                             }
                             
                             estimate = when {
-                                captured != null -> AppAi.caloriesWithOptimalProvider(ctx, captured!!, prompt).getOrThrow()
+                                captured != null -> {
+                                    val result = AppAi.caloriesWithOptimalProvider(ctx, captured!!, prompt)
+                                    if (result.isFailure) {
+                                        CaloriesEstimate(0, 30, "Analyse fehlgeschlagen: ${result.exceptionOrNull()?.message}")
+                                    } else {
+                                        result.getOrNull()
+                                    }
+                                }
                                 picked != null -> {
-                                    val bitmap = BitmapUtils.loadBitmapFromUri(ctx.contentResolver, picked!!)
-                                    AppAi.caloriesWithOptimalProvider(ctx, bitmap, prompt).getOrThrow()
+                                    try {
+                                        val bitmap = BitmapUtils.loadBitmapFromUri(ctx.contentResolver, picked!!)
+                                        val result = AppAi.caloriesWithOptimalProvider(ctx, bitmap, prompt)
+                                        if (result.isFailure) {
+                                            CaloriesEstimate(0, 30, "Analyse fehlgeschlagen: ${result.exceptionOrNull()?.message}")
+                                        } else {
+                                            result.getOrNull()
+                                        }
+                                    } catch (e: Exception) {
+                                        CaloriesEstimate(0, 30, "Bild konnte nicht geladen werden: ${e.message}")
+                                    }
                                 }
                                 else -> null
                             }
                             
-                            // Check if food was detected
+                            // Check if food was detected or if there was an error
                             estimate?.let { est ->
                                 if (est.text.contains("KEIN_ESSEN_ERKANNT", ignoreCase = true) || 
                                     est.text.contains("kein essen", ignoreCase = true) ||
+                                    est.text.contains("fehlgeschlagen", ignoreCase = true) ||
                                     est.kcal == 0) {
                                     showFoodValidationDialog = true
                                 } else {
@@ -216,6 +233,10 @@ fun FoodScanScreen(
                                     editedKcal = est.kcal.toString()
                                     editedLabel = "Essen (Foto): ${est.text.take(50)}"
                                 }
+                            } ?: run {
+                                // If estimate is null, show error dialog
+                                estimate = CaloriesEstimate(0, 30, "Unbekannter Fehler bei der Analyse")
+                                showFoodValidationDialog = true
                             }
                             
                         } catch (e: Exception) {
