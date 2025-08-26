@@ -120,7 +120,7 @@ fun FoodScanScreen(contentPadding: PaddingValues, provider: AiProvider, onLogged
             }) { Text(if (loading) "Analysiere…" else "Kalorien schätzen") }
         }
         picked?.let {
-            AsyncImage(model = it, contentDescription = null, modifier = Modifier.fillMaxWidth().height(200.dp))
+            AsyncImage(model = it, contentDescription = "Selected food image for analysis", modifier = Modifier.fillMaxWidth().height(200.dp))
         }
         captured?.let {
             Image(bitmap = it.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxWidth().height(200.dp))
