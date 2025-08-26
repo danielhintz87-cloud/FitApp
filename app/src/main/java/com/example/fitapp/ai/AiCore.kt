@@ -221,14 +221,15 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             .post(body).build()
 
         http.newCall(req).execute().use { resp ->
+            val bodyStr = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) {
                 if (resp.code == 401) {
                     error("Gemini 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
                 } else {
-                    error("Gemini ${resp.code}")
+                    error("Gemini ${resp.code}: ${bodyStr.take(200)}")
                 }
             }
-            val txt = resp.body!!.string()
+            val txt = bodyStr
             // Manual JSON parsing for Gemini
             val textStart = txt.indexOf("\"text\":\"") + 8
             val textEnd = txt.indexOf("\"", textStart)
@@ -259,14 +260,15 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             .post(body).build()
 
         http.newCall(req).execute().use { resp ->
+            val bodyStr = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) {
                 if (resp.code == 401) {
                     error("Gemini 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
                 } else {
-                    error("Gemini ${resp.code}")
+                    error("Gemini ${resp.code}: ${bodyStr.take(200)}")
                 }
             }
-            val txt = resp.body!!.string()
+            val txt = bodyStr
             // Manual JSON parsing for Gemini vision
             val textStart = txt.indexOf("\"text\":\"") + 8
             val textEnd = txt.indexOf("\"", textStart)
