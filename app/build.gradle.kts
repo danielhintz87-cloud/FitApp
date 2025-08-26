@@ -17,9 +17,9 @@ android {
         versionName = "1.0"
 
         // Direct API key placeholders - edit these values directly
-        buildConfigField("String", "OPENAI_API_KEY", "\"YOUR_OPENAI_API_KEY_HERE\"")
-        buildConfigField("String", "GEMINI_API_KEY", "\"YOUR_GEMINI_API_KEY_HERE\"")
-        buildConfigField("String", "DEEPSEEK_API_KEY", "\"YOUR_DEEPSEEK_API_KEY_HERE\"")
+        buildConfigField("String", "OPENAI_API_KEY", "\"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\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"AIzaSyBvqPCG17SaKJBRSghTpoEcs_EQfOfQVOs\"")
+        buildConfigField("String", "DEEPSEEK_API_KEY", "\"sk-06acf33d0fa2411cafeb7eace7b0fd83\"")
 
         // Recommended base URLs
         buildConfigField("String", "OPENAI_BASE_URL", "\"https://api.openai.com\"")
@@ -32,7 +32,7 @@ android {
         buildConfigField("String", "DEEPSEEK_MODEL", "\"deepseek-chat\"")
         
         // Claude configuration
-        buildConfigField("String", "CLAUDE_API_KEY", "\"YOUR_CLAUDE_API_KEY_HERE\"")
+        buildConfigField("String", "CLAUDE_API_KEY", "\"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\"")
         buildConfigField("String", "CLAUDE_BASE_URL", "\"https://api.anthropic.com\"")
         buildConfigField("String", "CLAUDE_MODEL", "\"claude-3-5-sonnet-20241022\"")
     }
