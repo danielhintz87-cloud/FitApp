@@ -17,8 +17,8 @@ class NutritionRepository(private val db: AppDatabase) {
     fun favorites(): Flow<List<RecipeEntity>> = db.recipeDao().favoritesFlow()
     fun history(): Flow<List<RecipeEntity>> = db.recipeDao().historyFlow()
 
-    suspend fun generateAndStore(prompt: String, provider: AiProvider): List<UiRecipe> {
-        val list = AiGateway.generateRecipes(prompt, provider.toGateway())
+    suspend fun generateAndStore(context: Context, prompt: String, provider: AiProvider): List<UiRecipe> {
+        val list = AiGateway.generateRecipes(context, prompt, provider.toGateway())
         list.forEach { r ->
             db.recipeDao().upsertAndAddToHistory(
                 RecipeEntity(
@@ -51,8 +51,8 @@ class NutritionRepository(private val db: AppDatabase) {
         return AiGateway.analyzeFoodImage(ctx, uri, provider.toGateway())
     }
 
-    suspend fun analyzeFoodBitmap(bitmap: Bitmap, provider: AiProvider): CalorieEstimate {
-        return AiGateway.analyzeFoodBitmap(bitmap, provider.toGateway())
+    suspend fun analyzeFoodBitmap(context: Context, bitmap: Bitmap, provider: AiProvider): CalorieEstimate {
+        return AiGateway.analyzeFoodBitmap(context, bitmap, provider.toGateway())
     }
 
     suspend fun logIntake(kcal: Int, label: String, source: String, refId: String? = null) {

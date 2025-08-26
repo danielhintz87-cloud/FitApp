@@ -5,7 +5,7 @@ import android.graphics.Bitmap
 import com.example.fitapp.data.db.AppDatabase
 
 object AppAi {
-    private fun core(context: Context) = AiCore(AppDatabase.get(context).aiLogDao())
+    private fun core(context: Context) = AiCore(AppDatabase.get(context).aiLogDao(), context)
 
     suspend fun plan(context: Context, provider: AiProvider, req: PlanRequest) =
         core(context).generatePlan(provider, req)

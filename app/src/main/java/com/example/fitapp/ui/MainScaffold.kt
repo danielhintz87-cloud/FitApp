@@ -20,11 +20,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.fitapp.ai.AiProvider
+import com.example.fitapp.ui.AiLogsScreen
 import com.example.fitapp.ui.food.FoodScanScreen
 import com.example.fitapp.ui.nutrition.NutritionScreen
 import com.example.fitapp.ui.screens.PlanScreen
 import com.example.fitapp.ui.screens.ProgressScreen
 import com.example.fitapp.ui.screens.TodayScreen
+import com.example.fitapp.ui.settings.ApiKeysScreen
 import kotlinx.coroutines.launch
 
 data class Destination(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
@@ -56,6 +58,7 @@ fun MainScaffold() {
                 NavigationDrawerItem(label = { Text("Progress") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("progress") })
                 NavigationDrawerItem(label = { Text("Food Scan") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("foodscan") })
                 NavigationDrawerItem(label = { Text("AI-Logs") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("logs") })
+                NavigationDrawerItem(label = { Text("API-Schlüssel") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("apikeys") })
             }
         }
     ) {
@@ -124,6 +127,12 @@ fun MainScaffold() {
                 composable("progress") { ProgressScreen(padding) }
                 composable("foodscan") {
                     FoodScanScreen(padding, provider) { nav.navigate("plan") }
+                }
+                composable("logs") {
+                    AiLogsScreen(padding)
+                }
+                composable("apikeys") {
+                    ApiKeysScreen(padding)
                 }
 
             }

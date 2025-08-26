@@ -1,10 +1,12 @@
 package com.example.fitapp.ai
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.util.Base64
 import com.example.fitapp.BuildConfig
 import com.example.fitapp.data.db.AiLog
 import com.example.fitapp.data.db.AiLogDao
+import com.example.fitapp.data.prefs.ApiKeys
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -33,7 +35,7 @@ data class RecipeRequest(
 
 data class CaloriesEstimate(val kcal: Int, val confidence: Int, val text: String)
 
-class AiCore(private val logDao: AiLogDao) {
+class AiCore(private val logDao: AiLogDao, private val context: Context) {
 
     private val http = OkHttpClient.Builder()
         .callTimeout(60, TimeUnit.SECONDS)
@@ -94,6 +96,11 @@ class AiCore(private val logDao: AiLogDao) {
     // -------- OpenAI --------
 
     private suspend fun openAiChat(prompt: String): Result<String> = runCatching {
+        val apiKey = ApiKeys.getOpenAiKey(context)
+        if (apiKey.isBlank()) {
+            throw IllegalStateException("OpenAI API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+        }
+        
         val model = BuildConfig.OPENAI_MODEL.ifBlank { "gpt-4o-mini" }
         val body = """
             {"model":"$model","messages":[{"role":"user","content":${prompt.json()}}],"temperature":0.4}
@@ -101,12 +108,18 @@ class AiCore(private val logDao: AiLogDao) {
 
         val req = Request.Builder()
             .url("${BuildConfig.OPENAI_BASE_URL}/v1/chat/completions")
-            .header("Authorization", "Bearer ${BuildConfig.OPENAI_API_KEY}")
+            .header("Authorization", "Bearer $apiKey")
             .post(body)
             .build()
 
         http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) error("OpenAI ${resp.code}")
+            if (!resp.isSuccessful) {
+                if (resp.code == 401) {
+                    error("OpenAI 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                } else {
+                    error("OpenAI ${resp.code}")
+                }
+            }
             val txt = resp.body!!.string()
             // Manual JSON parsing for simplicity
             val contentStart = txt.indexOf("\"content\":\"") + 11
@@ -119,6 +132,11 @@ class AiCore(private val logDao: AiLogDao) {
     }
 
     private suspend fun openAiVision(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> = runCatching {
+        val apiKey = ApiKeys.getOpenAiKey(context)
+        if (apiKey.isBlank()) {
+            throw IllegalStateException("OpenAI API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+        }
+        
         val model = BuildConfig.OPENAI_MODEL.ifBlank { "gpt-4o-mini" }
         val dataUrl = "data:image/jpeg;base64," + bitmap.toJpegBytes().b64()
         val body = """
@@ -134,11 +152,17 @@ class AiCore(private val logDao: AiLogDao) {
 
         val req = Request.Builder()
             .url("${BuildConfig.OPENAI_BASE_URL}/v1/chat/completions")
-            .header("Authorization", "Bearer ${BuildConfig.OPENAI_API_KEY}")
+            .header("Authorization", "Bearer $apiKey")
             .post(body).build()
 
         http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) error("OpenAI ${resp.code}")
+            if (!resp.isSuccessful) {
+                if (resp.code == 401) {
+                    error("OpenAI 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                } else {
+                    error("OpenAI ${resp.code}")
+                }
+            }
             val txt = resp.body!!.string()
             // Manual JSON parsing for vision response
             val contentStart = txt.indexOf("\"content\":\"") + 11
@@ -153,16 +177,27 @@ class AiCore(private val logDao: AiLogDao) {
     // -------- Gemini --------
 
     private suspend fun geminiText(prompt: String): Result<String> = runCatching {
+        val apiKey = ApiKeys.getGeminiKey(context)
+        if (apiKey.isBlank()) {
+            throw IllegalStateException("Gemini API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+        }
+        
         val model = BuildConfig.GEMINI_MODEL.ifBlank { "gemini-1.5-pro" }
         val body = """{"contents":[{"parts":[{"text":${prompt.json()}}]}]}"""
             .toRequestBody("application/json".toMediaType())
 
         val req = Request.Builder()
-            .url("${BuildConfig.GEMINI_BASE_URL}/v1beta/models/$model:generateContent?key=${BuildConfig.GEMINI_API_KEY}")
+            .url("${BuildConfig.GEMINI_BASE_URL}/v1beta/models/$model:generateContent?key=$apiKey")
             .post(body).build()
 
         http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) error("Gemini ${resp.code}")
+            if (!resp.isSuccessful) {
+                if (resp.code == 401) {
+                    error("Gemini 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                } else {
+                    error("Gemini ${resp.code}")
+                }
+            }
             val txt = resp.body!!.string()
             // Manual JSON parsing for Gemini
             val textStart = txt.indexOf("\"text\":\"") + 8
@@ -175,6 +210,11 @@ class AiCore(private val logDao: AiLogDao) {
     }
 
     private suspend fun geminiVision(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> = runCatching {
+        val apiKey = ApiKeys.getGeminiKey(context)
+        if (apiKey.isBlank()) {
+            throw IllegalStateException("Gemini API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+        }
+        
         val model = BuildConfig.GEMINI_MODEL.ifBlank { "gemini-1.5-pro" }
         val b64 = bitmap.toJpegBytes().b64()
         val body = """
@@ -185,11 +225,17 @@ class AiCore(private val logDao: AiLogDao) {
         """.trimIndent().toRequestBody("application/json".toMediaType())
 
         val req = Request.Builder()
-            .url("${BuildConfig.GEMINI_BASE_URL}/v1beta/models/$model:generateContent?key=${BuildConfig.GEMINI_API_KEY}")
+            .url("${BuildConfig.GEMINI_BASE_URL}/v1beta/models/$model:generateContent?key=$apiKey")
             .post(body).build()
 
         http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) error("Gemini ${resp.code}")
+            if (!resp.isSuccessful) {
+                if (resp.code == 401) {
+                    error("Gemini 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                } else {
+                    error("Gemini ${resp.code}")
+                }
+            }
             val txt = resp.body!!.string()
             // Manual JSON parsing for Gemini vision
             val textStart = txt.indexOf("\"text\":\"") + 8
@@ -204,6 +250,11 @@ class AiCore(private val logDao: AiLogDao) {
     // -------- DeepSeek --------
 
     private suspend fun deepseekText(prompt: String): Result<String> = runCatching {
+        val apiKey = ApiKeys.getDeepSeekKey(context)
+        if (apiKey.isBlank()) {
+            throw IllegalStateException("DeepSeek API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+        }
+        
         val model = BuildConfig.DEEPSEEK_MODEL.ifBlank { "deepseek-chat" }
         val body = """
             {"model":"$model","messages":[{"role":"user","content":${prompt.json()}}]}
@@ -211,11 +262,17 @@ class AiCore(private val logDao: AiLogDao) {
 
         val req = Request.Builder()
             .url("${BuildConfig.DEEPSEEK_BASE_URL}/v1/chat/completions")
-            .header("Authorization", "Bearer ${BuildConfig.DEEPSEEK_API_KEY}")
+            .header("Authorization", "Bearer $apiKey")
             .post(body).build()
 
         http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) error("DeepSeek ${resp.code}")
+            if (!resp.isSuccessful) {
+                if (resp.code == 401) {
+                    error("DeepSeek 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                } else {
+                    error("DeepSeek ${resp.code}")
+                }
+            }
             val txt = resp.body!!.string()
             // Manual JSON parsing for DeepSeek
             val contentStart = txt.indexOf("\"content\":\"") + 11
