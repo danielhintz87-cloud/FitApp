@@ -122,8 +122,12 @@ fun MainScaffold() {
                 composable("today") { TodayScreen(padding) }
                 composable("nutrition") { NutritionScreen(provider) }
                 composable("progress") { ProgressScreen(padding) }
+                composable("foodscan") {
+                    FoodScanScreen(padding, provider) { nav.navigate("plan") }
+                }
+
                 composable("foodscan") { FoodScanScreen(padding, provider) }
-                composable("logs") { AiLogsScreen(padding) }
+
             }
         }
     }
