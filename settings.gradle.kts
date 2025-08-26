@@ -12,6 +12,23 @@ pluginManagement {
     }
 }
 
+
+plugins {
+    // Falls schon vorhanden, lass die Version so stehen, wichtig ist der develocity-Block unten
+    id("com.gradle.develocity") version "3.19.2"
+}
+
+develocity {
+    buildScan {
+        // 👉 Bedingungen automatisch akzeptieren, damit keine CLI-Abfrage kommt
+        termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
+        termsOfUseAgree = "yes"
+
+        // 👉 Lokale Builds NICHT automatisch veröffentlichen
+        publishing.onlyIf { false }
+    }
+}
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {

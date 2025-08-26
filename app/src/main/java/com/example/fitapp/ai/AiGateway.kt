@@ -23,7 +23,6 @@ import java.io.ByteArrayOutputStream
 import java.util.UUID
 
 // Simple recipe model for UI
-
 data class UiRecipe(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
@@ -277,10 +276,6 @@ object AiGateway {
                 if (resp.code == 401) throw IllegalStateException("DeepSeek 401: API-Schlüssel ungültig oder fehlt")
                 else throw IllegalStateException("DeepSeek HTTP ${resp.code}: ${resp.body?.string()}")
             }
-            if (!resp.isSuccessful) {
-                if (resp.code == 401) throw IllegalStateException("DeepSeek 401: API-Schlüssel ungültig oder fehlt")
-                else throw IllegalStateException("DeepSeek HTTP ${resp.code}: ${resp.body?.string()}")
-            }
             val json = JSONObject(resp.body!!.string())
             return json.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
         }
@@ -319,4 +314,3 @@ object AiGateway {
         }
     }
 }
-

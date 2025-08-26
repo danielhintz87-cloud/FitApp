@@ -40,7 +40,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString() // "17"
+        // freeCompilerArgs += listOf(/* falls du hier schon was hast, so lassen */)
+    }
+
+    kotlin {
+        jvmToolchain(17)
+    }
 
     packaging {
         resources.excludes += setOf(

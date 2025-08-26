@@ -35,7 +35,7 @@ data class RecipeRequest(
 
 data class CaloriesEstimate(val kcal: Int, val confidence: Int, val text: String)
 
-class AiCore(private val logDao: AiLogDao, private val context: Context) {
+class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
     private val http = OkHttpClient.Builder()
         .callTimeout(60, TimeUnit.SECONDS)
@@ -60,7 +60,7 @@ class AiCore(private val logDao: AiLogDao, private val context: Context) {
 
     suspend fun estimateCaloriesFromPhoto(provider: AiProvider, bitmap: Bitmap, note: String = ""): Result<CaloriesEstimate> =
         withContext(Dispatchers.IO) {
-            val prompt = "Schätze Kalorien des gezeigten Essens. Antworte knapp: 'kcal: <Zahl>', 'confidence: <0-100>' und 1 Satz."
+            val prompt = "Schätze Kalorien des gezeigten Essens. Antworte knapp: 'kcal: <Zahl>', 'confidence: <0-100>' und 1 Satz zur Begründung."
             val started = System.currentTimeMillis()
             val r = when (provider) {
                 AiProvider.OpenAI -> openAiVision(prompt, bitmap)
