@@ -85,7 +85,8 @@ fun EquipmentSelectionScreen(
         matchesCategory && matchesSearch
     }
     
-    val mutableSelectedEquipment = remember(selectedEquipment) { selectedEquipment.toMutableList() }
+    val mutableSelectedEquipment = remember(selectedEquipment) { selectedEquipment.toMutableSet() }
+    var selectionState by remember { mutableStateOf(0) } // Trigger recomposition
     
     Column(Modifier.fillMaxSize()) {
         // Top App Bar
@@ -103,7 +104,7 @@ fun EquipmentSelectionScreen(
                         onBackPressed()
                     }
                 ) {
-                    Text("Fertig")
+                    Text("Fertig (${mutableSelectedEquipment.size})")
                 }
             }
         )
@@ -175,6 +176,7 @@ fun EquipmentSelectionScreen(
                         } else {
                             mutableSelectedEquipment.add(equipment.name)
                         }
+                        selectionState++ // Trigger recomposition
                     },
                     colors = if (isSelected) {
                         CardDefaults.elevatedCardColors(

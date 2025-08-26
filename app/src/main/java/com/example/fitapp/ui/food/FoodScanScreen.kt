@@ -124,13 +124,23 @@ fun FoodScanScreen(
                     loading = true
                     scope.launch {
                         try {
-                            estimate = when {
+                            val result = when {
                                 captured != null -> AppAi.caloriesWithOptimalProvider(ctx, captured!!, "").getOrThrow()
                                 picked != null -> {
                                     val bitmap = BitmapUtils.loadBitmapFromUri(ctx.contentResolver, picked!!)
                                     AppAi.caloriesWithOptimalProvider(ctx, bitmap, "").getOrThrow()
                                 }
                                 else -> null
+                            }
+                            estimate = result
+                            
+                            // Auto-prompt for confirmation if confidence is low (below 70%)
+                            result?.let { e ->
+                                if (e.confidence < 70) {
+                                    editedKcal = e.kcal.toString()
+                                    editedLabel = "Essen (Foto)"
+                                    showConfirmDialog = true
+                                }
                             }
                         } catch (e: Exception) {
                             estimate = CaloriesEstimate(0, 60, "Analyse fehlgeschlagen: ${e.message}")
@@ -165,14 +175,45 @@ fun FoodScanScreen(
         estimate?.let { e ->
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Schätzung: ${e.kcal} kcal (${e.confidence}%)", style = MaterialTheme.typography.titleMedium)
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Schätzung: ${e.kcal} kcal", style = MaterialTheme.typography.titleMedium)
+                        val confidenceColor = when {
+                            e.confidence >= 80 -> MaterialTheme.colorScheme.primary
+                            e.confidence >= 60 -> MaterialTheme.colorScheme.tertiary
+                            else -> MaterialTheme.colorScheme.error
+                        }
+                        Text("Vertrauen: ${e.confidence}%", 
+                             style = MaterialTheme.typography.titleSmall,
+                             color = confidenceColor)
+                    }
+                    
+                    if (e.confidence < 70) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            )
+                        ) {
+                            Text(
+                                "⚠️ Niedrige Sicherheit - Bitte überprüfen Sie die Werte",
+                                modifier = Modifier.padding(8.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                    
                     Text(e.text, style = MaterialTheme.typography.bodyMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = {
                             editedKcal = e.kcal.toString()
                             editedLabel = "Essen (Foto)"
                             showConfirmDialog = true
-                        }) { Text("Bestätigen & Buchen") }
+                        }) { 
+                            Text(if (e.confidence >= 70) "Bestätigen & Buchen" else "Korrigieren & Buchen")
+                        }
                         OutlinedButton(onClick = { estimate = null; picked = null; captured = null }) {
                             Text("Zurücksetzen")
                         }
@@ -185,11 +226,35 @@ fun FoodScanScreen(
     
     // Confirmation Dialog
     if (showConfirmDialog) {
+        val currentEstimate = estimate
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
-            title = { Text("Kalorien bestätigen") },
+            title = { 
+                Text(
+                    if (currentEstimate?.confidence ?: 100 < 70) 
+                        "Ergebnis überprüfen" 
+                    else 
+                        "Kalorien bestätigen"
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (currentEstimate?.confidence ?: 100 < 70) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            )
+                        ) {
+                            Text(
+                                "⚠️ Die AI ist unsicher bei der Erkennung (${currentEstimate?.confidence ?: 0}% Vertrauen). Bitte überprüfen Sie die Werte sorgfältig.",
+                                modifier = Modifier.padding(8.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    
                     Text("Bitte bestätigen oder korrigieren Sie die Werte:")
                     OutlinedTextField(
                         value = editedKcal,
