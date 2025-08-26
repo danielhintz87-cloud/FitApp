@@ -78,6 +78,24 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             "Achte auf realistische Portionsgrößen und präzise Makronährstoff-Verteilung."
         )
 
+    suspend fun parseShoppingList(provider: AiProvider, spokenText: String): Result<String> =
+        callText(provider,
+            "Analysiere folgenden gesprochenen Text und extrahiere einzelne Einkaufsliste-Items: '$spokenText'\n\n" +
+            "**Aufgabe:** Zerlege den Text in einzelne Lebensmittel mit optional genannten Mengen.\n\n" +
+            "**Ausgabeformat:** Eine Zeile pro Item im Format: 'Produktname|Menge'\n" +
+            "**Beispiele:**\n" +
+            "- 'Äpfel|2kg'\n" +
+            "- 'Milch|1L'\n" +
+            "- 'Brot|1 Stück'\n" +
+            "- 'Bananen|' (wenn keine Menge genannt)\n\n" +
+            "**Regeln:**\n" +
+            "- Erkenne Trennwörter wie 'und', 'sowie', ',', '&'\n" +
+            "- Normalisiere Produktnamen (z.B. 'Tomaten' statt 'Tomate')\n" +
+            "- Wenn keine Menge explizit genannt, lasse Mengenfeld leer\n" +
+            "- Ignoriere Füllwörter wie 'ich brauche', 'kaufen', etc.\n" +
+            "- Ein Item pro Zeile, keine zusätzlichen Erklärungen"
+        )
+
     suspend fun estimateCaloriesFromPhoto(provider: AiProvider, bitmap: Bitmap, note: String = ""): Result<CaloriesEstimate> =
         withContext(Dispatchers.IO) {
             val prompt = "Analysiere das Bild und schätze präzise die Kalorien des gezeigten Essens.\n\n" +
@@ -144,10 +162,14 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) {
-                if (resp.code == 401) {
-                    error("OpenAI 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                } else {
-                    error("OpenAI ${resp.code}")
+                val bodyStr = resp.body?.string().orEmpty()
+                when (resp.code) {
+                    400 -> error("OpenAI 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                    401 -> error("OpenAI 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                    402 -> error("OpenAI 402: Guthaben aufgebraucht oder Zahlung erforderlich. Bitte prüfen Sie Ihr OpenAI-Konto.")
+                    403 -> error("OpenAI 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt.")
+                    429 -> error("OpenAI 429: Zu viele Anfragen. Bitte versuchen Sie es später erneut.")
+                    else -> error("OpenAI ${resp.code}: ${bodyStr.take(200)}")
                 }
             }
             val txt = resp.body!!.string()
@@ -187,10 +209,14 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) {
-                if (resp.code == 401) {
-                    error("OpenAI 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                } else {
-                    error("OpenAI ${resp.code}")
+                val bodyStr = resp.body?.string().orEmpty()
+                when (resp.code) {
+                    400 -> error("OpenAI 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                    401 -> error("OpenAI 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                    402 -> error("OpenAI 402: Guthaben aufgebraucht oder Zahlung erforderlich. Bitte prüfen Sie Ihr OpenAI-Konto.")
+                    403 -> error("OpenAI 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt.")
+                    429 -> error("OpenAI 429: Zu viele Anfragen. Bitte versuchen Sie es später erneut.")
+                    else -> error("OpenAI ${resp.code}: ${bodyStr.take(200)}")
                 }
             }
             val txt = resp.body!!.string()
@@ -223,10 +249,12 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
         http.newCall(req).execute().use { resp ->
             val bodyStr = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) {
-                if (resp.code == 401) {
-                    error("Gemini 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                } else {
-                    error("Gemini ${resp.code}: ${bodyStr.take(200)}")
+                when (resp.code) {
+                    400 -> error("Gemini 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                    401 -> error("Gemini 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                    403 -> error("Gemini 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt.")
+                    429 -> error("Gemini 429: Zu viele Anfragen. Bitte versuchen Sie es später erneut.")
+                    else -> error("Gemini ${resp.code}: ${bodyStr.take(200)}")
                 }
             }
             val txt = bodyStr
@@ -262,10 +290,12 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
         http.newCall(req).execute().use { resp ->
             val bodyStr = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) {
-                if (resp.code == 401) {
-                    error("Gemini 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                } else {
-                    error("Gemini ${resp.code}: ${bodyStr.take(200)}")
+                when (resp.code) {
+                    400 -> error("Gemini 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                    401 -> error("Gemini 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                    403 -> error("Gemini 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt.")
+                    429 -> error("Gemini 429: Zu viele Anfragen. Bitte versuchen Sie es später erneut.")
+                    else -> error("Gemini ${resp.code}: ${bodyStr.take(200)}")
                 }
             }
             val txt = bodyStr
@@ -299,10 +329,14 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) {
-                if (resp.code == 401) {
-                    error("DeepSeek 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                } else {
-                    error("DeepSeek ${resp.code}")
+                val bodyStr = resp.body?.string().orEmpty()
+                when (resp.code) {
+                    400 -> error("DeepSeek 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                    401 -> error("DeepSeek 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
+                    402 -> error("DeepSeek 402: Guthaben aufgebraucht oder Zahlung erforderlich. Bitte prüfen Sie Ihr DeepSeek-Konto.")
+                    403 -> error("DeepSeek 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt.")
+                    429 -> error("DeepSeek 429: Zu viele Anfragen. Bitte versuchen Sie es später erneut.")
+                    else -> error("DeepSeek ${resp.code}: ${bodyStr.take(200)}")
                 }
             }
             val txt = resp.body!!.string()
@@ -373,6 +407,13 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                         ?: availableProviders.firstOrNull { it == AiProvider.DeepSeek }
                         ?: availableProviders.first()
                 }
+                TaskType.SHOPPING_LIST_PARSING -> {
+                    // OpenAI > Gemini > DeepSeek for text parsing and structured extraction
+                    availableProviders.firstOrNull { it == AiProvider.OpenAI }
+                        ?: availableProviders.firstOrNull { it == AiProvider.Gemini }
+                        ?: availableProviders.firstOrNull { it == AiProvider.DeepSeek }
+                        ?: availableProviders.first()
+                }
             }
         }
 
@@ -392,5 +433,6 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 enum class TaskType {
     TRAINING_PLAN,
     CALORIE_ESTIMATION,
-    RECIPE_GENERATION
+    RECIPE_GENERATION,
+    SHOPPING_LIST_PARSING
 }

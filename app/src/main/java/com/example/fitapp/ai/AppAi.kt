@@ -53,6 +53,18 @@ object AppAi {
         }
     }
 
+    /**
+     * Automatically selects the best provider for shopping list parsing with fallback
+     */
+    suspend fun parseShoppingListWithOptimalProvider(context: Context, spokenText: String): Result<String> {
+        val availableProviders = getAvailableProviders(context)
+        val optimal = AiCore.selectOptimalProvider(TaskType.SHOPPING_LIST_PARSING, availableProviders)
+        
+        return tryWithFallback(context, optimal, TaskType.SHOPPING_LIST_PARSING) { provider ->
+            core(context).parseShoppingList(provider, spokenText)
+        }
+    }
+
     private suspend fun <T> tryWithFallback(
         context: Context,
         primary: AiProvider,
