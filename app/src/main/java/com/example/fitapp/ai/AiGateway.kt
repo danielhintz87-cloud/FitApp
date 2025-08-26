@@ -67,13 +67,6 @@ object AiGateway {
             analyzeFoodBase64(base64, provider)
         }
 
-
-    suspend fun analyzeFoodImage(context: Context, imageUri: Uri, provider: Provider = Provider.OPENAI): CalorieEstimate =
-        withContext(Dispatchers.IO) {
-            val base64 = loadBitmapBase64(context.contentResolver, imageUri)
-            analyzeFoodBase64(base64, provider)
-        }
-
     suspend fun analyzeFoodBitmap(bitmap: Bitmap, provider: Provider = Provider.OPENAI): CalorieEstimate =
         withContext(Dispatchers.IO) {
             val stream = ByteArrayOutputStream()
@@ -83,11 +76,7 @@ object AiGateway {
         }
 
     private suspend fun analyzeFoodBase64(base64: String, provider: Provider): CalorieEstimate {
-
         val text = when (provider) {
-
-        val raw = when (provider) {
-
             Provider.OPENAI -> {
                 val content = JSONArray().apply {
                     put(
@@ -116,10 +105,10 @@ object AiGateway {
             }
             Provider.DEEPSEEK -> deepseekChat(
                 system = "Du bist ein erfahrener Ernährungscoach.",
-                user = "Schätze grob die Kalorien des Essens auf einem Foto. Hinweis: DeepSeek unterstützt eventuell keine Bildanalyse, schätze daher basierend auf allgemeinem Wissen."
+                user = "Schätze grob die Kalorien des Essens auf einem Foto. Hinweis: DeepSeek unterstützt eventuell keine Bildanalyse, schätze daher basierend auf allgemeinem Wissen.",
             )
         }
-        val kcal = Regex("""(\d{2,5})\s*kcal""", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        val kcal = Regex(r"(\d{2,5})\s*kcal", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)?.toIntOrNull() ?: 0
         val confidence = when {
             "hoch" in text.lowercase() || "sicher" in text.lowercase() -> "hoch"
             "mittel" in text.lowercase() -> "mittel"
