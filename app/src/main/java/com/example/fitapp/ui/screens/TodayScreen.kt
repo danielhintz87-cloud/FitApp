@@ -22,16 +22,11 @@ fun TodayScreen(contentPadding: PaddingValues) {
     
     val goal by repo.goalFlow(LocalDate.now()).collectAsState(initial = null)
     val entries by repo.dayEntriesFlow(todayEpoch).collectAsState(initial = emptyList())
-    val latestPlan by remember { mutableStateOf<com.example.fitapp.data.db.PlanEntity?>(null) }
-    
-    LaunchedEffect(Unit) {
-        // Load latest plan when screen loads
-        val plan = repo.getLatestPlan()
-        latestPlan?.let { /* This won't work due to remember, need different approach */ }
-    }
+    val plans by repo.plansFlow().collectAsState(initial = emptyList())
     
     val consumed = entries.sumOf { it.kcal }
     val target = goal?.targetKcal ?: 2000
+    val latestPlan = plans.firstOrNull()
 
     Column(
         modifier = Modifier
@@ -87,10 +82,16 @@ fun TodayScreen(contentPadding: PaddingValues) {
             Column(Modifier.padding(16.dp)) {
                 Text("Heutiges Training", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    "Erstelle einen Trainingsplan im Plan-Bereich, um hier dein heutiges Workout zu sehen.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                if (latestPlan != null) {
+                    Text("Aktueller Plan: ${latestPlan.title}", style = MaterialTheme.typography.bodyMedium)
+                    Text("Ziel: ${latestPlan.goal}", style = MaterialTheme.typography.bodySmall)
+                    Text("${latestPlan.sessionsPerWeek}x pro Woche, ${latestPlan.minutesPerSession} Min", style = MaterialTheme.typography.bodySmall)
+                } else {
+                    Text(
+                        "Erstelle einen Trainingsplan im Plan-Bereich, um hier dein heutiges Workout zu sehen.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         }
     }

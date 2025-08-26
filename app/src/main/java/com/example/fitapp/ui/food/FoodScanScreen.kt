@@ -98,7 +98,13 @@ fun FoodScanScreen(contentPadding: PaddingValues) {
                     Text("Schätzung: ${'$'}{e.kcal} kcal (${e.confidence})", style = MaterialTheme.typography.titleMedium)
                     Text(e.details, style = MaterialTheme.typography.bodyMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { scope.launch { repo.logIntake(e.kcal, "Essen (Foto)", "PHOTO") } }) { Text("Buchen") }
+                        Button(onClick = { 
+                            scope.launch { 
+                                repo.logIntake(e.kcal, "Essen (Foto)", "PHOTO")
+                                // Trigger daily goal adjustment
+                                repo.adjustDailyGoal(java.time.LocalDate.now())
+                            } 
+                        }) { Text("Buchen") }
                         OutlinedButton(onClick = { estimate = null; picked = null }) { Text("Zurücksetzen") }
                     }
                 }

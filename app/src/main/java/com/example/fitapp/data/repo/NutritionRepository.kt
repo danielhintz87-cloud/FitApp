@@ -8,6 +8,7 @@ import com.example.fitapp.ai.UiRecipe
 import com.example.fitapp.data.db.*
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
+import java.time.ZoneId
 
 class NutritionRepository(private val db: AppDatabase) {
     fun favorites(): Flow<List<RecipeEntity>> = db.recipeDao().favoritesFlow()
@@ -83,4 +84,24 @@ class NutritionRepository(private val db: AppDatabase) {
     suspend fun getLatestPlan() = db.planDao().getLatestPlan()
     suspend fun getPlan(id: Long) = db.planDao().getPlan(id)
     suspend fun deletePlan(id: Long) = db.planDao().delete(id)
+
+    // Day adjustment logic
+    suspend fun adjustDailyGoal(date: LocalDate) {
+        val epochSec = date.atStartOfDay(ZoneId.systemDefault()).toEpochSecond()
+        val consumedToday = totalForDay(epochSec)
+        val currentGoal = goalFlow(date).value?.targetKcal ?: 2000
+        
+        // Simple adjustment logic: if consumed > 120% of goal, increase goal by 10% for next day
+        // if consumed < 80% of goal, decrease goal by 5% for next day
+        val nextDay = date.plusDays(1)
+        val newTarget = when {
+            consumedToday > (currentGoal * 1.2) -> (currentGoal * 1.1).toInt()
+            consumedToday < (currentGoal * 0.8) -> (currentGoal * 0.95).toInt()
+            else -> currentGoal
+        }
+        
+        if (newTarget != currentGoal) {
+            setDailyGoal(nextDay, newTarget)
+        }
+    }
 }
