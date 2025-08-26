@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.ui.components.BudgetBar
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -18,6 +19,7 @@ import java.time.ZoneId
 fun TodayScreen(contentPadding: PaddingValues) {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val scope = rememberCoroutineScope()
     val todayEpoch = remember { LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond() }
     
     val goal by repo.goalFlow(LocalDate.now()).collectAsState(initial = null)
@@ -48,6 +50,19 @@ fun TodayScreen(contentPadding: PaddingValues) {
                 Text("Gegessen: $consumed kcal", style = MaterialTheme.typography.bodyMedium)
                 Text("Ziel: $target kcal", style = MaterialTheme.typography.bodyMedium)
                 Text("Verbleibend: ${maxOf(0, target - consumed)} kcal", style = MaterialTheme.typography.bodyMedium)
+                
+                if (latestPlan != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                repo.setAIRecommendedGoal(ctx, LocalDate.now())
+                            }
+                        }
+                    ) {
+                        Text("AI-Empfehlung für Kalorienziel anwenden")
+                    }
+                }
             }
         }
         
@@ -86,6 +101,23 @@ fun TodayScreen(contentPadding: PaddingValues) {
                     Text("Aktueller Plan: ${latestPlan.title}", style = MaterialTheme.typography.bodyMedium)
                     Text("Ziel: ${latestPlan.goal}", style = MaterialTheme.typography.bodySmall)
                     Text("${latestPlan.sessionsPerWeek}x pro Woche, ${latestPlan.minutesPerSession} Min", style = MaterialTheme.typography.bodySmall)
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { 
+                                // TODO: Navigate to today's training customization
+                            }
+                        ) {
+                            Text("Heutiges Training anpassen")
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                // TODO: Mark today's training as completed
+                            }
+                        ) {
+                            Text("Training abgeschlossen")
+                        }
+                    }
                 } else {
                     Text(
                         "Erstelle einen Trainingsplan im Plan-Bereich, um hier dein heutiges Workout zu sehen.",

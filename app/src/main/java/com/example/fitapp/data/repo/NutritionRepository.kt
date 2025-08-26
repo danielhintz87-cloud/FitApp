@@ -135,6 +135,46 @@ class NutritionRepository(private val db: AppDatabase) {
         }
     }
 
+    /**
+     * AI-driven calorie recommendation based on training plan and goals
+     */
+    suspend fun generateAICalorieRecommendation(context: Context): Int {
+        val latestPlan = getLatestPlan()
+        if (latestPlan == null) {
+            return 2000 // Default fallback
+        }
+
+        val baselineKcal = when (latestPlan.goal.lowercase()) {
+            "abnehmen", "gewicht verlieren" -> 1800
+            "muskelaufbau", "masse aufbauen" -> 2500
+            "kraft steigern" -> 2300
+            "ausdauer verbessern" -> 2200
+            "körper definieren" -> 2000
+            "allgemeine fitness" -> 2100
+            "funktionelle fitness" -> 2200
+            "beweglichkeit verbessern" -> 1900
+            else -> 2000
+        }
+
+        // Adjust based on training frequency and intensity
+        val intensityMultiplier = when {
+            latestPlan.sessionsPerWeek >= 5 && latestPlan.minutesPerSession >= 60 -> 1.2
+            latestPlan.sessionsPerWeek >= 4 && latestPlan.minutesPerSession >= 45 -> 1.1
+            latestPlan.sessionsPerWeek >= 3 && latestPlan.minutesPerSession >= 30 -> 1.05
+            else -> 1.0
+        }
+
+        return (baselineKcal * intensityMultiplier).toInt()
+    }
+
+    /**
+     * Set AI-recommended daily goal based on current training plan
+     */
+    suspend fun setAIRecommendedGoal(context: Context, date: LocalDate) {
+        val recommendedKcal = generateAICalorieRecommendation(context)
+        setDailyGoal(date, recommendedKcal)
+    }
+
     private fun AiProvider.toGateway(): AiGateway.Provider = when (this) {
         AiProvider.Gemini -> AiGateway.Provider.GEMINI
         AiProvider.DeepSeek -> AiGateway.Provider.DEEPSEEK

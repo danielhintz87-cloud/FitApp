@@ -373,10 +373,11 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) {
+                val errorBody = resp.body?.string() ?: "Kein Fehlertext verfügbar"
                 if (resp.code == 401) {
                     error("Claude 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
                 } else {
-                    error("Claude ${resp.code}")
+                    error("Claude ${resp.code}: $errorBody")
                 }
             }
             val txt = resp.body!!.string()
@@ -428,10 +429,11 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) {
+                val errorBody = resp.body?.string() ?: "Kein Fehlertext verfügbar"
                 if (resp.code == 401) {
                     error("Claude 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
                 } else {
-                    error("Claude ${resp.code}")
+                    error("Claude ${resp.code}: $errorBody")
                 }
             }
             val txt = resp.body!!.string()
