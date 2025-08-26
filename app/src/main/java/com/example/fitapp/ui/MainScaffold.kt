@@ -33,6 +33,7 @@ import com.example.fitapp.ui.screens.ProgressScreen
 import com.example.fitapp.ui.screens.TodayScreen
 import com.example.fitapp.ui.screens.EquipmentSelectionScreen
 import com.example.fitapp.ui.screens.TodayTrainingScreen
+import com.example.fitapp.ui.screens.TrainingExecutionScreen
 import com.example.fitapp.ui.settings.ApiKeysScreen
 import kotlinx.coroutines.launch
 
@@ -194,6 +195,17 @@ fun MainScaffold() {
                 }
                 composable("shopping_list") {
                     com.example.fitapp.ui.nutrition.EnhancedShoppingListScreen()
+                }
+                composable("training_execution/{planId}") { backStackEntry ->
+                    val planId = backStackEntry.arguments?.getString("planId")?.toLongOrNull() ?: 0L
+                    TrainingExecutionScreen(
+                        planId = planId,
+                        onBackPressed = { nav.popBackStack() },
+                        onTrainingCompleted = { 
+                            // TODO: Save training completion
+                            nav.popBackStack()
+                        }
+                    )
                 }
 
             }

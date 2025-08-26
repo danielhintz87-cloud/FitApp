@@ -20,6 +20,8 @@ import com.example.fitapp.data.db.SavedRecipeEntity
 import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import android.app.Activity
+import android.view.WindowManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,9 +47,15 @@ fun CookingModeScreen(
     
     // Keep screen on in cooking mode
     DisposableEffect(keepScreenOn) {
-        // This would require activity reference to set FLAG_KEEP_SCREEN_ON
-        // For now, just a placeholder
-        onDispose { }
+        val activity = ctx as? Activity
+        if (keepScreenOn) {
+            activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose { 
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -176,6 +184,32 @@ fun CookingModeScreen(
                             IconButton(onClick = { showIngredients = false }) {
                                 Icon(Icons.Filled.Close, contentDescription = "Schließen")
                             }
+                        },
+                        actions = {
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        val ingredients = parseIngredients(recipe.markdown)
+                                        ingredients.forEach { ingredient ->
+                                            val category = categorizeIngredient(ingredient)
+                                            db.shoppingDao().insert(
+                                                com.example.fitapp.data.db.ShoppingItemEntity(
+                                                    name = ingredient,
+                                                    quantity = null,
+                                                    unit = null,
+                                                    category = category,
+                                                    fromRecipeId = recipe.id
+                                                )
+                                            )
+                                        }
+                                        showIngredients = false
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Filled.ShoppingCart, contentDescription = null)
+                                Spacer(Modifier.width(4.dp))
+                                Text("Alle zur Liste")
+                            }
                         }
                     )
                     
@@ -186,21 +220,50 @@ fun CookingModeScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(ingredients.size) { index ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
+                            Card(
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Icon(
-                                    Icons.Filled.Circle,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(8.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(Modifier.width(12.dp))
-                                Text(
-                                    ingredients[index],
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Circle,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(8.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(
+                                        ingredients[index],
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    IconButton(
+                                        onClick = {
+                                            scope.launch {
+                                                val category = categorizeIngredient(ingredients[index])
+                                                db.shoppingDao().insert(
+                                                    com.example.fitapp.data.db.ShoppingItemEntity(
+                                                        name = ingredients[index],
+                                                        quantity = null,
+                                                        unit = null,
+                                                        category = category,
+                                                        fromRecipeId = recipe.id
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Add,
+                                            contentDescription = "Zur Einkaufsliste hinzufügen",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -336,4 +399,41 @@ private fun parseIngredients(markdown: String): List<String> {
     }
     
     return ingredients
+}
+
+private fun categorizeIngredient(ingredient: String): String {
+    val lowercaseIngredient = ingredient.lowercase()
+    
+    return when {
+        // Fruits & Vegetables
+        lowercaseIngredient.contains("apfel") || lowercaseIngredient.contains("banane") || 
+        lowercaseIngredient.contains("orange") || lowercaseIngredient.contains("tomate") ||
+        lowercaseIngredient.contains("zwiebel") || lowercaseIngredient.contains("kartoffel") ||
+        lowercaseIngredient.contains("möhre") || lowercaseIngredient.contains("salat") ||
+        lowercaseIngredient.contains("paprika") || lowercaseIngredient.contains("gurke") -> "Obst & Gemüse"
+        
+        // Meat & Fish
+        lowercaseIngredient.contains("fleisch") || lowercaseIngredient.contains("huhn") ||
+        lowercaseIngredient.contains("rind") || lowercaseIngredient.contains("schwein") ||
+        lowercaseIngredient.contains("fisch") || lowercaseIngredient.contains("lachs") ||
+        lowercaseIngredient.contains("thunfisch") || lowercaseIngredient.contains("wurst") -> "Fleisch & Fisch"
+        
+        // Dairy
+        lowercaseIngredient.contains("milch") || lowercaseIngredient.contains("käse") ||
+        lowercaseIngredient.contains("joghurt") || lowercaseIngredient.contains("butter") ||
+        lowercaseIngredient.contains("sahne") || lowercaseIngredient.contains("quark") -> "Milchprodukte"
+        
+        // Pantry items
+        lowercaseIngredient.contains("mehl") || lowercaseIngredient.contains("zucker") ||
+        lowercaseIngredient.contains("salz") || lowercaseIngredient.contains("pfeffer") ||
+        lowercaseIngredient.contains("öl") || lowercaseIngredient.contains("essig") ||
+        lowercaseIngredient.contains("reis") || lowercaseIngredient.contains("nudeln") ||
+        lowercaseIngredient.contains("pasta") -> "Grundnahrungsmittel"
+        
+        // Bread & Bakery
+        lowercaseIngredient.contains("brot") || lowercaseIngredient.contains("brötchen") ||
+        lowercaseIngredient.contains("semmel") -> "Bäckerei"
+        
+        else -> "Sonstiges"
+    }
 }

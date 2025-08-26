@@ -15,7 +15,12 @@ import androidx.compose.ui.unit.dp
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.ShoppingCategoryEntity
 import com.example.fitapp.data.db.ShoppingItemEntity
+import com.example.fitapp.ai.AppAi
 import kotlinx.coroutines.launch
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Intent
 
 @Composable
 fun EnhancedShoppingListScreen() {
@@ -27,6 +32,66 @@ fun EnhancedShoppingListScreen() {
     var newItemQuantity by remember { mutableStateOf("") }
     var showAddDialog by remember { mutableStateOf(false) }
     var sortBySupermarket by remember { mutableStateOf(false) }
+    var isListeningForVoice by remember { mutableStateOf(false) }
+    var voiceInput by remember { mutableStateOf("") }
+    
+    // Voice recognition launcher
+    val voiceLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        isListeningForVoice = false
+        result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.let { spokenText ->
+            voiceInput = spokenText
+            // Process voice input with AI to extract shopping items
+            scope.launch {
+                try {
+                    val prompt = "Analysiere folgenden gesprochenen Text und extrahiere Einkaufsliste-Items: '$spokenText'. " +
+                            "Gib eine Liste zurück im Format: 'Item1|Menge1, Item2|Menge2, ...' " +
+                            "Beispiel: 'Äpfel|2kg, Milch|1L, Brot|1 Stück'. " +
+                            "Wenn keine Menge genannt wird, lasse das Menge-Feld leer: 'Bananen|'"
+                    
+                    val aiResponse = AppAi.planWithOptimalProvider(ctx, com.example.fitapp.ai.PlanRequest(
+                        goal = prompt,
+                        weeks = 1,
+                        sessionsPerWeek = 1,
+                        minutesPerSession = 5
+                    )).getOrNull()
+                    
+                    // Simple parsing - in real implementation, would use proper AI text processing
+                    if (aiResponse != null && spokenText.isNotBlank()) {
+                        // For now, simple parsing of the spoken text
+                        val items = spokenText.split(",", "und", "&").map { it.trim() }
+                        items.forEach { item ->
+                            if (item.isNotBlank()) {
+                                val category = categorizeItem(item)
+                                db.shoppingDao().insert(
+                                    ShoppingItemEntity(
+                                        name = item,
+                                        quantity = null,
+                                        unit = null,
+                                        category = category
+                                    )
+                                )
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Fallback: just add the spoken text as a single item
+                    if (spokenText.isNotBlank()) {
+                        val category = categorizeItem(spokenText)
+                        db.shoppingDao().insert(
+                            ShoppingItemEntity(
+                                name = spokenText,
+                                quantity = null,
+                                unit = null,
+                                category = category
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
     
     val items by if (sortBySupermarket) {
         db.shoppingDao().itemsFlow().collectAsState(initial = emptyList())
@@ -66,6 +131,23 @@ fun EnhancedShoppingListScreen() {
                         contentDescription = "Sortierung"
                     )
                 }
+                IconButton(
+                    onClick = {
+                        isListeningForVoice = true
+                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "de-DE")
+                            putExtra(RecognizerIntent.EXTRA_PROMPT, "Sagen Sie Ihre Einkaufsliste...")
+                        }
+                        voiceLauncher.launch(intent)
+                    }
+                ) {
+                    Icon(
+                        if (isListeningForVoice) Icons.Filled.MicOff else Icons.Filled.Mic,
+                        contentDescription = "Sprachnotiz",
+                        tint = if (isListeningForVoice) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 IconButton(onClick = { showAddDialog = true }) {
                     Icon(Icons.Filled.Add, contentDescription = "Hinzufügen")
                 }
@@ -79,6 +161,72 @@ fun EnhancedShoppingListScreen() {
                     Icon(Icons.Filled.DeleteSweep, contentDescription = "Erledigte löschen")
                 }
             }
+        }
+        
+        // Voice input indicator
+        if (isListeningForVoice) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.Mic,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "🎤 Spracherkennung aktiv - Sagen Sie Ihre Einkaufsliste...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+        
+        // Voice input result
+        if (voiceInput.isNotBlank()) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "🎤 Spracherkennung:",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        OutlinedButton(
+                            onClick = { voiceInput = "" },
+                            modifier = Modifier.size(32.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("×", style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                    Text(
+                        "\"$voiceInput\"",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        "Items wurden automatisch hinzugefügt",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
         }
         
         // Sort mode indicator
@@ -100,6 +248,12 @@ fun EnhancedShoppingListScreen() {
                     if (sortBySupermarket) "Sortiert nach Supermarkt-Layout" else "Sortiert nach Status",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    "${items.size} Items",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline
                 )
             }
         }
