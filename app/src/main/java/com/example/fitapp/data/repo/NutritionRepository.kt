@@ -7,6 +7,7 @@ import com.example.fitapp.ai.CalorieEstimate
 import com.example.fitapp.ai.UiRecipe
 import com.example.fitapp.data.db.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -89,7 +90,7 @@ class NutritionRepository(private val db: AppDatabase) {
     suspend fun adjustDailyGoal(date: LocalDate) {
         val epochSec = date.atStartOfDay(ZoneId.systemDefault()).toEpochSecond()
         val consumedToday = totalForDay(epochSec)
-        val currentGoal = goalFlow(date).value?.targetKcal ?: 2000
+        val currentGoal = goalFlow(date).firstOrNull()?.targetKcal ?: 2000
         
         // Simple adjustment logic: if consumed > 120% of goal, increase goal by 10% for next day
         // if consumed < 80% of goal, decrease goal by 5% for next day

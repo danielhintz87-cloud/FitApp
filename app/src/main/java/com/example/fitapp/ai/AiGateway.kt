@@ -12,10 +12,10 @@ import androidx.annotation.WorkerThread
 import com.example.fitapp.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
@@ -93,11 +93,11 @@ object AiGateway {
         val req = Request.Builder()
             .url("${BuildConfig.OPENAI_BASE_URL}/v1/chat/completions")
             .addHeader("Authorization", "Bearer ${openAiKey()}")
-            .post(RequestBody.create(MediaType.parse("application/json"), body))
+            .post(body.toRequestBody("application/json".toMediaType()))
             .build()
         http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) throw IllegalStateException("OpenAI HTTP ${'$'}{resp.code()}: ${'$'}{resp.body()?.string()}")
-            val json = JSONObject(resp.body()!!.string())
+            if (!resp.isSuccessful) throw IllegalStateException("OpenAI HTTP ${'$'}{resp.code()}: ${'$'}{resp.body?.string()}")
+            val json = JSONObject(resp.body!!.string())
             return json.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
         }
     }
@@ -108,11 +108,11 @@ object AiGateway {
         val req = Request.Builder()
             .url("${BuildConfig.OPENAI_BASE_URL}/v1/chat/completions")
             .addHeader("Authorization", "Bearer ${openAiKey()}")
-            .post(RequestBody.create(MediaType.parse("application/json"), body))
+            .post(body.toRequestBody("application/json".toMediaType()))
             .build()
         http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) throw IllegalStateException("OpenAI HTTP ${'$'}{resp.code()}: ${'$'}{resp.body()?.string()}")
-            return JSONObject(resp.body()!!.string())
+            if (!resp.isSuccessful) throw IllegalStateException("OpenAI HTTP ${'$'}{resp.code()}: ${'$'}{resp.body?.string()}")
+            return JSONObject(resp.body!!.string())
         }
     }
 
@@ -126,11 +126,11 @@ object AiGateway {
         val body = JSONObject(mapOf("contents" to JSONArray().put(JSONObject(mapOf("parts" to JSONArray().put(JSONObject(mapOf("text" to "$system\n\n$user")))))))).toString()
         val req = Request.Builder()
             .url("${BuildConfig.GEMINI_BASE_URL}/v1beta/models/${'$'}model:generateContent?key=${'$'}{geminiKey()}")
-            .post(RequestBody.create(MediaType.parse("application/json"), body))
+            .post(body.toRequestBody("application/json".toMediaType()))
             .build()
         http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) throw IllegalStateException("Gemini HTTP ${'$'}{resp.code()}: ${'$'}{resp.body()?.string()}")
-            val json = JSONObject(resp.body()!!.string())
+            if (!resp.isSuccessful) throw IllegalStateException("Gemini HTTP ${'$'}{resp.code()}: ${'$'}{resp.body?.string()}")
+            val json = JSONObject(resp.body!!.string())
             return json.getJSONArray("candidates").getJSONObject(0).getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text")
         }
     }
@@ -144,11 +144,11 @@ object AiGateway {
         ))))).toString()
         val req = Request.Builder()
             .url("${BuildConfig.GEMINI_BASE_URL}/v1beta/models/${'$'}model:generateContent?key=${'$'}{geminiKey()}")
-            .post(RequestBody.create(MediaType.parse("application/json"), body))
+            .post(body.toRequestBody("application/json".toMediaType()))
             .build()
         http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) throw IllegalStateException("Gemini HTTP ${'$'}{resp.code()}: ${'$'}{resp.body()?.string()}")
-            return JSONObject(resp.body()!!.string())
+            if (!resp.isSuccessful) throw IllegalStateException("Gemini HTTP ${'$'}{resp.code()}: ${'$'}{resp.body?.string()}")
+            return JSONObject(resp.body!!.string())
         }
     }
 
