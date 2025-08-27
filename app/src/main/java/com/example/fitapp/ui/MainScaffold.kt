@@ -157,13 +157,10 @@ fun MainScaffold() {
                 composable("apikeys") {
                     ApiKeysScreen(padding)
                 }
-                composable("equipment") { backStackEntry ->
-                    val currentEquipment = backStackEntry.savedStateHandle.get<String>("equipment") ?: ""
+                composable("equipment") { 
                     EquipmentSelectionScreen(
-                        selectedEquipment = currentEquipment.split(",").filter { it.isNotBlank() },
-                        onEquipmentChanged = { newEquipment ->
-                            nav.previousBackStackEntry?.savedStateHandle?.set("equipment", newEquipment.joinToString(","))
-                        },
+                        selectedEquipment = emptyList(), // Let the screen load from UserPreferences
+                        onEquipmentChanged = { }, // Equipment is saved automatically in UserPreferences
                         onBackPressed = { nav.popBackStack() }
                     )
                 }

@@ -8,6 +8,7 @@ import com.example.fitapp.data.db.AiLog
 import com.example.fitapp.data.db.AiLogDao
 import com.example.fitapp.data.prefs.ApiKeys
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import okhttp3.MediaType.Companion.toMediaType
@@ -144,7 +145,27 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
     // -------- OpenAI --------
 
+    private suspend fun <T> openAiWithRetry(request: suspend () -> T): T {
+        var lastException: Exception? = null
+        for (attempt in 0..2) {
+            try {
+                return request()
+            } catch (e: Exception) {
+                lastException = e
+                if (e.message?.contains("429") == true && attempt < 2) {
+                    // Exponential backoff for rate limiting: 2s, 4s, 8s
+                    val delayMs = 2000L * (1L shl attempt)
+                    delay(delayMs)
+                } else {
+                    throw e
+                }
+            }
+        }
+        throw lastException ?: IllegalStateException("This should never be reached")
+    }
+
     private suspend fun openAiChat(prompt: String): Result<String> = runCatching {
+        openAiWithRetry {
         val apiKey = ApiKeys.getOpenAiKey(context)
         if (apiKey.isBlank()) {
             throw IllegalStateException("OpenAI API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
@@ -182,9 +203,11 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             } else "Error parsing response"
             content
         }
+        }
     }
 
     private suspend fun openAiVision(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> = runCatching {
+        openAiWithRetry {
         val apiKey = ApiKeys.getOpenAiKey(context)
         if (apiKey.isBlank()) {
             throw IllegalStateException("OpenAI API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
@@ -228,6 +251,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 txt.substring(contentStart, contentEnd).replace("\\\"", "\"").replace("\\n", "\n")
             } else "Error parsing response"
             parseCalories(text)
+        }
         }
     }
 
