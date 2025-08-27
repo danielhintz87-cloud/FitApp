@@ -180,6 +180,10 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                 scope.launch {
                     busy = true
                     result = try {
+                        // Debug: Check provider status
+                        val providerStatus = AppAi.getProviderStatus(ctx)
+                        println("Provider Status: $providerStatus")
+                        
                         // Get the most current equipment selection from UserPreferences
                         val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
                         val finalEquipment = if (savedEquipment.isNotEmpty()) {
@@ -212,7 +216,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                         planContent
                     } catch (e: Exception) {
                         saveStatus = ""
-                        "Fehler: ${e.message}"
+                        "Fehler bei der Planerstellung:\n\n${e.message}\n\nProvider Status:\n${AppAi.getProviderStatus(ctx)}"
                     } finally {
                         busy = false
                     }

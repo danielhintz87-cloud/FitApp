@@ -51,7 +51,7 @@ fun NutritionScreen() {
                         error = null
                     } catch (e: Exception) {
                         results = emptyList()
-                        error = e.message
+                        error = "Fehler bei der Rezeptgenerierung:\n\n${e.message}\n\nProvider Status:\n${com.example.fitapp.ai.AppAi.getProviderStatus(ctx)}"
                     } finally { generating = false }
                 }
             }, onFav = { id, fav -> scope.launch { repo.setFavorite(id, fav) } }, onToShopping = { id -> scope.launch { repo.addRecipeToShoppingList(id) } }, onLog = { r -> scope.launch {
