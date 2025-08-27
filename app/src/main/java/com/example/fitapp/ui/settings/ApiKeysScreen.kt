@@ -19,10 +19,8 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
     val context = LocalContext.current
     
     var openAiKey by remember { mutableStateOf(ApiKeys.getStoredOpenAiKey(context)) }
-    var geminiKey by remember { mutableStateOf(ApiKeys.getStoredGeminiKey(context)) }
-    var deepSeekKey by remember { mutableStateOf(ApiKeys.getStoredDeepSeekKey(context)) }
     
-    var showPasswords by remember { mutableStateOf(false) }
+    var showPassword by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(false) }
 
     Column(
@@ -34,12 +32,12 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "API-Schlüssel",
+            text = "OpenAI API-Schlüssel",
             style = MaterialTheme.typography.titleLarge
         )
         
         Text(
-            text = "Geben Sie Ihre API-Schlüssel ein, um AI-Features zu nutzen. Schlüssel werden sicher auf dem Gerät gespeichert.",
+            text = "Geben Sie Ihren OpenAI API-Schlüssel ein, um AI-Features zu nutzen. Der Schlüssel wird sicher auf dem Gerät gespeichert.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -53,33 +51,9 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
             label = { Text("OpenAI API Key") },
             placeholder = { Text("sk-...") },
             modifier = Modifier.fillMaxWidth(),
-            visualTransformation = if (showPasswords) VisualTransformation.None else PasswordVisualTransformation(),
+            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            supportingText = { Text("Für ChatGPT-basierte Features") }
-        )
-
-        // Gemini Key
-        OutlinedTextField(
-            value = geminiKey,
-            onValueChange = { geminiKey = it; saved = false },
-            label = { Text("Gemini API Key") },
-            placeholder = { Text("AI...") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = if (showPasswords) VisualTransformation.None else PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            supportingText = { Text("Für Google Gemini Features") }
-        )
-
-        // DeepSeek Key
-        OutlinedTextField(
-            value = deepSeekKey,
-            onValueChange = { deepSeekKey = it; saved = false },
-            label = { Text("DeepSeek API Key") },
-            placeholder = { Text("sk-...") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = if (showPasswords) VisualTransformation.None else PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            supportingText = { Text("Für DeepSeek AI Features") }
+            supportingText = { Text("Für ChatGPT-basierte Features (gpt-4o-mini)") }
         )
 
         Row(
@@ -87,17 +61,15 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedButton(
-                onClick = { showPasswords = !showPasswords },
+                onClick = { showPassword = !showPassword },
                 modifier = Modifier.weight(1f)
             ) {
-                Text(if (showPasswords) "Ausblenden" else "Anzeigen")
+                Text(if (showPassword) "Ausblenden" else "Anzeigen")
             }
 
             Button(
                 onClick = {
                     ApiKeys.saveOpenAiKey(context, openAiKey.trim())
-                    ApiKeys.saveGeminiKey(context, geminiKey.trim())
-                    ApiKeys.saveDeepSeekKey(context, deepSeekKey.trim())
                     saved = true
                 },
                 modifier = Modifier.weight(1f)
@@ -113,7 +85,7 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
                 )
             ) {
                 Text(
-                    text = "✓ API-Schlüssel erfolgreich gespeichert",
+                    text = "✓ OpenAI API-Schlüssel erfolgreich gespeichert",
                     modifier = Modifier.padding(16.dp),
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -130,9 +102,29 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "• Schlüssel werden nur lokal auf Ihrem Gerät gespeichert\n" +
+                    text = "• Der Schlüssel wird nur lokal auf Ihrem Gerät gespeichert\n" +
                           "• Für Produktionsnutzung wird verschlüsselte Speicherung empfohlen\n" +
-                          "• Teilen Sie Ihre API-Schlüssel niemals mit anderen",
+                          "• Teilen Sie Ihren API-Schlüssel niemals mit anderen\n" +
+                          "• Nur OpenAI wird als AI-Provider unterstützt",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Card {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "OpenAI API-Schlüssel erhalten",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "• Besuchen Sie platform.openai.com\n" +
+                          "• Melden Sie sich an oder erstellen Sie ein Konto\n" +
+                          "• Gehen Sie zu 'API Keys' in Ihrem Dashboard\n" +
+                          "• Erstellen Sie einen neuen API-Schlüssel\n" +
+                          "• Kopieren Sie den Schlüssel und fügen Sie ihn hier ein",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

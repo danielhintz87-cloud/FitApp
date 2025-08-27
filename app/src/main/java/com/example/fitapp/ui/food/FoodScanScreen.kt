@@ -92,7 +92,7 @@ fun FoodScanScreen(
                 // Load recommended calories based on training plan
                 LaunchedEffect(Unit) {
                     try {
-                        recommendedCalories = repo.generateAICalorieRecommendation(ctx)
+                        recommendedCalories = repo.generateAICalorieRecommendation()
                     } catch (e: Exception) {
                         // Fallback to current goal if no plan exists
                         recommendedCalories = target

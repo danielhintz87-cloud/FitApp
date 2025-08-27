@@ -17,7 +17,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
 
-enum class AiProvider { OpenAI, Gemini, DeepSeek }
+enum class AiProvider { OpenAI }
 
 data class PlanRequest(
     val goal: String,
@@ -34,6 +34,15 @@ data class RecipeRequest(
 )
 
 data class CaloriesEstimate(val kcal: Int, val confidence: Int, val text: String)
+
+// Simple recipe model for UI
+data class UiRecipe(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val title: String,
+    val markdown: String,
+    val calories: Int? = null,
+    val imageUrl: String? = null
+)
 
 class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
@@ -110,11 +119,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 "Begründung: [Lebensmittel] ca. [Gramm]g = [kcal]kcal, [weitere Komponenten]\n" +
                 "Unsicherheitsfaktoren: [versteckte Fette, Portionsgröße, etc.]"
             val started = System.currentTimeMillis()
-            val r = when (provider) {
-                AiProvider.OpenAI -> openAiVision(prompt, bitmap)
-                AiProvider.Gemini -> geminiVision(prompt, bitmap)
-                AiProvider.DeepSeek -> deepseekVision(prompt, bitmap)
-            }
+            val r = openAiVision(prompt, bitmap)
             val took = System.currentTimeMillis() - started
             r.onSuccess {
                 logDao.insert(AiLog.success("vision_calories", provider.name, prompt + " $note", it.toString(), took))
@@ -127,11 +132,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
     suspend fun callText(provider: AiProvider, prompt: String): Result<String> =
         withContext(Dispatchers.IO) {
             val started = System.currentTimeMillis()
-            val result = when (provider) {
-                AiProvider.OpenAI -> openAiChat(prompt)
-                AiProvider.Gemini -> geminiText(prompt)
-                AiProvider.DeepSeek -> deepseekText(prompt)
-            }
+            val result = openAiChat(prompt)
             val took = System.currentTimeMillis() - started
             result.onSuccess {
                 logDao.insert(AiLog.success("text", provider.name, prompt, it, took))
@@ -230,132 +231,6 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
         }
     }
 
-    // -------- Gemini --------
-
-    private suspend fun geminiText(prompt: String): Result<String> = runCatching {
-        val apiKey = ApiKeys.getGeminiKey(context)
-        if (apiKey.isBlank()) {
-            throw IllegalStateException("Gemini API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
-        }
-        
-        val model = BuildConfig.GEMINI_MODEL.ifBlank { "gemini-1.5-pro" }
-        val body = """{"contents":[{"parts":[{"text":${prompt.json()}}]}]}"""
-            .toRequestBody("application/json".toMediaType())
-
-        val req = Request.Builder()
-            .url("${BuildConfig.GEMINI_BASE_URL}/v1beta/models/$model:generateContent?key=$apiKey")
-            .post(body).build()
-
-        http.newCall(req).execute().use { resp ->
-            val bodyStr = resp.body?.string().orEmpty()
-            if (!resp.isSuccessful) {
-                when (resp.code) {
-                    400 -> error("Gemini 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                    401 -> error("Gemini 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                    403 -> error("Gemini 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt.")
-                    429 -> error("Gemini 429: Zu viele Anfragen. Bitte versuchen Sie es später erneut.")
-                    else -> error("Gemini ${resp.code}: ${bodyStr.take(200)}")
-                }
-            }
-            val txt = bodyStr
-            // Manual JSON parsing for Gemini
-            val textStart = txt.indexOf("\"text\":\"") + 8
-            val textEnd = txt.indexOf("\"", textStart)
-            val content = if (textStart > 7 && textEnd > textStart) {
-                txt.substring(textStart, textEnd).replace("\\\"", "\"").replace("\\n", "\n")
-            } else "Error parsing response"
-            content
-        }
-    }
-
-    private suspend fun geminiVision(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> = runCatching {
-        val apiKey = ApiKeys.getGeminiKey(context)
-        if (apiKey.isBlank()) {
-            throw IllegalStateException("Gemini API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
-        }
-        
-        val model = BuildConfig.GEMINI_MODEL.ifBlank { "gemini-1.5-pro" }
-        val b64 = bitmap.toJpegBytes().b64()
-        val body = """
-        {"contents":[{"parts":[
-          {"text":${prompt.json()}},
-          {"inline_data":{"mime_type":"image/jpeg","data":"$b64"}}
-        ]}]}
-        """.trimIndent().toRequestBody("application/json".toMediaType())
-
-        val req = Request.Builder()
-            .url("${BuildConfig.GEMINI_BASE_URL}/v1beta/models/$model:generateContent?key=$apiKey")
-            .post(body).build()
-
-        http.newCall(req).execute().use { resp ->
-            val bodyStr = resp.body?.string().orEmpty()
-            if (!resp.isSuccessful) {
-                when (resp.code) {
-                    400 -> error("Gemini 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                    401 -> error("Gemini 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                    403 -> error("Gemini 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt.")
-                    429 -> error("Gemini 429: Zu viele Anfragen. Bitte versuchen Sie es später erneut.")
-                    else -> error("Gemini ${resp.code}: ${bodyStr.take(200)}")
-                }
-            }
-            val txt = bodyStr
-            // Manual JSON parsing for Gemini vision
-            val textStart = txt.indexOf("\"text\":\"") + 8
-            val textEnd = txt.indexOf("\"", textStart)
-            val text = if (textStart > 7 && textEnd > textStart) {
-                txt.substring(textStart, textEnd).replace("\\\"", "\"").replace("\\n", "\n")
-            } else "Error parsing response"
-            parseCalories(text)
-        }
-    }
-
-    // -------- DeepSeek --------
-
-    private suspend fun deepseekText(prompt: String): Result<String> = runCatching {
-        val apiKey = ApiKeys.getDeepSeekKey(context)
-        if (apiKey.isBlank()) {
-            throw IllegalStateException("DeepSeek API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
-        }
-        
-        val model = BuildConfig.DEEPSEEK_MODEL.ifBlank { "deepseek-chat" }
-        val body = """
-            {"model":"$model","messages":[{"role":"user","content":${prompt.json()}}]}
-        """.trimIndent().toRequestBody("application/json".toMediaType())
-
-        val req = Request.Builder()
-            .url("${BuildConfig.DEEPSEEK_BASE_URL}/v1/chat/completions")
-            .header("Authorization", "Bearer $apiKey")
-            .post(body).build()
-
-        http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) {
-                val bodyStr = resp.body?.string().orEmpty()
-                when (resp.code) {
-                    400 -> error("DeepSeek 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                    401 -> error("DeepSeek 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                    402 -> error("DeepSeek 402: Guthaben aufgebraucht oder Zahlung erforderlich. Bitte prüfen Sie Ihr DeepSeek-Konto.")
-                    403 -> error("DeepSeek 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt.")
-                    429 -> error("DeepSeek 429: Zu viele Anfragen. Bitte versuchen Sie es später erneut.")
-                    else -> error("DeepSeek ${resp.code}: ${bodyStr.take(200)}")
-                }
-            }
-            val txt = resp.body!!.string()
-            // Manual JSON parsing for DeepSeek
-            val contentStart = txt.indexOf("\"content\":\"") + 11
-            val contentEnd = txt.indexOf("\"", contentStart)
-            val content = if (contentStart > 10 && contentEnd > contentStart) {
-                txt.substring(contentStart, contentEnd).replace("\\\"", "\"").replace("\\n", "\n")
-            } else "Error parsing response"
-            content
-        }
-    }
-
-    private suspend fun deepseekVision(prompt: String, @Suppress("UNUSED_PARAMETER") bitmap: Bitmap): Result<CaloriesEstimate> {
-        // Fallback: DeepSeek doesn't support vision. We provide a text-based estimation with note.
-        val text = deepseekText("$prompt (Hinweis: Falls Vision nicht unterstützt, grobe Schätzung anhand Standardportion)").getOrThrow()
-        return runCatching { parseCalories(text) }
-    }
-
     // -------- Helpers --------
 
     private fun parseCalories(text: String): CaloriesEstimate {
@@ -380,25 +255,17 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
     companion object {
         /**
-         * Selects optimal provider based on task type - prioritizes OpenAI for all tasks
+         * Returns OpenAI as the only provider
          */
-        fun selectOptimalProvider(taskType: TaskType, availableProviders: List<AiProvider>): AiProvider {
-            if (availableProviders.isEmpty()) return AiProvider.OpenAI
-            
-            // Always prioritize OpenAI as it supports both text and vision
-            return availableProviders.firstOrNull { it == AiProvider.OpenAI }
-                ?: availableProviders.first() // Fallback to any available provider
+        fun selectOptimalProvider(): AiProvider {
+            return AiProvider.OpenAI
         }
 
         /**
-         * Simplified fallback chain - try Gemini, then DeepSeek as backup
+         * No fallback chain needed since only OpenAI is available
          */
-        fun getFallbackChain(primary: AiProvider): List<AiProvider> {
-            return when (primary) {
-                AiProvider.OpenAI -> listOf(AiProvider.Gemini, AiProvider.DeepSeek)
-                AiProvider.Gemini -> listOf(AiProvider.OpenAI, AiProvider.DeepSeek)
-                AiProvider.DeepSeek -> listOf(AiProvider.OpenAI, AiProvider.Gemini)
-            }
+        fun getFallbackChain(): List<AiProvider> {
+            return emptyList()
         }
     }
 }

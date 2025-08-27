@@ -3,10 +3,9 @@ package com.example.fitapp.data.repo
 import android.content.Context
 import android.net.Uri
 import android.graphics.Bitmap
-import com.example.fitapp.ai.AiGateway
 import com.example.fitapp.ai.AiProvider
 import com.example.fitapp.ai.AppAi
-import com.example.fitapp.ai.CalorieEstimate
+import com.example.fitapp.ai.CaloriesEstimate
 import com.example.fitapp.ai.RecipeRequest
 import com.example.fitapp.ai.UiRecipe
 import com.example.fitapp.data.db.*
@@ -40,8 +39,13 @@ class NutritionRepository(private val db: AppDatabase) {
         return list
     }
 
-    suspend fun generateAndStore(context: Context, prompt: String, provider: AiProvider): List<UiRecipe> {
-        val list = AiGateway.generateRecipes(context, prompt, provider.toGateway())
+    suspend fun generateAndStore(context: Context, prompt: String): List<UiRecipe> {
+        val req = RecipeRequest(preferences = prompt, diet = "", count = 10)
+        val result = AppAi.recipesWithOptimalProvider(context, req).getOrThrow()
+        
+        // Parse the result string into UiRecipe list
+        val list = parseMarkdownRecipes(result)
+        
         list.forEach { r ->
             db.recipeDao().upsertAndAddToHistory(
                 RecipeEntity(
@@ -70,12 +74,8 @@ class NutritionRepository(private val db: AppDatabase) {
         }
     }
 
-    suspend fun analyzeFoodImage(ctx: Context, uri: Uri, provider: AiProvider): CalorieEstimate {
-        return AiGateway.analyzeFoodImage(ctx, uri, provider.toGateway())
-    }
-
-    suspend fun analyzeFoodBitmap(context: Context, bitmap: Bitmap, provider: AiProvider): CalorieEstimate {
-        return AiGateway.analyzeFoodBitmap(context, bitmap, provider.toGateway())
+    suspend fun analyzeFoodBitmap(context: Context, bitmap: Bitmap): CaloriesEstimate {
+        return AppAi.caloriesWithOptimalProvider(context, bitmap).getOrThrow()
     }
 
     suspend fun logIntake(kcal: Int, label: String, source: String, refId: String? = null) {
@@ -138,7 +138,7 @@ class NutritionRepository(private val db: AppDatabase) {
     /**
      * AI-driven calorie recommendation based on training plan and goals
      */
-    suspend fun generateAICalorieRecommendation(context: Context): Int {
+    suspend fun generateAICalorieRecommendation(): Int {
         val latestPlan = getLatestPlan()
         if (latestPlan == null) {
             return 2000 // Default fallback
@@ -170,15 +170,9 @@ class NutritionRepository(private val db: AppDatabase) {
     /**
      * Set AI-recommended daily goal based on current training plan
      */
-    suspend fun setAIRecommendedGoal(context: Context, date: LocalDate) {
-        val recommendedKcal = generateAICalorieRecommendation(context)
+    suspend fun setAIRecommendedGoal(date: LocalDate) {
+        val recommendedKcal = generateAICalorieRecommendation()
         setDailyGoal(date, recommendedKcal)
-    }
-
-    private fun AiProvider.toGateway(): AiGateway.Provider = when (this) {
-        AiProvider.Gemini -> AiGateway.Provider.GEMINI
-        AiProvider.DeepSeek -> AiGateway.Provider.DEEPSEEK
-        else -> AiGateway.Provider.OPENAI
     }
 
     private fun parseMarkdownRecipes(markdown: String): List<UiRecipe> {

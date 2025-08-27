@@ -59,7 +59,7 @@ fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = n
                     Button(
                         onClick = {
                             scope.launch {
-                                repo.setAIRecommendedGoal(ctx, LocalDate.now())
+                                repo.setAIRecommendedGoal(LocalDate.now())
                             }
                         }
                     ) {

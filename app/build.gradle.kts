@@ -16,20 +16,12 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // Direct API key placeholders - edit these values directly
-        buildConfigField("String", "OPENAI_API_KEY", "\"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\"")
-        buildConfigField("String", "GEMINI_API_KEY", "\"AIzaSyDVx1Em9s5IcVm_9YVXKEn4Y7w7i5QqBrI\"")
-        buildConfigField("String", "DEEPSEEK_API_KEY", "\"sk-a41a78a9e4354bb98c2b5a23c56070d7\"")
+        // Direct API key placeholder - only for OpenAI (remove in production)
+        buildConfigField("String", "OPENAI_API_KEY", "\"\"")
 
-        // Recommended base URLs
+        // OpenAI configuration
         buildConfigField("String", "OPENAI_BASE_URL", "\"https://api.openai.com\"")
-        buildConfigField("String", "GEMINI_BASE_URL", "\"https://generativelanguage.googleapis.com\"")
-        buildConfigField("String", "DEEPSEEK_BASE_URL", "\"https://api.deepseek.com\"")
-
-        // Default model configurations - Using stable free models
         buildConfigField("String", "OPENAI_MODEL", "\"gpt-4o-mini\"")
-        buildConfigField("String", "GEMINI_MODEL", "\"gemini-1.5-flash\"")
-        buildConfigField("String", "DEEPSEEK_MODEL", "\"deepseek-chat\"")
         
 
     }
