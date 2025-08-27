@@ -2,18 +2,14 @@ package com.example.fitapp.data.prefs
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.example.fitapp.BuildConfig
 
 /**
- * Helper for storing and retrieving API keys from SharedPreferences
- * with fallback to BuildConfig values. Focuses on OpenAI as primary provider.
+ * Helper for storing and retrieving the OpenAI API key from SharedPreferences.
+ * Simplified to focus exclusively on OpenAI as the primary provider.
  */
 object ApiKeys {
     private const val PREFS_NAME = "api_keys"
     private const val KEY_OPENAI = "openai_api_key"
-    // Keep backup providers for existing configurations but prioritize OpenAI
-    private const val KEY_GEMINI = "gemini_api_key"
-    private const val KEY_DEEPSEEK = "deepseek_api_key"
 
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -23,43 +19,16 @@ object ApiKeys {
         getPrefs(context).edit().putString(KEY_OPENAI, key).apply()
     }
 
-    fun saveGeminiKey(context: Context, key: String) {
-        getPrefs(context).edit().putString(KEY_GEMINI, key).apply()
-    }
-
-    fun saveDeepSeekKey(context: Context, key: String) {
-        getPrefs(context).edit().putString(KEY_DEEPSEEK, key).apply()
-    }
-
     fun getOpenAiKey(context: Context): String {
-        val stored = getPrefs(context).getString(KEY_OPENAI, "")
-        return if (stored.isNullOrBlank()) BuildConfig.OPENAI_API_KEY else stored
-    }
-
-    fun getGeminiKey(context: Context): String {
-        val stored = getPrefs(context).getString(KEY_GEMINI, "")
-        return if (stored.isNullOrBlank()) BuildConfig.GEMINI_API_KEY else stored
-    }
-
-    fun getDeepSeekKey(context: Context): String {
-        val stored = getPrefs(context).getString(KEY_DEEPSEEK, "")
-        return if (stored.isNullOrBlank()) BuildConfig.DEEPSEEK_API_KEY else stored
+        return getPrefs(context).getString(KEY_OPENAI, "") ?: ""
     }
 
     fun getStoredOpenAiKey(context: Context): String {
         return getPrefs(context).getString(KEY_OPENAI, "") ?: ""
     }
 
-    fun getStoredGeminiKey(context: Context): String {
-        return getPrefs(context).getString(KEY_GEMINI, "") ?: ""
-    }
-
-    fun getStoredDeepSeekKey(context: Context): String {
-        return getPrefs(context).getString(KEY_DEEPSEEK, "") ?: ""
-    }
-
     /**
-     * Check if primary OpenAI provider is available
+     * Check if OpenAI provider is available
      */
     fun isPrimaryProviderAvailable(context: Context): Boolean {
         return getOpenAiKey(context).isNotBlank()
@@ -71,7 +40,7 @@ object ApiKeys {
     fun getConfigurationStatus(context: Context): String {
         val openAiKey = getOpenAiKey(context)
         return if (openAiKey.isNotBlank()) {
-            "✓ OpenAI konfiguriert (primärer Provider)"
+            "✓ OpenAI konfiguriert"
         } else {
             "✗ OpenAI API-Schlüssel erforderlich. Bitte unter Einstellungen → API-Schlüssel eingeben."
         }
