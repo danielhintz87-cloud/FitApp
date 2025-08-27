@@ -149,7 +149,7 @@ fun MainScaffold() {
                 composable("nutrition") { NutritionScreen() }
                 composable("progress") { ProgressScreen(padding) }
                 composable("foodscan") {
-                    FoodScanScreen(padding) { nav.navigate("plan") }
+                    FoodScanScreen(contentPadding = padding)
                 }
                 composable("logs") {
                     AiLogsScreen(padding)

@@ -11,6 +11,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,10 +32,11 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FoodScanScreen(
     contentPadding: PaddingValues,
-    onLogged: () -> Unit
+    onLogged: () -> Unit = {}
 ) {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
@@ -105,41 +108,43 @@ fun FoodScanScreen(
             }
         }
 
-        // Custom prompt input section
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(Modifier.padding(16.dp)) {
-                Text(
-                    "Zusätzliche Informationen für die AI",
-                    style = MaterialTheme.typography.titleSmall
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = customPrompt,
-                    onValueChange = { customPrompt = it },
-                    label = { Text("Was ist auf dem Bild? (optional)") },
-                    placeholder = { Text("z.B. 'Ein Apfel mit 200g' oder 'Pasta mit Tomatensauce'") },
-                    modifier = Modifier.fillMaxWidth(),
-                    maxLines = 3
-                )
-                if (customPrompt.isNotBlank()) {
+        // Custom prompt input section - only show after image is selected
+        if (picked != null || captured != null) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text(
+                        "Zusätzliche Informationen für die AI",
+                        style = MaterialTheme.typography.titleSmall
+                    )
                     Spacer(Modifier.height(8.dp))
-                    Row {
-                        OutlinedButton(
-                            onClick = { customPrompt = "" },
-                            modifier = Modifier.size(32.dp),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("×", style = MaterialTheme.typography.labelLarge)
+                    OutlinedTextField(
+                        value = customPrompt,
+                        onValueChange = { customPrompt = it },
+                        label = { Text("Was ist auf dem Bild? (optional)") },
+                        placeholder = { Text("z.B. 'Ein Apfel mit 200g' oder 'Pasta mit Tomatensauce'") },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3
+                    )
+                    if (customPrompt.isNotBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        Row {
+                            OutlinedButton(
+                                onClick = { customPrompt = "" },
+                                modifier = Modifier.size(32.dp),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text("×", style = MaterialTheme.typography.labelLarge)
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Diese Informationen helfen der AI bei einer genaueren Analyse",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Diese Informationen helfen der AI bei einer genaueren Analyse",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
             }
@@ -175,18 +180,35 @@ fun FoodScanScreen(
                             }
                             
                             estimate = when {
-                                captured != null -> AppAi.caloriesWithOptimalProvider(ctx, captured!!, prompt).getOrThrow()
+                                captured != null -> {
+                                    val result = AppAi.caloriesWithOptimalProvider(ctx, captured!!, prompt)
+                                    if (result.isFailure) {
+                                        CaloriesEstimate(0, 30, "Analyse fehlgeschlagen: ${result.exceptionOrNull()?.message}")
+                                    } else {
+                                        result.getOrNull()
+                                    }
+                                }
                                 picked != null -> {
-                                    val bitmap = BitmapUtils.loadBitmapFromUri(ctx.contentResolver, picked!!)
-                                    AppAi.caloriesWithOptimalProvider(ctx, bitmap, prompt).getOrThrow()
+                                    try {
+                                        val bitmap = BitmapUtils.loadBitmapFromUri(ctx.contentResolver, picked!!)
+                                        val result = AppAi.caloriesWithOptimalProvider(ctx, bitmap, prompt)
+                                        if (result.isFailure) {
+                                            CaloriesEstimate(0, 30, "Analyse fehlgeschlagen: ${result.exceptionOrNull()?.message}")
+                                        } else {
+                                            result.getOrNull()
+                                        }
+                                    } catch (e: Exception) {
+                                        CaloriesEstimate(0, 30, "Bild konnte nicht geladen werden: ${e.message}")
+                                    }
                                 }
                                 else -> null
                             }
                             
-                            // Check if food was detected
+                            // Check if food was detected or if there was an error
                             estimate?.let { est ->
                                 if (est.text.contains("KEIN_ESSEN_ERKANNT", ignoreCase = true) || 
                                     est.text.contains("kein essen", ignoreCase = true) ||
+                                    est.text.contains("fehlgeschlagen", ignoreCase = true) ||
                                     est.kcal == 0) {
                                     showFoodValidationDialog = true
                                 } else {
@@ -194,6 +216,10 @@ fun FoodScanScreen(
                                     editedKcal = est.kcal.toString()
                                     editedLabel = "Essen (Foto): ${est.text.take(50)}"
                                 }
+                            } ?: run {
+                                // If estimate is null, show error dialog
+                                estimate = CaloriesEstimate(0, 30, "Unbekannter Fehler bei der Analyse")
+                                showFoodValidationDialog = true
                             }
                             
                         } catch (e: Exception) {

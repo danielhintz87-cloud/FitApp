@@ -14,7 +14,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.fitapp.data.prefs.UserPreferences
 
 data class EquipmentItem(
     val name: String,
@@ -29,9 +31,14 @@ fun EquipmentSelectionScreen(
     onEquipmentChanged: (List<String>) -> Unit,
     onBackPressed: () -> Unit
 ) {
+    val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Alle") }
     var expandedCategory by remember { mutableStateOf(false) }
+    
+    // Load equipment from persistent storage initially
+    val persistentEquipment = remember { UserPreferences.getSelectedEquipment(context) }
+    val initialEquipment = if (selectedEquipment.isEmpty()) persistentEquipment else selectedEquipment
     
     val categories = listOf(
         "Alle", "Krafttraining", "Cardio", "Funktionell", "Körpergewicht", "Zubehör"
@@ -89,7 +96,7 @@ fun EquipmentSelectionScreen(
     }
     
     val mutableSelectedEquipment = remember { 
-        mutableStateListOf<String>().apply { addAll(selectedEquipment) }
+        mutableStateListOf<String>().apply { addAll(initialEquipment) }
     }
     
     Column(Modifier.fillMaxSize()) {
@@ -104,7 +111,11 @@ fun EquipmentSelectionScreen(
             actions = {
                 Button(
                     onClick = {
-                        onEquipmentChanged(mutableSelectedEquipment.toList())
+                        val newEquipment = mutableSelectedEquipment.toList()
+                        // Save to persistent storage
+                        UserPreferences.saveSelectedEquipment(context, newEquipment)
+                        // Also notify the callback
+                        onEquipmentChanged(newEquipment)
                         onBackPressed()
                     },
                     modifier = Modifier.padding(end = 8.dp)
