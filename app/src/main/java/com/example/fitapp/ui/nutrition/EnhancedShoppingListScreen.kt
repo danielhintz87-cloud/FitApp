@@ -22,8 +22,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Intent
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EnhancedShoppingListScreen(padding: PaddingValues = PaddingValues(0.dp)) {
+fun EnhancedShoppingListScreen(
+    padding: PaddingValues = PaddingValues(0.dp),
+    onBackPressed: (() -> Unit)? = null
+) {
     val ctx = LocalContext.current
     val db = remember { AppDatabase.get(ctx) }
     val scope = rememberCoroutineScope()
@@ -123,57 +127,89 @@ fun EnhancedShoppingListScreen(padding: PaddingValues = PaddingValues(0.dp)) {
         items.groupBy { if (it.checked) "Erledigt" else "Offen" }
     }
 
-    Column(Modifier.fillMaxSize().padding(padding)) {
-        // Header with actions
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "Einkaufsliste",
-                style = MaterialTheme.typography.titleLarge
+    Column(Modifier.fillMaxSize()) {
+        // Top App Bar for better navigation
+        if (onBackPressed != null) {
+            TopAppBar(
+                title = { Text("Einkaufsliste") },
+                navigationIcon = {
+                    IconButton(onClick = onBackPressed) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { sortBySupermarket = !sortBySupermarket }) {
+                        Icon(
+                            if (sortBySupermarket) Icons.Filled.Store else Icons.Filled.List,
+                            contentDescription = "Sortierung"
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            isListeningForVoice = true
+                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Sagen Sie Ihre Einkaufsliste")
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "de-DE")
+                            }
+                            voiceLauncher.launch(intent)
+                        }
+                    ) {
+                        Icon(
+                            if (isListeningForVoice) Icons.Filled.MicOff else Icons.Filled.Mic,
+                            contentDescription = "Spracheingabe"
+                        )
+                    }
+                    IconButton(onClick = { showAddDialog = true }) {
+                        Icon(Icons.Filled.Add, contentDescription = "Hinzufügen")
+                    }
+                }
             )
-            Row {
-                IconButton(onClick = { sortBySupermarket = !sortBySupermarket }) {
-                    Icon(
-                        if (sortBySupermarket) Icons.Filled.Store else Icons.Filled.List,
-                        contentDescription = "Sortierung"
-                    )
-                }
-                IconButton(
-                    onClick = {
-                        isListeningForVoice = true
-                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "de-DE")
-                            putExtra(RecognizerIntent.EXTRA_PROMPT, "Sagen Sie Ihre Einkaufsliste...")
-                        }
-                        voiceLauncher.launch(intent)
-                    }
+        }
+        
+        Column(Modifier.fillMaxSize().padding(if (onBackPressed != null) PaddingValues(0.dp) else padding)) {
+            // Header with actions (only shown when no TopAppBar)
+            if (onBackPressed == null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        if (isListeningForVoice) Icons.Filled.MicOff else Icons.Filled.Mic,
-                        contentDescription = "Sprachnotiz",
-                        tint = if (isListeningForVoice) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                    Text(
+                        "Einkaufsliste",
+                        style = MaterialTheme.typography.titleLarge
                     )
-                }
-                IconButton(onClick = { showAddDialog = true }) {
-                    Icon(Icons.Filled.Add, contentDescription = "Hinzufügen")
-                }
-                IconButton(
-                    onClick = {
-                        scope.launch {
-                            db.shoppingDao().deleteCheckedItems()
+                    Row {
+                        IconButton(onClick = { sortBySupermarket = !sortBySupermarket }) {
+                            Icon(
+                                if (sortBySupermarket) Icons.Filled.Store else Icons.Filled.List,
+                                contentDescription = "Sortierung"
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                isListeningForVoice = true
+                                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, "de-DE")
+                                    putExtra(RecognizerIntent.EXTRA_PROMPT, "Sagen Sie Ihre Einkaufsliste...")
+                                }
+                                voiceLauncher.launch(intent)
+                            }
+                        ) {
+                            Icon(
+                                if (isListeningForVoice) Icons.Filled.MicOff else Icons.Filled.Mic,
+                                contentDescription = "Spracheingabe"
+                            )
+                        }
+                        IconButton(onClick = { showAddDialog = true }) {
+                            Icon(Icons.Filled.Add, contentDescription = "Hinzufügen")
                         }
                     }
-                ) {
-                    Icon(Icons.Filled.DeleteSweep, contentDescription = "Erledigte löschen")
                 }
             }
-        }
         
         // Voice input indicator
         if (isListeningForVoice) {
@@ -390,6 +426,7 @@ fun EnhancedShoppingListScreen(padding: PaddingValues = PaddingValues(0.dp)) {
             }
         )
     }
+}
 }
 
 @Composable

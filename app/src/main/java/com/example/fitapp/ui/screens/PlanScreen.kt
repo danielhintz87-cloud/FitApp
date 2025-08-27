@@ -40,10 +40,11 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         }
     }
     
-    // Check for equipment changes when returning from equipment selection
-    navController?.currentBackStackEntry?.savedStateHandle?.get<String>("equipment")?.let { newEquipment ->
-        if (newEquipment.isNotBlank() && newEquipment != equipment) {
-            equipment = newEquipment
+    // Refresh equipment when returning from equipment selection screen
+    LaunchedEffect(navController?.currentBackStackEntry) {
+        val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
+        if (savedEquipment.isNotEmpty()) {
+            equipment = savedEquipment.joinToString(", ")
         }
     }
     
@@ -163,10 +164,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         // Equipment selection button
         OutlinedButton(
             onClick = {
-                navController?.let { nav ->
-                    nav.currentBackStackEntry?.savedStateHandle?.set("equipment", equipment)
-                    nav.navigate("equipment")
-                }
+                navController?.navigate("equipment")
             },
             modifier = Modifier.fillMaxWidth()
         ) {

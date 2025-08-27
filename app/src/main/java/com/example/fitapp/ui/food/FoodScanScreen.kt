@@ -438,29 +438,12 @@ fun FoodScanScreen(
                             }
                         }
                     } else {
-                        // If food not detected, show dialog for manual entry or new photo
+                        // If food not detected, don't show redundant error input, just guide to manual entry
                         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
                             Column(Modifier.padding(12.dp)) {
                                 Text("❌ Kein Essen erkannt", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onErrorContainer)
-                                Text("Möchten Sie es erneut versuchen oder das Essen manuell eingeben?", 
+                                Text("Nutzen Sie bitte den 'Manueller Eintrag' unten für eine manuelle Eingabe.", 
                                      style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer)
-                                Spacer(Modifier.height(8.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedButton(
-                                        onClick = {
-                                            // Reset and switch to manual entry mode
-                                            estimate = null
-                                            picked = null
-                                            captured = null
-                                            customPrompt = ""
-                                            // Focus on manual entry by clearing description to prompt user
-                                            manualFoodDescription = ""
-                                        },
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text("Manuell eingeben")
-                                    }
-                                }
                             }
                         }
                     }
