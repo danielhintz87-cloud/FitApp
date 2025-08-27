@@ -125,7 +125,10 @@ fun EquipmentSelectionScreen(
             }
         )
         
-        Column(Modifier.padding(16.dp)) {
+        // Search and Filter Section
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
             // Search Field
             OutlinedTextField(
                 value = searchQuery,
@@ -166,7 +169,7 @@ fun EquipmentSelectionScreen(
                 }
             }
             
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
             
             // Selected Count
             Text(
@@ -176,10 +179,16 @@ fun EquipmentSelectionScreen(
             )
         }
         
-        // Equipment List
+        // Equipment List - Now properly fills remaining space and allows full scrolling
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f), // This ensures LazyColumn takes remaining space
+            contentPadding = PaddingValues(
+                start = 16.dp, 
+                end = 16.dp, 
+                bottom = 16.dp + 48.dp // Extra bottom padding to ensure scrolling to last item
+            ),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(filteredEquipment, key = { it.name }) { equipment ->

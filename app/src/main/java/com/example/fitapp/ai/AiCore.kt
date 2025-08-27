@@ -380,45 +380,18 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
     companion object {
         /**
-         * Selects optimal provider based on task type
+         * Selects optimal provider based on task type - prioritizes OpenAI for all tasks
          */
         fun selectOptimalProvider(taskType: TaskType, availableProviders: List<AiProvider>): AiProvider {
             if (availableProviders.isEmpty()) return AiProvider.OpenAI
             
-            return when (taskType) {
-                TaskType.TRAINING_PLAN -> {
-                    // DeepSeek > OpenAI > Gemini for detailed reasoning and structured plans
-                    availableProviders.firstOrNull { it == AiProvider.DeepSeek }
-                        ?: availableProviders.firstOrNull { it == AiProvider.OpenAI }
-                        ?: availableProviders.firstOrNull { it == AiProvider.Gemini }
-                        ?: availableProviders.first()
-                }
-                TaskType.CALORIE_ESTIMATION -> {
-                    // OpenAI Vision > Gemini > DeepSeek for vision tasks
-                    availableProviders.firstOrNull { it == AiProvider.OpenAI }
-                        ?: availableProviders.firstOrNull { it == AiProvider.Gemini }
-                        ?: availableProviders.firstOrNull { it == AiProvider.DeepSeek }
-                        ?: availableProviders.first()
-                }
-                TaskType.RECIPE_GENERATION -> {
-                    // Gemini > OpenAI > DeepSeek for creative recipe generation and structured output
-                    availableProviders.firstOrNull { it == AiProvider.Gemini }
-                        ?: availableProviders.firstOrNull { it == AiProvider.OpenAI }
-                        ?: availableProviders.firstOrNull { it == AiProvider.DeepSeek }
-                        ?: availableProviders.first()
-                }
-                TaskType.SHOPPING_LIST_PARSING -> {
-                    // OpenAI > Gemini > DeepSeek for text parsing and structured extraction
-                    availableProviders.firstOrNull { it == AiProvider.OpenAI }
-                        ?: availableProviders.firstOrNull { it == AiProvider.Gemini }
-                        ?: availableProviders.firstOrNull { it == AiProvider.DeepSeek }
-                        ?: availableProviders.first()
-                }
-            }
+            // Always prioritize OpenAI as it supports both text and vision
+            return availableProviders.firstOrNull { it == AiProvider.OpenAI }
+                ?: availableProviders.first() // Fallback to any available provider
         }
 
         /**
-         * Provides fallback chain for when primary provider fails
+         * Simplified fallback chain - try Gemini, then DeepSeek as backup
          */
         fun getFallbackChain(primary: AiProvider): List<AiProvider> {
             return when (primary) {
