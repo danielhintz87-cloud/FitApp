@@ -6,11 +6,12 @@ import com.example.fitapp.BuildConfig
 
 /**
  * Helper for storing and retrieving API keys from SharedPreferences
- * with fallback to BuildConfig values
+ * with fallback to BuildConfig values. Focuses on OpenAI as primary provider.
  */
 object ApiKeys {
     private const val PREFS_NAME = "api_keys"
     private const val KEY_OPENAI = "openai_api_key"
+    // Keep backup providers for existing configurations but prioritize OpenAI
     private const val KEY_GEMINI = "gemini_api_key"
     private const val KEY_DEEPSEEK = "deepseek_api_key"
 
@@ -55,5 +56,24 @@ object ApiKeys {
 
     fun getStoredDeepSeekKey(context: Context): String {
         return getPrefs(context).getString(KEY_DEEPSEEK, "") ?: ""
+    }
+
+    /**
+     * Check if primary OpenAI provider is available
+     */
+    fun isPrimaryProviderAvailable(context: Context): Boolean {
+        return getOpenAiKey(context).isNotBlank()
+    }
+
+    /**
+     * Get status message focused on OpenAI configuration
+     */
+    fun getConfigurationStatus(context: Context): String {
+        val openAiKey = getOpenAiKey(context)
+        return if (openAiKey.isNotBlank()) {
+            "✓ OpenAI konfiguriert (primärer Provider)"
+        } else {
+            "✗ OpenAI API-Schlüssel erforderlich. Bitte unter Einstellungen → API-Schlüssel eingeben."
+        }
     }
 }

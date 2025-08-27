@@ -50,6 +50,8 @@ fun FoodScanScreen(
     var editedLabel by remember { mutableStateOf("") }
     var customPrompt by remember { mutableStateOf("") }
     var analysisAttempts by remember { mutableStateOf(0) }
+    var manualFoodDescription by remember { mutableStateOf("") }
+    var isEstimatingManualCalories by remember { mutableStateOf(false) }
     
     val todayEpoch = remember { LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond() }
     val goal by repo.goalFlow(LocalDate.now()).collectAsState(initial = null)
@@ -280,6 +282,84 @@ fun FoodScanScreen(
             }
         }
 
+        // Manual Food Entry Section
+        Card {
+            Column(Modifier.padding(16.dp)) {
+                Text("📝 Manueller Eintrag", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                
+                OutlinedTextField(
+                    value = manualFoodDescription,
+                    onValueChange = { manualFoodDescription = it },
+                    label = { Text("Beschreibung des Essens") },
+                    placeholder = { Text("z.B. 'gekochtes Ei', 'Apfel', 'Pasta mit Tomatensauce'") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = false,
+                    maxLines = 3
+                )
+                
+                Spacer(Modifier.height(8.dp))
+                
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Button(
+                        onClick = {
+                            if (manualFoodDescription.isNotBlank()) {
+                                isEstimatingManualCalories = true
+                                scope.launch {
+                                    try {
+                                        val estimatedKcal = AppAi.estimateCaloriesForManualEntry(ctx, manualFoodDescription).getOrThrow()
+                                        editedKcal = estimatedKcal.toString()
+                                        editedLabel = "Manuell: $manualFoodDescription"
+                                        showConfirmDialog = true
+                                    } catch (e: Exception) {
+                                        // Fallback to manual input if AI estimation fails
+                                        editedKcal = ""
+                                        editedLabel = "Manuell: $manualFoodDescription"
+                                        showConfirmDialog = true
+                                    } finally {
+                                        isEstimatingManualCalories = false
+                                    }
+                                }
+                            }
+                        },
+                        enabled = manualFoodDescription.isNotBlank() && !isEstimatingManualCalories,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        if (isEstimatingManualCalories) {
+                            Text("🤖 Schätze...")
+                        } else {
+                            Text("🤖 KI-Schätzung + Buchen")
+                        }
+                    }
+                    
+                    OutlinedButton(
+                        onClick = {
+                            if (manualFoodDescription.isNotBlank()) {
+                                editedKcal = ""
+                                editedLabel = "Manuell: $manualFoodDescription"
+                                showConfirmDialog = true
+                            }
+                        },
+                        enabled = manualFoodDescription.isNotBlank(),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("✏️ Selbst eingeben")
+                    }
+                }
+                
+                if (manualFoodDescription.isBlank()) {
+                    Text(
+                        "Geben Sie eine Beschreibung des Essens ein für KI-Kalorienschätzung oder manuelle Eingabe",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
+        }
+
         picked?.let {
             AsyncImage(
                 model = it,
@@ -368,10 +448,13 @@ fun FoodScanScreen(
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     OutlinedButton(
                                         onClick = {
-                                            // Show manual entry
-                                            editedKcal = "200"
-                                            editedLabel = "Manueller Eintrag"
-                                            showConfirmDialog = true
+                                            // Reset and switch to manual entry mode
+                                            estimate = null
+                                            picked = null
+                                            captured = null
+                                            customPrompt = ""
+                                            // Focus on manual entry by clearing description to prompt user
+                                            manualFoodDescription = ""
                                         },
                                         modifier = Modifier.weight(1f)
                                     ) {

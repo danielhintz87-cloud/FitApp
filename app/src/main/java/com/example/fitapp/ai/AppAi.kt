@@ -21,11 +21,11 @@ object AppAi {
      * Automatically selects the best provider for training plan generation with fallback
      */
     suspend fun planWithOptimalProvider(context: Context, req: PlanRequest): Result<String> {
-        val availableProviders = getAvailableProviders(context)
-        if (availableProviders.isEmpty()) {
-            val statusInfo = getProviderStatus(context)
-            return Result.failure(IllegalStateException("Keine AI-Provider konfiguriert.\n\n$statusInfo\n\nBitte unter Einstellungen → API-Schlüssel mindestens einen API-Schlüssel eingeben."))
+        if (!ApiKeys.isPrimaryProviderAvailable(context)) {
+            val statusInfo = ApiKeys.getConfigurationStatus(context)
+            return Result.failure(IllegalStateException("$statusInfo\n\nBitte unter Einstellungen → API-Schlüssel einen OpenAI API-Schlüssel eingeben."))
         }
+        val availableProviders = getAvailableProviders(context)
         val optimal = AiCore.selectOptimalProvider(TaskType.TRAINING_PLAN, availableProviders)
         
         return tryWithFallback(context, optimal, TaskType.TRAINING_PLAN) { provider ->
@@ -37,11 +37,11 @@ object AppAi {
      * Automatically selects the best provider for recipe generation with fallback
      */
     suspend fun recipesWithOptimalProvider(context: Context, req: RecipeRequest): Result<String> {
-        val availableProviders = getAvailableProviders(context)
-        if (availableProviders.isEmpty()) {
-            val statusInfo = getProviderStatus(context)
-            return Result.failure(IllegalStateException("Keine AI-Provider konfiguriert.\n\n$statusInfo\n\nBitte unter Einstellungen → API-Schlüssel mindestens einen API-Schlüssel eingeben."))
+        if (!ApiKeys.isPrimaryProviderAvailable(context)) {
+            val statusInfo = ApiKeys.getConfigurationStatus(context)
+            return Result.failure(IllegalStateException("$statusInfo\n\nBitte unter Einstellungen → API-Schlüssel einen OpenAI API-Schlüssel eingeben."))
         }
+        val availableProviders = getAvailableProviders(context)
         val optimal = AiCore.selectOptimalProvider(TaskType.RECIPE_GENERATION, availableProviders)
         
         return tryWithFallback(context, optimal, TaskType.RECIPE_GENERATION) { provider ->
@@ -53,10 +53,11 @@ object AppAi {
      * Automatically selects the best provider for calorie estimation with fallback
      */
     suspend fun caloriesWithOptimalProvider(context: Context, bitmap: Bitmap, note: String = ""): Result<CaloriesEstimate> {
-        val availableProviders = getAvailableProviders(context)
-        if (availableProviders.isEmpty()) {
-            return Result.failure(IllegalStateException("Keine AI-Provider konfiguriert. Bitte unter Einstellungen → API-Schlüssel mindestens einen API-Schlüssel eingeben."))
+        if (!ApiKeys.isPrimaryProviderAvailable(context)) {
+            val statusInfo = ApiKeys.getConfigurationStatus(context)
+            return Result.failure(IllegalStateException("$statusInfo\n\nBitte unter Einstellungen → API-Schlüssel einen OpenAI API-Schlüssel eingeben."))
         }
+        val availableProviders = getAvailableProviders(context)
         val optimal = AiCore.selectOptimalProvider(TaskType.CALORIE_ESTIMATION, availableProviders)
         
         return tryWithFallback(context, optimal, TaskType.CALORIE_ESTIMATION) { provider ->
@@ -68,14 +69,39 @@ object AppAi {
      * Automatically selects the best provider for shopping list parsing with fallback
      */
     suspend fun parseShoppingListWithOptimalProvider(context: Context, spokenText: String): Result<String> {
-        val availableProviders = getAvailableProviders(context)
-        if (availableProviders.isEmpty()) {
-            return Result.failure(IllegalStateException("Keine AI-Provider konfiguriert. Bitte unter Einstellungen → API-Schlüssel mindestens einen API-Schlüssel eingeben."))
+        if (!ApiKeys.isPrimaryProviderAvailable(context)) {
+            val statusInfo = ApiKeys.getConfigurationStatus(context)
+            return Result.failure(IllegalStateException("$statusInfo\n\nBitte unter Einstellungen → API-Schlüssel einen OpenAI API-Schlüssel eingeben."))
         }
+        val availableProviders = getAvailableProviders(context)
         val optimal = AiCore.selectOptimalProvider(TaskType.SHOPPING_LIST_PARSING, availableProviders)
         
         return tryWithFallback(context, optimal, TaskType.SHOPPING_LIST_PARSING) { provider ->
             core(context).parseShoppingList(provider, spokenText)
+        }
+    }
+
+    /**
+     * Get simple AI calorie estimation for manual food entries
+     */
+    suspend fun estimateCaloriesForManualEntry(context: Context, foodDescription: String): Result<Int> {
+        if (!ApiKeys.isPrimaryProviderAvailable(context)) {
+            return Result.failure(IllegalStateException("OpenAI API-Schlüssel erforderlich für Kalorienschätzung."))
+        }
+        
+        return try {
+            val prompt = "Schätze die Kalorien für: '$foodDescription'. Antworte nur mit einer Zahl (kcal) ohne zusätzlichen Text."
+            val result = core(context).callText(AiProvider.OpenAI, prompt)
+            
+            result.mapCatching { response ->
+                // Extract number from response
+                val kcalRegex = Regex("\\d+")
+                val kcal = kcalRegex.find(response)?.value?.toIntOrNull() ?: 0
+                if (kcal == 0) throw IllegalArgumentException("Keine gültige Kalorienzahl gefunden")
+                kcal
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
@@ -140,10 +166,11 @@ object AppAi {
         
         return buildString {
             appendLine("AI Provider Status:")
-            appendLine("- OpenAI: ${if (openAiKey.isNotBlank()) "✓ Configured (${openAiKey.take(10)}...)" else "✗ Not configured"}")
-            appendLine("- Gemini: ${if (geminiKey.isNotBlank()) "✓ Configured (${geminiKey.take(10)}...)" else "✗ Not configured"}")
-            appendLine("- DeepSeek: ${if (deepSeekKey.isNotBlank()) "✓ Configured (${deepSeekKey.take(10)}...)" else "✗ Not configured"}")
-            appendLine("Available providers: ${getAvailableProviders(context).joinToString()}")
+            appendLine("- OpenAI (Primär): ${if (openAiKey.isNotBlank()) "✓ Configured (${openAiKey.take(10)}...)" else "✗ Not configured"}")
+            appendLine("- Gemini (Backup): ${if (geminiKey.isNotBlank()) "✓ Configured (${geminiKey.take(10)}...)" else "✗ Not configured"}")
+            appendLine("- DeepSeek (Backup): ${if (deepSeekKey.isNotBlank()) "✓ Configured (${deepSeekKey.take(10)}...)" else "✗ Not configured"}")
+            appendLine("Verfügbare Provider: ${getAvailableProviders(context).joinToString()}")
+            appendLine("\nEmpfehlung: Konfigurieren Sie mindestens OpenAI für optimale Funktionalität.")
         }
     }
 }
