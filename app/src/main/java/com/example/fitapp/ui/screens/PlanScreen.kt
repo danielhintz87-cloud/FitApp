@@ -1,5 +1,6 @@
 package com.example.fitapp.ui.screens
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.PlanRequest
 import com.example.fitapp.data.db.AppDatabase
+import com.example.fitapp.data.prefs.UserPreferences
 import com.example.fitapp.data.repo.NutritionRepository
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
@@ -29,6 +31,21 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
     var result by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var saveStatus by remember { mutableStateOf("") }
+    
+    // Load saved equipment from UserPreferences on initialization
+    LaunchedEffect(Unit) {
+        val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
+        if (savedEquipment.isNotEmpty()) {
+            equipment = savedEquipment.joinToString(", ")
+        }
+    }
+    
+    // Check for equipment changes when returning from equipment selection
+    navController?.currentBackStackEntry?.savedStateHandle?.get<String>("equipment")?.let { newEquipment ->
+        if (newEquipment.isNotBlank() && newEquipment != equipment) {
+            equipment = newEquipment
+        }
+    }
     
     // Dropdown states
     var goalExpanded by remember { mutableStateOf(false) }
@@ -163,12 +180,20 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                 scope.launch {
                     busy = true
                     result = try {
+                        // Get the most current equipment selection from UserPreferences
+                        val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
+                        val finalEquipment = if (savedEquipment.isNotEmpty()) {
+                            savedEquipment
+                        } else {
+                            equipment.split(",").map { it.trim() }
+                        }
+                        
                         val req = PlanRequest(
                             goal = goal,
                             weeks = 12,
                             sessionsPerWeek = sessions.toIntOrNull() ?: 3,
                             minutesPerSession = minutes.toIntOrNull() ?: 60,
-                            equipment = equipment.split(",").map { it.trim() }
+                            equipment = finalEquipment
                         )
                         val planContent = AppAi.planWithOptimalProvider(ctx, req).getOrThrow()
                         
