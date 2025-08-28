@@ -90,6 +90,7 @@ data class PlanEntity(
     val sessionsPerWeek: Int,
     val minutesPerSession: Int,
     val equipment: String, // JSON array as string
+    val trainingDays: String? = null, // comma-separated DayOfWeek names, e.g. "MONDAY,WEDNESDAY,THURSDAY"
     val createdAt: Long = System.currentTimeMillis() / 1000
 )
 
@@ -114,5 +115,15 @@ data class SavedRecipeEntity(
 data class ShoppingCategoryEntity(
     @PrimaryKey val name: String,
     val order: Int // for supermarket sorting
+)
+
+@Entity(tableName = "today_workouts")
+data class TodayWorkoutEntity(
+    @PrimaryKey val dateIso: String, // e.g., "2025-08-28"
+    val content: String, // string with pipe-lines format
+    val status: String, // "pending", "completed", "skipped"
+    val createdAt: Long = System.currentTimeMillis() / 1000,
+    val completedAt: Long? = null,
+    val planId: Long? = null // nullable FK-like field; no constraint needed
 )
 

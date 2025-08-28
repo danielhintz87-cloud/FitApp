@@ -97,7 +97,7 @@ class NutritionRepository(private val db: AppDatabase) {
     suspend fun deleteItem(id: Long) = db.shoppingDao().delete(id)
 
     // Plan related methods
-    suspend fun savePlan(title: String, content: String, goal: String, weeks: Int, sessionsPerWeek: Int, minutesPerSession: Int, equipment: List<String>): Long {
+    suspend fun savePlan(title: String, content: String, goal: String, weeks: Int, sessionsPerWeek: Int, minutesPerSession: Int, equipment: List<String>, trainingDays: List<String>? = null): Long {
         val plan = PlanEntity(
             title = title,
             content = content,
@@ -105,7 +105,8 @@ class NutritionRepository(private val db: AppDatabase) {
             weeks = weeks,
             sessionsPerWeek = sessionsPerWeek,
             minutesPerSession = minutesPerSession,
-            equipment = equipment.joinToString(",")
+            equipment = equipment.joinToString(","),
+            trainingDays = trainingDays?.joinToString(",")
         )
         return db.planDao().insert(plan)
     }
@@ -114,6 +115,7 @@ class NutritionRepository(private val db: AppDatabase) {
     suspend fun getLatestPlan() = db.planDao().getLatestPlan()
     suspend fun getPlan(id: Long) = db.planDao().getPlan(id)
     suspend fun deletePlan(id: Long) = db.planDao().delete(id)
+    suspend fun deleteAllPlans() = db.planDao().deleteAll()
 
     // Day adjustment logic
     suspend fun adjustDailyGoal(date: LocalDate) {
@@ -185,4 +187,10 @@ class NutritionRepository(private val db: AppDatabase) {
             UiRecipe(title = title, markdown = "## $raw".trim(), calories = kcal)
         }
     }
+
+    // Today workout methods
+    suspend fun getTodayWorkout(dateIso: String) = db.todayWorkoutDao().getByDate(dateIso)
+    suspend fun saveTodayWorkout(workout: com.example.fitapp.data.db.TodayWorkoutEntity) = db.todayWorkoutDao().upsert(workout)
+    suspend fun setWorkoutStatus(dateIso: String, status: String, completedAt: Long?) = db.todayWorkoutDao().setStatus(dateIso, status, completedAt)
+    suspend fun getWorkoutsBetween(fromIso: String, toIso: String) = db.todayWorkoutDao().getBetween(fromIso, toIso)
 }

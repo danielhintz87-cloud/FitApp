@@ -30,7 +30,6 @@ fun EquipmentSelectionScreen(
     }
     
     val equipmentOptions = listOf(
-        "Nur Körpergewicht",
         "Hanteln",
         "Langhantel",
         "Kurzhanteln", 

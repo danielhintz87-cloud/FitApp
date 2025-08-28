@@ -16,9 +16,10 @@ import androidx.room.RoomDatabase
         ShoppingItemEntity::class,
         PlanEntity::class,
         SavedRecipeEntity::class,
-        ShoppingCategoryEntity::class
+        ShoppingCategoryEntity::class,
+        TodayWorkoutEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,6 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun planDao(): PlanDao
     abstract fun savedRecipeDao(): SavedRecipeDao
     abstract fun shoppingCategoryDao(): ShoppingCategoryDao
+    abstract fun todayWorkoutDao(): TodayWorkoutDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null

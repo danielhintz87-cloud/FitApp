@@ -154,5 +154,23 @@ interface PlanDao {
 
     @Query("DELETE FROM training_plans WHERE id = :id")
     suspend fun delete(id: Long)
+    
+    @Query("DELETE FROM training_plans")
+    suspend fun deleteAll()
+}
+
+@Dao
+interface TodayWorkoutDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(workout: TodayWorkoutEntity)
+
+    @Query("SELECT * FROM today_workouts WHERE dateIso = :dateIso")
+    suspend fun getByDate(dateIso: String): TodayWorkoutEntity?
+
+    @Query("UPDATE today_workouts SET status = :status, completedAt = :completedAt WHERE dateIso = :dateIso")
+    suspend fun setStatus(dateIso: String, status: String, completedAt: Long?)
+
+    @Query("SELECT * FROM today_workouts WHERE dateIso BETWEEN :fromIso AND :toIso ORDER BY dateIso DESC")
+    suspend fun getBetween(fromIso: String, toIso: String): List<TodayWorkoutEntity>
 }
 

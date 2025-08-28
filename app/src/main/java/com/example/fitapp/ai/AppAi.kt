@@ -119,6 +119,39 @@ object AppAi {
     }
     
     /**
+     * Generate daily workout steps using optimal provider routing
+     */
+    suspend fun generateDailyWorkoutSteps(context: Context, goal: String, minutes: Int, equipment: List<String>): Result<String> {
+        if (!ApiKeys.isPrimaryProviderAvailable(context)) {
+            val statusInfo = ApiKeys.getConfigurationStatus(context)
+            return Result.failure(IllegalStateException("$statusInfo\n\nBitte beide API-Schlüssel unter Einstellungen → API-Schlüssel eingeben."))
+        }
+        
+        return try {
+            val equipmentString = if (equipment.isEmpty()) "Nur Körpergewicht" else equipment.joinToString(", ")
+            val prompt = """
+Erstelle ein ${minutes}-minütiges tägliches Workout für das Ziel "$goal" mit folgenden verfügbaren Geräten: $equipmentString.
+
+Format: Gib die Übungen als einfache Liste zurück, eine Übung pro Zeile, mit | als Trenner zwischen Übung und Beschreibung:
+
+Übungsname | Kurze Anleitung (Wiederholungen/Zeit)
+
+Beispiel:
+Kniebeugen | 3 Sätze à 15 Wiederholungen
+Liegestütze | 2 Sätze à 10 Wiederholungen  
+Plank | 3x 30 Sekunden halten
+Pause | 60 Sekunden Erholung
+
+Erstelle 8-12 Übungen inklusive Pausen. Keine zusätzlichen Texte oder Disclaimern.
+            """.trimIndent()
+            
+            core(context).callText(AiProvider.Gemini, prompt)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Reset usage statistics (useful for monthly budget tracking)
      */
     fun resetUsageStats(context: Context) {
