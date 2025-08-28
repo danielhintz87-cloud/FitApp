@@ -1,0 +1,21 @@
+suggestions:
+  kotlin:
+    enabled: true
+    style: "modern"
+    patterns:
+      - "Room database entities"
+      - "Jetpack Compose UI"
+      - "Material 3 components"  
+      - "Kotlin coroutines"
+    
+context:
+  include:
+    - "**/*.kt"
+    - "**/*.kts" 
+    - "**/build.gradle*"
+    - "**/AndroidManifest.xml"
+    
+preferences:
+  code_style: "kotlin_official"
+  compose_style: "material3"
+  architecture: "clean_mvvm"
