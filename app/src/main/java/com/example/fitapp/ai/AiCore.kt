@@ -158,16 +158,14 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
     }
 
     /**
-     * Parse retry-after header value from OpenAI response
+     * Parse retry-after header value from OpenAI response - improved version
      */
-    private fun parseRetryAfter(retryAfterHeader: String?): Long? {
-        if (retryAfterHeader.isNullOrBlank()) return null
-        return try {
-            val seconds = retryAfterHeader.toLong()
-            seconds * 1000
-        } catch (e: NumberFormatException) {
-            null
-        }
+    private fun parseRetryAfter(value: String?): Long? {
+        if (value.isNullOrBlank()) return null
+        val seconds = value.trim().toLongOrNull()
+        if (seconds != null) return seconds * 1000L
+        // RFC1123 date parsing would be complex; fallback for non-numeric values
+        return 2_000L
     }
 
     /**
@@ -198,20 +196,21 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             } catch (e: Exception) {
                 lastException = e
 
-                // Extract status code if available
+                // Extract status code if available - improved pattern matching
                 val lastStatusCode = when {
-                    e.message?.contains("429") == true -> 429
-                    e.message?.contains("500") == true -> 500
-                    e.message?.contains("502") == true -> 502
-                    e.message?.contains("503") == true -> 503
-                    e.message?.contains("504") == true -> 504
+                    e.message?.contains(" 429") == true || e.message?.contains("429") == true -> 429
+                    e.message?.contains(" 500") == true || e.message?.contains("500") == true -> 500
+                    e.message?.contains(" 502") == true || e.message?.contains("502") == true -> 502
+                    e.message?.contains(" 503") == true || e.message?.contains("503") == true -> 503
+                    e.message?.contains(" 504") == true || e.message?.contains("504") == true -> 504
                     else -> null
                 }
 
                 if (attempt < 4 && isRetriableError(lastStatusCode, e)) {
-                    // Check for retry-after header in error message
+                    // Improved retry-after parsing - check multiple formats
                     val retryAfter = parseRetryAfter(
-                        e.message?.substringAfter("Retry-After: ")?.substringBefore(",")
+                        e.message?.substringAfter("Retry-After: ")?.substringBefore("\n")
+                            ?: e.message?.substringAfter("retry_after=")?.substringBeforeAny(',', ' ', ')')
                     )
 
                     val delayMs = retryAfter ?: calculateBackoffDelay(attempt)
@@ -227,6 +226,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
     private suspend fun openAiChat(prompt: String): Result<String> = runCatching {
         openAiWithRetry {
         val apiKey = ApiKeys.getOpenAiKey(context)
+            .ifBlank { BuildConfig.OPENAI_API_KEY }
         if (apiKey.isBlank()) {
             throw IllegalStateException("OpenAI API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
         }
@@ -236,9 +236,11 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             {"model":"$model","messages":[{"role":"user","content":${prompt.json()}}],"temperature":0.4}
         """.trimIndent().toRequestBody("application/json".toMediaType())
 
+        val base = BuildConfig.OPENAI_BASE_URL.ifBlank { "https://api.openai.com" }
         val req = Request.Builder()
-            .url("${BuildConfig.OPENAI_BASE_URL}/v1/chat/completions")
+            .url("$base/v1/chat/completions")
             .header("Authorization", "Bearer $apiKey")
+            .header("User-Agent", "fitapp/1.0")
             .post(body)
             .build()
 
@@ -277,6 +279,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
     private suspend fun openAiVision(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> = runCatching {
         openAiWithRetry {
         val apiKey = ApiKeys.getOpenAiKey(context)
+            .ifBlank { BuildConfig.OPENAI_API_KEY }
         if (apiKey.isBlank()) {
             throw IllegalStateException("OpenAI API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
         }
@@ -295,9 +298,11 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
           ]
         }""".trimIndent().toRequestBody("application/json".toMediaType())
 
+        val base = BuildConfig.OPENAI_BASE_URL.ifBlank { "https://api.openai.com" }
         val req = Request.Builder()
-            .url("${BuildConfig.OPENAI_BASE_URL}/v1/chat/completions")
+            .url("$base/v1/chat/completions")
             .header("Authorization", "Bearer $apiKey")
+            .header("User-Agent", "fitapp/1.0")
             .post(body).build()
 
         http.newCall(req).execute().use { resp ->
@@ -361,6 +366,11 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
     }
 
     private fun String.json(): String = "\"${this.replace("\"", "\\\"").replace("\n", "\\n")}\""
+
+    private fun String.substringBeforeAny(vararg chars: Char): String {
+        val idx = this.indexOfFirst { c -> chars.contains(c) }
+        return if (idx >= 0) this.substring(0, idx) else this
+    }
 
     private fun Bitmap.toJpegBytes(quality: Int = 80): ByteArray =
         ByteArrayOutputStream().use { bos ->

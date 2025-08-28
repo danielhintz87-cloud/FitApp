@@ -1,150 +1,144 @@
-package com.example.fitapp.ai
+package com.example.fitapp.ui.screens
 
-import android.content.Context
-import com.example.fitapp.BuildConfig
-import com.example.fitapp.data.db.AiLogDao
-import kotlinx.coroutines.delay
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-import java.util.concurrent.Semaphore
-import kotlin.math.pow
-import kotlin.random.Random
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
+import com.example.fitapp.data.prefs.UserPreferences
 
-/**
- * Zentraler OpenAI-Zugriff mit Retry/Backoff.
- * (Gemäß deiner Entscheidung aktuell nur OpenAI aktiv.)
- */
-class AiCore(
-    private val context: Context,
-    private val logDao: AiLogDao
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EquipmentSelectionScreen(
+    selectedEquipment: List<String>,
+    onEquipmentChanged: (List<String>) -> Unit,
+    onBackPressed: () -> Unit
 ) {
-
-    private val http = OkHttpClient()
-    private val requestSemaphore = Semaphore(2) // max. 2 gleichzeitige Requests
-
-    /** Hilfsfunktion: sichere JSON-String-Quote */
-    private fun String.json(): String = JSONObject.quote(this)
-
-    /** true = Fehler ist mit Wartezeit erneut versuchbar */
-    private fun isRetriableError(statusCode: Int?, exception: Exception?): Boolean {
-        return when {
-            statusCode == 429 -> true                // Rate limit / insufficient_quota
-            statusCode in 500..599 -> true           // Serverfehler
-            exception?.message?.contains("timeout", ignoreCase = true) == true -> true
-            exception?.message?.contains("connection", ignoreCase = true) == true -> true
-            else -> false
-        }
+    val context = LocalContext.current
+    
+    // Load current equipment selection
+    var currentSelection by remember { 
+        mutableStateOf(UserPreferences.getSelectedEquipment(context).toSet()) 
+    }
+    
+    val equipmentOptions = listOf(
+        "Nur Körpergewicht",
+        "Hanteln",
+        "Langhantel",
+        "Kurzhanteln", 
+        "Klimmzugstange",
+        "Dip-Station",
+        "Trainingsbank",
+        "Verstellbare Bank",
+        "Kettlebells",
+        "Widerstandsbänder",
+        "TRX/Schlingen",
+        "Medizinbälle",
+        "Foam Roller",
+        "Yoga-Matte",
+        "Laufband",
+        "Crosstrainer", 
+        "Fahrradergometer",
+        "Rudergerät",
+        "Vollausstattung Fitnessstudio",
+        "Heimstudio komplett",
+        "Crossfit Equipment",
+        "Functional Training Setup"
+    )
+    
+    // Save selection when it changes
+    LaunchedEffect(currentSelection) {
+        val selectionList = currentSelection.toList()
+        UserPreferences.saveSelectedEquipment(context, selectionList)
+        onEquipmentChanged(selectionList)
     }
 
-    /**
-     * Führt einen OpenAI-Call mit bis zu 5 Versuchen aus.
-     * Beachtet 'Retry-After' falls vorhanden, sonst Exponential Backoff mit Jitter.
-     */
-    private suspend fun <T> openAiWithRetry(request: suspend () -> T): T {
-        var lastException: Exception? = null
-
-        for (attempt in 0..4) { // 5 Versuche (0,1,2,3,4)
-            try {
-                requestSemaphore.acquire()
-                try {
-                    return request()
-                } finally {
-                    requestSemaphore.release()
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Geräteauswahl") },
+                navigationIcon = {
+                    IconButton(onClick = onBackPressed) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
+                    }
                 }
-            } catch (e: Exception) {
-                lastException = e
-
-                // Heuristik: Statuscode aus Fehlermeldung extrahieren (Serverantwort)
-                val lastStatusCode = when {
-                    e.message?.contains(" 429") == true || e.message?.contains("429") == true -> 429
-                    e.message?.contains(" 500") == true || e.message?.contains("500") == true -> 500
-                    e.message?.contains(" 502") == true || e.message?.contains("502") == true -> 502
-                    e.message?.contains(" 503") == true || e.message?.contains("503") == true -> 503
-                    e.message?.contains(" 504") == true || e.message?.contains("504") == true -> 504
-                    else -> null
-                }
-
-                if (attempt < 4 && isRetriableError(lastStatusCode, e)) {
-                    // Try to read Retry-After aus der Exception-Message
-                    val retryAfter = parseRetryAfter(
-                        e.message?.substringAfter("Retry-After: ")?.substringBefore("\n")
-                            ?: e.message?.substringAfter("retry_after=")?.substringBeforeAny(',', ' ', ')')
-                    )
-                    val delayMs = retryAfter ?: calculateBackoffDelay(attempt)
-                    delay(delayMs)
-                } else {
-                    throw e
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Wähle deine verfügbaren Trainingsgeräte:",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            
+            Text(
+                text = "${currentSelection.size} Geräte ausgewählt",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(equipmentOptions) { equipment ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .toggleable(
+                                value = currentSelection.contains(equipment),
+                                onValueChange = { isSelected ->
+                                    currentSelection = if (isSelected) {
+                                        currentSelection + equipment
+                                    } else {
+                                        currentSelection - equipment
+                                    }
+                                },
+                                role = Role.Checkbox
+                            ),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (currentSelection.contains(equipment)) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            }
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = equipment,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.weight(1f)
+                            )
+                            
+                            Checkbox(
+                                checked = currentSelection.contains(equipment),
+                                onCheckedChange = null // handled by toggleable
+                            )
+                        }
+                    }
                 }
             }
         }
-        throw lastException ?: IllegalStateException("Max retries exceeded")
-    }
-
-    /**
-     * Minimaler Chat-Call zu OpenAI (nutzt Key aus App-Einstellungen, sonst BuildConfig).
-     * Gibt Result<String> zurück, damit der Aufrufer .getOrElse{} nutzen kann.
-     */
-    suspend fun openAiChat(prompt: String): Result<String> = runCatching {
-        openAiWithRetry {
-            val apiKey = ApiKeys.getOpenAiKey(context)
-                .ifBlank { BuildConfig.OPENAI_API_KEY }
-            if (apiKey.isBlank()) {
-                throw IllegalStateException("OpenAI API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
-            }
-
-            val model = BuildConfig.OPENAI_MODEL.ifBlank { "gpt-4o-mini" }
-            val body = """
-                {"model":"$model","messages":[{"role":"user","content":${prompt.json()}}],"temperature":0.4}
-            """.trimIndent().toRequestBody("application/json".toMediaType())
-
-            val base = BuildConfig.OPENAI_BASE_URL.ifBlank { "https://api.openai.com" }
-            val req = Request.Builder()
-                .url("$base/v1/chat/completions")
-                .header("Authorization", "Bearer $apiKey")
-                .header("User-Agent", "fitapp/1.0")
-                .post(body)
-                .build()
-
-            http.newCall(req).execute().use { resp ->
-                val raw = resp.body?.string().orEmpty()
-                if (!resp.isSuccessful) {
-                    // Retry-After direkt an die Exception anhängen, damit der Parser es findet
-                    val retry = resp.header("Retry-After")?.let { " | Retry-After: $it" } ?: ""
-                    val msg = try {
-                        JSONObject(raw).optJSONObject("error")?.optString("message")
-                    } catch (_: Exception) { null }
-                    throw IllegalStateException("OpenAI HTTP ${resp.code} – ${msg ?: raw}$retry")
-                }
-                val json = JSONObject(raw)
-                json.getJSONArray("choices").getJSONObject(0)
-                    .getJSONObject("message").getString("content")
-            }
-        }
-    }
-
-    // -------- Retry/Backoff Hilfen --------
-
-    /** Parsed "Retry-After" (Sekunden oder RFC1123-Datum), liefert Delay in Millisekunden. */
-    private fun parseRetryAfter(value: String?): Long? {
-        if (value.isNullOrBlank()) return null
-        val seconds = value.trim().toLongOrNull()
-        if (seconds != null) return seconds * 1000L
-        // RFC1123 wäre aufwendig; wenn kein Sekundenwert: kleiner Fallback
-        return 2_000L
-    }
-
-    private fun String.substringBeforeAny(vararg chars: Char): String {
-        val idx = this.indexOfFirst { c -> chars.contains(c) }
-        return if (idx >= 0) this.substring(0, idx) else this
-    }
-
-    /** Exponential Backoff: 1s, 2s, 4s, 8s (+ Jitter 0..250ms) */
-    private fun calculateBackoffDelay(attempt: Int): Long {
-        val base = 1000.0 * 2.0.pow(attempt.toDouble())
-        val jitter = Random.nextInt(0, 250)
-        return base.toLong() + jitter
     }
 }
