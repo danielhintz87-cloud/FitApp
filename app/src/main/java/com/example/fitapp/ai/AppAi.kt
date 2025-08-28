@@ -91,11 +91,12 @@ object AppAi {
     }
 
     /**
-     * Get AI provider status for debugging
+     * Get AI provider status for debugging including usage statistics
      */
     fun getProviderStatus(context: Context): String {
         val geminiKey = ApiKeys.getGeminiKey(context)
         val perplexityKey = ApiKeys.getPerplexityKey(context)
+        val totalUsage = UsageTracker.getTotalUsageStats(context)
         
         return buildString {
             appendLine("AI Provider Status:")
@@ -107,6 +108,20 @@ object AppAi {
             appendLine("- Strukturierte Trainingspläne → Gemini")
             appendLine("- Schnelle Q&A, Web-Suche → Perplexity")
             appendLine("- Shopping List Parsing → Perplexity")
+            appendLine()
+            appendLine("Usage Statistics:")
+            appendLine("- Total Requests: ${totalUsage.totalRequests}")
+            appendLine("- Total Tokens: ${totalUsage.totalTokens}")
+            appendLine("- Estimated Cost: $${String.format("%.3f", totalUsage.totalEstimatedCost)}")
+            appendLine("  - Gemini: ${totalUsage.geminiStats.requests} requests, ${totalUsage.geminiStats.tokens} tokens, $${String.format("%.3f", totalUsage.geminiStats.estimatedCost)}")
+            appendLine("  - Perplexity: ${totalUsage.perplexityStats.requests} requests, ${totalUsage.perplexityStats.tokens} tokens, $${String.format("%.3f", totalUsage.perplexityStats.estimatedCost)}")
         }
+    }
+    
+    /**
+     * Reset usage statistics (useful for monthly budget tracking)
+     */
+    fun resetUsageStats(context: Context) {
+        UsageTracker.resetUsageStats(context)
     }
 }

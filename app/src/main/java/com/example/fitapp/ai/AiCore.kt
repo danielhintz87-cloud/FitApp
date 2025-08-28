@@ -76,7 +76,9 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
     suspend fun generatePlan(req: PlanRequest): Result<String> {
         val provider = selectProviderForTask(TaskType.TRAINING_PLAN)
-        return callText(provider,
+        
+        // Try primary provider first
+        var result = callText(provider,
             "Erstelle einen wissenschaftlich fundierten **${req.weeks}-Wochen-Trainingsplan** in Markdown. " +
             "Ziel: ${req.goal}. Trainingsfrequenz: ${req.sessionsPerWeek} Einheiten/Woche, ${req.minutesPerSession} Min/Einheit. " +
             "Verfügbare Geräte: ${req.equipment.joinToString()}. " +
@@ -93,11 +95,24 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             "- Progressionshinweise für nächste Woche\n" +
             "- Anpassungen bei Beschwerden oder Stagnation"
         )
+        
+        // Try fallback provider if primary fails
+        if (result.isFailure) {
+            val fallbackProvider = getFallbackProvider(provider)
+            if (fallbackProvider != null && ApiKeys.isProviderAvailable(context, fallbackProvider)) {
+                result = callText(fallbackProvider, result.exceptionOrNull()?.message?.let { 
+                    "Fallback zu ${fallbackProvider.name}: " 
+                } ?: "" + "Erstelle einen wissenschaftlich fundierten **${req.weeks}-Wochen-Trainingsplan**...")
+            }
+        }
+        
+        return result
     }
 
     suspend fun generateRecipes(req: RecipeRequest): Result<String> {
         val provider = selectProviderForTask(TaskType.RECIPE_GENERATION)
-        return callText(provider,
+        
+        var result = callText(provider,
             "Erstelle ${req.count} **nutritionsoptimierte Rezepte** als präzise Markdown-Liste. " +
             "Präferenzen: ${req.preferences}. Diätform: ${req.diet}. " +
             "\n\n**Anforderungen pro Rezept:**\n" +
@@ -111,11 +126,23 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             "\n**Kalkulationsbasis:** Verwende USDA-Nährwertdatenbank-Standards für genaue Berechnungen. " +
             "Achte auf realistische Portionsgrößen und präzise Makronährstoff-Verteilung."
         )
+        
+        // Try fallback provider if primary fails
+        if (result.isFailure) {
+            val fallbackProvider = getFallbackProvider(provider)
+            if (fallbackProvider != null && ApiKeys.isProviderAvailable(context, fallbackProvider)) {
+                result = callText(fallbackProvider, 
+                    "Erstelle ${req.count} **nutritionsoptimierte Rezepte** als präzise Markdown-Liste...")
+            }
+        }
+        
+        return result
     }
 
     suspend fun parseShoppingList(spokenText: String): Result<String> {
         val provider = selectProviderForTask(TaskType.SHOPPING_LIST_PARSING)
-        return callText(provider,
+        
+        var result = callText(provider,
             "Analysiere folgenden gesprochenen Text und extrahiere einzelne Einkaufsliste-Items: '$spokenText'\n\n" +
             "**Aufgabe:** Zerlege den Text in einzelne Lebensmittel mit optional genannten Mengen.\n\n" +
             "**Ausgabeformat:** Eine Zeile pro Item im Format: 'Produktname|Menge'\n" +
@@ -131,6 +158,17 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             "- Ignoriere Füllwörter wie 'ich brauche', 'kaufen', etc.\n" +
             "- Ein Item pro Zeile, keine zusätzlichen Erklärungen"
         )
+        
+        // Try fallback provider if primary fails
+        if (result.isFailure) {
+            val fallbackProvider = getFallbackProvider(provider)
+            if (fallbackProvider != null && ApiKeys.isProviderAvailable(context, fallbackProvider)) {
+                result = callText(fallbackProvider,
+                    "Analysiere folgenden gesprochenen Text und extrahiere einzelne Einkaufsliste-Items: '$spokenText'...")
+            }
+        }
+        
+        return result
     }
 
     suspend fun estimateCaloriesFromPhoto(bitmap: Bitmap, note: String = ""): Result<CaloriesEstimate> {
@@ -153,8 +191,11 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 AiProvider.Perplexity -> Result.failure(IllegalStateException("Perplexity unterstützt keine Bildanalyse. Verwende Gemini für multimodale Aufgaben."))
             }
             val took = System.currentTimeMillis() - started
-            r.onSuccess {
-                logDao.insert(AiLog.success("vision_calories", provider.name, prompt + " $note", it.toString(), took))
+            r.onSuccess { caloriesEstimate ->
+                // Track usage for successful vision requests
+                val estimatedTokens = UsageTracker.estimateVisionTokens(prompt + caloriesEstimate.text)
+                UsageTracker.recordUsage(context, provider, estimatedTokens)
+                logDao.insert(AiLog.success("vision_calories", provider.name, prompt + " $note", caloriesEstimate.toString(), took))
             }.onFailure {
                 logDao.insert(AiLog.error("vision_calories", provider.name, prompt + " $note", it.message ?: "unknown", took))
             }
@@ -170,8 +211,12 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 AiProvider.Perplexity -> perplexityChat(prompt)
             }
             val took = System.currentTimeMillis() - started
-            result.onSuccess {
-                logDao.insert(AiLog.success("text", provider.name, prompt, it, took))
+            
+            result.onSuccess { response ->
+                // Track usage for successful requests
+                val estimatedTokens = UsageTracker.estimateTokens(prompt + response)
+                UsageTracker.recordUsage(context, provider, estimatedTokens)
+                logDao.insert(AiLog.success("text", provider.name, prompt, response, took))
             }.onFailure {
                 logDao.insert(AiLog.error("text", provider.name, prompt, it.message ?: "unknown", took))
             }
