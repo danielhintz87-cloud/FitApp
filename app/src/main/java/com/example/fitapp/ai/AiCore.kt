@@ -20,7 +20,7 @@ import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
-enum class AiProvider { OpenAI }
+enum class AiProvider { Gemini, Perplexity }
 
 data class PlanRequest(
     val goal: String,
@@ -55,8 +55,28 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    suspend fun generatePlan(provider: AiProvider, req: PlanRequest): Result<String> =
-        callText(provider,
+    // -------- Intelligent Task Routing --------
+    
+    /**
+     * Routes task to optimal AI provider based on task characteristics
+     */
+    private fun selectProviderForTask(task: TaskType, hasImage: Boolean = false): AiProvider {
+        return when {
+            // Multimodal tasks → Gemini
+            hasImage -> AiProvider.Gemini
+            // Structured fitness plans → Gemini  
+            task == TaskType.TRAINING_PLAN -> AiProvider.Gemini
+            // Quick Q&A and web search → Perplexity
+            task == TaskType.SHOPPING_LIST_PARSING -> AiProvider.Perplexity
+            task == TaskType.RECIPE_GENERATION -> AiProvider.Perplexity
+            // Default to Gemini for complex tasks
+            else -> AiProvider.Gemini
+        }
+    }
+
+    suspend fun generatePlan(req: PlanRequest): Result<String> {
+        val provider = selectProviderForTask(TaskType.TRAINING_PLAN)
+        return callText(provider,
             "Erstelle einen wissenschaftlich fundierten **${req.weeks}-Wochen-Trainingsplan** in Markdown. " +
             "Ziel: ${req.goal}. Trainingsfrequenz: ${req.sessionsPerWeek} Einheiten/Woche, ${req.minutesPerSession} Min/Einheit. " +
             "Verfügbare Geräte: ${req.equipment.joinToString()}. " +
@@ -73,9 +93,11 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             "- Progressionshinweise für nächste Woche\n" +
             "- Anpassungen bei Beschwerden oder Stagnation"
         )
+    }
 
-    suspend fun generateRecipes(provider: AiProvider, req: RecipeRequest): Result<String> =
-        callText(provider,
+    suspend fun generateRecipes(req: RecipeRequest): Result<String> {
+        val provider = selectProviderForTask(TaskType.RECIPE_GENERATION)
+        return callText(provider,
             "Erstelle ${req.count} **nutritionsoptimierte Rezepte** als präzise Markdown-Liste. " +
             "Präferenzen: ${req.preferences}. Diätform: ${req.diet}. " +
             "\n\n**Anforderungen pro Rezept:**\n" +
@@ -89,9 +111,11 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             "\n**Kalkulationsbasis:** Verwende USDA-Nährwertdatenbank-Standards für genaue Berechnungen. " +
             "Achte auf realistische Portionsgrößen und präzise Makronährstoff-Verteilung."
         )
+    }
 
-    suspend fun parseShoppingList(provider: AiProvider, spokenText: String): Result<String> =
-        callText(provider,
+    suspend fun parseShoppingList(spokenText: String): Result<String> {
+        val provider = selectProviderForTask(TaskType.SHOPPING_LIST_PARSING)
+        return callText(provider,
             "Analysiere folgenden gesprochenen Text und extrahiere einzelne Einkaufsliste-Items: '$spokenText'\n\n" +
             "**Aufgabe:** Zerlege den Text in einzelne Lebensmittel mit optional genannten Mengen.\n\n" +
             "**Ausgabeformat:** Eine Zeile pro Item im Format: 'Produktname|Menge'\n" +
@@ -107,9 +131,11 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             "- Ignoriere Füllwörter wie 'ich brauche', 'kaufen', etc.\n" +
             "- Ein Item pro Zeile, keine zusätzlichen Erklärungen"
         )
+    }
 
-    suspend fun estimateCaloriesFromPhoto(provider: AiProvider, bitmap: Bitmap, note: String = ""): Result<CaloriesEstimate> =
-        withContext(Dispatchers.IO) {
+    suspend fun estimateCaloriesFromPhoto(bitmap: Bitmap, note: String = ""): Result<CaloriesEstimate> {
+        val provider = selectProviderForTask(TaskType.CALORIE_ESTIMATION, hasImage = true)
+        return withContext(Dispatchers.IO) {
             val prompt = "Analysiere das Bild und schätze präzise die Kalorien des gezeigten Essens.\n\n" +
                 "**Analyseschritte:**\n" +
                 "1. Identifiziere alle sichtbaren Lebensmittel/Getränke\n" +
@@ -122,7 +148,10 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 "Begründung: [Lebensmittel] ca. [Gramm]g = [kcal]kcal, [weitere Komponenten]\n" +
                 "Unsicherheitsfaktoren: [versteckte Fette, Portionsgröße, etc.]"
             val started = System.currentTimeMillis()
-            val r = openAiVision(prompt, bitmap)
+            val r = when (provider) {
+                AiProvider.Gemini -> geminiVision(prompt, bitmap)
+                AiProvider.Perplexity -> Result.failure(IllegalStateException("Perplexity unterstützt keine Bildanalyse. Verwende Gemini für multimodale Aufgaben."))
+            }
             val took = System.currentTimeMillis() - started
             r.onSuccess {
                 logDao.insert(AiLog.success("vision_calories", provider.name, prompt + " $note", it.toString(), took))
@@ -131,11 +160,15 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             }
             r
         }
+    }
 
     suspend fun callText(provider: AiProvider, prompt: String): Result<String> =
         withContext(Dispatchers.IO) {
             val started = System.currentTimeMillis()
-            val result = openAiChat(prompt)
+            val result = when (provider) {
+                AiProvider.Gemini -> geminiChat(prompt)
+                AiProvider.Perplexity -> perplexityChat(prompt)
+            }
             val took = System.currentTimeMillis() - started
             result.onSuccess {
                 logDao.insert(AiLog.success("text", provider.name, prompt, it, took))
@@ -145,7 +178,188 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             result
         }
 
-    // -------- OpenAI --------
+    // -------- Gemini API --------
+
+    private suspend fun geminiChat(prompt: String): Result<String> = runCatching {
+        withRetry {
+            val apiKey = ApiKeys.getGeminiKey(context)
+            if (apiKey.isBlank()) {
+                throw IllegalStateException("Gemini API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+            }
+            
+            val body = """
+                {
+                    "contents": [{
+                        "parts": [{"text": ${prompt.json()}}]
+                    }],
+                    "generationConfig": {
+                        "temperature": 0.4,
+                        "maxOutputTokens": 4096
+                    }
+                }
+            """.trimIndent().toRequestBody("application/json".toMediaType())
+
+            val req = Request.Builder()
+                .url("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=$apiKey")
+                .header("User-Agent", "fitapp/1.0")
+                .post(body)
+                .build()
+
+            http.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) {
+                    val bodyStr = resp.body?.string().orEmpty()
+                    val errorMsg = when (resp.code) {
+                        400 -> "Gemini 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen."
+                        401 -> "Gemini 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen."
+                        403 -> "Gemini 403: Zugriff verweigert oder API-Limit erreicht. Prüfen Sie Ihr Google Cloud Konto."
+                        429 -> "Gemini 429: Zu viele Anfragen. Bitte warten Sie ein paar Sekunden und versuchen Sie es erneut."
+                        in 500..599 -> "Gemini ${resp.code}: Server-Fehler. Bitte versuchen Sie es später erneut."
+                        else -> "Gemini ${resp.code}: ${bodyStr.take(200)}"
+                    }
+                    error(errorMsg)
+                }
+                
+                val txt = resp.body!!.string()
+                // Parse Gemini response JSON
+                val jsonObj = JSONObject(txt)
+                val candidates = jsonObj.getJSONArray("candidates")
+                if (candidates.length() > 0) {
+                    val content = candidates.getJSONObject(0)
+                        .getJSONObject("content")
+                        .getJSONArray("parts")
+                        .getJSONObject(0)
+                        .getString("text")
+                    content
+                } else {
+                    "Keine Antwort von Gemini erhalten"
+                }
+            }
+        }
+    }
+
+    private suspend fun geminiVision(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> = runCatching {
+        withRetry {
+            val apiKey = ApiKeys.getGeminiKey(context)
+            if (apiKey.isBlank()) {
+                throw IllegalStateException("Gemini API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+            }
+            
+            val optimizedBitmap = optimizeBitmapForVision(bitmap)
+            val imageData = optimizedBitmap.toJpegBytes(80).b64()
+            
+            val body = """
+                {
+                    "contents": [{
+                        "parts": [
+                            {"text": ${prompt.json()}},
+                            {
+                                "inline_data": {
+                                    "mime_type": "image/jpeg",
+                                    "data": "$imageData"
+                                }
+                            }
+                        ]
+                    }],
+                    "generationConfig": {
+                        "temperature": 0.3,
+                        "maxOutputTokens": 2048
+                    }
+                }
+            """.trimIndent().toRequestBody("application/json".toMediaType())
+
+            val req = Request.Builder()
+                .url("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=$apiKey")
+                .header("User-Agent", "fitapp/1.0")
+                .post(body)
+                .build()
+
+            http.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) {
+                    val bodyStr = resp.body?.string().orEmpty()
+                    val errorMsg = when (resp.code) {
+                        400 -> "Gemini 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen."
+                        401 -> "Gemini 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen."
+                        403 -> "Gemini 403: Zugriff verweigert oder API-Limit erreicht. Prüfen Sie Ihr Google Cloud Konto."
+                        429 -> "Gemini 429: Zu viele Anfragen. Bitte warten Sie ein paar Sekunden und versuchen Sie es erneut."
+                        in 500..599 -> "Gemini ${resp.code}: Server-Fehler. Bitte versuchen Sie es später erneut."
+                        else -> "Gemini ${resp.code}: ${bodyStr.take(200)}"
+                    }
+                    error(errorMsg)
+                }
+                
+                val txt = resp.body!!.string()
+                // Parse Gemini response JSON
+                val jsonObj = JSONObject(txt)
+                val candidates = jsonObj.getJSONArray("candidates")
+                if (candidates.length() > 0) {
+                    val content = candidates.getJSONObject(0)
+                        .getJSONObject("content")
+                        .getJSONArray("parts")
+                        .getJSONObject(0)
+                        .getString("text")
+                    parseCalories(content)
+                } else {
+                    throw IllegalStateException("Keine Antwort von Gemini erhalten")
+                }
+            }
+        }
+    }
+
+    // -------- Perplexity API --------
+
+    private suspend fun perplexityChat(prompt: String): Result<String> = runCatching {
+        withRetry {
+            val apiKey = ApiKeys.getPerplexityKey(context)
+            if (apiKey.isBlank()) {
+                throw IllegalStateException("Perplexity API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
+            }
+            
+            val body = """
+                {
+                    "model": "llama-3.1-sonar-small-128k-online",
+                    "messages": [
+                        {"role": "user", "content": ${prompt.json()}}
+                    ],
+                    "temperature": 0.4,
+                    "max_tokens": 4096
+                }
+            """.trimIndent().toRequestBody("application/json".toMediaType())
+
+            val req = Request.Builder()
+                .url("https://api.perplexity.ai/chat/completions")
+                .header("Authorization", "Bearer $apiKey")
+                .header("User-Agent", "fitapp/1.0")
+                .post(body)
+                .build()
+
+            http.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) {
+                    val bodyStr = resp.body?.string().orEmpty()
+                    val errorMsg = when (resp.code) {
+                        400 -> "Perplexity 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen."
+                        401 -> "Perplexity 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen."
+                        402 -> "Perplexity 402: Guthaben aufgebraucht oder Zahlung erforderlich. Bitte prüfen Sie Ihr Perplexity-Konto."
+                        403 -> "Perplexity 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt."
+                        429 -> "Perplexity 429: Zu viele Anfragen. Bitte warten Sie ein paar Sekunden und versuchen Sie es erneut."
+                        in 500..599 -> "Perplexity ${resp.code}: Server-Fehler. Bitte versuchen Sie es später erneut."
+                        else -> "Perplexity ${resp.code}: ${bodyStr.take(200)}"
+                    }
+                    error(errorMsg)
+                }
+                
+                val txt = resp.body!!.string()
+                // Parse OpenAI-compatible response from Perplexity
+                val contentStart = txt.indexOf("\"content\":\"") + 11
+                val contentEnd = txt.indexOf("\"", contentStart)
+                val content = if (contentStart > 10 && contentEnd > contentStart) {
+                    txt.substring(contentStart, contentEnd).replace("\\\"", "\"").replace("\\n", "\n")
+                } else "Error parsing response"
+                content
+            }
+        }
+    }
+
+    // -------- Retry Logic --------
 
     /**
      * Calculate exponential backoff delay with jitter for retry attempts
@@ -155,17 +369,6 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
         val baseDelay = baseDelays.getOrElse(attempt) { 8000L }
         val jitter = Random.nextLong(0, 400)
         return baseDelay + jitter
-    }
-
-    /**
-     * Parse retry-after header value from OpenAI response - improved version
-     */
-    private fun parseRetryAfter(value: String?): Long? {
-        if (value.isNullOrBlank()) return null
-        val seconds = value.trim().toLongOrNull()
-        if (seconds != null) return seconds * 1000L
-        // RFC1123 date parsing would be complex; fallback for non-numeric values
-        return 2_000L
     }
 
     /**
@@ -181,10 +384,10 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
         }
     }
 
-    private suspend fun <T> openAiWithRetry(request: suspend () -> T): T {
+    private suspend fun <T> withRetry(request: suspend () -> T): T {
         var lastException: Exception? = null
         
-        for (attempt in 0..4) { // Increased to 4 attempts
+        for (attempt in 0..3) {
             try {
                 // Acquire semaphore to limit concurrent requests
                 requestSemaphore.acquire()
@@ -196,7 +399,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             } catch (e: Exception) {
                 lastException = e
 
-                // Extract status code if available - improved pattern matching
+                // Extract status code if available
                 val lastStatusCode = when {
                     e.message?.contains(" 429") == true || e.message?.contains("429") == true -> 429
                     e.message?.contains(" 500") == true || e.message?.contains("500") == true -> 500
@@ -206,14 +409,8 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                     else -> null
                 }
 
-                if (attempt < 4 && isRetriableError(lastStatusCode, e)) {
-                    // Improved retry-after parsing - check multiple formats
-                    val retryAfter = parseRetryAfter(
-                        e.message?.substringAfter("Retry-After: ")?.substringBefore("\n")
-                            ?: e.message?.substringAfter("retry_after=")?.substringBeforeAny(',', ' ', ')')
-                    )
-
-                    val delayMs = retryAfter ?: calculateBackoffDelay(attempt)
+                if (attempt < 3 && isRetriableError(lastStatusCode, e)) {
+                    val delayMs = calculateBackoffDelay(attempt)
                     delay(delayMs)
                 } else {
                     throw e
@@ -223,124 +420,10 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
         throw lastException ?: IllegalStateException("Max retries exceeded")
     }
 
-    private suspend fun openAiChat(prompt: String): Result<String> = runCatching {
-        openAiWithRetry {
-        val apiKey = ApiKeys.getOpenAiKey(context)
-            .ifBlank { BuildConfig.OPENAI_API_KEY }
-        if (apiKey.isBlank()) {
-            throw IllegalStateException("OpenAI API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
-        }
-        
-        val model = BuildConfig.OPENAI_MODEL.ifBlank { "gpt-4o-mini" }
-        val body = """
-            {"model":"$model","messages":[{"role":"user","content":${prompt.json()}}],"temperature":0.4}
-        """.trimIndent().toRequestBody("application/json".toMediaType())
-
-        val base = BuildConfig.OPENAI_BASE_URL.ifBlank { "https://api.openai.com" }
-        val req = Request.Builder()
-            .url("$base/v1/chat/completions")
-            .header("Authorization", "Bearer $apiKey")
-            .header("User-Agent", "fitapp/1.0")
-            .post(body)
-            .build()
-
-        http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) {
-                val bodyStr = resp.body?.string().orEmpty()
-                val retryAfter = resp.header("Retry-After")
-                val errorMsg = when (resp.code) {
-                    400 -> "OpenAI 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen."
-                    401 -> "OpenAI 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen."
-                    402 -> "OpenAI 402: Guthaben aufgebraucht oder Zahlung erforderlich. Bitte prüfen Sie Ihr OpenAI-Konto."
-                    403 -> "OpenAI 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt."
-                    429 -> {
-                        val waitTime = retryAfter?.let { "${it}s" } ?: "ein paar Sekunden"
-                        "OpenAI 429: Zu viele Anfragen. Bitte warten Sie $waitTime und versuchen Sie es erneut."
-                    }
-                    in 500..599 -> "OpenAI ${resp.code}: Server-Fehler. Bitte versuchen Sie es später erneut."
-                    else -> "OpenAI ${resp.code}: ${bodyStr.take(200)}"
-                }
-                // Include retry-after in error message for retry logic
-                val fullError = if (retryAfter != null) "$errorMsg Retry-After: $retryAfter" else errorMsg
-                error(fullError)
-            }
-            val txt = resp.body!!.string()
-            // Manual JSON parsing for simplicity
-            val contentStart = txt.indexOf("\"content\":\"") + 11
-            val contentEnd = txt.indexOf("\"", contentStart)
-            val content = if (contentStart > 10 && contentEnd > contentStart) {
-                txt.substring(contentStart, contentEnd).replace("\\\"", "\"").replace("\\n", "\n")
-            } else "Error parsing response"
-            content
-        }
-        }
-    }
-
-    private suspend fun openAiVision(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> = runCatching {
-        openAiWithRetry {
-        val apiKey = ApiKeys.getOpenAiKey(context)
-            .ifBlank { BuildConfig.OPENAI_API_KEY }
-        if (apiKey.isBlank()) {
-            throw IllegalStateException("OpenAI API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
-        }
-        
-        val model = BuildConfig.OPENAI_MODEL.ifBlank { "gpt-4o-mini" }
-        val optimizedBitmap = optimizeBitmapForVision(bitmap)
-        val dataUrl = "data:image/jpeg;base64," + optimizedBitmap.toJpegBytes(80).b64()
-        val body = """
-        {
-          "model":"$model",
-          "messages":[
-            {"role":"user","content":[
-              {"type":"text","text":${prompt.json()}},
-              {"type":"image_url","image_url":{"url":${dataUrl.json()}}}
-            ]}
-          ]
-        }""".trimIndent().toRequestBody("application/json".toMediaType())
-
-        val base = BuildConfig.OPENAI_BASE_URL.ifBlank { "https://api.openai.com" }
-        val req = Request.Builder()
-            .url("$base/v1/chat/completions")
-            .header("Authorization", "Bearer $apiKey")
-            .header("User-Agent", "fitapp/1.0")
-            .post(body).build()
-
-        http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) {
-                val bodyStr = resp.body?.string().orEmpty()
-                val retryAfter = resp.header("Retry-After")
-                val errorMsg = when (resp.code) {
-                    400 -> "OpenAI 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen."
-                    401 -> "OpenAI 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen."
-                    402 -> "OpenAI 402: Guthaben aufgebraucht oder Zahlung erforderlich. Bitte prüfen Sie Ihr OpenAI-Konto."
-                    403 -> "OpenAI 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt."
-                    429 -> {
-                        val waitTime = retryAfter?.let { "${it}s" } ?: "ein paar Sekunden"
-                        "OpenAI 429: Zu viele Anfragen. Bitte warten Sie $waitTime und versuchen Sie es erneut."
-                    }
-                    in 500..599 -> "OpenAI ${resp.code}: Server-Fehler. Bitte versuchen Sie es später erneut."
-                    else -> "OpenAI ${resp.code}: ${bodyStr.take(200)}"
-                }
-                // Include retry-after in error message for retry logic
-                val fullError = if (retryAfter != null) "$errorMsg Retry-After: $retryAfter" else errorMsg
-                error(fullError)
-            }
-            val txt = resp.body!!.string()
-            // Manual JSON parsing for vision response
-            val contentStart = txt.indexOf("\"content\":\"") + 11
-            val contentEnd = txt.indexOf("\"", contentStart)
-            val text = if (contentStart > 10 && contentEnd > contentStart) {
-                txt.substring(contentStart, contentEnd).replace("\\\"", "\"").replace("\\n", "\n")
-            } else "Error parsing response"
-            parseCalories(text)
-        }
-        }
-    }
-
     // -------- Helpers --------
 
     /**
-     * Optimize bitmap for OpenAI Vision API to reduce token usage
+     * Optimize bitmap for Vision API to reduce token usage
      */
     private fun optimizeBitmapForVision(bitmap: Bitmap): Bitmap {
         val maxDimension = 1024
@@ -367,11 +450,6 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
     private fun String.json(): String = "\"${this.replace("\"", "\\\"").replace("\n", "\\n")}\""
 
-    private fun String.substringBeforeAny(vararg chars: Char): String {
-        val idx = this.indexOfFirst { c -> chars.contains(c) }
-        return if (idx >= 0) this.substring(0, idx) else this
-    }
-
     private fun Bitmap.toJpegBytes(quality: Int = 80): ByteArray =
         ByteArrayOutputStream().use { bos ->
             compress(Bitmap.CompressFormat.JPEG, quality, bos)
@@ -380,24 +458,20 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
     private fun ByteArray.b64(): String = Base64.encodeToString(this, Base64.NO_WRAP)
 
-    // -------- Provider Selection & Fallback Logic --------
-
+    // -------- Usage Tracking --------
+    
     companion object {
-        // Global request throttling - max 2 concurrent OpenAI API calls
-        private val requestSemaphore = Semaphore(2)
+        // Global request throttling - max 2 concurrent API calls per provider
+        private val requestSemaphore = Semaphore(4)
         
         /**
-         * Returns OpenAI as the only provider
+         * Get fallback provider for a given provider when it fails
          */
-        fun selectOptimalProvider(): AiProvider {
-            return AiProvider.OpenAI
-        }
-
-        /**
-         * No fallback chain needed since only OpenAI is available
-         */
-        fun getFallbackChain(): List<AiProvider> {
-            return emptyList()
+        fun getFallbackProvider(primary: AiProvider): AiProvider? {
+            return when (primary) {
+                AiProvider.Gemini -> AiProvider.Perplexity
+                AiProvider.Perplexity -> AiProvider.Gemini
+            }
         }
     }
 }

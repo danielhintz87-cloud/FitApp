@@ -4,45 +4,84 @@ import android.content.Context
 import android.content.SharedPreferences
 
 /**
- * Helper for storing and retrieving the OpenAI API key from SharedPreferences.
- * Simplified to focus exclusively on OpenAI as the primary provider.
+ * Helper for storing and retrieving AI provider API keys from SharedPreferences.
+ * Supports Gemini and Perplexity as the primary providers.
  */
 object ApiKeys {
     private const val PREFS_NAME = "api_keys"
-    private const val KEY_OPENAI = "openai_api_key"
+    private const val KEY_GEMINI = "gemini_api_key"
+    private const val KEY_PERPLEXITY = "perplexity_api_key"
 
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
+    fun saveGeminiKey(context: Context, key: String) {
+        getPrefs(context).edit().putString(KEY_GEMINI, key).apply()
+    }
+
+    fun getGeminiKey(context: Context): String {
+        return getPrefs(context).getString(KEY_GEMINI, "") ?: ""
+    }
+
+    fun savePerplexityKey(context: Context, key: String) {
+        getPrefs(context).edit().putString(KEY_PERPLEXITY, key).apply()
+    }
+
+    fun getPerplexityKey(context: Context): String {
+        return getPrefs(context).getString(KEY_PERPLEXITY, "") ?: ""
+    }
+
+    // Legacy methods for migration compatibility
     fun saveOpenAiKey(context: Context, key: String) {
-        getPrefs(context).edit().putString(KEY_OPENAI, key).apply()
+        // For migration purposes, if someone sets an OpenAI key, we'll use it as Gemini key
+        saveGeminiKey(context, key)
     }
 
     fun getOpenAiKey(context: Context): String {
-        return getPrefs(context).getString(KEY_OPENAI, "") ?: ""
+        // For migration compatibility, return Gemini key
+        return getGeminiKey(context)
     }
 
     fun getStoredOpenAiKey(context: Context): String {
-        return getPrefs(context).getString(KEY_OPENAI, "") ?: ""
+        return getGeminiKey(context)
     }
 
     /**
-     * Check if OpenAI provider is available
+     * Check if both primary providers are available
      */
     fun isPrimaryProviderAvailable(context: Context): Boolean {
-        return getOpenAiKey(context).isNotBlank()
+        return getGeminiKey(context).isNotBlank() && getPerplexityKey(context).isNotBlank()
     }
 
     /**
-     * Get status message focused on OpenAI configuration
+     * Check if specific provider is available
+     */
+    fun isProviderAvailable(context: Context, provider: com.example.fitapp.ai.AiProvider): Boolean {
+        return when (provider) {
+            com.example.fitapp.ai.AiProvider.Gemini -> getGeminiKey(context).isNotBlank()
+            com.example.fitapp.ai.AiProvider.Perplexity -> getPerplexityKey(context).isNotBlank()
+        }
+    }
+
+    /**
+     * Get status message for AI provider configuration
      */
     fun getConfigurationStatus(context: Context): String {
-        val openAiKey = getOpenAiKey(context)
-        return if (openAiKey.isNotBlank()) {
-            "✓ OpenAI konfiguriert"
-        } else {
-            "✗ OpenAI API-Schlüssel erforderlich. Bitte unter Einstellungen → API-Schlüssel eingeben."
+        val geminiKey = getGeminiKey(context)
+        val perplexityKey = getPerplexityKey(context)
+        
+        return buildString {
+            appendLine("AI Provider Status:")
+            append("- Gemini: ${if (geminiKey.isNotBlank()) "✓ Konfiguriert" else "✗ API-Schlüssel erforderlich"}")
+            appendLine()
+            append("- Perplexity: ${if (perplexityKey.isNotBlank()) "✓ Konfiguriert" else "✗ API-Schlüssel erforderlich"}")
+            
+            if (geminiKey.isBlank() || perplexityKey.isBlank()) {
+                appendLine()
+                appendLine()
+                append("Bitte beide API-Schlüssel unter Einstellungen → API-Schlüssel eingeben.")
+            }
         }
     }
 }

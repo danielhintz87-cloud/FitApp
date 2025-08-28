@@ -18,9 +18,11 @@ import com.example.fitapp.data.prefs.ApiKeys
 fun ApiKeysScreen(contentPadding: PaddingValues) {
     val context = LocalContext.current
     
-    var openAiKey by remember { mutableStateOf(ApiKeys.getStoredOpenAiKey(context)) }
+    var geminiKey by remember { mutableStateOf(ApiKeys.getGeminiKey(context)) }
+    var perplexityKey by remember { mutableStateOf(ApiKeys.getPerplexityKey(context)) }
     
-    var showPassword by remember { mutableStateOf(false) }
+    var showGeminiPassword by remember { mutableStateOf(false) }
+    var showPerplexityPassword by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(false) }
 
     Column(
@@ -32,28 +34,28 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "OpenAI API-Schlüssel",
+            text = "AI Provider API-Schlüssel",
             style = MaterialTheme.typography.titleLarge
         )
         
         Text(
-            text = "Geben Sie Ihren OpenAI API-Schlüssel ein, um AI-Features zu nutzen. Der Schlüssel wird sicher auf dem Gerät gespeichert.",
+            text = "Geben Sie Ihre API-Schlüssel für Gemini und Perplexity ein, um AI-Features zu nutzen. Die Schlüssel werden sicher auf dem Gerät gespeichert.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // OpenAI Key
+        // Gemini Key
         OutlinedTextField(
-            value = openAiKey,
-            onValueChange = { openAiKey = it; saved = false },
-            label = { Text("OpenAI API Key") },
-            placeholder = { Text("sk-...") },
+            value = geminiKey,
+            onValueChange = { geminiKey = it; saved = false },
+            label = { Text("Gemini API Key") },
+            placeholder = { Text("AIza...") },
             modifier = Modifier.fillMaxWidth(),
-            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+            visualTransformation = if (showGeminiPassword) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            supportingText = { Text("Für ChatGPT-basierte Features (gpt-4o-mini)") }
+            supportingText = { Text("Für multimodale Aufgaben (Bilder, strukturierte Pläne)") }
         )
 
         Row(
@@ -61,20 +63,47 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedButton(
-                onClick = { showPassword = !showPassword },
+                onClick = { showGeminiPassword = !showGeminiPassword },
                 modifier = Modifier.weight(1f)
             ) {
-                Text(if (showPassword) "Ausblenden" else "Anzeigen")
+                Text(if (showGeminiPassword) "Ausblenden" else "Anzeigen")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Perplexity Key
+        OutlinedTextField(
+            value = perplexityKey,
+            onValueChange = { perplexityKey = it; saved = false },
+            label = { Text("Perplexity API Key") },
+            placeholder = { Text("pplx-...") },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = if (showPerplexityPassword) VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            supportingText = { Text("Für schnelle Q&A und Web-basierte Suche") }
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            OutlinedButton(
+                onClick = { showPerplexityPassword = !showPerplexityPassword },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(if (showPerplexityPassword) "Ausblenden" else "Anzeigen")
             }
 
             Button(
                 onClick = {
-                    ApiKeys.saveOpenAiKey(context, openAiKey.trim())
+                    ApiKeys.saveGeminiKey(context, geminiKey.trim())
+                    ApiKeys.savePerplexityKey(context, perplexityKey.trim())
                     saved = true
                 },
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Speichern")
+                Text("Beide Speichern")
             }
         }
 
@@ -85,7 +114,7 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
                 )
             ) {
                 Text(
-                    text = "✓ OpenAI API-Schlüssel erfolgreich gespeichert",
+                    text = "✓ API-Schlüssel erfolgreich gespeichert",
                     modifier = Modifier.padding(16.dp),
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -97,15 +126,15 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
         Card {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Hinweise zur Sicherheit",
+                    text = "Intelligente Task-Verteilung",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "• Der Schlüssel wird nur lokal auf Ihrem Gerät gespeichert\n" +
-                          "• Für Produktionsnutzung wird verschlüsselte Speicherung empfohlen\n" +
-                          "• Teilen Sie Ihren API-Schlüssel niemals mit anderen\n" +
-                          "• Nur OpenAI wird als AI-Provider unterstützt",
+                    text = "• **Gemini**: Multimodale Aufgaben (Bildanalyse), strukturierte Trainingspläne\n" +
+                          "• **Perplexity**: Schnelle Q&A, Web-basierte Suche, Shopping-Listen\n" +
+                          "• Die App wählt automatisch den optimalen Provider für jede Aufgabe\n" +
+                          "• Fallback-Mechanismen bei Problemen mit einem Provider",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -115,16 +144,37 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
         Card {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "OpenAI API-Schlüssel erhalten",
+                    text = "Hinweise zur Sicherheit",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "• Besuchen Sie platform.openai.com\n" +
+                    text = "• Die Schlüssel werden nur lokal auf Ihrem Gerät gespeichert\n" +
+                          "• Für Produktionsnutzung wird verschlüsselte Speicherung empfohlen\n" +
+                          "• Teilen Sie Ihre API-Schlüssel niemals mit anderen\n" +
+                          "• Gemini und Perplexity als optimierte AI-Provider",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Card {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "API-Schlüssel erhalten",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "**Gemini:**\n" +
+                          "• Besuchen Sie aistudio.google.com\n" +
                           "• Melden Sie sich an oder erstellen Sie ein Konto\n" +
-                          "• Gehen Sie zu 'API Keys' in Ihrem Dashboard\n" +
-                          "• Erstellen Sie einen neuen API-Schlüssel\n" +
-                          "• Kopieren Sie den Schlüssel und fügen Sie ihn hier ein",
+                          "• Erstellen Sie einen neuen API-Schlüssel\n\n" +
+                          "**Perplexity:**\n" +
+                          "• Besuchen Sie www.perplexity.ai\n" +
+                          "• Gehen Sie zu Settings → API\n" +
+                          "• Erstellen Sie einen neuen API-Schlüssel",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
