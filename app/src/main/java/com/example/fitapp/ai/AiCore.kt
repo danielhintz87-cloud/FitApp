@@ -197,7 +197,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 }
             } catch (e: Exception) {
                 lastException = e
-                
+
                 // Extract status code if available
                 val lastStatusCode = when {
                     e.message?.contains("429") == true -> 429
@@ -207,16 +207,13 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                     e.message?.contains("504") == true -> 504
                     else -> null
                 }
-                
-                // Release semaphore on error
-                requestSemaphore.release()
-                
+
                 if (attempt < 4 && isRetriableError(lastStatusCode, e)) {
                     // Check for retry-after header in error message
                     val retryAfter = parseRetryAfter(
                         e.message?.substringAfter("Retry-After: ")?.substringBefore(",")
                     )
-                    
+
                     val delayMs = retryAfter ?: calculateBackoffDelay(attempt)
                     delay(delayMs)
                 } else {

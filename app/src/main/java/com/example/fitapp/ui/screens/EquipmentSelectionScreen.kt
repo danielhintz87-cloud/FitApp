@@ -99,25 +99,27 @@ fun EquipmentSelectionScreen(
         mutableStateListOf<String>().apply { addAll(initialEquipment) }
     }
     
+    val saveAndExit = {
+        val newEquipment = mutableSelectedEquipment.toList()
+        // Save to persistent storage
+        UserPreferences.saveSelectedEquipment(context, newEquipment)
+        // Also notify the callback
+        onEquipmentChanged(newEquipment)
+        onBackPressed()
+    }
+
     Column(Modifier.fillMaxSize()) {
         // Top App Bar
         TopAppBar(
             title = { Text("Geräte auswählen") },
             navigationIcon = {
-                IconButton(onClick = onBackPressed) {
+                IconButton(onClick = saveAndExit) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück")
                 }
             },
             actions = {
                 Button(
-                    onClick = {
-                        val newEquipment = mutableSelectedEquipment.toList()
-                        // Save to persistent storage
-                        UserPreferences.saveSelectedEquipment(context, newEquipment)
-                        // Also notify the callback
-                        onEquipmentChanged(newEquipment)
-                        onBackPressed()
-                    },
+                    onClick = saveAndExit,
                     modifier = Modifier.padding(end = 8.dp)
                 ) {
                     Text("Fertig (${mutableSelectedEquipment.size})")
