@@ -16,12 +16,9 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // Direct API key placeholder - only for OpenAI (remove in production)
-        buildConfigField("String", "OPENAI_API_KEY", "\"\"")
-
-        // OpenAI configuration
-        buildConfigField("String", "OPENAI_BASE_URL", "\"https://api.openai.com\"")
-        buildConfigField("String", "OPENAI_MODEL", "\"gpt-4o-mini\"")
+        // API key placeholders - remove in production
+        buildConfigField("String", "GEMINI_API_KEY", "\"\"")
+        buildConfigField("String", "PERPLEXITY_API_KEY", "\"\"")
         
 
     }
