@@ -91,4 +91,7 @@ dependencies {
 
     // Coil (Vorschau des gewählten Bildes)
     implementation("io.coil-kt:coil-compose:2.7.0")
+    
+    // WorkManager for background tasks
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
 }
