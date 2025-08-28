@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.PlanRequest
@@ -16,6 +17,8 @@ import com.example.fitapp.data.prefs.UserPreferences
 import com.example.fitapp.data.repo.NutritionRepository
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 @OptIn(ExperimentalMaterial3Api::class)
 
@@ -32,20 +35,27 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
     var busy by remember { mutableStateOf(false) }
     var saveStatus by remember { mutableStateOf("") }
     
-    // Load saved equipment from UserPreferences on initialization
+    // Load saved equipment initially
     LaunchedEffect(Unit) {
         val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
         if (savedEquipment.isNotEmpty()) {
             equipment = savedEquipment.joinToString(", ")
         }
     }
-    
-    // Refresh equipment when returning from equipment selection screen
-    LaunchedEffect(navController?.currentBackStackEntry) {
-        val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
-        if (savedEquipment.isNotEmpty()) {
-            equipment = savedEquipment.joinToString(", ")
+
+    // Refresh equipment when screen is resumed
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
+                if (savedEquipment.isNotEmpty()) {
+                    equipment = savedEquipment.joinToString(", ")
+                }
+            }
         }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     
     // Dropdown states
@@ -223,7 +233,24 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         ) {
             Text(if (busy) "Generiere..." else "Plan erstellen")
         }
-        
+
+        OutlinedButton(
+            onClick = {
+                goal = "Muskelaufbau"
+                sessions = "3"
+                minutes = "60"
+                equipment = ""
+                result = ""
+                saveStatus = ""
+                UserPreferences.saveSelectedEquipment(ctx, emptyList())
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+        ) {
+            Text("Zurücksetzen")
+        }
+
         if (saveStatus.isNotBlank()) {
             Spacer(Modifier.height(8.dp))
             Text(saveStatus, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)

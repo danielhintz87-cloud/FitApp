@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -99,25 +100,29 @@ fun EquipmentSelectionScreen(
         mutableStateListOf<String>().apply { addAll(initialEquipment) }
     }
     
+    val saveAndExit = {
+        val newEquipment = mutableSelectedEquipment.toList()
+        // Save to persistent storage
+        UserPreferences.saveSelectedEquipment(context, newEquipment)
+        // Also notify the callback
+        onEquipmentChanged(newEquipment)
+        onBackPressed()
+    }
+
+    BackHandler { saveAndExit() }
+
     Column(Modifier.fillMaxSize()) {
         // Top App Bar
         TopAppBar(
             title = { Text("Geräte auswählen") },
             navigationIcon = {
-                IconButton(onClick = onBackPressed) {
+                IconButton(onClick = saveAndExit) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück")
                 }
             },
             actions = {
                 Button(
-                    onClick = {
-                        val newEquipment = mutableSelectedEquipment.toList()
-                        // Save to persistent storage
-                        UserPreferences.saveSelectedEquipment(context, newEquipment)
-                        // Also notify the callback
-                        onEquipmentChanged(newEquipment)
-                        onBackPressed()
-                    },
+                    onClick = saveAndExit,
                     modifier = Modifier.padding(end = 8.dp)
                 ) {
                     Text("Fertig (${mutableSelectedEquipment.size})")
@@ -204,6 +209,15 @@ fun EquipmentSelectionScreen(
                     }
                 )
             }
+        }
+
+        Button(
+            onClick = saveAndExit,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text("Auswahl speichern")
         }
     }
 }
