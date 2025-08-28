@@ -10,6 +10,7 @@ import com.example.fitapp.data.prefs.ApiKeys
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Semaphore
 import org.json.JSONObject
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -17,6 +18,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 enum class AiProvider { OpenAI }
 
@@ -278,6 +280,9 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
     // -------- Provider Selection & Fallback Logic --------
 
     companion object {
+        // Global request throttling - max 2 concurrent OpenAI API calls
+        private val requestSemaphore = Semaphore(2)
+        
         /**
          * Returns OpenAI as the only provider
          */
