@@ -48,7 +48,6 @@ fun FoodScanScreen(
     var showConfirmDialog by remember { mutableStateOf(false) }
     var editedKcal by remember { mutableStateOf("") }
     var editedLabel by remember { mutableStateOf("") }
-    var customPrompt by remember { mutableStateOf("") }
     var analysisAttempts by remember { mutableStateOf(0) }
     var manualFoodDescription by remember { mutableStateOf("") }
     var isEstimatingManualCalories by remember { mutableStateOf(false) }
@@ -126,40 +125,6 @@ fun FoodScanScreen(
                     }
                 } ?: run {
                     Text("Lade Empfehlung...", style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-        }
-
-        // Custom prompt input section - only show after failed analysis for correction
-        if ((picked != null || captured != null) && estimate != null && 
-            (estimate!!.text.contains("KEIN_ESSEN_ERKANNT", ignoreCase = true) || 
-             estimate!!.text.contains("kein essen", ignoreCase = true) ||
-             estimate!!.text.contains("fehlgeschlagen", ignoreCase = true) ||
-             estimate!!.kcal == 0)) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-            ) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(
-                        "Essen nicht erkannt - Zusätzliche Informationen",
-                        style = MaterialTheme.typography.titleSmall
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = customPrompt,
-                        onValueChange = { customPrompt = it },
-                        label = { Text("Was ist auf dem Bild?") },
-                        placeholder = { Text("z.B. 'Ein Apfel mit 200g' oder 'Pasta mit Tomatensauce'") },
-                        modifier = Modifier.fillMaxWidth(),
-                        maxLines = 3
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Beschreiben Sie kurz das Essen, um eine bessere Analyse zu ermöglichen",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
                 }
             }
         }
@@ -246,11 +211,7 @@ fun FoodScanScreen(
                         analysisAttempts++
                         scope.launch {
                             try {
-                                val prompt = if (customPrompt.isNotBlank()) {
-                                    "Bitte analysiere dieses Bild und identifiziere das Essen. Zusätzliche Informationen: $customPrompt. Prüfe ob es sich um echtes Essen handelt und schätze die Kalorien."
-                                } else {
-                                    "Analysiere dieses Bild nochmals genauer und identifiziere das Essen. Prüfe zuerst ob es sich um echtes, essbares Essen handelt."
-                                }
+                                val prompt = "Analysiere dieses Bild nochmals genauer und identifiziere das Essen. Prüfe zuerst ob es sich um echtes, essbares Essen handelt."
                                 
                                 estimate = when {
                                     captured != null -> AppAi.caloriesWithOptimalProvider(ctx, captured!!, prompt).getOrThrow()
@@ -275,7 +236,6 @@ fun FoodScanScreen(
                     estimate = null
                     picked = null
                     captured = null
-                    customPrompt = ""
                 }) {
                     Text("📷 Neues Foto")
                 }
