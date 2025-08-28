@@ -107,7 +107,7 @@ object SmartNotificationManager {
         )
         
         val notification = NotificationCompat.Builder(context, CHANNEL_ACHIEVEMENTS)
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // Use app icon or achievement icon
+            .setSmallIcon(android.R.drawable.ic_dialog_info) // Use system icon
             .setContentTitle("🎉 Erfolg freigeschaltet!")
             .setContentText(achievement.title)
             .setStyle(NotificationCompat.BigTextStyle()
@@ -151,7 +151,7 @@ object SmartNotificationManager {
         )
         
         val notification = NotificationCompat.Builder(context, CHANNEL_STREAKS)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle("🔥 Streak in Gefahr!")
             .setContentText("Deine ${streak.name}-Streak (${streak.currentStreak} Tage) ist gefährdet")
             .setStyle(NotificationCompat.BigTextStyle()
@@ -204,7 +204,7 @@ object SmartNotificationManager {
         }
         
         val notification = NotificationCompat.Builder(context, CHANNEL_MILESTONES)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("🔥 Streak-Meilenstein!")
             .setContentText("${streak.name}: $milestoneText")
             .setStyle(NotificationCompat.BigTextStyle()
@@ -272,7 +272,7 @@ object SmartNotificationManager {
         }
         
         val notification = NotificationCompat.Builder(context, CHANNEL_DAILY_MOTIVATION)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("FitApp Motivation")
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle()
