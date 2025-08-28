@@ -233,7 +233,24 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         ) {
             Text(if (busy) "Generiere..." else "Plan erstellen")
         }
-        
+
+        OutlinedButton(
+            onClick = {
+                goal = "Muskelaufbau"
+                sessions = "3"
+                minutes = "60"
+                equipment = ""
+                result = ""
+                saveStatus = ""
+                UserPreferences.saveSelectedEquipment(ctx, emptyList())
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+        ) {
+            Text("Zurücksetzen")
+        }
+
         if (saveStatus.isNotBlank()) {
             Spacer(Modifier.height(8.dp))
             Text(saveStatus, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
