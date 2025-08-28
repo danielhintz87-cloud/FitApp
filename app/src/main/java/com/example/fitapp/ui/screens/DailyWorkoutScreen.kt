@@ -21,6 +21,9 @@ import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.TodayWorkoutEntity
 import com.example.fitapp.data.prefs.UserPreferences
 import com.example.fitapp.data.repo.NutritionRepository
+import com.example.fitapp.data.repo.PersonalMotivationRepository
+import com.example.fitapp.services.PersonalAchievementManager
+import com.example.fitapp.services.PersonalStreakManager
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -35,6 +38,9 @@ fun DailyWorkoutScreen(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val motivationRepo = remember { PersonalMotivationRepository(AppDatabase.get(ctx)) }
+    val achievementManager = remember { PersonalAchievementManager(ctx, motivationRepo) }
+    val streakManager = remember { PersonalStreakManager(ctx, motivationRepo) }
     
     var workoutSteps by remember { mutableStateOf<List<String>>(emptyList()) }
     var currentStepIndex by remember { mutableStateOf(0) }
@@ -350,6 +356,10 @@ fun DailyWorkoutScreen(
                                                 "completed", 
                                                 System.currentTimeMillis() / 1000
                                             )
+                                            
+                                            // Track achievement and streak progress
+                                            achievementManager.trackWorkoutCompletion()
+                                            streakManager.trackWorkoutCompletion()
                                         }
                                         isCompleted = true
                                     }
