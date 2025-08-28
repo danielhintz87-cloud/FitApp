@@ -47,8 +47,8 @@ class PersonalMotivationRepository(private val db: AppDatabase) {
     suspend fun updateStreak(streak: PersonalStreakEntity) = 
         db.personalStreakDao().update(streak)
     
-    suspend fun updateStreakCounts(id: Long, currentStreak: Int, longestStreak: Int, lastActivityDate: String?) = 
-        db.personalStreakDao().updateStreak(id, currentStreak, longestStreak, lastActivityDate ?: "")
+    suspend fun updateStreakCounts(id: Long, currentStreak: Int, longestStreak: Int, lastActivityTimestamp: Long?) = 
+        db.personalStreakDao().updateStreak(id, currentStreak, longestStreak, lastActivityTimestamp)
     
     suspend fun setStreakActive(id: Long, active: Boolean) = 
         db.personalStreakDao().setActive(id, active)

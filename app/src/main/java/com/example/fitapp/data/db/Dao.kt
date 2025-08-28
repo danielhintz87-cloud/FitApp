@@ -224,8 +224,8 @@ interface PersonalStreakDao {
     @Query("SELECT * FROM personal_streaks WHERE category = :category ORDER BY currentStreak DESC")
     fun streaksByCategoryFlow(category: String): Flow<List<PersonalStreakEntity>>
 
-    @Query("UPDATE personal_streaks SET currentStreak = :currentStreak, longestStreak = :longestStreak, lastActivityDate = :lastActivityDate WHERE id = :id")
-    suspend fun updateStreak(id: Long, currentStreak: Int, longestStreak: Int, lastActivityDate: String)
+    @Query("UPDATE personal_streaks SET currentStreak = :currentStreak, longestStreak = :longestStreak, lastActivityTimestamp = :lastActivityTimestamp WHERE id = :id")
+    suspend fun updateStreak(id: Long, currentStreak: Int, longestStreak: Int, lastActivityTimestamp: Long?)
 
     @Query("UPDATE personal_streaks SET isActive = :active WHERE id = :id")
     suspend fun setActive(id: Long, active: Boolean)

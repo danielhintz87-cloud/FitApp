@@ -150,7 +150,7 @@ data class PersonalStreakEntity(
     val category: String, // "workout", "nutrition", "habit"
     val currentStreak: Int = 0,
     val longestStreak: Int = 0,
-    val lastActivityDate: String? = null, // ISO date string
+    val lastActivityTimestamp: Long? = null, // Epoch timestamp in seconds
     val isActive: Boolean = true,
     val targetDays: Int? = null, // target streak length
     val createdAt: Long = System.currentTimeMillis() / 1000

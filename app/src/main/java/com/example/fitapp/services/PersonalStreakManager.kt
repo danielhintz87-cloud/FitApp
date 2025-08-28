@@ -24,6 +24,13 @@ class PersonalStreakManager(
         
         // Grace period for streaks (hours)
         const val GRACE_PERIOD_HOURS = 6
+        
+        // Helper functions to convert between LocalDate and timestamp
+        private fun LocalDate.toEpochSecond(): Long = 
+            this.atStartOfDay(ZoneId.systemDefault()).toEpochSecond()
+        
+        private fun Long.toLocalDate(): LocalDate = 
+            LocalDate.ofEpochDay(this / 86400)
     }
     
     fun getAllStreaks(): Flow<List<PersonalStreakEntity>> =
@@ -52,15 +59,15 @@ class PersonalStreakManager(
      * Update all streaks based on daily activities
      */
     suspend fun updateDailyStreaks() {
-        val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+        val todayTimestamp = LocalDate.now().toEpochSecond()
         val activeStreaks = repository.activeStreaksFlow().first()
         
         for (streak in activeStreaks) {
             when (streak.category) {
-                CATEGORY_WORKOUT -> updateWorkoutStreak(streak, today)
-                CATEGORY_NUTRITION -> updateNutritionStreak(streak, today)
-                CATEGORY_HABIT -> updateHabitStreak(streak, today)
-                CATEGORY_WEIGHT -> updateWeightTrackingStreak(streak, today)
+                CATEGORY_WORKOUT -> updateWorkoutStreak(streak, todayTimestamp)
+                CATEGORY_NUTRITION -> updateNutritionStreak(streak, todayTimestamp)
+                CATEGORY_HABIT -> updateHabitStreak(streak, todayTimestamp)
+                CATEGORY_WEIGHT -> updateWeightTrackingStreak(streak, todayTimestamp)
             }
         }
     }
@@ -69,12 +76,12 @@ class PersonalStreakManager(
      * Track workout completion for streaks
      */
     suspend fun trackWorkoutCompletion(date: LocalDate = LocalDate.now()) {
-        val dateStr = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
+        val dateTimestamp = date.toEpochSecond()
         val workoutStreaks = repository.streaksByCategoryFlow(CATEGORY_WORKOUT).first()
             .filter { it.isActive }
         
         for (streak in workoutStreaks) {
-            incrementStreak(streak, dateStr)
+            incrementStreak(streak, dateTimestamp)
         }
     }
     
@@ -82,12 +89,12 @@ class PersonalStreakManager(
      * Track nutrition logging for streaks
      */
     suspend fun trackNutritionLogging(date: LocalDate = LocalDate.now()) {
-        val dateStr = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
+        val dateTimestamp = date.toEpochSecond()
         val nutritionStreaks = repository.streaksByCategoryFlow(CATEGORY_NUTRITION).first()
             .filter { it.isActive }
         
         for (streak in nutritionStreaks) {
-            incrementStreak(streak, dateStr)
+            incrementStreak(streak, dateTimestamp)
         }
     }
     
@@ -95,12 +102,12 @@ class PersonalStreakManager(
      * Track weight logging for streaks
      */
     suspend fun trackWeightLogging(date: LocalDate = LocalDate.now()) {
-        val dateStr = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
+        val dateTimestamp = date.toEpochSecond()
         val weightStreaks = repository.streaksByCategoryFlow(CATEGORY_WEIGHT).first()
             .filter { it.isActive }
         
         for (streak in weightStreaks) {
-            incrementStreak(streak, dateStr)
+            incrementStreak(streak, dateTimestamp)
         }
     }
     
@@ -112,8 +119,8 @@ class PersonalStreakManager(
         val today = LocalDate.now()
         
         for (streak in activeStreaks) {
-            if (streak.lastActivityDate != null) {
-                val lastActivity = LocalDate.parse(streak.lastActivityDate)
+            if (streak.lastActivityTimestamp != null) {
+                val lastActivity = streak.lastActivityTimestamp.toLocalDate()
                 val daysSinceActivity = ChronoUnit.DAYS.between(lastActivity, today)
                 
                 // Send warning if streak is about to break
@@ -144,48 +151,48 @@ class PersonalStreakManager(
         )
     }
     
-    private suspend fun updateWorkoutStreak(streak: PersonalStreakEntity, today: String) {
-        val todayWorkout = repository.getTodayWorkout(today)
+    private suspend fun updateWorkoutStreak(streak: PersonalStreakEntity, todayTimestamp: Long) {
+        val todayIso = todayTimestamp.toLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE)
+        val todayWorkout = repository.getTodayWorkout(todayIso)
         
         if (todayWorkout?.status == "completed") {
-            incrementStreak(streak, today)
+            incrementStreak(streak, todayTimestamp)
         } else {
-            checkForStreakBreak(streak, today)
+            checkForStreakBreak(streak, todayTimestamp)
         }
     }
     
-    private suspend fun updateNutritionStreak(streak: PersonalStreakEntity, today: String) {
-        val todayEpoch = LocalDate.parse(today).atStartOfDay(ZoneId.systemDefault()).toEpochSecond()
-        val todayIntakeTotal = repository.getTotalIntakeForDay(todayEpoch)
+    private suspend fun updateNutritionStreak(streak: PersonalStreakEntity, todayTimestamp: Long) {
+        val todayIntakeTotal = repository.getTotalIntakeForDay(todayTimestamp)
         
         // Consider nutrition logged if any intake was recorded
         if (todayIntakeTotal > 0) {
-            incrementStreak(streak, today)
+            incrementStreak(streak, todayTimestamp)
         } else {
-            checkForStreakBreak(streak, today)
+            checkForStreakBreak(streak, todayTimestamp)
         }
     }
     
-    private suspend fun updateHabitStreak(streak: PersonalStreakEntity, today: String) {
+    private suspend fun updateHabitStreak(streak: PersonalStreakEntity, todayTimestamp: Long) {
         // For habit streaks, check multiple criteria
-        val todayWorkout = repository.getTodayWorkout(today)
-        val todayEpoch = LocalDate.parse(today).atStartOfDay(ZoneId.systemDefault()).toEpochSecond()
-        val todayIntakeTotal = repository.getTotalIntakeForDay(todayEpoch)
+        val todayIso = todayTimestamp.toLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE)
+        val todayWorkout = repository.getTodayWorkout(todayIso)
+        val todayIntakeTotal = repository.getTotalIntakeForDay(todayTimestamp)
         
         // Habit streak continues if either workout OR nutrition is tracked
         if (todayWorkout?.status == "completed" || todayIntakeTotal > 0) {
-            incrementStreak(streak, today)
+            incrementStreak(streak, todayTimestamp)
         } else {
-            checkForStreakBreak(streak, today)
+            checkForStreakBreak(streak, todayTimestamp)
         }
     }
     
-    private suspend fun updateWeightTrackingStreak(streak: PersonalStreakEntity, today: String) {
+    private suspend fun updateWeightTrackingStreak(streak: PersonalStreakEntity, todayTimestamp: Long) {
         // TODO: Implement weight tracking streak when weight tracking is added
         // For now, just maintain existing streak
-        if (streak.lastActivityDate != null) {
-            val lastActivity = LocalDate.parse(streak.lastActivityDate)
-            val daysSinceActivity = ChronoUnit.DAYS.between(lastActivity, LocalDate.parse(today))
+        if (streak.lastActivityTimestamp != null) {
+            val lastActivity = streak.lastActivityTimestamp.toLocalDate()
+            val daysSinceActivity = ChronoUnit.DAYS.between(lastActivity, todayTimestamp.toLocalDate())
             
             if (daysSinceActivity > 1) {
                 breakStreak(streak)
@@ -193,9 +200,9 @@ class PersonalStreakManager(
         }
     }
     
-    private suspend fun incrementStreak(streak: PersonalStreakEntity, date: String) {
-        val lastActivity = streak.lastActivityDate?.let { LocalDate.parse(it) }
-        val currentDate = LocalDate.parse(date)
+    private suspend fun incrementStreak(streak: PersonalStreakEntity, timestamp: Long) {
+        val lastActivity = streak.lastActivityTimestamp?.toLocalDate()
+        val currentDate = timestamp.toLocalDate()
         
         val newCurrentStreak = if (lastActivity == null || lastActivity.isBefore(currentDate)) {
             // Check if this is consecutive
@@ -221,17 +228,17 @@ class PersonalStreakManager(
             streak.id,
             newCurrentStreak,
             newLongestStreak,
-            date
+            timestamp
         )
         
         // Check for milestone achievements
         checkStreakMilestones(streak, newCurrentStreak)
     }
     
-    private suspend fun checkForStreakBreak(streak: PersonalStreakEntity, today: String) {
-        if (streak.lastActivityDate != null) {
-            val lastActivity = LocalDate.parse(streak.lastActivityDate)
-            val daysSinceActivity = ChronoUnit.DAYS.between(lastActivity, LocalDate.parse(today))
+    private suspend fun checkForStreakBreak(streak: PersonalStreakEntity, todayTimestamp: Long) {
+        if (streak.lastActivityTimestamp != null) {
+            val lastActivity = streak.lastActivityTimestamp.toLocalDate()
+            val daysSinceActivity = ChronoUnit.DAYS.between(lastActivity, todayTimestamp.toLocalDate())
             
             if (daysSinceActivity > 1) {
                 breakStreak(streak)
