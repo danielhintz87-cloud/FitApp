@@ -338,7 +338,10 @@ private fun StreakStatusRow(streak: com.example.fitapp.data.db.PersonalStreakEnt
             )
             
             // Show if today's activity is needed
-            val needsTodayActivity = streak.lastActivityDate != LocalDate.now().toString()
+            val needsTodayActivity = streak.lastActivityTimestamp?.let { timestamp ->
+                val lastActivity = LocalDate.ofEpochDay(timestamp / 86400)
+                lastActivity != LocalDate.now()
+            } ?: true
             if (needsTodayActivity) {
                 Text(
                     "Heute noch nicht erledigt",

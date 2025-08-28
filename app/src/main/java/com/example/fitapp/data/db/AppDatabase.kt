@@ -25,7 +25,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PersonalRecordEntity::class,
         ProgressMilestoneEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -74,7 +74,7 @@ abstract class AppDatabase : RoomDatabase() {
                         `category` TEXT NOT NULL,
                         `currentStreak` INTEGER NOT NULL,
                         `longestStreak` INTEGER NOT NULL,
-                        `lastActivityDate` TEXT,
+                        `lastActivityTimestamp` INTEGER,
                         `isActive` INTEGER NOT NULL,
                         `targetDays` INTEGER,
                         `createdAt` INTEGER NOT NULL
@@ -116,10 +116,47 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
         
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Migrate personal_streaks table from lastActivityDate (TEXT) to lastActivityTimestamp (INTEGER)
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `personal_streaks_new` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `description` TEXT NOT NULL,
+                        `category` TEXT NOT NULL,
+                        `currentStreak` INTEGER NOT NULL,
+                        `longestStreak` INTEGER NOT NULL,
+                        `lastActivityTimestamp` INTEGER,
+                        `isActive` INTEGER NOT NULL,
+                        `targetDays` INTEGER,
+                        `createdAt` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                
+                // Convert existing data - parse ISO date strings to epoch seconds
+                database.execSQL("""
+                    INSERT INTO personal_streaks_new (id, name, description, category, currentStreak, longestStreak, lastActivityTimestamp, isActive, targetDays, createdAt)
+                    SELECT id, name, description, category, currentStreak, longestStreak, 
+                           CASE 
+                               WHEN lastActivityDate IS NOT NULL AND lastActivityDate != '' 
+                               THEN strftime('%s', lastActivityDate || 'T00:00:00Z')
+                               ELSE NULL 
+                           END as lastActivityTimestamp,
+                           isActive, targetDays, createdAt
+                    FROM personal_streaks
+                """.trimIndent())
+                
+                // Drop old table and rename new table
+                database.execSQL("DROP TABLE personal_streaks")
+                database.execSQL("ALTER TABLE personal_streaks_new RENAME TO personal_streaks")
+            }
+        }
+        
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
-                    .addMigrations(MIGRATION_5_6)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7)
                     .build().also { INSTANCE = it }
             }
     }
