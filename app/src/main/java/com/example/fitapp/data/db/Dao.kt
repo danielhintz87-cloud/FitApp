@@ -174,3 +174,123 @@ interface TodayWorkoutDao {
     suspend fun getBetween(fromIso: String, toIso: String): List<TodayWorkoutEntity>
 }
 
+@Dao
+interface PersonalAchievementDao {
+    @Insert
+    suspend fun insert(achievement: PersonalAchievementEntity): Long
+
+    @Update
+    suspend fun update(achievement: PersonalAchievementEntity)
+
+    @Query("DELETE FROM personal_achievements WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM personal_achievements ORDER BY createdAt DESC")
+    fun allAchievementsFlow(): Flow<List<PersonalAchievementEntity>>
+
+    @Query("SELECT * FROM personal_achievements WHERE category = :category ORDER BY createdAt DESC")
+    fun achievementsByCategoryFlow(category: String): Flow<List<PersonalAchievementEntity>>
+
+    @Query("SELECT * FROM personal_achievements WHERE isCompleted = :completed ORDER BY createdAt DESC")
+    fun achievementsByCompletionFlow(completed: Boolean): Flow<List<PersonalAchievementEntity>>
+
+    @Query("UPDATE personal_achievements SET isCompleted = :completed, completedAt = :completedAt WHERE id = :id")
+    suspend fun markAsCompleted(id: Long, completed: Boolean, completedAt: Long?)
+
+    @Query("UPDATE personal_achievements SET currentValue = :value WHERE id = :id")
+    suspend fun updateProgress(id: Long, value: Double)
+
+    @Query("SELECT * FROM personal_achievements WHERE id = :id")
+    suspend fun getAchievement(id: Long): PersonalAchievementEntity?
+}
+
+@Dao
+interface PersonalStreakDao {
+    @Insert
+    suspend fun insert(streak: PersonalStreakEntity): Long
+
+    @Update
+    suspend fun update(streak: PersonalStreakEntity)
+
+    @Query("DELETE FROM personal_streaks WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM personal_streaks WHERE isActive = 1 ORDER BY currentStreak DESC")
+    fun activeStreaksFlow(): Flow<List<PersonalStreakEntity>>
+
+    @Query("SELECT * FROM personal_streaks ORDER BY longestStreak DESC")
+    fun allStreaksFlow(): Flow<List<PersonalStreakEntity>>
+
+    @Query("SELECT * FROM personal_streaks WHERE category = :category ORDER BY currentStreak DESC")
+    fun streaksByCategoryFlow(category: String): Flow<List<PersonalStreakEntity>>
+
+    @Query("UPDATE personal_streaks SET currentStreak = :currentStreak, longestStreak = :longestStreak, lastActivityDate = :lastActivityDate WHERE id = :id")
+    suspend fun updateStreak(id: Long, currentStreak: Int, longestStreak: Int, lastActivityDate: String)
+
+    @Query("UPDATE personal_streaks SET isActive = :active WHERE id = :id")
+    suspend fun setActive(id: Long, active: Boolean)
+
+    @Query("SELECT * FROM personal_streaks WHERE id = :id")
+    suspend fun getStreak(id: Long): PersonalStreakEntity?
+}
+
+@Dao
+interface PersonalRecordDao {
+    @Insert
+    suspend fun insert(record: PersonalRecordEntity): Long
+
+    @Update
+    suspend fun update(record: PersonalRecordEntity)
+
+    @Query("DELETE FROM personal_records WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM personal_records ORDER BY achievedAt DESC")
+    fun allRecordsFlow(): Flow<List<PersonalRecordEntity>>
+
+    @Query("SELECT * FROM personal_records WHERE exerciseName = :exerciseName ORDER BY achievedAt DESC")
+    fun recordsByExerciseFlow(exerciseName: String): Flow<List<PersonalRecordEntity>>
+
+    @Query("SELECT * FROM personal_records WHERE recordType = :recordType ORDER BY achievedAt DESC")
+    fun recordsByTypeFlow(recordType: String): Flow<List<PersonalRecordEntity>>
+
+    @Query("SELECT * FROM personal_records WHERE exerciseName = :exerciseName AND recordType = :recordType ORDER BY value DESC LIMIT 1")
+    suspend fun getBestRecord(exerciseName: String, recordType: String): PersonalRecordEntity?
+
+    @Query("SELECT DISTINCT exerciseName FROM personal_records ORDER BY exerciseName")
+    suspend fun getExerciseNames(): List<String>
+
+    @Query("SELECT * FROM personal_records WHERE id = :id")
+    suspend fun getRecord(id: Long): PersonalRecordEntity?
+}
+
+@Dao
+interface ProgressMilestoneDao {
+    @Insert
+    suspend fun insert(milestone: ProgressMilestoneEntity): Long
+
+    @Update
+    suspend fun update(milestone: ProgressMilestoneEntity)
+
+    @Query("DELETE FROM progress_milestones WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM progress_milestones ORDER BY createdAt DESC")
+    fun allMilestonesFlow(): Flow<List<ProgressMilestoneEntity>>
+
+    @Query("SELECT * FROM progress_milestones WHERE category = :category ORDER BY createdAt DESC")
+    fun milestonesByCategoryFlow(category: String): Flow<List<ProgressMilestoneEntity>>
+
+    @Query("SELECT * FROM progress_milestones WHERE isCompleted = :completed ORDER BY createdAt DESC")
+    fun milestonesByCompletionFlow(completed: Boolean): Flow<List<ProgressMilestoneEntity>>
+
+    @Query("UPDATE progress_milestones SET currentValue = :value, progress = :progress WHERE id = :id")
+    suspend fun updateProgress(id: Long, value: Double, progress: Double)
+
+    @Query("UPDATE progress_milestones SET isCompleted = :completed, completedAt = :completedAt WHERE id = :id")
+    suspend fun markAsCompleted(id: Long, completed: Boolean, completedAt: Long?)
+
+    @Query("SELECT * FROM progress_milestones WHERE id = :id")
+    suspend fun getMilestone(id: Long): ProgressMilestoneEntity?
+}
+

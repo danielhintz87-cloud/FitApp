@@ -127,3 +127,61 @@ data class TodayWorkoutEntity(
     val planId: Long? = null // nullable FK-like field; no constraint needed
 )
 
+@Entity(tableName = "personal_achievements")
+data class PersonalAchievementEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String,
+    val description: String,
+    val category: String, // "fitness", "nutrition", "streak", "milestone"
+    val iconName: String, // Material icon name for display
+    val targetValue: Double? = null, // target for numeric achievements
+    val currentValue: Double = 0.0, // current progress
+    val unit: String? = null, // "kg", "reps", "days", "kcal", etc.
+    val isCompleted: Boolean = false,
+    val completedAt: Long? = null,
+    val createdAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(tableName = "personal_streaks")
+data class PersonalStreakEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val description: String,
+    val category: String, // "workout", "nutrition", "habit"
+    val currentStreak: Int = 0,
+    val longestStreak: Int = 0,
+    val lastActivityDate: String? = null, // ISO date string
+    val isActive: Boolean = true,
+    val targetDays: Int? = null, // target streak length
+    val createdAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(tableName = "personal_records")
+data class PersonalRecordEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val exerciseName: String,
+    val recordType: String, // "weight", "reps", "time", "distance"
+    val value: Double,
+    val unit: String, // "kg", "lbs", "reps", "seconds", "meters", etc.
+    val notes: String? = null,
+    val achievedAt: Long = System.currentTimeMillis() / 1000,
+    val previousRecord: Double? = null, // previous best for comparison
+    val improvement: Double? = null // calculated improvement percentage
+)
+
+@Entity(tableName = "progress_milestones")
+data class ProgressMilestoneEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String,
+    val description: String,
+    val category: String, // "weight_loss", "muscle_gain", "endurance", "strength"
+    val targetValue: Double,
+    val currentValue: Double = 0.0,
+    val unit: String, // "kg", "kcal", "minutes", "reps", etc.
+    val targetDate: String? = null, // ISO date string for deadline
+    val isCompleted: Boolean = false,
+    val completedAt: Long? = null,
+    val progress: Double = 0.0, // percentage (0.0 to 100.0)
+    val createdAt: Long = System.currentTimeMillis() / 1000
+)
+
