@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayTrainingScreen(
+    navController: androidx.navigation.NavController? = null,
     onBackPressed: () -> Unit
 ) {
     val ctx = LocalContext.current
@@ -172,6 +173,24 @@ fun TodayTrainingScreen(
                 }
             ) {
                 Text(if (busy) "Erstelle Training..." else "Heutiges Training erstellen")
+            }
+            
+            // New button to start step-by-step daily workout
+            Spacer(Modifier.height(8.dp))
+            Button(
+                enabled = !busy && customGoal.isNotBlank() && customMinutes.isNotBlank(),
+                onClick = {
+                    // Navigate to DailyWorkoutScreen with current parameters
+                    val goal = customGoal.replace("Angepasst: ", "")
+                    val minutes = customMinutes.toIntOrNull() ?: 60
+                    navController?.navigate("daily_workout/$goal/$minutes")
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("Step-by-Step Training starten")
             }
             
             if (result.isNotBlank()) {

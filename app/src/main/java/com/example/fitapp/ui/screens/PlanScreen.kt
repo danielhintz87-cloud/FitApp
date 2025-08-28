@@ -4,6 +4,8 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -28,7 +30,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
     val scope = rememberCoroutineScope()
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
     var goal by remember { mutableStateOf("Muskelaufbau") }
-    var sessions by remember { mutableStateOf("3") }
+    var selectedDays by remember { mutableStateOf(setOf("MONDAY", "WEDNESDAY", "FRIDAY")) }
     var minutes by remember { mutableStateOf("60") }
     var equipment by remember { mutableStateOf("Hanteln, Klimmzugstange") }
     var result by remember { mutableStateOf("") }
@@ -61,6 +63,17 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
     // Dropdown states
     var goalExpanded by remember { mutableStateOf(false) }
     var equipmentExpanded by remember { mutableStateOf(false) }
+    
+    // Weekdays for picker
+    val weekdays = listOf(
+        "MONDAY" to "Mo",
+        "TUESDAY" to "Di", 
+        "WEDNESDAY" to "Mi",
+        "THURSDAY" to "Do",
+        "FRIDAY" to "Fr",
+        "SATURDAY" to "Sa",
+        "SUNDAY" to "So"
+    )
     
     // Predefined options
     val goalOptions = listOf(
@@ -125,11 +138,37 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         }
         Spacer(Modifier.height(8.dp))
         
-        OutlinedTextField(
-            value = sessions,
-            onValueChange = { sessions = it },
-            label = { Text("Sessions pro Woche") },
+        // Weekday selection
+        Text("Trainingstage", style = MaterialTheme.typography.labelLarge)
+        Spacer(Modifier.height(8.dp))
+        
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.fillMaxWidth()
+        ) {
+            weekdays.forEach { (dayKey, dayLabel) ->
+                AssistChip(
+                    onClick = {
+                        selectedDays = if (selectedDays.contains(dayKey)) {
+                            selectedDays - dayKey
+                        } else {
+                            selectedDays + dayKey
+                        }
+                    },
+                    label = { Text(dayLabel) },
+                    leadingIcon = if (selectedDays.contains(dayKey)) {
+                        { Icon(Icons.Default.Check, contentDescription = null) }
+                    } else null,
+                    modifier = Modifier.weight(1f / 7f)
+                )
+            }
+        }
+        
+        Text(
+            text = "${selectedDays.size} Trainingstage pro Woche gewählt",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 4.dp)
         )
         Spacer(Modifier.height(8.dp))
         
@@ -203,7 +242,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                         val req = PlanRequest(
                             goal = goal,
                             weeks = 12,
-                            sessionsPerWeek = sessions.toIntOrNull() ?: 3,
+                            sessionsPerWeek = selectedDays.size,
                             minutesPerSession = minutes.toIntOrNull() ?: 60,
                             equipment = finalEquipment
                         )
@@ -217,7 +256,8 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                             weeks = 12,
                             sessionsPerWeek = req.sessionsPerWeek,
                             minutesPerSession = req.minutesPerSession,
-                            equipment = req.equipment
+                            equipment = req.equipment,
+                            trainingDays = selectedDays.toList()
                         )
                         saveStatus = "✓ Plan gespeichert (ID: $planId)"
                         
@@ -237,7 +277,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         OutlinedButton(
             onClick = {
                 goal = "Muskelaufbau"
-                sessions = "3"
+                selectedDays = setOf("MONDAY", "WEDNESDAY", "FRIDAY")
                 minutes = "60"
                 equipment = ""
                 result = ""
@@ -249,6 +289,29 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                 .padding(top = 8.dp)
         ) {
             Text("Zurücksetzen")
+        }
+
+        // Real Reset button that removes the plan from the app
+        OutlinedButton(
+            onClick = {
+                scope.launch {
+                    try {
+                        repo.deleteAllPlans()
+                        saveStatus = "✓ Alle Pläne gelöscht"
+                        result = ""
+                    } catch (e: Exception) {
+                        saveStatus = "Fehler beim Löschen: ${e.message}"
+                    }
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
+            )
+        ) {
+            Text("Plan komplett löschen")
         }
 
         if (saveStatus.isNotBlank()) {
