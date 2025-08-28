@@ -147,23 +147,84 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
     // -------- OpenAI --------
 
+    /**
+     * Calculate exponential backoff delay with jitter for retry attempts
+     */
+    private fun calculateBackoffDelay(attempt: Int): Long {
+        val baseDelays = listOf(800L, 1500L, 2500L, 4000L, 6000L)
+        val baseDelay = baseDelays.getOrElse(attempt) { 8000L }
+        val jitter = Random.nextLong(0, 400)
+        return baseDelay + jitter
+    }
+
+    /**
+     * Parse retry-after header value from OpenAI response
+     */
+    private fun parseRetryAfter(retryAfterHeader: String?): Long? {
+        if (retryAfterHeader.isNullOrBlank()) return null
+        return try {
+            val seconds = retryAfterHeader.toLong()
+            seconds * 1000
+        } catch (e: NumberFormatException) {
+            null
+        }
+    }
+
+    /**
+     * Check if an exception or HTTP status code indicates a retriable error
+     */
+    private fun isRetriableError(statusCode: Int?, exception: Exception?): Boolean {
+        return when {
+            statusCode == 429 -> true  // Rate limit
+            statusCode in 500..599 -> true  // Server errors
+            exception?.message?.contains("timeout", ignoreCase = true) == true -> true
+            exception?.message?.contains("connection", ignoreCase = true) == true -> true
+            else -> false
+        }
+    }
+
     private suspend fun <T> openAiWithRetry(request: suspend () -> T): T {
         var lastException: Exception? = null
-        for (attempt in 0..2) {
+        
+        for (attempt in 0..4) { // Increased to 4 attempts
             try {
-                return request()
+                // Acquire semaphore to limit concurrent requests
+                requestSemaphore.acquire()
+                try {
+                    return request()
+                } finally {
+                    requestSemaphore.release()
+                }
             } catch (e: Exception) {
                 lastException = e
-                if (e.message?.contains("429") == true && attempt < 2) {
-                    // Exponential backoff for rate limiting: 2s, 4s, 8s
-                    val delayMs = 2000L * (1L shl attempt)
+                
+                // Extract status code if available
+                val lastStatusCode = when {
+                    e.message?.contains("429") == true -> 429
+                    e.message?.contains("500") == true -> 500
+                    e.message?.contains("502") == true -> 502
+                    e.message?.contains("503") == true -> 503
+                    e.message?.contains("504") == true -> 504
+                    else -> null
+                }
+                
+                // Release semaphore on error
+                requestSemaphore.release()
+                
+                if (attempt < 4 && isRetriableError(lastStatusCode, e)) {
+                    // Check for retry-after header in error message
+                    val retryAfter = parseRetryAfter(
+                        e.message?.substringAfter("Retry-After: ")?.substringBefore(",")
+                    )
+                    
+                    val delayMs = retryAfter ?: calculateBackoffDelay(attempt)
                     delay(delayMs)
                 } else {
                     throw e
                 }
             }
         }
-        throw lastException ?: IllegalStateException("This should never be reached")
+        throw lastException ?: IllegalStateException("Max retries exceeded")
     }
 
     private suspend fun openAiChat(prompt: String): Result<String> = runCatching {
@@ -187,14 +248,22 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) {
                 val bodyStr = resp.body?.string().orEmpty()
-                when (resp.code) {
-                    400 -> error("OpenAI 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                    401 -> error("OpenAI 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                    402 -> error("OpenAI 402: Guthaben aufgebraucht oder Zahlung erforderlich. Bitte prüfen Sie Ihr OpenAI-Konto.")
-                    403 -> error("OpenAI 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt.")
-                    429 -> error("OpenAI 429: Zu viele Anfragen. Bitte versuchen Sie es später erneut.")
-                    else -> error("OpenAI ${resp.code}: ${bodyStr.take(200)}")
+                val retryAfter = resp.header("Retry-After")
+                val errorMsg = when (resp.code) {
+                    400 -> "OpenAI 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen."
+                    401 -> "OpenAI 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen."
+                    402 -> "OpenAI 402: Guthaben aufgebraucht oder Zahlung erforderlich. Bitte prüfen Sie Ihr OpenAI-Konto."
+                    403 -> "OpenAI 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt."
+                    429 -> {
+                        val waitTime = retryAfter?.let { "${it}s" } ?: "ein paar Sekunden"
+                        "OpenAI 429: Zu viele Anfragen. Bitte warten Sie $waitTime und versuchen Sie es erneut."
+                    }
+                    in 500..599 -> "OpenAI ${resp.code}: Server-Fehler. Bitte versuchen Sie es später erneut."
+                    else -> "OpenAI ${resp.code}: ${bodyStr.take(200)}"
                 }
+                // Include retry-after in error message for retry logic
+                val fullError = if (retryAfter != null) "$errorMsg Retry-After: $retryAfter" else errorMsg
+                error(fullError)
             }
             val txt = resp.body!!.string()
             // Manual JSON parsing for simplicity
@@ -216,7 +285,8 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
         }
         
         val model = BuildConfig.OPENAI_MODEL.ifBlank { "gpt-4o-mini" }
-        val dataUrl = "data:image/jpeg;base64," + bitmap.toJpegBytes().b64()
+        val optimizedBitmap = optimizeBitmapForVision(bitmap)
+        val dataUrl = "data:image/jpeg;base64," + optimizedBitmap.toJpegBytes(80).b64()
         val body = """
         {
           "model":"$model",
@@ -236,14 +306,22 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) {
                 val bodyStr = resp.body?.string().orEmpty()
-                when (resp.code) {
-                    400 -> error("OpenAI 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                    401 -> error("OpenAI 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen.")
-                    402 -> error("OpenAI 402: Guthaben aufgebraucht oder Zahlung erforderlich. Bitte prüfen Sie Ihr OpenAI-Konto.")
-                    403 -> error("OpenAI 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt.")
-                    429 -> error("OpenAI 429: Zu viele Anfragen. Bitte versuchen Sie es später erneut.")
-                    else -> error("OpenAI ${resp.code}: ${bodyStr.take(200)}")
+                val retryAfter = resp.header("Retry-After")
+                val errorMsg = when (resp.code) {
+                    400 -> "OpenAI 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen."
+                    401 -> "OpenAI 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen."
+                    402 -> "OpenAI 402: Guthaben aufgebraucht oder Zahlung erforderlich. Bitte prüfen Sie Ihr OpenAI-Konto."
+                    403 -> "OpenAI 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt."
+                    429 -> {
+                        val waitTime = retryAfter?.let { "${it}s" } ?: "ein paar Sekunden"
+                        "OpenAI 429: Zu viele Anfragen. Bitte warten Sie $waitTime und versuchen Sie es erneut."
+                    }
+                    in 500..599 -> "OpenAI ${resp.code}: Server-Fehler. Bitte versuchen Sie es später erneut."
+                    else -> "OpenAI ${resp.code}: ${bodyStr.take(200)}"
                 }
+                // Include retry-after in error message for retry logic
+                val fullError = if (retryAfter != null) "$errorMsg Retry-After: $retryAfter" else errorMsg
+                error(fullError)
             }
             val txt = resp.body!!.string()
             // Manual JSON parsing for vision response
@@ -259,6 +337,24 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
     // -------- Helpers --------
 
+    /**
+     * Optimize bitmap for OpenAI Vision API to reduce token usage
+     */
+    private fun optimizeBitmapForVision(bitmap: Bitmap): Bitmap {
+        val maxDimension = 1024
+        val width = bitmap.width
+        val height = bitmap.height
+        val scaleFactor = (maxDimension.toFloat() / maxOf(width, height)).coerceAtMost(1f)
+        
+        return if (scaleFactor < 1f) {
+            val newWidth = (width * scaleFactor).toInt()
+            val newHeight = (height * scaleFactor).toInt()
+            Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+        } else {
+            bitmap
+        }
+    }
+
     private fun parseCalories(text: String): CaloriesEstimate {
         val kcalRegex = Regex("(\\d{2,4})\\s*(k?cal|Kilokalorien)", RegexOption.IGNORE_CASE)
         val confRegex = Regex("(confidence|sicherheit)[^0-9]{0,8}(\\d{1,3})", RegexOption.IGNORE_CASE)
@@ -269,7 +365,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
 
     private fun String.json(): String = "\"${this.replace("\"", "\\\"").replace("\n", "\\n")}\""
 
-    private fun Bitmap.toJpegBytes(quality: Int = 90): ByteArray =
+    private fun Bitmap.toJpegBytes(quality: Int = 80): ByteArray =
         ByteArrayOutputStream().use { bos ->
             compress(Bitmap.CompressFormat.JPEG, quality, bos)
             bos.toByteArray()
