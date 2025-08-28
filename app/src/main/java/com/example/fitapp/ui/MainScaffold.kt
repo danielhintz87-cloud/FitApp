@@ -33,6 +33,7 @@ import com.example.fitapp.ui.screens.ProgressScreen
 import com.example.fitapp.ui.screens.TodayScreen
 import com.example.fitapp.ui.screens.EquipmentSelectionScreen
 import com.example.fitapp.ui.screens.TodayTrainingScreen
+import com.example.fitapp.ui.screens.DailyWorkoutScreen
 import com.example.fitapp.ui.screens.TrainingExecutionScreen
 import com.example.fitapp.ui.settings.ApiKeysScreen
 import kotlinx.coroutines.launch
@@ -166,6 +167,7 @@ fun MainScaffold() {
                 }
                 composable("todaytraining") {
                     TodayTrainingScreen(
+                        navController = nav,
                         onBackPressed = { nav.popBackStack() }
                     )
                 }
@@ -205,6 +207,15 @@ fun MainScaffold() {
                             // TODO: Save training completion
                             nav.popBackStack()
                         }
+                    )
+                }
+                composable("daily_workout/{goal}/{minutes}") { backStackEntry ->
+                    val goal = backStackEntry.arguments?.getString("goal") ?: "Muskelaufbau"
+                    val minutes = backStackEntry.arguments?.getString("minutes")?.toIntOrNull() ?: 60
+                    DailyWorkoutScreen(
+                        goal = goal,
+                        minutes = minutes,
+                        onBackPressed = { nav.popBackStack() }
                     )
                 }
 

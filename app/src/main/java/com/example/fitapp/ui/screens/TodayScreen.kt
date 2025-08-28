@@ -118,7 +118,10 @@ fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = n
                         }
                         Button(
                             onClick = {
-                                navController?.navigate("training_execution/${latestPlan.id}")
+                                // Use plan data for daily workout
+                                val planGoal = latestPlan.goal
+                                val minutes = latestPlan.minutesPerSession
+                                navController?.navigate("daily_workout/$planGoal/$minutes")
                             },
                             modifier = Modifier.weight(1f)
                         ) {

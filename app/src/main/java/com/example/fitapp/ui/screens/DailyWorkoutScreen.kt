@@ -89,7 +89,7 @@ fun DailyWorkoutScreen(
                             content = content,
                             status = "pending"
                         )
-                        repo.db.todayWorkoutDao().upsert(workout)
+                        repo.saveTodayWorkout(workout)
                         
                         isLoading = false
                     },
@@ -310,7 +310,7 @@ fun DailyWorkoutScreen(
                                         // Complete workout
                                         scope.launch {
                                             val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-                                            repo.db.todayWorkoutDao().setStatus(
+                                            repo.setWorkoutStatus(
                                                 today, 
                                                 "completed", 
                                                 System.currentTimeMillis() / 1000
@@ -345,7 +345,7 @@ fun DailyWorkoutScreen(
                                         // Complete workout
                                         scope.launch {
                                             val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-                                            repo.db.todayWorkoutDao().setStatus(
+                                            repo.setWorkoutStatus(
                                                 today, 
                                                 "completed", 
                                                 System.currentTimeMillis() / 1000
