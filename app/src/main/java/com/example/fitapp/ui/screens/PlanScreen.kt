@@ -21,21 +21,40 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.example.fitapp.util.rememberDebouncedState
+import com.example.fitapp.util.rememberSafeCoroutineScope
+import com.example.fitapp.util.rememberStable
+import com.example.fitapp.util.rememberAutoClearing
 
 @OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
 fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = null) {
     val ctx = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val scope = rememberSafeCoroutineScope()
+    
+    // Optimize expensive repository creation
+    val repo = rememberStable(ctx) { NutritionRepository(AppDatabase.get(ctx)) }
+    
+    // Optimized state management
     var goal by remember { mutableStateOf("Muskelaufbau") }
     var selectedDays by remember { mutableStateOf(setOf<String>()) }
-    var minutes by remember { mutableStateOf("60") }
+    val (minutes, updateMinutes) = rememberDebouncedState("60", 500L)
     var equipment by remember { mutableStateOf("Hanteln, Klimmzugstange") }
     var result by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var saveStatus by remember { mutableStateOf("") }
+    
+    // Stable callback for day selection to prevent recomposition
+    val onDayToggle = remember {
+        { dayKey: String ->
+            selectedDays = if (selectedDays.contains(dayKey)) {
+                selectedDays - dayKey
+            } else {
+                selectedDays + dayKey
+            }
+        }
+    }
     
     // Load saved equipment initially
     LaunchedEffect(Unit) {
@@ -163,13 +182,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
             ) {
                 weekdays.take(4).forEach { (dayKey, dayLabel) ->
                     FilterChip(
-                        onClick = {
-                            selectedDays = if (selectedDays.contains(dayKey)) {
-                                selectedDays - dayKey
-                            } else {
-                                selectedDays + dayKey
-                            }
-                        },
+                        onClick = { onDayToggle(dayKey) },
                         label = { 
                             Text(
                                 dayLabel,
@@ -200,13 +213,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
             ) {
                 weekdays.takeLast(3).forEach { (dayKey, dayLabel) ->
                     FilterChip(
-                        onClick = {
-                            selectedDays = if (selectedDays.contains(dayKey)) {
-                                selectedDays - dayKey
-                            } else {
-                                selectedDays + dayKey
-                            }
-                        },
+                        onClick = { onDayToggle(dayKey) },
                         label = { 
                             Text(
                                 dayLabel,
@@ -249,7 +256,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         
         OutlinedTextField(
             value = minutes,
-            onValueChange = { minutes = it },
+            onValueChange = updateMinutes,
             label = { Text("Minuten pro Session") },
             modifier = Modifier.fillMaxWidth()
         )
@@ -297,76 +304,140 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         Spacer(Modifier.height(16.dp))
         
         Button(
-            enabled = !busy && selectedDays.isNotEmpty(),
+            enabled = !busy && selectedDays.isNotEmpty() && minutes.toIntOrNull() != null && minutes.toInt() > 0,
             onClick = {
                 scope.launch {
                     busy = true
+                    saveStatus = ""
                     result = try {
-                        // Validate inputs
-                        if (selectedDays.isEmpty()) {
-                            "Bitte wählen Sie mindestens einen Trainingstag aus."
-                        } else if (minutes.toIntOrNull() == null || minutes.toInt() <= 0) {
-                            "Bitte geben Sie eine gültige Trainingszeit ein."
-                        } else {
-                            // Debug: Check provider status
-                            val providerStatus = AppAi.getProviderStatus(ctx)
-                            println("Provider Status: $providerStatus")
-                            
-                            // Get the most current equipment selection from UserPreferences
-                            val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
-                            val finalEquipment = if (savedEquipment.isNotEmpty()) {
-                                savedEquipment
-                            } else {
-                                equipment.split(",").map { it.trim() }
+                        // Comprehensive input validation
+                        when {
+                            selectedDays.isEmpty() -> {
+                                "❌ Bitte wählen Sie mindestens einen Trainingstag aus."
                             }
-                            
-                            val req = PlanRequest(
-                                goal = goal,
-                                weeks = 12,
-                                sessionsPerWeek = selectedDays.size,
-                                minutesPerSession = minutes.toIntOrNull() ?: 60,
-                                equipment = finalEquipment
-                            )
-                            val planContent = AppAi.planWithOptimalProvider(ctx, req).getOrThrow()
-                            
-                            // Save the plan to database
-                            val planId = repo.savePlan(
-                                title = "12-Wochen-Trainingsplan: $goal",
-                                content = planContent,
-                                goal = goal,
-                                weeks = 12,
-                                sessionsPerWeek = req.sessionsPerWeek,
-                                minutesPerSession = req.minutesPerSession,
-                                equipment = req.equipment,
-                                trainingDays = selectedDays.toList()
-                            )
-                            saveStatus = "✓ Plan gespeichert (ID: $planId)"
-                            
-                            planContent
+                            minutes.toIntOrNull() == null -> {
+                                "❌ Bitte geben Sie eine gültige Zahl für die Trainingszeit ein."
+                            }
+                            minutes.toInt() <= 0 -> {
+                                "❌ Trainingszeit muss mindestens 1 Minute sein."
+                            }
+                            minutes.toInt() > 300 -> {
+                                "❌ Trainingszeit sollte höchstens 300 Minuten sein."
+                            }
+                            goal.isBlank() -> {
+                                "❌ Bitte wählen Sie ein Trainingsziel aus."
+                            }
+                            else -> {
+                                    val providerStatus = AppAi.getProviderStatus(ctx)
+                                    if (!providerStatus.contains("✓")) {
+                                        result = "❌ Keine verfügbaren AI-Provider. Bitte prüfen Sie Ihre API-Schlüssel in den Einstellungen."
+                                        return@launch
+                                    }
+                                
+                                // Get the most current equipment selection from UserPreferences
+                                val savedEquipment = try {
+                                    UserPreferences.getSelectedEquipment(ctx)
+                                } catch (e: Exception) {
+                                    android.util.Log.w("PlanScreen", "Failed to load equipment preferences", e)
+                                    emptyList()
+                                }
+                                
+                                val finalEquipment = if (savedEquipment.isNotEmpty()) {
+                                    savedEquipment
+                                } else {
+                                    equipment.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                                }
+                                
+                                val req = PlanRequest(
+                                    goal = goal.trim(),
+                                    weeks = 12,
+                                    sessionsPerWeek = selectedDays.size,
+                                    minutesPerSession = minutes.toInt(),
+                                    equipment = finalEquipment
+                                )
+                                
+                                // Generate plan with comprehensive error handling
+                                val planResult = AppAi.planWithOptimalProvider(ctx, req)
+                                
+                                if (planResult.isFailure) {
+                                    val error = planResult.exceptionOrNull()
+                                    when {
+                                        error?.message?.contains("API") == true -> 
+                                            "❌ API-Fehler: ${error.message}\n\nBitte prüfen Sie Ihre Internetverbindung und API-Schlüssel."
+                                        error?.message?.contains("timeout") == true -> 
+                                            "❌ Zeitüberschreitung. Bitte versuchen Sie es erneut."
+                                        else -> 
+                                            "❌ Fehler bei der Planerstellung: ${error?.message ?: "Unbekannter Fehler"}"
+                                    }
+                                } else {
+                                    val planContent = planResult.getOrThrow()
+                                    
+                                    // Validate generated content
+                                    if (planContent.isBlank()) {
+                                        "❌ Leerer Plan erhalten. Bitte versuchen Sie es erneut."
+                                    } else if (planContent.length < 100) {
+                                        "❌ Plan scheint unvollständig zu sein. Bitte versuchen Sie es erneut."
+                                    } else {
+                                        // Save the plan to database with error handling
+                                        try {
+                                            val planId = repo.savePlan(
+                                                title = "12-Wochen-Trainingsplan: $goal",
+                                                content = planContent,
+                                                goal = goal,
+                                                weeks = 12,
+                                                sessionsPerWeek = req.sessionsPerWeek,
+                                                minutesPerSession = req.minutesPerSession,
+                                                equipment = req.equipment,
+                                                trainingDays = selectedDays.toList()
+                                            )
+                                            saveStatus = "✅ Plan erfolgreich gespeichert (ID: $planId)"
+                                            planContent
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("PlanScreen", "Failed to save plan", e)
+                                            saveStatus = "⚠️ Plan erstellt, aber Speichern fehlgeschlagen: ${e.message}"
+                                            planContent
+                                        }
+                                    }
+                                }
+                            }
                         }
                     } catch (e: Exception) {
+                        android.util.Log.e("PlanScreen", "Unexpected error in plan generation", e)
                         saveStatus = ""
-                        "Fehler bei der Planerstellung:\n\n${e.message}\n\nProvider Status:\n${AppAi.getProviderStatus(ctx)}"
+                        "❌ Unerwarteter Fehler: ${e.message}\n\nProvider Status:\n${AppAi.getProviderStatus(ctx)}"
                     } finally {
                         busy = false
                     }
                 }
             }
         ) {
-            Text(
-                when {
-                    busy -> "Generiere..."
-                    selectedDays.isEmpty() -> "Bitte Trainingstage wählen"
-                    else -> "Plan erstellen"
+            if (busy) {
+                Row(
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Text("Generiere Plan...")
                 }
-            )
+            } else {
+                Text(
+                    when {
+                        selectedDays.isEmpty() -> "Bitte Trainingstage wählen"
+                        minutes.toIntOrNull() == null || minutes.toInt() <= 0 -> "Ungültige Trainingszeit"
+                        else -> "Plan erstellen"
+                    }
+                )
+            }
         }
 
         OutlinedButton(
             onClick = {
                 goal = "Muskelaufbau"
                 selectedDays = setOf() // Clear selected days
-                minutes = "60"
+                updateMinutes("60") // Use the debounced updater
                 equipment = ""
                 result = ""
                 saveStatus = ""
