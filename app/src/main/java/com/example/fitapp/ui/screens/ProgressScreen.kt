@@ -33,7 +33,8 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun ProgressScreen(contentPadding: PaddingValues) {
     val ctx = LocalContext.current
-    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val nutritionRepo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val planDao = remember { AppDatabase.get(ctx).planDao() }
     val motivationRepo = remember { PersonalMotivationRepository(AppDatabase.get(ctx)) }
     
     // Get data for the last 7 days
@@ -52,7 +53,7 @@ fun ProgressScreen(contentPadding: PaddingValues) {
     LaunchedEffect(Unit) {
         last7Days.forEach { date ->
             val epochSec = date.atStartOfDay(ZoneId.systemDefault()).toEpochSecond()
-            val total = repo.totalForDay(epochSec)
+            val total = nutritionRepo.totalForDay(epochSec)
             dailyCalories[date] = total
         }
     }
@@ -143,7 +144,7 @@ fun ProgressScreen(contentPadding: PaddingValues) {
                 Text("Trainingspläne", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
                 
-                val plans by repo.plansFlow().collectAsState(initial = emptyList())
+                val plans by planDao.plansFlow().collectAsState(initial = emptyList())
                 
                 if (plans.isEmpty()) {
                     Text("Noch keine Trainingspläne erstellt.", style = MaterialTheme.typography.bodyMedium)

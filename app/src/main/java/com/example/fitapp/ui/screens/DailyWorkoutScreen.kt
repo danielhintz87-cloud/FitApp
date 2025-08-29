@@ -20,7 +20,6 @@ import com.example.fitapp.ai.AppAi
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.TodayWorkoutEntity
 import com.example.fitapp.data.prefs.UserPreferences
-import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.data.repo.PersonalMotivationRepository
 import com.example.fitapp.services.PersonalAchievementManager
 import com.example.fitapp.services.PersonalStreakManager
@@ -37,7 +36,7 @@ fun DailyWorkoutScreen(
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
-    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val workoutDao = remember { AppDatabase.get(ctx).todayWorkoutDao() }
     val motivationRepo = remember { PersonalMotivationRepository(AppDatabase.get(ctx)) }
     val achievementManager = remember { PersonalAchievementManager(ctx, motivationRepo) }
     val streakManager = remember { PersonalStreakManager(ctx, motivationRepo) }
@@ -95,7 +94,7 @@ fun DailyWorkoutScreen(
                             content = content,
                             status = "pending"
                         )
-                        repo.saveTodayWorkout(workout)
+                        workoutDao.upsert(workout)
                         
                         isLoading = false
                     },
@@ -316,11 +315,15 @@ fun DailyWorkoutScreen(
                                         // Complete workout
                                         scope.launch {
                                             val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-                                            repo.setWorkoutStatus(
+                                            workoutDao.setStatus(
                                                 today, 
                                                 "completed", 
                                                 System.currentTimeMillis() / 1000
                                             )
+                                            
+                                            // Track achievement and streak progress
+                                            achievementManager.trackWorkoutCompletion()
+                                            streakManager.trackWorkoutCompletion()
                                         }
                                         isCompleted = true
                                     }
@@ -351,7 +354,7 @@ fun DailyWorkoutScreen(
                                         // Complete workout
                                         scope.launch {
                                             val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-                                            repo.setWorkoutStatus(
+                                            workoutDao.setStatus(
                                                 today, 
                                                 "completed", 
                                                 System.currentTimeMillis() / 1000
