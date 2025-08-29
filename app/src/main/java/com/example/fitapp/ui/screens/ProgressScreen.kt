@@ -24,7 +24,6 @@ import com.example.fitapp.data.db.PersonalAchievementEntity
 import com.example.fitapp.data.db.PersonalStreakEntity
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.data.repo.PersonalMotivationRepository
-import com.example.fitapp.services.PersonalStreakManager
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId

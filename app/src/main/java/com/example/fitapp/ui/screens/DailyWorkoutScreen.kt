@@ -73,40 +73,38 @@ fun DailyWorkoutScreen(
     
     // Generate workout on first load
     LaunchedEffect(Unit) {
-        scope.launch {
-            try {
-                val equipment = UserPreferences.getSelectedEquipment(ctx)
-                val result = AppAi.generateDailyWorkoutSteps(ctx, goal, minutes, equipment)
-                
-                result.fold(
-                    onSuccess = { content ->
-                        // Parse content into steps (format: "Exercise | Description")
-                        val steps = content.split("\n")
-                            .filter { it.isNotBlank() && it.contains("|") }
-                            .map { it.trim() }
-                        
-                        workoutSteps = steps
-                        
-                        // Save to database
-                        val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-                        val workout = TodayWorkoutEntity(
-                            dateIso = today,
-                            content = content,
-                            status = "pending"
-                        )
-                        workoutDao.upsert(workout)
-                        
-                        isLoading = false
-                    },
-                    onFailure = { e ->
-                        error = e.message
-                        isLoading = false
-                    }
-                )
-            } catch (e: Exception) {
-                error = e.message
-                isLoading = false
-            }
+        try {
+            val equipment = UserPreferences.getSelectedEquipment(ctx)
+            val result = AppAi.generateDailyWorkoutSteps(ctx, goal, minutes, equipment)
+
+            result.fold(
+                onSuccess = { content ->
+                    // Parse content into steps (format: "Exercise | Description")
+                    val steps = content.split("\n")
+                        .filter { it.isNotBlank() && it.contains("|") }
+                        .map { it.trim() }
+
+                    workoutSteps = steps
+
+                    // Save to database
+                    val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    val workout = TodayWorkoutEntity(
+                        dateIso = today,
+                        content = content,
+                        status = "pending"
+                    )
+                    workoutDao.upsert(workout)
+
+                    isLoading = false
+                },
+                onFailure = { e ->
+                    error = e.message
+                    isLoading = false
+                }
+            )
+        } catch (e: Exception) {
+            error = e.message
+            isLoading = false
         }
     }
     

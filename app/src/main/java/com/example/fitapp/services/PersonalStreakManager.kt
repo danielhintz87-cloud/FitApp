@@ -5,6 +5,7 @@ import com.example.fitapp.data.db.PersonalStreakEntity
 import com.example.fitapp.data.repo.PersonalMotivationRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -29,8 +30,8 @@ class PersonalStreakManager(
         private fun LocalDate.toEpochSecond(): Long = 
             this.atStartOfDay(ZoneId.systemDefault()).toEpochSecond()
         
-        private fun Long.toLocalDate(): LocalDate = 
-            LocalDate.ofEpochDay(this / 86400)
+        private fun Long.toLocalDate(): LocalDate =
+            Instant.ofEpochSecond(this).atZone(ZoneId.systemDefault()).toLocalDate()
     }
     
     fun getAllStreaks(): Flow<List<PersonalStreakEntity>> =
@@ -120,16 +121,18 @@ class PersonalStreakManager(
         
         for (streak in activeStreaks) {
             if (streak.lastActivityTimestamp != null) {
-                val lastActivity = streak.lastActivityTimestamp.toLocalDate()
-                val daysSinceActivity = ChronoUnit.DAYS.between(lastActivity, today)
-                
                 // Send warning if streak is about to break
-                if (daysSinceActivity >= 1 && streak.currentStreak > 0) {
+                val hoursSinceActivity = ChronoUnit.HOURS.between(
+                    Instant.ofEpochSecond(streak.lastActivityTimestamp),
+                    Instant.now()
+                )
+
+                if (hoursSinceActivity >= 24 && streak.currentStreak > 0) {
                     SmartNotificationManager.showStreakWarning(context, streak)
                 }
-                
+
                 // Break streak if more than grace period
-                if (daysSinceActivity > 1) {
+                if (hoursSinceActivity > 24 + GRACE_PERIOD_HOURS) {
                     breakStreak(streak)
                 }
             }
@@ -191,10 +194,12 @@ class PersonalStreakManager(
         // TODO: Implement weight tracking streak when weight tracking is added
         // For now, just maintain existing streak
         if (streak.lastActivityTimestamp != null) {
-            val lastActivity = streak.lastActivityTimestamp.toLocalDate()
-            val daysSinceActivity = ChronoUnit.DAYS.between(lastActivity, todayTimestamp.toLocalDate())
-            
-            if (daysSinceActivity > 1) {
+            val hoursSinceActivity = ChronoUnit.HOURS.between(
+                Instant.ofEpochSecond(streak.lastActivityTimestamp),
+                Instant.ofEpochSecond(todayTimestamp)
+            )
+
+            if (hoursSinceActivity > 24 + GRACE_PERIOD_HOURS) {
                 breakStreak(streak)
             }
         }
@@ -237,10 +242,12 @@ class PersonalStreakManager(
     
     private suspend fun checkForStreakBreak(streak: PersonalStreakEntity, todayTimestamp: Long) {
         if (streak.lastActivityTimestamp != null) {
-            val lastActivity = streak.lastActivityTimestamp.toLocalDate()
-            val daysSinceActivity = ChronoUnit.DAYS.between(lastActivity, todayTimestamp.toLocalDate())
-            
-            if (daysSinceActivity > 1) {
+            val hoursSinceActivity = ChronoUnit.HOURS.between(
+                Instant.ofEpochSecond(streak.lastActivityTimestamp),
+                Instant.ofEpochSecond(todayTimestamp)
+            )
+
+            if (hoursSinceActivity > 24 + GRACE_PERIOD_HOURS) {
                 breakStreak(streak)
             }
         }
