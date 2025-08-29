@@ -13,7 +13,6 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
-import kotlin.collections.HashMap
 
 /**
  * Comprehensive structured logging system for FitApp
@@ -66,6 +65,7 @@ object StructuredLogger {
     private var isInitialized = false
     private var logToFile = false
     private var minLogLevel = LogLevel.INFO
+    private lateinit var appContext: Context
     
     /**
      * Initialize the logging system
@@ -73,13 +73,14 @@ object StructuredLogger {
     fun initialize(context: Context, enableFileLogging: Boolean = true, minimumLevel: LogLevel = LogLevel.INFO) {
         if (isInitialized) return
         
+        appContext = context.applicationContext
         logToFile = enableFileLogging
         minLogLevel = minimumLevel
         isInitialized = true
         
         if (logToFile) {
             try {
-                val logDir = File(context.filesDir, "logs")
+                val logDir = File(appContext.filesDir, "logs")
                 if (!logDir.exists()) {
                     logDir.mkdirs()
                 }
@@ -355,7 +356,7 @@ object StructuredLogger {
             // Write the log line to file
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val logFile = File(File(android.os.Environment.getExternalFilesDir(null), "logs"), LOG_FILE_NAME)
+                    val logFile = File(File(appContext.filesDir, "logs"), LOG_FILE_NAME)
                     logFile.parentFile?.mkdirs()
                     FileWriter(logFile, true).use { writer ->
                         writer.append(logLine)
