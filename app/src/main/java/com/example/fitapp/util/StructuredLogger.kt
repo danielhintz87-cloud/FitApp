@@ -41,6 +41,8 @@ object StructuredLogger {
         DATABASE("DB"),
         NETWORK("NET"),
         AI("AI"),
+        API("API"),
+        SYNC("SYNC"),
         PERFORMANCE("PERF"),
         USER_ACTION("USER"),
         SYSTEM("SYS"),

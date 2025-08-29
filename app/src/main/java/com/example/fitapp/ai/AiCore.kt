@@ -306,17 +306,39 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                     error(errorMsg)
                 }
                 
-                val txt = resp.body!!.string()
+                val responseBody = resp.body
+                if (responseBody == null) {
+                    error("Gemini: Leere Antwort vom Server erhalten")
+                }
+                
+                val txt = responseBody.string()
+                if (txt.isBlank()) {
+                    error("Gemini: Leere Antwort vom Server erhalten")
+                }
+                
                 // Parse Gemini response JSON
                 val jsonObj = JSONObject(txt)
-                val candidates = jsonObj.getJSONArray("candidates")
+                val candidates = jsonObj.optJSONArray("candidates")
+                    ?: error("Gemini: Ungültige Antwortstruktur - candidates fehlt")
+                
                 if (candidates.length() > 0) {
-                    val content = candidates.getJSONObject(0)
-                        .getJSONObject("content")
-                        .getJSONArray("parts")
-                        .getJSONObject(0)
-                        .getString("text")
-                    content
+                    val candidate = candidates.optJSONObject(0)
+                        ?: error("Gemini: Ungültige Antwortstruktur - candidate fehlt")
+                    
+                    val content = candidate.optJSONObject("content")
+                        ?: error("Gemini: Ungültige Antwortstruktur - content fehlt")
+                    
+                    val parts = content.optJSONArray("parts")
+                        ?: error("Gemini: Ungültige Antwortstruktur - parts fehlt")
+                    
+                    val part = parts.optJSONObject(0)
+                        ?: error("Gemini: Ungültige Antwortstruktur - part fehlt")
+                    
+                    val text = part.optString("text")
+                    if (text.isNullOrBlank()) {
+                        error("Gemini: Kein Text in der Antwort gefunden")
+                    }
+                    text
                 } else {
                     "Keine Antwort von Gemini erhalten"
                 }
@@ -374,17 +396,40 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                     error(errorMsg)
                 }
                 
-                val txt = resp.body!!.string()
+                val responseBody = resp.body
+                if (responseBody == null) {
+                    throw IllegalStateException("Gemini: Leere Antwort vom Server erhalten")
+                }
+                
+                val txt = responseBody.string()
+                if (txt.isBlank()) {
+                    throw IllegalStateException("Gemini: Leere Antwort vom Server erhalten")
+                }
+                
                 // Parse Gemini response JSON
                 val jsonObj = JSONObject(txt)
-                val candidates = jsonObj.getJSONArray("candidates")
+                val candidates = jsonObj.optJSONArray("candidates")
+                    ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - candidates fehlt")
+                
                 if (candidates.length() > 0) {
-                    val content = candidates.getJSONObject(0)
-                        .getJSONObject("content")
-                        .getJSONArray("parts")
-                        .getJSONObject(0)
-                        .getString("text")
-                    parseCalories(content)
+                    val candidate = candidates.optJSONObject(0)
+                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - candidate fehlt")
+                    
+                    val content = candidate.optJSONObject("content")
+                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - content fehlt")
+                    
+                    val parts = content.optJSONArray("parts")
+                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - parts fehlt")
+                    
+                    val part = parts.optJSONObject(0)
+                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - part fehlt")
+                    
+                    val text = part.optString("text")
+                    if (text.isNullOrBlank()) {
+                        throw IllegalStateException("Gemini: Kein Text in der Antwort gefunden")
+                    }
+                    
+                    parseCalories(text)
                 } else {
                     throw IllegalStateException("Keine Antwort von Gemini erhalten")
                 }
@@ -434,13 +479,37 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                     error(errorMsg)
                 }
                 
-                val txt = resp.body!!.string()
+                val responseBody = resp.body
+                if (responseBody == null) {
+                    error("Perplexity: Leere Antwort vom Server erhalten")
+                }
+                
+                val txt = responseBody.string()
+                if (txt.isBlank()) {
+                    error("Perplexity: Leere Antwort vom Server erhalten")
+                }
+                
                 // Parse OpenAI-compatible response from Perplexity
                 val contentStart = txt.indexOf("\"content\":\"") + 11
                 val contentEnd = txt.indexOf("\"", contentStart)
                 val content = if (contentStart > 10 && contentEnd > contentStart) {
                     txt.substring(contentStart, contentEnd).replace("\\\"", "\"").replace("\\n", "\n")
-                } else "Error parsing response"
+                } else {
+                    // Try to parse as JSON for better error handling
+                    try {
+                        val jsonObj = JSONObject(txt)
+                        val choices = jsonObj.optJSONArray("choices")
+                        if (choices != null && choices.length() > 0) {
+                            val choice = choices.optJSONObject(0)
+                            val message = choice?.optJSONObject("message")
+                            message?.optString("content") ?: "Error parsing response"
+                        } else {
+                            "Error parsing response"
+                        }
+                    } catch (e: Exception) {
+                        "Error parsing response: ${e.message}"
+                    }
+                }
                 content
             }
         }

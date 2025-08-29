@@ -155,18 +155,78 @@ abstract class AppDatabase : RoomDatabase() {
         
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
-                INSTANCE ?: try {
-                    Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
-                        .addMigrations(MIGRATION_5_6, MIGRATION_6_7)
-                        .fallbackToDestructiveMigration() // Add fallback for migration issues
-                        .build().also { INSTANCE = it }
-                } catch (e: Exception) {
-                    android.util.Log.e("AppDatabase", "Failed to create database", e)
-                    // Create a new database with fallback
+                INSTANCE ?: buildDatabase(context)
+            }
+        
+        private fun buildDatabase(context: Context): AppDatabase {
+            return try {
+                Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7)
+                    .fallbackToDestructiveMigration() // Add fallback for migration issues
+                    .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING) // Enable WAL mode for better performance
+                    .setQueryCallback({ sqlQuery, bindArgs ->
+                        // Log slow queries for performance monitoring
+                        android.util.Log.d("Database", "Query: $sqlQuery Args: $bindArgs")
+                    }, java.util.concurrent.Executors.newSingleThreadExecutor())
+                    .addCallback(object : RoomDatabase.Callback() {
+                        override fun onCreate(db: SupportSQLiteDatabase) {
+                            super.onCreate(db)
+                            // Add indices for better query performance
+                            addPerformanceIndices(db)
+                        }
+                        
+                        override fun onOpen(db: SupportSQLiteDatabase) {
+                            super.onOpen(db)
+                            // Ensure WAL mode is enabled and configure for performance
+                            db.execSQL("PRAGMA wal_autocheckpoint=1000")
+                            db.execSQL("PRAGMA synchronous=NORMAL")
+                            db.execSQL("PRAGMA cache_size=10000")
+                            db.execSQL("PRAGMA temp_store=MEMORY")
+                        }
+                    })
+                    .build().also { 
+                        INSTANCE = it 
+                        android.util.Log.i("AppDatabase", "Database initialized successfully")
+                    }
+            } catch (e: Exception) {
+                android.util.Log.e("AppDatabase", "Failed to create database", e)
+                // Create a new database with fallback
+                try {
                     Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp_fallback.db")
                         .fallbackToDestructiveMigration()
-                        .build().also { INSTANCE = it }
+                        .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
+                        .build().also { 
+                            INSTANCE = it 
+                            android.util.Log.w("AppDatabase", "Using fallback database")
+                        }
+                } catch (fallbackError: Exception) {
+                    android.util.Log.e("AppDatabase", "Even fallback database failed", fallbackError)
+                    throw IllegalStateException("Unable to create database", fallbackError)
                 }
             }
+        }
+        
+        private fun addPerformanceIndices(db: SupportSQLiteDatabase) {
+            try {
+                // Add indices for commonly queried columns
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_intake_entries_date ON intake_entries(dateIso)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_daily_goals_date ON daily_goals(dateIso)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_shopping_items_category ON shopping_items(category)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_shopping_items_checked ON shopping_items(checked)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_personal_achievements_category ON personal_achievements(category)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_personal_achievements_completed ON personal_achievements(isCompleted)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_personal_streaks_category ON personal_streaks(category)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_personal_streaks_active ON personal_streaks(isActive)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_personal_records_exercise ON personal_records(exerciseName)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_progress_milestones_category ON progress_milestones(category)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_progress_milestones_completed ON progress_milestones(isCompleted)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_recipe_favorites_recipe ON recipe_favorites(recipeId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_recipe_history_recipe ON recipe_history(recipeId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_ai_logs_timestamp ON ai_logs(timestamp)")
+                android.util.Log.i("AppDatabase", "Performance indices added successfully")
+            } catch (e: Exception) {
+                android.util.Log.w("AppDatabase", "Failed to add some indices", e)
+            }
+        }
     }
 }

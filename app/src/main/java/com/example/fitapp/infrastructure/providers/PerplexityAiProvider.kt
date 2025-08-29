@@ -10,6 +10,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 /**
  * Perplexity AI provider implementation
  */
@@ -66,13 +67,37 @@ class PerplexityAiProvider(
                     throw IllegalStateException(errorMsg)
                 }
                 
-                val txt = response.body!!.string()
+                val responseBody = response.body
+                if (responseBody == null) {
+                    throw IllegalStateException("Perplexity: Leere Antwort vom Server erhalten")
+                }
+                
+                val txt = responseBody.string()
+                if (txt.isBlank()) {
+                    throw IllegalStateException("Perplexity: Leere Antwort vom Server erhalten")
+                }
+                
                 // Parse OpenAI-compatible response from Perplexity
                 val contentStart = txt.indexOf("\"content\":\"") + 11
                 val contentEnd = txt.indexOf("\"", contentStart)
                 val content = if (contentStart > 10 && contentEnd > contentStart) {
                     txt.substring(contentStart, contentEnd).replace("\\\"", "\"").replace("\\n", "\n")
-                } else "Error parsing response"
+                } else {
+                    // Try to parse as JSON for better error handling
+                    try {
+                        val jsonObj = JSONObject(txt)
+                        val choices = jsonObj.optJSONArray("choices")
+                        if (choices != null && choices.length() > 0) {
+                            val choice = choices.optJSONObject(0)
+                            val message = choice?.optJSONObject("message")
+                            message?.optString("content") ?: "Error parsing response"
+                        } else {
+                            "Error parsing response"
+                        }
+                    } catch (e: Exception) {
+                        "Error parsing response: ${e.message}"
+                    }
+                }
                 content
             }
         }

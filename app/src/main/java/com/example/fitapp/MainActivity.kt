@@ -23,6 +23,7 @@ import com.example.fitapp.util.StructuredLogger
 
 class MainActivity : ComponentActivity() {
     private var isInitialized = false
+    private var networkMonitor: NetworkStateMonitor? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,6 +83,24 @@ class MainActivity : ComponentActivity() {
             // Log error but don't crash the app
             StructuredLogger.error(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Failed to schedule daily work", exception = e)
         }
+        
+        try {
+            // Initialize network monitoring
+            networkMonitor = NetworkStateMonitor(this).apply {
+                startMonitoring()
+            }
+            StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Network monitoring initialized")
+        } catch (e: Exception) {
+            StructuredLogger.error(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Failed to initialize network monitoring", exception = e)
+        }
+        
+        try {
+            // Schedule periodic sync
+            OfflineSyncManager.schedulePeriodicSync(this)
+            StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Offline sync scheduled")
+        } catch (e: Exception) {
+            StructuredLogger.error(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Failed to schedule offline sync", exception = e)
+        }
     }
     
     private fun initializeDataAsync() {
@@ -139,6 +158,17 @@ class MainActivity : ComponentActivity() {
             StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Simple initialization completed")
         } catch (e: Exception) {
             StructuredLogger.error(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Even simple initialization failed", exception = e)
+        }
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            // Clean up network monitoring
+            networkMonitor?.stopMonitoring()
+            StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Network monitoring stopped")
+        } catch (e: Exception) {
+            StructuredLogger.error(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Error stopping network monitoring", exception = e)
         }
     }
 }
