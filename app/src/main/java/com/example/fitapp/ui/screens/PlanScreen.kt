@@ -21,21 +21,40 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.example.fitapp.util.rememberDebouncedState
+import com.example.fitapp.util.rememberSafeCoroutineScope
+import com.example.fitapp.util.rememberStable
+import com.example.fitapp.util.rememberAutoClearing
 
 @OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
 fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = null) {
     val ctx = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val scope = rememberSafeCoroutineScope()
+    
+    // Optimize expensive repository creation
+    val repo = rememberStable(ctx) { NutritionRepository(AppDatabase.get(ctx)) }
+    
+    // Optimized state management
     var goal by remember { mutableStateOf("Muskelaufbau") }
     var selectedDays by remember { mutableStateOf(setOf<String>()) }
-    var minutes by remember { mutableStateOf("60") }
+    val (minutes, updateMinutes) = rememberDebouncedState("60", 500L)
     var equipment by remember { mutableStateOf("Hanteln, Klimmzugstange") }
     var result by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var saveStatus by remember { mutableStateOf("") }
+    
+    // Stable callback for day selection to prevent recomposition
+    val onDayToggle = remember {
+        { dayKey: String ->
+            selectedDays = if (selectedDays.contains(dayKey)) {
+                selectedDays - dayKey
+            } else {
+                selectedDays + dayKey
+            }
+        }
+    }
     
     // Load saved equipment initially
     LaunchedEffect(Unit) {
@@ -163,13 +182,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
             ) {
                 weekdays.take(4).forEach { (dayKey, dayLabel) ->
                     FilterChip(
-                        onClick = {
-                            selectedDays = if (selectedDays.contains(dayKey)) {
-                                selectedDays - dayKey
-                            } else {
-                                selectedDays + dayKey
-                            }
-                        },
+                        onClick = { onDayToggle(dayKey) },
                         label = { 
                             Text(
                                 dayLabel,
@@ -200,13 +213,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
             ) {
                 weekdays.takeLast(3).forEach { (dayKey, dayLabel) ->
                     FilterChip(
-                        onClick = {
-                            selectedDays = if (selectedDays.contains(dayKey)) {
-                                selectedDays - dayKey
-                            } else {
-                                selectedDays + dayKey
-                            }
-                        },
+                        onClick = { onDayToggle(dayKey) },
                         label = { 
                             Text(
                                 dayLabel,
@@ -249,7 +256,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         
         OutlinedTextField(
             value = minutes,
-            onValueChange = { minutes = it },
+            onValueChange = updateMinutes,
             label = { Text("Minuten pro Session") },
             modifier = Modifier.fillMaxWidth()
         )
@@ -430,7 +437,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
             onClick = {
                 goal = "Muskelaufbau"
                 selectedDays = setOf() // Clear selected days
-                minutes = "60"
+                updateMinutes("60") // Use the debounced updater
                 equipment = ""
                 result = ""
                 saveStatus = ""

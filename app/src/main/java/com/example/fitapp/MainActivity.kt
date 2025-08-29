@@ -19,7 +19,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import com.example.fitapp.util.PerformanceMonitor
 import kotlinx.coroutines.withTimeout
-import kotlin.random.Random
+import com.example.fitapp.util.StructuredLogger
 
 class MainActivity : ComponentActivity() {
     private var isInitialized = false
@@ -28,6 +28,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         
         try {
+            // Initialize logging system first
+            StructuredLogger.initialize(this, enableFileLogging = true, StructuredLogger.LogLevel.INFO)
+            StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "App starting")
+            
             // Set content immediately for faster UI loading
             setContent { MainScaffold() }
             
@@ -38,7 +42,7 @@ class MainActivity : ComponentActivity() {
             initializeDataAsync()
             
         } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Critical error in onCreate", e)
+            StructuredLogger.critical(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Critical error in onCreate", exception = e)
             // Fallback UI in case of critical errors
             setContent { 
                 FitAppTheme {
@@ -64,17 +68,19 @@ class MainActivity : ComponentActivity() {
         try {
             // Initialize notification channels with error handling
             SmartNotificationManager.createNotificationChannels(this)
+            StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Notification channels initialized")
         } catch (e: Exception) {
             // Log error but don't crash the app
-            android.util.Log.e("MainActivity", "Failed to create notification channels", e)
+            StructuredLogger.error(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Failed to create notification channels", exception = e)
         }
         
         try {
             // Schedule daily work with error handling
             DailyMotivationWorker.scheduleWork(this)
+            StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Daily work scheduled")
         } catch (e: Exception) {
             // Log error but don't crash the app
-            android.util.Log.e("MainActivity", "Failed to schedule daily work", e)
+            StructuredLogger.error(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Failed to schedule daily work", exception = e)
         }
     }
     
@@ -100,7 +106,7 @@ class MainActivity : ComponentActivity() {
                         streakManager.initializeDefaultStreaks()
                         
                         isInitialized = true
-                        android.util.Log.i("MainActivity", "Personal motivation data initialized successfully")
+                        StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Personal motivation data initialized successfully")
                         
                         // Record performance
                         val duration = System.currentTimeMillis() - startTime
@@ -112,11 +118,11 @@ class MainActivity : ComponentActivity() {
                     throw e
                 }
             } catch (e: TimeoutCancellationException) {
-                android.util.Log.w("MainActivity", "Timeout initializing personal motivation data", e)
+                StructuredLogger.warning(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Timeout initializing personal motivation data", exception = e)
                 // Retry with simpler initialization
                 retrySimpleInitialization()
             } catch (e: Exception) {
-                android.util.Log.e("MainActivity", "Failed to initialize personal motivation data", e)
+                StructuredLogger.error(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Failed to initialize personal motivation data", exception = e)
                 // Don't crash, app can still function without this data
                 retrySimpleInitialization()
             }
@@ -130,9 +136,9 @@ class MainActivity : ComponentActivity() {
             // Just ensure database is accessible
             database.openHelper.writableDatabase
             isInitialized = true
-            android.util.Log.i("MainActivity", "Simple initialization completed")
+            StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Simple initialization completed")
         } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Even simple initialization failed", e)
+            StructuredLogger.error(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Even simple initialization failed", exception = e)
         }
     }
 }
