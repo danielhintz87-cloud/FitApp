@@ -66,6 +66,11 @@ class AiProviderRepositoryImpl(
     }
     
     override suspend fun selectOptimalProvider(taskType: TaskType, hasImage: Boolean): com.example.fitapp.domain.entities.AiProvider {
+        // Temporary: Route all requests through Gemini to avoid Perplexity-related crashes
+        // TODO: Restore original provider routing once Perplexity issues are resolved
+        return com.example.fitapp.domain.entities.AiProvider.Gemini
+        
+        /* Original routing logic (disabled temporarily):
         return when {
             // Multimodal tasks → Gemini
             hasImage -> com.example.fitapp.domain.entities.AiProvider.Gemini
@@ -77,6 +82,7 @@ class AiProviderRepositoryImpl(
             // Default to Gemini for complex tasks
             else -> com.example.fitapp.domain.entities.AiProvider.Gemini
         }
+        */
     }
     
     override suspend fun getFallbackProvider(primary: com.example.fitapp.domain.entities.AiProvider): com.example.fitapp.domain.entities.AiProvider? {
