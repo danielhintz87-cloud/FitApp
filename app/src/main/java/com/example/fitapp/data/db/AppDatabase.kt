@@ -209,7 +209,7 @@ abstract class AppDatabase : RoomDatabase() {
         private fun addPerformanceIndices(db: SupportSQLiteDatabase) {
             try {
                 // Add indices for commonly queried columns
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_intake_entries_date ON intake_entries(dateIso)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_intake_entries_timestamp ON intake_entries(timestamp)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS idx_daily_goals_date ON daily_goals(dateIso)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS idx_shopping_items_category ON shopping_items(category)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS idx_shopping_items_checked ON shopping_items(checked)")

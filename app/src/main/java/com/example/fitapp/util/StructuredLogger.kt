@@ -352,8 +352,18 @@ object StructuredLogger {
             val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
             val logLine = "${formatter.format(Date(entry.timestamp))} ${entry.level.prefix}/${entry.category.category}/${entry.tag}: ${buildLogMessage(entry)}\n"
             
-            // This is a simplified file writing approach
-            // In a real implementation, you'd want to use a background thread and proper file management
+            // Write the log line to file
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val logFile = File(File(android.os.Environment.getExternalFilesDir(null), "logs"), LOG_FILE_NAME)
+                    logFile.parentFile?.mkdirs()
+                    FileWriter(logFile, true).use { writer ->
+                        writer.append(logLine)
+                    }
+                } catch (e: IOException) {
+                    Log.e(TAG, "Failed to write log to file", e)
+                }
+            }
         } catch (e: Exception) {
             // Don't log this error to avoid recursion
             Log.e(TAG, "Failed to write log to file", e)
