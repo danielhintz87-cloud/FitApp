@@ -113,26 +113,40 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
         val provider = selectProviderForTask(TaskType.RECIPE_GENERATION)
         
         var result = callText(provider,
-            "Erstelle ${req.count} **nutritionsoptimierte Rezepte** als präzise Markdown-Liste. " +
+            "Erstelle ${req.count} **einzelne, klar getrennte Rezepte** als strukturierte Markdown-Liste. " +
             "Präferenzen: ${req.preferences}. Diätform: ${req.diet}. " +
-            "\n\n**Anforderungen pro Rezept:**\n" +
-            "- Titel (## Format)\n" +
-            "- Zutatenliste mit exakten Gramm-Angaben (nicht 'eine Tasse' sondern '150g')\n" +
-            "- Schritt-für-Schritt Zubereitung (nummeriert)\n" +
-            "- **Präzise Nährwerte:** Kalorien, Protein, Kohlenhydrate, Fett (jeweils in g), Ballaststoffe\n" +
-            "- Portionsgröße und Anzahl Portionen\n" +
-            "- Zubereitungszeit & Schwierigkeitsgrad\n" +
-            "- Mikronährstoff-Highlights (Vitamin C, Eisen, etc.)\n" +
+            "\n\n**WICHTIG: Jedes Rezept MUSS mit '## ' beginnen und durch eine Leerzeile getrennt sein!**\n\n" +
+            "**Format pro Rezept:**\n" +
+            "## [Rezeptname]\n" +
+            "**Kalorien:** [Anzahl] kcal pro Portion\n" +
+            "**Portionen:** [Anzahl]\n" +
+            "**Zubereitungszeit:** [Zeit] Minuten\n" +
+            "**Schwierigkeit:** Leicht/Mittel/Schwer\n\n" +
+            "**Zutaten:**\n" +
+            "- [Zutat] ([exakte Gramm-Angabe])\n" +
+            "- [Weitere Zutaten mit präzisen Mengen]\n\n" +
+            "**Zubereitung:**\n" +
+            "1. [Erster Schritt der Zubereitung]\n" +
+            "2. [Zweiter Schritt der Zubereitung]\n" +
+            "[Weitere nummerierte Schritte]\n\n" +
+            "**Nährwerte pro Portion:**\n" +
+            "- Protein: [X]g\n" +
+            "- Kohlenhydrate: [X]g\n" +
+            "- Fett: [X]g\n" +
+            "- Ballaststoffe: [X]g\n\n" +
+            "**Mikronährstoff-Highlights:** [Vitamin C, Eisen, etc.]\n\n" +
+            "---\n\n" +
             "\n**Kalkulationsbasis:** Verwende USDA-Nährwertdatenbank-Standards für genaue Berechnungen. " +
-            "Achte auf realistische Portionsgrößen und präzise Makronährstoff-Verteilung."
+            "Achte auf realistische Portionsgrößen und präzise Makronährstoff-Verteilung. " +
+            "JEDES REZEPT MUSS VOLLSTÄNDIG GETRENNT UND MIT ## ÜBERSCHRIFT BEGINNEN!"
         )
         
         // Try fallback provider if primary fails
         if (result.isFailure) {
             val fallbackProvider = getFallbackProvider(provider)
             if (fallbackProvider != null && ApiKeys.isProviderAvailable(context, fallbackProvider)) {
-                result = callText(fallbackProvider, 
-                    "Erstelle ${req.count} **nutritionsoptimierte Rezepte** als präzise Markdown-Liste...")
+                result = callText(fallbackProvider,
+                    "Erstelle ${req.count} **einzelne, klar getrennte Rezepte** mit ## Überschriften...")
             }
         }
         

@@ -227,14 +227,23 @@ private fun TrainingOverview(
         
         Spacer(Modifier.height(16.dp))
         
-        // Start Training Button
+        // Start/Continue Training Button
         Button(
             onClick = onStartTraining,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            )
         ) {
-            Icon(Icons.Filled.PlayArrow, contentDescription = null)
+            Icon(
+                if (completedExercises.isNotEmpty()) Icons.Filled.PlayArrow else Icons.Filled.PlayArrow, 
+                contentDescription = null
+            )
             Spacer(Modifier.width(8.dp))
-            Text("Training starten")
+            Text(
+                if (completedExercises.isNotEmpty()) "Training fortsetzen" else "Training starten",
+                style = MaterialTheme.typography.titleMedium
+            )
         }
     }
 }
@@ -312,6 +321,30 @@ private fun ActiveTrainingMode(
 ) {
     val currentExercise = exercises.getOrNull(currentIndex)
     
+    // Cardio timer state
+    var cardioTimeRemaining by remember(currentIndex) { mutableStateOf(0) }
+    var cardioTimerRunning by remember(currentIndex) { mutableStateOf(false) }
+    
+    // Initialize cardio timer for cardio exercises
+    LaunchedEffect(currentExercise) {
+        if (currentExercise?.type == "cardio") {
+            // Extract time from cardio exercise value (e.g., "5 km/h für 10 Min" -> 10 minutes)
+            val timeMatch = Regex("(\\d+)\\s*[mM]in", RegexOption.IGNORE_CASE).find(currentExercise.value)
+            val minutes = timeMatch?.groupValues?.get(1)?.toIntOrNull() ?: 5
+            cardioTimeRemaining = minutes * 60 // Convert to seconds
+        }
+    }
+    
+    // Cardio timer countdown
+    LaunchedEffect(cardioTimerRunning, cardioTimeRemaining) {
+        if (cardioTimerRunning && cardioTimeRemaining > 0) {
+            delay(1000)
+            cardioTimeRemaining--
+        } else if (cardioTimerRunning && cardioTimeRemaining <= 0) {
+            cardioTimerRunning = false
+        }
+    }
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -338,7 +371,11 @@ private fun ActiveTrainingMode(
                     exercise = exercise,
                     exerciseNumber = currentIndex + 1,
                     totalExercises = exercises.size,
-                    guidedMode = guidedMode
+                    guidedMode = guidedMode,
+                    cardioTimeRemaining = cardioTimeRemaining,
+                    cardioTimerRunning = cardioTimerRunning,
+                    onStartCardioTimer = { cardioTimerRunning = true },
+                    onStopCardioTimer = { cardioTimerRunning = false }
                 )
             }
         }
@@ -424,7 +461,11 @@ private fun CurrentExerciseDisplay(
     exercise: ExerciseStep,
     exerciseNumber: Int,
     totalExercises: Int,
-    guidedMode: Boolean
+    guidedMode: Boolean,
+    cardioTimeRemaining: Int = 0,
+    cardioTimerRunning: Boolean = false,
+    onStartCardioTimer: () -> Unit = {},
+    onStopCardioTimer: () -> Unit = {}
 ) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(24.dp)) {
@@ -446,7 +487,72 @@ private fun CurrentExerciseDisplay(
                 color = MaterialTheme.colorScheme.primary
             )
             
-            if (exercise.description.isNotBlank() && guidedMode) {
+            // Cardio Timer Display
+            if (exercise.type == "cardio") {
+                Spacer(Modifier.height(16.dp))
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (cardioTimerRunning) 
+                            MaterialTheme.colorScheme.primaryContainer 
+                        else 
+                            MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "⏱️ Cardio Timer",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "${cardioTimeRemaining / 60}:${(cardioTimeRemaining % 60).toString().padStart(2, '0')}",
+                            style = MaterialTheme.typography.displayMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = if (cardioTimerRunning) onStopCardioTimer else onStartCardioTimer,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (cardioTimerRunning) 
+                                        MaterialTheme.colorScheme.error 
+                                    else 
+                                        MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(
+                                    if (cardioTimerRunning) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                    contentDescription = null
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(if (cardioTimerRunning) "Pause" else "Start")
+                            }
+                        }
+                    }
+                }
+                
+                // Enhanced cardio instructions
+                Spacer(Modifier.height(12.dp))
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text(
+                            "🏃 Cardio-Anleitung",
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        val cardioInstructions = getCardioInstructions(exercise.name, exercise.value)
+                        Text(
+                            cardioInstructions,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+            
+            if (exercise.description.isNotBlank() && guidedMode && exercise.type != "cardio") {
                 Spacer(Modifier.height(16.dp))
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                     Column(Modifier.padding(12.dp)) {
@@ -565,4 +671,34 @@ private fun calculateTotalDuration(exercises: List<ExerciseStep>): Int {
         totalMinutes += exercise.restTime / 60
     }
     return totalMinutes
+}
+
+private fun getCardioInstructions(exerciseName: String, exerciseValue: String): String {
+    val lowercaseName = exerciseName.lowercase()
+    val lowercaseValue = exerciseValue.lowercase()
+    
+    return when {
+        lowercaseName.contains("laufband") || lowercaseName.contains("treadmill") -> {
+            val speedMatch = Regex("(\\d+(?:\\.\\d+)?)\\s*km/h").find(lowercaseValue)
+            val speed = speedMatch?.groupValues?.get(1) ?: "5"
+            "🏃‍♂️ Laufband:\n• Geschwindigkeit: ${speed} km/h\n• Steigung: 0-2% (leichte Steigung)\n• Gleichmäßiges Tempo halten\n• Bei Atemnot Geschwindigkeit reduzieren"
+        }
+        lowercaseName.contains("rudern") || lowercaseName.contains("rowing") -> {
+            "🚣‍♂️ Rudergerät:\n• Mittlere Intensität (60-70% Herzfrequenz)\n• Gleichmäßige Züge\n• Rücken gerade halten\n• Knie nicht vollständig durchstrecken"
+        }
+        lowercaseName.contains("fahrrad") || lowercaseName.contains("bike") || lowercaseName.contains("ergometer") -> {
+            val levelMatch = Regex("stufe\\s*(\\d+)").find(lowercaseValue)
+            val level = levelMatch?.groupValues?.get(1) ?: "5-8"
+            "🚴‍♂️ Ergometer:\n• Widerstandsstufe: ${level}\n• Sitzhöhe korrekt einstellen\n• Gleichmäßig treten\n• Oberkörper aufrecht"
+        }
+        lowercaseName.contains("elliptical") || lowercaseName.contains("crosstrainer") -> {
+            "🏃‍♀️ Crosstrainer:\n• Mittlere Intensität\n• Arme aktiv mitbewegen\n• Aufrechte Haltung\n• Gleichmäßiger Rhythmus"
+        }
+        lowercaseName.contains("stepper") -> {
+            "👟 Stepper:\n• Kontrollierte Bewegungen\n• Ganzen Fuß aufsetzen\n• Knie nicht vollständig durchstrecken\n• Handlauf nur zur Balance nutzen"
+        }
+        else -> {
+            "🏃‍♂️ Cardio-Training:\n• Gleichmäßige Intensität beibehalten\n• Atmung kontrollieren\n• Bei zu hoher Belastung Tempo reduzieren\n• Ausreichend trinken"
+        }
+    }
 }

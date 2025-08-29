@@ -241,6 +241,8 @@ object SmartNotificationManager {
             "Deine Ziele warten auf dich! 🎯",
             "Kleine Schritte führen zu großen Veränderungen! 👣",
             "Du bist stärker als deine Ausreden! 🔥",
+            "Halte dein Training durch - du wirst stärker! 🔥",
+            "Bleib am Ball - jeder Tag bringt dich näher ans Ziel! 🎯",
             "Fitness ist eine Reise, nicht ein Ziel! 🛤️",
             "Jeder Tag ist eine neue Chance! ☀️"
         )

@@ -147,7 +147,7 @@ fun MainScaffold() {
             NavHost(navController = nav, startDestination = "plan", modifier = Modifier.fillMaxSize()) {
                 composable("plan") { PlanScreen(padding, nav) }
                 composable("today") { TodayScreen(padding, nav) }
-                composable("nutrition") { NutritionScreen() }
+                composable("nutrition") { NutritionScreen(nav) }
                 composable("progress") { ProgressScreen(padding) }
                 composable("foodscan") {
                     FoodScanScreen(contentPadding = padding)

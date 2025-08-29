@@ -67,10 +67,97 @@ class NutritionRepository(private val db: AppDatabase) {
 
     suspend fun addRecipeToShoppingList(recipeId: String) {
         val recipe = db.recipeDao().getRecipe(recipeId) ?: return
-        val block = Regex("""(?s)Zutaten.*?(?:\n\n|$)""").find(recipe.markdown)?.value ?: return
-        val items = Regex("""^\s*[-*]\s+(.+)$""", RegexOption.MULTILINE).findAll(block)
-        items.forEach { m ->
-            db.shoppingDao().insert(ShoppingItemEntity(name = m.groupValues[1], quantity = null, unit = null))
+        
+        // Enhanced ingredient parsing
+        val ingredients = extractIngredientsWithQuantities(recipe.markdown)
+        
+        ingredients.forEach { ingredient ->
+            val (name, quantity, unit) = parseIngredientDetails(ingredient)
+            db.shoppingDao().insert(
+                ShoppingItemEntity(
+                    name = name,
+                    quantity = quantity,
+                    unit = unit,
+                    category = categorizeIngredient(name),
+                    fromRecipeId = recipeId
+                )
+            )
+        }
+    }
+    
+    private fun extractIngredientsWithQuantities(markdown: String): List<String> {
+        val ingredients = mutableListOf<String>()
+        val lines = markdown.lines()
+        var inIngredients = false
+        
+        for (line in lines) {
+            when {
+                line.contains("Zutaten", ignoreCase = true) || line.contains("**Zutaten", ignoreCase = true) -> {
+                    inIngredients = true
+                }
+                line.startsWith("**") && inIngredients && !line.contains("Zutaten", ignoreCase = true) -> {
+                    break
+                }
+                line.startsWith("##") && inIngredients -> {
+                    break
+                }
+                inIngredients && (line.startsWith("- ") || line.startsWith("* ")) -> {
+                    ingredients.add(line.substring(2).trim())
+                }
+            }
+        }
+        return ingredients
+    }
+    
+    private fun parseIngredientDetails(ingredient: String): Triple<String, String?, String?> {
+        // Parse ingredients like "Hähnchenbrust (300g)" or "Olivenöl (2 EL)" or "Zwiebel, groß (1 Stück)"
+        val quantityRegex = Regex("""(.+?)\s*\(([^)]+)\)""")
+        val match = quantityRegex.find(ingredient)
+        
+        return if (match != null) {
+            val name = match.groupValues[1].trim()
+            val quantityString = match.groupValues[2].trim()
+            
+            // Parse quantity and unit
+            val quantityUnitRegex = Regex("""(\d+(?:[.,]\d+)?)\s*([a-zA-ZäöüÄÖÜß]+)""")
+            val quantityMatch = quantityUnitRegex.find(quantityString)
+            
+            if (quantityMatch != null) {
+                val quantity = quantityMatch.groupValues[1].replace(",", ".")
+                val unit = quantityMatch.groupValues[2]
+                Triple(name, quantity, unit)
+            } else {
+                Triple(name, quantityString, null)
+            }
+        } else {
+            Triple(ingredient, null, null)
+        }
+    }
+    
+    private fun categorizeIngredient(ingredient: String): String {
+        val lowerIngredient = ingredient.lowercase()
+        return when {
+            lowerIngredient.contains("fleisch") || lowerIngredient.contains("hähnchen") || 
+            lowerIngredient.contains("rind") || lowerIngredient.contains("schwein") ||
+            lowerIngredient.contains("fisch") || lowerIngredient.contains("lachs") -> "Fleisch & Fisch"
+            
+            lowerIngredient.contains("gemüse") || lowerIngredient.contains("tomate") ||
+            lowerIngredient.contains("zwiebel") || lowerIngredient.contains("paprika") ||
+            lowerIngredient.contains("karotte") || lowerIngredient.contains("brokkoli") -> "Gemüse"
+            
+            lowerIngredient.contains("obst") || lowerIngredient.contains("apfel") ||
+            lowerIngredient.contains("banane") || lowerIngredient.contains("beeren") -> "Obst"
+            
+            lowerIngredient.contains("milch") || lowerIngredient.contains("käse") ||
+            lowerIngredient.contains("joghurt") || lowerIngredient.contains("quark") -> "Milchprodukte"
+            
+            lowerIngredient.contains("reis") || lowerIngredient.contains("nudeln") ||
+            lowerIngredient.contains("brot") || lowerIngredient.contains("mehl") -> "Getreide"
+            
+            lowerIngredient.contains("öl") || lowerIngredient.contains("butter") ||
+            lowerIngredient.contains("margarine") -> "Fette & Öle"
+            
+            else -> "Sonstiges"
         }
     }
 

@@ -437,3 +437,38 @@ private fun categorizeIngredient(ingredient: String): String {
         else -> "Sonstiges"
     }
 }
+
+@Composable
+fun CookingModeFromId(
+    recipeId: String,
+    onBackPressed: () -> Unit,
+    onFinishCooking: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val db = remember { AppDatabase.get(ctx) }
+    var recipe by remember { mutableStateOf<SavedRecipeEntity?>(null) }
+    
+    LaunchedEffect(recipeId) {
+        recipe = db.savedRecipeDao().getRecipe(recipeId)
+    }
+    
+    recipe?.let { savedRecipe ->
+        CookingModeScreen(
+            recipe = savedRecipe,
+            onBackPressed = onBackPressed,
+            onFinishCooking = onFinishCooking
+        )
+    } ?: run {
+        // Loading or recipe not found
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                CircularProgressIndicator()
+                Spacer(Modifier.height(16.dp))
+                Text("Rezept wird geladen...")
+            }
+        }
+    }
+}
