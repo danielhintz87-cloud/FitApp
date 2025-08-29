@@ -155,9 +155,18 @@ abstract class AppDatabase : RoomDatabase() {
         
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
-                INSTANCE ?: Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
-                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7)
-                    .build().also { INSTANCE = it }
+                INSTANCE ?: try {
+                    Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
+                        .addMigrations(MIGRATION_5_6, MIGRATION_6_7)
+                        .fallbackToDestructiveMigration() // Add fallback for migration issues
+                        .build().also { INSTANCE = it }
+                } catch (e: Exception) {
+                    android.util.Log.e("AppDatabase", "Failed to create database", e)
+                    // Create a new database with fallback
+                    Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp_fallback.db")
+                        .fallbackToDestructiveMigration()
+                        .build().also { INSTANCE = it }
+                }
             }
     }
 }

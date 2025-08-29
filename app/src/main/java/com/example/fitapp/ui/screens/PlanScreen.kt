@@ -30,7 +30,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
     val scope = rememberCoroutineScope()
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
     var goal by remember { mutableStateOf("Muskelaufbau") }
-    var selectedDays by remember { mutableStateOf(setOf("MONDAY", "WEDNESDAY", "FRIDAY")) }
+    var selectedDays by remember { mutableStateOf(setOf<String>()) }
     var minutes by remember { mutableStateOf("60") }
     var equipment by remember { mutableStateOf("Hanteln, Klimmzugstange") }
     var result by remember { mutableStateOf("") }
@@ -64,15 +64,15 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
     var goalExpanded by remember { mutableStateOf(false) }
     var equipmentExpanded by remember { mutableStateOf(false) }
     
-    // Weekdays for picker
+    // Weekdays for picker - using more descriptive labels
     val weekdays = listOf(
-        "MONDAY" to "Mo",
-        "TUESDAY" to "Di", 
-        "WEDNESDAY" to "Mi",
-        "THURSDAY" to "Do",
-        "FRIDAY" to "Fr",
-        "SATURDAY" to "Sa",
-        "SUNDAY" to "So"
+        "MONDAY" to "Montag",
+        "TUESDAY" to "Dienstag", 
+        "WEDNESDAY" to "Mittwoch",
+        "THURSDAY" to "Donnerstag",
+        "FRIDAY" to "Freitag",
+        "SATURDAY" to "Samstag",
+        "SUNDAY" to "Sonntag"
     )
     
     // Predefined options
@@ -106,7 +106,13 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
             .padding(16.dp)
     ) {
         Text("12-Wochen-Trainingsplan", style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.height(16.dp))
+        Text(
+            "Erstellen Sie Ihren personalisierten Trainingsplan",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+        Spacer(Modifier.height(24.dp))
         
         // Goal Dropdown
         ExposedDropdownMenuBox(
@@ -136,41 +142,110 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                 }
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(24.dp))
         
         // Weekday selection
-        Text("Trainingstage", style = MaterialTheme.typography.labelLarge)
-        Spacer(Modifier.height(8.dp))
+        Text("Trainingstage", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Wählen Sie die Tage aus, an denen Sie trainieren möchten",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp)
+        )
+        Spacer(Modifier.height(12.dp))
         
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            weekdays.forEach { (dayKey, dayLabel) ->
-                AssistChip(
-                    onClick = {
-                        selectedDays = if (selectedDays.contains(dayKey)) {
-                            selectedDays - dayKey
-                        } else {
-                            selectedDays + dayKey
-                        }
-                    },
-                    label = { Text(dayLabel) },
-                    leadingIcon = if (selectedDays.contains(dayKey)) {
-                        { Icon(Icons.Default.Check, contentDescription = null) }
-                    } else null,
-                    modifier = Modifier.weight(1f / 7f)
-                )
+        // Use FlowRow-like layout for better responsiveness
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // First row: Monday to Thursday
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                weekdays.take(4).forEach { (dayKey, dayLabel) ->
+                    FilterChip(
+                        onClick = {
+                            selectedDays = if (selectedDays.contains(dayKey)) {
+                                selectedDays - dayKey
+                            } else {
+                                selectedDays + dayKey
+                            }
+                        },
+                        label = { 
+                            Text(
+                                dayLabel,
+                                style = MaterialTheme.typography.labelMedium
+                            ) 
+                        },
+                        selected = selectedDays.contains(dayKey),
+                        leadingIcon = if (selectedDays.contains(dayKey)) {
+                            { 
+                                Icon(
+                                    Icons.Default.Check, 
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                ) 
+                            }
+                        } else null,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+            
+            Spacer(Modifier.height(8.dp))
+            
+            // Second row: Friday to Sunday
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                weekdays.takeLast(3).forEach { (dayKey, dayLabel) ->
+                    FilterChip(
+                        onClick = {
+                            selectedDays = if (selectedDays.contains(dayKey)) {
+                                selectedDays - dayKey
+                            } else {
+                                selectedDays + dayKey
+                            }
+                        },
+                        label = { 
+                            Text(
+                                dayLabel,
+                                style = MaterialTheme.typography.labelMedium
+                            ) 
+                        },
+                        selected = selectedDays.contains(dayKey),
+                        leadingIcon = if (selectedDays.contains(dayKey)) {
+                            { 
+                                Icon(
+                                    Icons.Default.Check, 
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                ) 
+                            }
+                        } else null,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                // Add spacer to balance the row
+                Spacer(Modifier.weight(1f))
             }
         }
         
         Text(
-            text = "${selectedDays.size} Trainingstage pro Woche gewählt",
+            text = if (selectedDays.isEmpty()) {
+                "Keine Trainingstage ausgewählt"
+            } else {
+                "${selectedDays.size} Trainingstage pro Woche gewählt"
+            },
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.primary,
+            color = if (selectedDays.isEmpty()) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.primary
+            },
             modifier = Modifier.padding(top = 4.dp)
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(16.dp))
         
         OutlinedTextField(
             value = minutes,
@@ -178,7 +253,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
             label = { Text("Minuten pro Session") },
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(16.dp))
         
         // Equipment Dropdown
         ExposedDropdownMenuBox(
@@ -222,46 +297,53 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         Spacer(Modifier.height(16.dp))
         
         Button(
-            enabled = !busy,
+            enabled = !busy && selectedDays.isNotEmpty(),
             onClick = {
                 scope.launch {
                     busy = true
                     result = try {
-                        // Debug: Check provider status
-                        val providerStatus = AppAi.getProviderStatus(ctx)
-                        println("Provider Status: $providerStatus")
-                        
-                        // Get the most current equipment selection from UserPreferences
-                        val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
-                        val finalEquipment = if (savedEquipment.isNotEmpty()) {
-                            savedEquipment
+                        // Validate inputs
+                        if (selectedDays.isEmpty()) {
+                            "Bitte wählen Sie mindestens einen Trainingstag aus."
+                        } else if (minutes.toIntOrNull() == null || minutes.toInt() <= 0) {
+                            "Bitte geben Sie eine gültige Trainingszeit ein."
                         } else {
-                            equipment.split(",").map { it.trim() }
+                            // Debug: Check provider status
+                            val providerStatus = AppAi.getProviderStatus(ctx)
+                            println("Provider Status: $providerStatus")
+                            
+                            // Get the most current equipment selection from UserPreferences
+                            val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
+                            val finalEquipment = if (savedEquipment.isNotEmpty()) {
+                                savedEquipment
+                            } else {
+                                equipment.split(",").map { it.trim() }
+                            }
+                            
+                            val req = PlanRequest(
+                                goal = goal,
+                                weeks = 12,
+                                sessionsPerWeek = selectedDays.size,
+                                minutesPerSession = minutes.toIntOrNull() ?: 60,
+                                equipment = finalEquipment
+                            )
+                            val planContent = AppAi.planWithOptimalProvider(ctx, req).getOrThrow()
+                            
+                            // Save the plan to database
+                            val planId = repo.savePlan(
+                                title = "12-Wochen-Trainingsplan: $goal",
+                                content = planContent,
+                                goal = goal,
+                                weeks = 12,
+                                sessionsPerWeek = req.sessionsPerWeek,
+                                minutesPerSession = req.minutesPerSession,
+                                equipment = req.equipment,
+                                trainingDays = selectedDays.toList()
+                            )
+                            saveStatus = "✓ Plan gespeichert (ID: $planId)"
+                            
+                            planContent
                         }
-                        
-                        val req = PlanRequest(
-                            goal = goal,
-                            weeks = 12,
-                            sessionsPerWeek = selectedDays.size,
-                            minutesPerSession = minutes.toIntOrNull() ?: 60,
-                            equipment = finalEquipment
-                        )
-                        val planContent = AppAi.planWithOptimalProvider(ctx, req).getOrThrow()
-                        
-                        // Save the plan to database
-                        val planId = repo.savePlan(
-                            title = "12-Wochen-Trainingsplan: $goal",
-                            content = planContent,
-                            goal = goal,
-                            weeks = 12,
-                            sessionsPerWeek = req.sessionsPerWeek,
-                            minutesPerSession = req.minutesPerSession,
-                            equipment = req.equipment,
-                            trainingDays = selectedDays.toList()
-                        )
-                        saveStatus = "✓ Plan gespeichert (ID: $planId)"
-                        
-                        planContent
                     } catch (e: Exception) {
                         saveStatus = ""
                         "Fehler bei der Planerstellung:\n\n${e.message}\n\nProvider Status:\n${AppAi.getProviderStatus(ctx)}"
@@ -271,13 +353,19 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                 }
             }
         ) {
-            Text(if (busy) "Generiere..." else "Plan erstellen")
+            Text(
+                when {
+                    busy -> "Generiere..."
+                    selectedDays.isEmpty() -> "Bitte Trainingstage wählen"
+                    else -> "Plan erstellen"
+                }
+            )
         }
 
         OutlinedButton(
             onClick = {
                 goal = "Muskelaufbau"
-                selectedDays = setOf("MONDAY", "WEDNESDAY", "FRIDAY")
+                selectedDays = setOf() // Clear selected days
                 minutes = "60"
                 equipment = ""
                 result = ""

@@ -14,11 +14,21 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Initialize notification channels
-        SmartNotificationManager.createNotificationChannels(this)
+        try {
+            // Initialize notification channels with error handling
+            SmartNotificationManager.createNotificationChannels(this)
+        } catch (e: Exception) {
+            // Log error but don't crash the app
+            android.util.Log.e("MainActivity", "Failed to create notification channels", e)
+        }
         
-        // Schedule daily work
-        DailyMotivationWorker.scheduleWork(this)
+        try {
+            // Schedule daily work with error handling
+            DailyMotivationWorker.scheduleWork(this)
+        } catch (e: Exception) {
+            // Log error but don't crash the app
+            android.util.Log.e("MainActivity", "Failed to schedule daily work", e)
+        }
         
         // Initialize default data
         initializePersonalMotivationData()
@@ -28,14 +38,19 @@ class MainActivity : ComponentActivity() {
     
     private fun initializePersonalMotivationData() {
         lifecycleScope.launch {
-            val database = AppDatabase.get(this@MainActivity)
-            val repository = PersonalMotivationRepository(database)
-            val achievementManager = PersonalAchievementManager(this@MainActivity, repository)
-            val streakManager = PersonalStreakManager(this@MainActivity, repository)
-            
-            // Initialize default achievements and streaks
-            achievementManager.initializeDefaultAchievements()
-            streakManager.initializeDefaultStreaks()
+            try {
+                val database = AppDatabase.get(this@MainActivity)
+                val repository = PersonalMotivationRepository(database)
+                val achievementManager = PersonalAchievementManager(this@MainActivity, repository)
+                val streakManager = PersonalStreakManager(this@MainActivity, repository)
+                
+                // Initialize default achievements and streaks
+                achievementManager.initializeDefaultAchievements()
+                streakManager.initializeDefaultStreaks()
+            } catch (e: Exception) {
+                // Log error but don't crash the app
+                android.util.Log.e("MainActivity", "Failed to initialize personal motivation data", e)
+            }
         }
     }
 }
