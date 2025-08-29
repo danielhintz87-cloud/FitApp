@@ -5,13 +5,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.ai.UiRecipe
 import com.example.fitapp.data.db.AppDatabase
@@ -95,28 +96,24 @@ private fun GenerateTab(
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
         LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp,16.dp,16.dp,96.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(results) { r ->
-                ElevatedCard {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(r.title, style = MaterialTheme.typography.titleMedium)
-                        r.calories?.let { Text("~$it kcal", style = MaterialTheme.typography.labelMedium) }
-                        Text(r.markdown, style = MaterialTheme.typography.bodySmall)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            var fav by remember(r.id) { mutableStateOf(false) }
-                            OutlinedButton(onClick = { onToShopping(r.id) }) { Text("Zutaten → Einkaufsliste") }
-                            Button(onClick = { onLog(r) }) { Text("In Tagesbilanz buchen") }
-                            FilledTonalButton(onClick = { fav = !fav; onFav(r.id, fav) }) { Text(if (fav) "Favorit ✓" else "Als Favorit speichern") }
-                            OutlinedButton(
-                                onClick = { 
-                                    scope.launch {
-                                        saveToSavedRecipes(ctx, r)
-                                    }
-                                }
-                            ) { 
-                                Text("Dauerhaft speichern") 
-                            }
+                IndividualRecipeCard(
+                    recipe = r,
+                    onFavoriteClick = { fav -> onFav(r.id, fav) },
+                    onAddToShopping = { onToShopping(r.id) },
+                    onLogCalories = { onLog(r) },
+                    onSaveRecipe = { 
+                        scope.launch {
+                            saveToSavedRecipes(ctx, r)
+                        }
+                    },
+                    onPrepareRecipe = {
+                        // Navigate to cooking mode - we'll implement this
+                        scope.launch {
+                            saveToSavedRecipes(ctx, r)
+                            // TODO: Navigate to cooking mode
                         }
                     }
-                }
+                )
             }
         }
     }
@@ -157,6 +154,176 @@ private fun RecipeList(title: String, items: List<RecipeEntity>, onFavClick: (St
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun IndividualRecipeCard(
+    recipe: UiRecipe,
+    onFavoriteClick: (Boolean) -> Unit,
+    onAddToShopping: () -> Unit,
+    onLogCalories: () -> Unit,
+    onSaveRecipe: () -> Unit,
+    onPrepareRecipe: () -> Unit
+) {
+    var isFavorite by remember(recipe.id) { mutableStateOf(false) }
+    var showFullRecipe by remember(recipe.id) { mutableStateOf(false) }
+    
+    ElevatedCard {
+        Column(Modifier.padding(16.dp)) {
+            // Header with title and calories
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        recipe.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    recipe.calories?.let { 
+                        Text(
+                            "~$it kcal",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                
+                // Favorite button
+                IconButton(
+                    onClick = { 
+                        isFavorite = !isFavorite
+                        onFavoriteClick(isFavorite) 
+                    }
+                ) {
+                    Icon(
+                        if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = if (isFavorite) "Aus Favoriten entfernen" else "Zu Favoriten hinzufügen",
+                        tint = if (isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+            
+            Spacer(Modifier.height(8.dp))
+            
+            // Recipe preview/summary
+            val recipePreview = extractRecipePreview(recipe.markdown)
+            Text(
+                recipePreview,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = if (showFullRecipe) Int.MAX_VALUE else 3
+            )
+            
+            // Show full recipe toggle
+            if (!showFullRecipe) {
+                TextButton(
+                    onClick = { showFullRecipe = true }
+                ) {
+                    Text("Vollständiges Rezept anzeigen")
+                    Icon(Icons.Filled.ExpandMore, contentDescription = null)
+                }
+            } else {
+                // Full recipe content
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    recipe.markdown,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                TextButton(
+                    onClick = { showFullRecipe = false }
+                ) {
+                    Text("Weniger anzeigen")
+                    Icon(Icons.Filled.ExpandLess, contentDescription = null)
+                }
+            }
+            
+            Spacer(Modifier.height(12.dp))
+            
+            // Action buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Primary action - Prepare Recipe
+                Button(
+                    onClick = onPrepareRecipe,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(Icons.Filled.Restaurant, contentDescription = null)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Rezept zubereiten")
+                }
+            }
+            
+            // Secondary actions row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onAddToShopping,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Filled.ShoppingCart, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Zutaten", style = MaterialTheme.typography.bodySmall)
+                }
+                
+                OutlinedButton(
+                    onClick = onLogCalories,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Loggen", style = MaterialTheme.typography.bodySmall)
+                }
+                
+                OutlinedButton(
+                    onClick = onSaveRecipe,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Filled.BookmarkAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Speichern", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+    }
+}
+
+private fun extractRecipePreview(markdown: String): String {
+    // Extract ingredients and basic info for preview
+    val lines = markdown.lines()
+    val preview = StringBuilder()
+    
+    for (line in lines) {
+        when {
+            line.trim().startsWith("**Zutaten") || line.trim().startsWith("Zutaten") -> {
+                preview.append("🥘 ").append(line.trim()).append("\n")
+            }
+            line.trim().startsWith("**Zubereitungszeit") || line.trim().startsWith("Zubereitungszeit") -> {
+                preview.append("⏱️ ").append(line.trim()).append("\n")
+            }
+            line.trim().startsWith("**Schwierigkeit") || line.trim().startsWith("Schwierigkeit") -> {
+                preview.append("⭐ ").append(line.trim()).append("\n")
+            }
+            line.trim().startsWith("- ") && preview.length < 200 -> {
+                preview.append(line.trim()).append("\n")
+            }
+        }
+        if (preview.length > 250) break
+    }
+    
+    return if (preview.isEmpty()) {
+        "Leckeres Rezept mit detaillierter Anleitung..."
+    } else {
+        preview.toString().trim()
     }
 }
 
