@@ -297,69 +297,133 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         Spacer(Modifier.height(16.dp))
         
         Button(
-            enabled = !busy && selectedDays.isNotEmpty(),
+            enabled = !busy && selectedDays.isNotEmpty() && minutes.toIntOrNull() != null && minutes.toInt() > 0,
             onClick = {
                 scope.launch {
                     busy = true
+                    saveStatus = ""
                     result = try {
-                        // Validate inputs
-                        if (selectedDays.isEmpty()) {
-                            "Bitte wählen Sie mindestens einen Trainingstag aus."
-                        } else if (minutes.toIntOrNull() == null || minutes.toInt() <= 0) {
-                            "Bitte geben Sie eine gültige Trainingszeit ein."
-                        } else {
-                            // Debug: Check provider status
-                            val providerStatus = AppAi.getProviderStatus(ctx)
-                            println("Provider Status: $providerStatus")
-                            
-                            // Get the most current equipment selection from UserPreferences
-                            val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
-                            val finalEquipment = if (savedEquipment.isNotEmpty()) {
-                                savedEquipment
-                            } else {
-                                equipment.split(",").map { it.trim() }
+                        // Comprehensive input validation
+                        when {
+                            selectedDays.isEmpty() -> {
+                                "❌ Bitte wählen Sie mindestens einen Trainingstag aus."
                             }
-                            
-                            val req = PlanRequest(
-                                goal = goal,
-                                weeks = 12,
-                                sessionsPerWeek = selectedDays.size,
-                                minutesPerSession = minutes.toIntOrNull() ?: 60,
-                                equipment = finalEquipment
-                            )
-                            val planContent = AppAi.planWithOptimalProvider(ctx, req).getOrThrow()
-                            
-                            // Save the plan to database
-                            val planId = repo.savePlan(
-                                title = "12-Wochen-Trainingsplan: $goal",
-                                content = planContent,
-                                goal = goal,
-                                weeks = 12,
-                                sessionsPerWeek = req.sessionsPerWeek,
-                                minutesPerSession = req.minutesPerSession,
-                                equipment = req.equipment,
-                                trainingDays = selectedDays.toList()
-                            )
-                            saveStatus = "✓ Plan gespeichert (ID: $planId)"
-                            
-                            planContent
+                            minutes.toIntOrNull() == null -> {
+                                "❌ Bitte geben Sie eine gültige Zahl für die Trainingszeit ein."
+                            }
+                            minutes.toInt() <= 0 -> {
+                                "❌ Trainingszeit muss mindestens 1 Minute sein."
+                            }
+                            minutes.toInt() > 300 -> {
+                                "❌ Trainingszeit sollte höchstens 300 Minuten sein."
+                            }
+                            goal.isBlank() -> {
+                                "❌ Bitte wählen Sie ein Trainingsziel aus."
+                            }
+                            else -> {
+                                    val providerStatus = AppAi.getProviderStatus(ctx)
+                                    if (!providerStatus.contains("✓")) {
+                                        result = "❌ Keine verfügbaren AI-Provider. Bitte prüfen Sie Ihre API-Schlüssel in den Einstellungen."
+                                        return@launch
+                                    }
+                                
+                                // Get the most current equipment selection from UserPreferences
+                                val savedEquipment = try {
+                                    UserPreferences.getSelectedEquipment(ctx)
+                                } catch (e: Exception) {
+                                    android.util.Log.w("PlanScreen", "Failed to load equipment preferences", e)
+                                    emptyList()
+                                }
+                                
+                                val finalEquipment = if (savedEquipment.isNotEmpty()) {
+                                    savedEquipment
+                                } else {
+                                    equipment.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                                }
+                                
+                                val req = PlanRequest(
+                                    goal = goal.trim(),
+                                    weeks = 12,
+                                    sessionsPerWeek = selectedDays.size,
+                                    minutesPerSession = minutes.toInt(),
+                                    equipment = finalEquipment
+                                )
+                                
+                                // Generate plan with comprehensive error handling
+                                val planResult = AppAi.planWithOptimalProvider(ctx, req)
+                                
+                                if (planResult.isFailure) {
+                                    val error = planResult.exceptionOrNull()
+                                    when {
+                                        error?.message?.contains("API") == true -> 
+                                            "❌ API-Fehler: ${error.message}\n\nBitte prüfen Sie Ihre Internetverbindung und API-Schlüssel."
+                                        error?.message?.contains("timeout") == true -> 
+                                            "❌ Zeitüberschreitung. Bitte versuchen Sie es erneut."
+                                        else -> 
+                                            "❌ Fehler bei der Planerstellung: ${error?.message ?: "Unbekannter Fehler"}"
+                                    }
+                                } else {
+                                    val planContent = planResult.getOrThrow()
+                                    
+                                    // Validate generated content
+                                    if (planContent.isBlank()) {
+                                        "❌ Leerer Plan erhalten. Bitte versuchen Sie es erneut."
+                                    } else if (planContent.length < 100) {
+                                        "❌ Plan scheint unvollständig zu sein. Bitte versuchen Sie es erneut."
+                                    } else {
+                                        // Save the plan to database with error handling
+                                        try {
+                                            val planId = repo.savePlan(
+                                                title = "12-Wochen-Trainingsplan: $goal",
+                                                content = planContent,
+                                                goal = goal,
+                                                weeks = 12,
+                                                sessionsPerWeek = req.sessionsPerWeek,
+                                                minutesPerSession = req.minutesPerSession,
+                                                equipment = req.equipment,
+                                                trainingDays = selectedDays.toList()
+                                            )
+                                            saveStatus = "✅ Plan erfolgreich gespeichert (ID: $planId)"
+                                            planContent
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("PlanScreen", "Failed to save plan", e)
+                                            saveStatus = "⚠️ Plan erstellt, aber Speichern fehlgeschlagen: ${e.message}"
+                                            planContent
+                                        }
+                                    }
+                                }
+                            }
                         }
                     } catch (e: Exception) {
+                        android.util.Log.e("PlanScreen", "Unexpected error in plan generation", e)
                         saveStatus = ""
-                        "Fehler bei der Planerstellung:\n\n${e.message}\n\nProvider Status:\n${AppAi.getProviderStatus(ctx)}"
+                        "❌ Unerwarteter Fehler: ${e.message}\n\nProvider Status:\n${AppAi.getProviderStatus(ctx)}"
                     } finally {
                         busy = false
                     }
                 }
             }
         ) {
-            Text(
-                when {
-                    busy -> "Generiere..."
-                    selectedDays.isEmpty() -> "Bitte Trainingstage wählen"
-                    else -> "Plan erstellen"
+            if (busy) {
+                Row(
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Text("Generiere Plan...")
                 }
-            )
+            } else {
+                Text(
+                    when {
+                        selectedDays.isEmpty() -> "Bitte Trainingstage wählen"
+                        minutes.toIntOrNull() == null || minutes.toInt() <= 0 -> "Ungültige Trainingszeit"
+                        else -> "Plan erstellen"
+                    }
+                )
+            }
         }
 
         OutlinedButton(

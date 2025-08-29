@@ -6,7 +6,14 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.time.LocalDate
 
-@Entity(tableName = "recipes")
+@Entity(
+    tableName = "recipes",
+    indices = [
+        Index(value = ["createdAt"]),
+        Index(value = ["title"]),
+        Index(value = ["calories"])
+    ]
+)
 data class RecipeEntity(
     @PrimaryKey val id: String,
     val title: String,
@@ -52,7 +59,14 @@ data class RecipeHistoryEntity(
     val createdAt: Long = System.currentTimeMillis() / 1000
 )
 
-@Entity(tableName = "intake_entries")
+@Entity(
+    tableName = "intake_entries",
+    indices = [
+        Index(value = ["timestamp"]),
+        Index(value = ["kcal"]),
+        Index(value = ["timestamp", "kcal"])
+    ]
+)
 data class IntakeEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val timestamp: Long = System.currentTimeMillis() / 1000,
@@ -117,7 +131,14 @@ data class ShoppingCategoryEntity(
     val order: Int // for supermarket sorting
 )
 
-@Entity(tableName = "today_workouts")
+@Entity(
+    tableName = "today_workouts",
+    indices = [
+        Index(value = ["dateIso"]),
+        Index(value = ["status"]),
+        Index(value = ["createdAt"])
+    ]
+)
 data class TodayWorkoutEntity(
     @PrimaryKey val dateIso: String, // e.g., "2025-08-28"
     val content: String, // string with pipe-lines format
@@ -127,7 +148,14 @@ data class TodayWorkoutEntity(
     val planId: Long? = null // nullable FK-like field; no constraint needed
 )
 
-@Entity(tableName = "personal_achievements")
+@Entity(
+    tableName = "personal_achievements",
+    indices = [
+        Index(value = ["category"]),
+        Index(value = ["isCompleted"]),
+        Index(value = ["createdAt"])
+    ]
+)
 data class PersonalAchievementEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,

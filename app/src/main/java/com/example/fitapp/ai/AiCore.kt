@@ -19,6 +19,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
+import com.example.fitapp.util.PerformanceMonitor
+import com.example.fitapp.util.withPerformanceMonitoring
 
 enum class AiProvider { Gemini, Perplexity }
 
@@ -75,29 +77,36 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
     }
 
     suspend fun generatePlan(req: PlanRequest): Result<String> {
-        val provider = selectProviderForTask(TaskType.TRAINING_PLAN)
-        
-        // Try primary provider first
-        var result = callText(provider,
-            "Erstelle einen wissenschaftlich fundierten **${req.weeks}-Wochen-Trainingsplan** in Markdown. " +
-            "Ziel: ${req.goal}. Trainingsfrequenz: ${req.sessionsPerWeek} Einheiten/Woche, ${req.minutesPerSession} Min/Einheit. " +
-            "Verfügbare Geräte: ${req.equipment.joinToString()}. " +
-            "\n\n**Medizinische Anforderungen:**\n" +
-            "- Progressive Überlastung mit 5-10% Steigerung alle 2 Wochen\n" +
-            "- Deload-Wochen alle 4 Wochen (50-60% Intensität)\n" +
-            "- RPE-Skala (6-20) für Intensitätskontrolle\n" +
-            "- Mindestens 48h Pause zwischen gleichen Muskelgruppen\n" +
-            "- Aufwärm- und Cool-Down-Protokolle\n" +
-            "\n**Struktur:** Jede Woche mit H2-Überschrift, dann Trainingstage mit:\n" +
-            "- Aufwärmung (5-10 Min)\n" +
-            "- Hauptübungen: Übung | Sätze x Wiederholungen | Tempo (1-2-1-0) | RPE | Pausenzeit\n" +
-            "- Cool-Down & Mobility (5-10 Min)\n" +
-            "- Progressionshinweise für nächste Woche\n" +
-            "- Anpassungen bei Beschwerden oder Stagnation"
-        )
-        
-        // Try fallback provider if primary fails
-        if (result.isFailure) {
+        return try {
+            // Validate input parameters
+            require(req.goal.isNotBlank()) { "Trainingsziel darf nicht leer sein" }
+            require(req.weeks > 0) { "Anzahl Wochen muss positiv sein" }
+            require(req.sessionsPerWeek > 0) { "Trainingseinheiten pro Woche muss positiv sein" }
+            require(req.minutesPerSession > 0) { "Minuten pro Einheit muss positiv sein" }
+            
+            val provider = selectProviderForTask(TaskType.TRAINING_PLAN)
+            
+            // Try primary provider first
+            var result = callText(provider,
+                "Erstelle einen wissenschaftlich fundierten **${req.weeks}-Wochen-Trainingsplan** in Markdown. " +
+                "Ziel: ${req.goal}. Trainingsfrequenz: ${req.sessionsPerWeek} Einheiten/Woche, ${req.minutesPerSession} Min/Einheit. " +
+                "Verfügbare Geräte: ${req.equipment.joinToString()}. " +
+                "\n\n**Medizinische Anforderungen:**\n" +
+                "- Progressive Überlastung mit 5-10% Steigerung alle 2 Wochen\n" +
+                "- Deload-Wochen alle 4 Wochen (50-60% Intensität)\n" +
+                "- RPE-Skala (6-20) für Intensitätskontrolle\n" +
+                "- Mindestens 48h Pause zwischen gleichen Muskelgruppen\n" +
+                "- Aufwärm- und Cool-Down-Protokolle\n" +
+                "\n**Struktur:** Jede Woche mit H2-Überschrift, dann Trainingstage mit:\n" +
+                "- Aufwärmung (5-10 Min)\n" +
+                "- Hauptübungen: Übung | Sätze x Wiederholungen | Tempo (1-2-1-0) | RPE | Pausenzeit\n" +
+                "- Cool-Down & Mobility (5-10 Min)\n" +
+                "- Progressionshinweise für nächste Woche\n" +
+                "- Anpassungen bei Beschwerden oder Stagnation"
+            )
+            
+            // Try fallback provider if primary fails
+            if (result.isFailure) {
             val fallbackProvider = getFallbackProvider(provider)
             if (fallbackProvider != null && ApiKeys.isProviderAvailable(context, fallbackProvider)) {
                 result = callText(fallbackProvider, result.exceptionOrNull()?.message?.let { 
@@ -106,51 +115,70 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             }
         }
         
-        return result
+        result
+        } catch (e: IllegalArgumentException) {
+            Result.failure(IllegalArgumentException("Ungültige Eingabe: ${e.message}"))
+        } catch (e: Exception) {
+            android.util.Log.e("AiCore", "Unexpected error in generatePlan", e)
+            Result.failure(Exception("Unerwarteter Fehler bei der Planerstellung: ${e.message}"))
+        }
     }
 
     suspend fun generateRecipes(req: RecipeRequest): Result<String> {
-        val provider = selectProviderForTask(TaskType.RECIPE_GENERATION)
-        
-        var result = callText(provider,
-            "Erstelle ${req.count} **einzelne, klar getrennte Rezepte** als strukturierte Markdown-Liste. " +
-            "Präferenzen: ${req.preferences}. Diätform: ${req.diet}. " +
-            "\n\n**WICHTIG: Jedes Rezept MUSS mit '## ' beginnen und durch eine Leerzeile getrennt sein!**\n\n" +
-            "**Format pro Rezept:**\n" +
-            "## [Rezeptname]\n" +
-            "**Kalorien:** [Anzahl] kcal pro Portion\n" +
-            "**Portionen:** [Anzahl]\n" +
-            "**Zubereitungszeit:** [Zeit] Minuten\n" +
-            "**Schwierigkeit:** Leicht/Mittel/Schwer\n\n" +
-            "**Zutaten:**\n" +
-            "- [Zutat] ([exakte Gramm-Angabe])\n" +
-            "- [Weitere Zutaten mit präzisen Mengen]\n\n" +
-            "**Zubereitung:**\n" +
-            "1. [Erster Schritt der Zubereitung]\n" +
-            "2. [Zweiter Schritt der Zubereitung]\n" +
-            "[Weitere nummerierte Schritte]\n\n" +
-            "**Nährwerte pro Portion:**\n" +
-            "- Protein: [X]g\n" +
-            "- Kohlenhydrate: [X]g\n" +
-            "- Fett: [X]g\n" +
-            "- Ballaststoffe: [X]g\n\n" +
-            "**Mikronährstoff-Highlights:** [Vitamin C, Eisen, etc.]\n\n" +
-            "---\n\n" +
-            "\n**Kalkulationsbasis:** Verwende USDA-Nährwertdatenbank-Standards für genaue Berechnungen. " +
-            "Achte auf realistische Portionsgrößen und präzise Makronährstoff-Verteilung. " +
-            "JEDES REZEPT MUSS VOLLSTÄNDIG GETRENNT UND MIT ## ÜBERSCHRIFT BEGINNEN!"
-        )
-        
-        // Try fallback provider if primary fails
-        if (result.isFailure) {
-            val fallbackProvider = getFallbackProvider(provider)
-            if (fallbackProvider != null && ApiKeys.isProviderAvailable(context, fallbackProvider)) {
-                result = callText(fallbackProvider,
-                    "Erstelle ${req.count} **einzelne, klar getrennte Rezepte** mit ## Überschriften...")
+        return try {
+            // Validate input parameters
+            require(req.preferences.isNotBlank()) { "Präferenzen dürfen nicht leer sein" }
+            require(req.diet.isNotBlank()) { "Diättyp darf nicht leer sein" }
+            require(req.count > 0) { "Anzahl Rezepte muss positiv sein" }
+            require(req.count <= 20) { "Maximal 20 Rezepte auf einmal möglich" }
+            
+            val provider = selectProviderForTask(TaskType.RECIPE_GENERATION)
+            
+            var result = callText(provider,
+                "Erstelle ${req.count} **einzelne, klar getrennte Rezepte** als strukturierte Markdown-Liste. " +
+                "Präferenzen: ${req.preferences}. Diätform: ${req.diet}. " +
+                "\n\n**WICHTIG: Jedes Rezept MUSS mit '## ' beginnen und durch eine Leerzeile getrennt sein!**\n\n" +
+                "**Format pro Rezept:**\n" +
+                "## [Rezeptname]\n" +
+                "**Kalorien:** [Anzahl] kcal pro Portion\n" +
+                "**Portionen:** [Anzahl]\n" +
+                "**Zubereitungszeit:** [Zeit] Minuten\n" +
+                "**Schwierigkeit:** Leicht/Mittel/Schwer\n\n" +
+                "**Zutaten:**\n" +
+                "- [Zutat] ([exakte Gramm-Angabe])\n" +
+                "- [Weitere Zutaten mit präzisen Mengen]\n\n" +
+                "**Zubereitung:**\n" +
+                "1. [Erster Schritt der Zubereitung]\n" +
+                "2. [Zweiter Schritt der Zubereitung]\n" +
+                "[Weitere nummerierte Schritte]\n\n" +
+                "**Nährwerte pro Portion:**\n" +
+                "- Protein: [X]g\n" +
+                "- Kohlenhydrate: [X]g\n" +
+                "- Fett: [X]g\n" +
+                "- Ballaststoffe: [X]g\n\n" +
+                "**Mikronährstoff-Highlights:** [Vitamin C, Eisen, etc.]\n\n" +
+                "---\n\n" +
+                "\n**Kalkulationsbasis:** Verwende USDA-Nährwertdatenbank-Standards für genaue Berechnungen. " +
+                "Achte auf realistische Portionsgrößen und präzise Makronährstoff-Verteilung. " +
+                "JEDES REZEPT MUSS VOLLSTÄNDIG GETRENNT UND MIT ## ÜBERSCHRIFT BEGINNEN!"
+            )
+            
+            // Try fallback provider if primary fails
+            if (result.isFailure) {
+                val fallbackProvider = getFallbackProvider(provider)
+                if (fallbackProvider != null && ApiKeys.isProviderAvailable(context, fallbackProvider)) {
+                    result = callText(fallbackProvider,
+                        "Erstelle ${req.count} **einzelne, klar getrennte Rezepte** mit ## Überschriften...")
+                }
             }
+            
+            result
+        } catch (e: IllegalArgumentException) {
+            Result.failure(IllegalArgumentException("Ungültige Eingabe: ${e.message}"))
+        } catch (e: Exception) {
+            android.util.Log.e("AiCore", "Unexpected error in generateRecipes", e)
+            Result.failure(Exception("Unerwarteter Fehler bei der Rezepterstellung: ${e.message}"))
         }
-        
-        return result
     }
 
     suspend fun parseShoppingList(spokenText: String): Result<String> {
@@ -426,7 +454,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
     private fun calculateBackoffDelay(attempt: Int): Long {
         val baseDelays = listOf(800L, 1500L, 2500L, 4000L, 6000L)
         val baseDelay = baseDelays.getOrElse(attempt) { 8000L }
-        val jitter = Random.nextLong(0, 400)
+        val jitter = Random.nextLong(0, 400L)
         return baseDelay + jitter
     }
 
