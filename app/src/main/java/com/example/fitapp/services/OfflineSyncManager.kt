@@ -7,9 +7,7 @@ import com.example.fitapp.util.ApiCallWrapper
 import com.example.fitapp.util.StructuredLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 /**
@@ -293,14 +291,11 @@ class OfflineSyncWorker(
 class SyncQueue(private val context: Context) {
     
     private val database = AppDatabase.get(context)
-    private val json = Json { ignoreUnknownKeys = true }
     
     suspend fun addOperation(operation: SyncOperation) = withContext(Dispatchers.IO) {
         try {
             // Store operation in local database for persistence
-            val operationData = json.encodeToString(operation)
-            
-            // Add to sync queue table (would need to be implemented in Room)
+            // For now, just log - would implement proper persistence with Room
             StructuredLogger.info(
                 StructuredLogger.LogCategory.SYNC,
                 "SyncQueue",
@@ -373,7 +368,6 @@ class SyncQueue(private val context: Context) {
 /**
  * Data classes for sync operations
  */
-@Serializable
 data class SyncOperation(
     val id: String,
     val type: SyncOperationType,

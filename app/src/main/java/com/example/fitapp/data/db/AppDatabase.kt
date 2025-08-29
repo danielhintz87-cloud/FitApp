@@ -163,7 +163,7 @@ abstract class AppDatabase : RoomDatabase() {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
                     .addMigrations(MIGRATION_5_6, MIGRATION_6_7)
                     .fallbackToDestructiveMigration() // Add fallback for migration issues
-                    .setJournalMode(RoomDatabase.JournalMode.WAL) // Enable WAL mode for better performance
+                    .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING) // Enable WAL mode for better performance
                     .setQueryCallback({ sqlQuery, bindArgs ->
                         // Log slow queries for performance monitoring
                         android.util.Log.d("Database", "Query: $sqlQuery Args: $bindArgs")
@@ -194,7 +194,7 @@ abstract class AppDatabase : RoomDatabase() {
                 try {
                     Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp_fallback.db")
                         .fallbackToDestructiveMigration()
-                        .setJournalMode(RoomDatabase.JournalMode.WAL)
+                        .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
                         .build().also { 
                             INSTANCE = it 
                             android.util.Log.w("AppDatabase", "Using fallback database")

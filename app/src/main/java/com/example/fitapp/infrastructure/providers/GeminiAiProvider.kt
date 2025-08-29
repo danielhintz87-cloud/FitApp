@@ -174,10 +174,10 @@ class GeminiAiProvider(
                     val candidate = candidates.optJSONObject(0)
                         ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - candidate fehlt")
                     
-                    val content = candidate.optJSONObject("content")
+                    val contentObj = candidate.optJSONObject("content")
                         ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - content fehlt")
                     
-                    val parts = content.optJSONArray("parts")
+                    val parts = contentObj.optJSONArray("parts")
                         ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - parts fehlt")
                     
                     val part = parts.optJSONObject(0)
@@ -187,8 +187,8 @@ class GeminiAiProvider(
                     if (text.isNullOrBlank()) {
                         throw IllegalStateException("Gemini: Kein Text in der Antwort gefunden")
                     }
-                    val content = text
-                    parseCalories(content)
+                    
+                    parseCalories(text)
                 } else {
                     throw IllegalStateException("Keine Antwort von Gemini erhalten")
                 }
