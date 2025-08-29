@@ -141,7 +141,7 @@ fun FoodScanScreen(
                     
                     estimate = when {
                         captured != null -> {
-                            val result = AppAi.caloriesWithOptimalProvider(ctx, captured!!, prompt)
+                            val result = AppAi.caloriesWithOptimalProvider(ctx, captured, prompt)
                             if (result.isFailure) {
                                 CaloriesEstimate(0, 30, "Analyse fehlgeschlagen: ${result.exceptionOrNull()?.message}")
                             } else {
@@ -150,7 +150,7 @@ fun FoodScanScreen(
                         }
                         picked != null -> {
                             try {
-                                val bitmap = BitmapUtils.loadBitmapFromUri(ctx.contentResolver, picked!!)
+                                val bitmap = BitmapUtils.loadBitmapFromUri(ctx.contentResolver, picked)
                                 val result = AppAi.caloriesWithOptimalProvider(ctx, bitmap, prompt)
                                 if (result.isFailure) {
                                     CaloriesEstimate(0, 30, "Analyse fehlgeschlagen: ${result.exceptionOrNull()?.message}")
@@ -214,9 +214,9 @@ fun FoodScanScreen(
                                 val prompt = "Analysiere dieses Bild nochmals genauer und identifiziere das Essen. Prüfe zuerst ob es sich um echtes, essbares Essen handelt."
                                 
                                 estimate = when {
-                                    captured != null -> AppAi.caloriesWithOptimalProvider(ctx, captured!!, prompt).getOrThrow()
+                                    captured != null -> AppAi.caloriesWithOptimalProvider(ctx, captured, prompt).getOrThrow()
                                     picked != null -> {
-                                        val bitmap = BitmapUtils.loadBitmapFromUri(ctx.contentResolver, picked!!)
+                                        val bitmap = BitmapUtils.loadBitmapFromUri(ctx.contentResolver, picked)
                                         AppAi.caloriesWithOptimalProvider(ctx, bitmap, prompt).getOrThrow()
                                     }
                                     else -> null

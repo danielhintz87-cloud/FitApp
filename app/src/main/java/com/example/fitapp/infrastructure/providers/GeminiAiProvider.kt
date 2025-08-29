@@ -69,15 +69,38 @@ class GeminiAiProvider(
                     throw IllegalStateException(errorMsg)
                 }
                 
-                val txt = response.body!!.string()
+                val responseBody = response.body
+                if (responseBody == null) {
+                    throw IllegalStateException("Gemini: Leere Antwort vom Server erhalten")
+                }
+                
+                val txt = responseBody.string()
+                if (txt.isBlank()) {
+                    throw IllegalStateException("Gemini: Leere Antwort vom Server erhalten")
+                }
+                
                 val jsonObj = JSONObject(txt)
-                val candidates = jsonObj.getJSONArray("candidates")
+                val candidates = jsonObj.optJSONArray("candidates")
+                    ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - candidates fehlt")
+                
                 if (candidates.length() > 0) {
-                    candidates.getJSONObject(0)
-                        .getJSONObject("content")
-                        .getJSONArray("parts")
-                        .getJSONObject(0)
-                        .getString("text")
+                    val candidate = candidates.optJSONObject(0)
+                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - candidate fehlt")
+                    
+                    val content = candidate.optJSONObject("content")
+                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - content fehlt")
+                    
+                    val parts = content.optJSONArray("parts")
+                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - parts fehlt")
+                    
+                    val part = parts.optJSONObject(0)
+                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - part fehlt")
+                    
+                    val text = part.optString("text")
+                    if (text.isNullOrBlank()) {
+                        throw IllegalStateException("Gemini: Kein Text in der Antwort gefunden")
+                    }
+                    text
                 } else {
                     throw IllegalStateException("Keine Antwort von Gemini erhalten")
                 }
@@ -135,15 +158,38 @@ class GeminiAiProvider(
                     throw IllegalStateException(errorMsg)
                 }
                 
-                val txt = response.body!!.string()
+                val responseBody = response.body
+                if (responseBody == null) {
+                    throw IllegalStateException("Gemini: Leere Antwort vom Server erhalten")
+                }
+                
+                val txt = responseBody.string()
+                if (txt.isBlank()) {
+                    throw IllegalStateException("Gemini: Leere Antwort vom Server erhalten")
+                }
+                
                 val jsonObj = JSONObject(txt)
-                val candidates = jsonObj.getJSONArray("candidates")
+                val candidates = jsonObj.optJSONArray("candidates")
+                    ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - candidates fehlt")
+                
                 if (candidates.length() > 0) {
-                    val content = candidates.getJSONObject(0)
-                        .getJSONObject("content")
-                        .getJSONArray("parts")
-                        .getJSONObject(0)
-                        .getString("text")
+                    val candidate = candidates.optJSONObject(0)
+                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - candidate fehlt")
+                    
+                    val content = candidate.optJSONObject("content")
+                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - content fehlt")
+                    
+                    val parts = content.optJSONArray("parts")
+                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - parts fehlt")
+                    
+                    val part = parts.optJSONObject(0)
+                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - part fehlt")
+                    
+                    val text = part.optString("text")
+                    if (text.isNullOrBlank()) {
+                        throw IllegalStateException("Gemini: Kein Text in der Antwort gefunden")
+                    }
+                    val content = text
                     parseCalories(content)
                 } else {
                     throw IllegalStateException("Keine Antwort von Gemini erhalten")
