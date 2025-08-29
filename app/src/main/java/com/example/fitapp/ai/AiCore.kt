@@ -63,6 +63,11 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
      * Routes task to optimal AI provider based on task characteristics
      */
     private fun selectProviderForTask(task: TaskType, hasImage: Boolean = false): AiProvider {
+        // Temporary: Route all requests through Gemini to avoid Perplexity-related crashes
+        // TODO: Restore original provider routing once Perplexity issues are resolved
+        return AiProvider.Gemini
+        
+        /* Original routing logic (disabled temporarily):
         return when {
             // Multimodal tasks → Gemini
             hasImage -> AiProvider.Gemini
@@ -74,6 +79,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             // Default to Gemini for complex tasks
             else -> AiProvider.Gemini
         }
+        */
     }
 
     suspend fun generatePlan(req: PlanRequest): Result<String> {

@@ -17,7 +17,7 @@ class EstimateCaloriesForManualEntryUseCaseImpl(
         
         val aiRequest = AiRequest(
             prompt = prompt,
-            provider = com.example.fitapp.domain.entities.AiProvider.Perplexity, // Use Perplexity for quick factual queries
+            provider = com.example.fitapp.domain.entities.AiProvider.Gemini, // Temporarily use Gemini instead of Perplexity
             taskType = TaskType.CALORIE_ESTIMATION
         )
         
