@@ -22,7 +22,7 @@ import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.launch
 
 @Composable
-fun NutritionScreen() {
+fun NutritionScreen(navController: androidx.navigation.NavController? = null) {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
     val scope = rememberCoroutineScope()
@@ -44,7 +44,7 @@ fun NutritionScreen() {
             }
         }
         when (tab) {
-            0 -> GenerateTab(prompt, { prompt = it }, generating, results, error, onGenerate = {
+            0 -> GenerateTab(prompt, { prompt = it }, generating, results, error, navController, onGenerate = {
                 generating = true
                 scope.launch {
                     try {
@@ -73,6 +73,7 @@ private fun GenerateTab(
     generating: Boolean,
     results: List<UiRecipe>,
     error: String?,
+    navController: androidx.navigation.NavController? = null,
     onGenerate: () -> Unit,
     onFav: (String, Boolean) -> Unit,
     onToShopping: (String) -> Unit,
@@ -107,10 +108,10 @@ private fun GenerateTab(
                         }
                     },
                     onPrepareRecipe = {
-                        // Navigate to cooking mode - we'll implement this
                         scope.launch {
+                            // Save recipe first, then navigate to cooking mode
                             saveToSavedRecipes(ctx, r)
-                            // TODO: Navigate to cooking mode
+                            navController?.navigate("cooking_mode/${r.id}")
                         }
                     }
                 )
