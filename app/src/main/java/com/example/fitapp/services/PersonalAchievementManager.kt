@@ -64,6 +64,9 @@ class PersonalAchievementManager(
                 "Wöchentlicher Krieger" -> checkWeeklyWarriorAchievement(achievement)
                 "Nahrungs-Tracker" -> checkNutritionTrackerAchievement(achievement)
                 "Ausdauer-Champion" -> checkEnduranceChampionAchievement(achievement)
+                "Fitness-Enthusiast" -> checkFitnessEnthusiastAchievement(achievement)
+                "Ernährungs-Experte" -> checkNutritionExpertAchievement(achievement)
+                "Gewohnheits-Guru" -> checkHabitGuruAchievement(achievement)
                 "Streak-Meister" -> checkStreakMasterAchievement(achievement)
             }
         }
@@ -103,6 +106,7 @@ class PersonalAchievementManager(
     suspend fun trackWorkoutCompletion() {
         // Update workout-related achievements
         updateWorkoutCountAchievements()
+        updateFitnessAchievements()
     }
     
     /**
@@ -111,6 +115,7 @@ class PersonalAchievementManager(
     suspend fun trackNutritionLogging() {
         // Update nutrition-related achievements
         updateNutritionAchievements()
+        updateNutritionExpertAchievement()
     }
     
     private suspend fun updateWorkoutCountAchievements() {
@@ -173,11 +178,56 @@ class PersonalAchievementManager(
         updateAchievementProgress(achievement.id, monthlyWorkouts.size.toDouble())
     }
     
+    private suspend fun checkFitnessEnthusiastAchievement(achievement: PersonalAchievementEntity) {
+        // Check total workouts completed (lifetime)
+        val allWorkouts = repository.getWorkoutsBetween(
+            LocalDate.now().minusDays(365).format(DateTimeFormatter.ISO_LOCAL_DATE), // Look back a year
+            LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+        ).filter { it.status == "completed" }
+        
+        updateAchievementProgress(achievement.id, allWorkouts.size.toDouble())
+    }
+    
+    private suspend fun checkNutritionExpertAchievement(achievement: PersonalAchievementEntity) {
+        // This would need to track daily nutrition logging for 30 days
+        // For now, we'll increment based on the current value
+        updateAchievementProgress(achievement.id, achievement.currentValue + 1.0)
+    }
+    
+    private suspend fun checkHabitGuruAchievement(achievement: PersonalAchievementEntity) {
+        // Check longest streak for any habit
+        val activeStreaks = repository.activeStreaksFlow().first()
+        val maxStreak = activeStreaks.maxOfOrNull { it.longestStreak } ?: 0
+        
+        updateAchievementProgress(achievement.id, maxStreak.toDouble())
+    }
+    
     private suspend fun checkStreakMasterAchievement(achievement: PersonalAchievementEntity) {
         val activeStreaks = repository.activeStreaksFlow().first()
         val maxStreak = activeStreaks.maxOfOrNull { it.currentStreak } ?: 0
         
         updateAchievementProgress(achievement.id, maxStreak.toDouble())
+    }
+    
+    private suspend fun updateFitnessAchievements() {
+        val fitnessAchievements = repository.achievementsByCategoryFlow(CATEGORY_FITNESS).first()
+            .filter { !it.isCompleted }
+        
+        for (achievement in fitnessAchievements) {
+            when (achievement.title) {
+                "Ausdauer-Champion" -> checkEnduranceChampionAchievement(achievement)
+                "Fitness-Enthusiast" -> checkFitnessEnthusiastAchievement(achievement)
+            }
+        }
+    }
+    
+    private suspend fun updateNutritionExpertAchievement() {
+        val nutritionAchievements = repository.achievementsByCategoryFlow(CATEGORY_NUTRITION).first()
+            .filter { !it.isCompleted && it.title == "Ernährungs-Experte" }
+        
+        nutritionAchievements.forEach { achievement ->
+            checkNutritionExpertAchievement(achievement)
+        }
     }
     
     private fun createDefaultAchievements(): List<PersonalAchievementEntity> {

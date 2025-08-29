@@ -9,8 +9,9 @@ object AppAi {
     // Keep original core() method for legacy compatibility if needed
     private fun core(context: Context) = AiCore(context, AppDatabase.get(context).aiLogDao())
 
-    suspend fun plan(context: Context, req: PlanRequest) =
-        AppAiClean.planWithOptimalProvider(context, req)
+    suspend fun plan(context: Context, req: PlanRequest): Result<String> {
+        return planWithOptimalProvider(context, req)
+    }
 
     suspend fun recipes(context: Context, req: RecipeRequest) =
         AppAiClean.recipesWithOptimalProvider(context, req)

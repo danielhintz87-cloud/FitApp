@@ -101,7 +101,7 @@ object SmartNotificationManager {
         
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            (NOTIFICATION_ID_ACHIEVEMENT + achievement.id).toInt(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -145,7 +145,7 @@ object SmartNotificationManager {
         
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            (NOTIFICATION_ID_STREAK_WARNING + streak.id).toInt(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -189,7 +189,7 @@ object SmartNotificationManager {
         
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            (NOTIFICATION_ID_STREAK_MILESTONE + streak.id + milestone).toInt(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -256,7 +256,7 @@ object SmartNotificationManager {
         
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            NOTIFICATION_ID_DAILY_MOTIVATION,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
