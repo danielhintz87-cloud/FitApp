@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.util.Base64
 import com.example.fitapp.data.prefs.ApiKeys
 import com.example.fitapp.domain.entities.CaloriesEstimate
+import com.example.fitapp.util.ApiCallWrapper
+import com.example.fitapp.util.safeApiCall
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -30,8 +32,8 @@ class GeminiAiProvider(
     
     override fun supportsVision(): Boolean = true
     
-    override suspend fun generateText(prompt: String): Result<String> = withContext(Dispatchers.IO) {
-        runCatching {
+    override suspend fun generateText(prompt: String): Result<String> = 
+        safeApiCall(context, "Gemini Text Generation") {
             val apiKey = ApiKeys.getGeminiKey(context)
             if (apiKey.isBlank()) {
                 throw IllegalStateException("Gemini API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
@@ -55,7 +57,8 @@ class GeminiAiProvider(
                 .post(body)
                 .build()
 
-            httpClient.newCall(request).execute().use { response ->
+            val response = httpClient.newCall(request).execute()
+            response.use {
                 if (!response.isSuccessful) {
                     val bodyStr = response.body?.string().orEmpty()
                     val errorMsg = when (response.code) {
@@ -69,16 +72,12 @@ class GeminiAiProvider(
                     throw IllegalStateException(errorMsg)
                 }
                 
-                val responseBody = response.body
-                if (responseBody == null) {
-                    throw IllegalStateException("Gemini: Leere Antwort vom Server erhalten")
+                val responseBodyResult = ApiCallWrapper.safeReadResponseBody(response)
+                if (responseBodyResult.isFailure) {
+                    throw responseBodyResult.exceptionOrNull() ?: IllegalStateException("Failed to read response")
                 }
                 
-                val txt = responseBody.string()
-                if (txt.isBlank()) {
-                    throw IllegalStateException("Gemini: Leere Antwort vom Server erhalten")
-                }
-                
+                val txt = responseBodyResult.getOrThrow()
                 val jsonObj = JSONObject(txt)
                 val candidates = jsonObj.optJSONArray("candidates")
                     ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - candidates fehlt")
@@ -106,7 +105,6 @@ class GeminiAiProvider(
                 }
             }
         }
-    }
     
     override suspend fun analyzeImage(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> = withContext(Dispatchers.IO) {
         runCatching {
