@@ -17,6 +17,7 @@ import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.data.prefs.UserPreferences
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -161,7 +162,16 @@ fun TodayTrainingScreen(
                             
                             val planContent = AppAi.planWithOptimalProvider(ctx, req).getOrThrow()
                             
-                            // TODO: Save as today's custom training (separate from main plan)
+                            // Save as today's custom training (separate from main plan)
+                            val today = LocalDate.now()
+                            val dateIso = today.toString()
+                            val workout = com.example.fitapp.data.db.TodayWorkoutEntity(
+                                dateIso = dateIso,
+                                content = planContent,
+                                status = "pending",
+                                planId = null // Custom training, not associated with main plan
+                            )
+                            repo.saveTodayWorkout(workout)
                             
                             planContent
                         } catch (e: Exception) {
@@ -205,8 +215,34 @@ fun TodayTrainingScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(
                                 onClick = {
-                                    // TODO: Mark training as completed and add to progress
-                                    onBackPressed()
+                                    scope.launch {
+                                        try {
+                                            val today = LocalDate.now()
+                                            val dateIso = today.toString()
+                                            
+                                            // Save today's custom training
+                                            val workout = com.example.fitapp.data.db.TodayWorkoutEntity(
+                                                dateIso = dateIso,
+                                                content = result,
+                                                status = "completed",
+                                                completedAt = System.currentTimeMillis() / 1000,
+                                                planId = currentPlan?.id
+                                            )
+                                            repo.saveTodayWorkout(workout)
+                                            
+                                            // Trigger workout streak tracking
+                                            val streakManager = com.example.fitapp.services.PersonalStreakManager(
+                                                ctx, 
+                                                com.example.fitapp.data.repo.PersonalMotivationRepository(AppDatabase.get(ctx))
+                                            )
+                                            streakManager.trackWorkoutCompletion(today)
+                                            
+                                            onBackPressed()
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("TodayTrainingScreen", "Error saving training completion", e)
+                                            onBackPressed() // Still go back even if there's an error
+                                        }
+                                    }
                                 }
                             ) {
                                 Text("Training abgeschlossen")

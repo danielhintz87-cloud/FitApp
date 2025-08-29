@@ -23,9 +23,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PersonalAchievementEntity::class,
         PersonalStreakEntity::class,
         PersonalRecordEntity::class,
-        ProgressMilestoneEntity::class
+        ProgressMilestoneEntity::class,
+        WeightEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -42,6 +43,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun personalStreakDao(): PersonalStreakDao
     abstract fun personalRecordDao(): PersonalRecordDao
     abstract fun progressMilestoneDao(): ProgressMilestoneDao
+    abstract fun weightDao(): WeightDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -153,6 +155,25 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
         
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Create weight entries table
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `weight_entries` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `weight` REAL NOT NULL,
+                        `dateIso` TEXT NOT NULL,
+                        `notes` TEXT,
+                        `recordedAt` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                
+                // Add indices for weight entries
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_entries_dateIso` ON `weight_entries` (`dateIso`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_entries_recordedAt` ON `weight_entries` (`recordedAt`)")
+            }
+        }
+        
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: buildDatabase(context)
@@ -161,7 +182,7 @@ abstract class AppDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): AppDatabase {
             return try {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
-                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     .fallbackToDestructiveMigration() // Add fallback for migration issues
                     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING) // Enable WAL mode for better performance
                     .setQueryCallback({ sqlQuery, bindArgs ->

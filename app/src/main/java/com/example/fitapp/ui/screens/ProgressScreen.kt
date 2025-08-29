@@ -28,6 +28,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.example.fitapp.R
 
 @Composable
 fun ProgressScreen(contentPadding: PaddingValues) {
@@ -170,45 +171,58 @@ fun ProgressScreen(contentPadding: PaddingValues) {
 @Composable
 private fun AchievementShowcase(achievements: List<PersonalAchievementEntity>) {
     Card {
-        Column(Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("🏆 Erfolge", style = MaterialTheme.typography.titleMedium)
-                val completedCount = achievements.count { it.isCompleted }
-                Text(
-                    "$completedCount/${achievements.size}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            Spacer(Modifier.height(12.dp))
+        Box {
+            // Background achievement image
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(R.drawable.generated_image_5),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                alpha = 0.2f
+            )
             
-            if (achievements.isNotEmpty()) {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+            Column(Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(achievements.take(6)) { achievement ->
-                        AchievementCard(achievement)
-                    }
-                }
-                
-                if (achievements.size > 6) {
-                    Spacer(Modifier.height(8.dp))
+                    Text("🏆 Erfolge", style = MaterialTheme.typography.titleMedium)
+                    val completedCount = achievements.count { it.isCompleted }
                     Text(
-                        "und ${achievements.size - 6} weitere...",
-                        style = MaterialTheme.typography.bodySmall,
+                        "$completedCount/${achievements.size}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                
+                if (achievements.isNotEmpty()) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(achievements.take(6)) { achievement ->
+                            AchievementCard(achievement)
+                        }
+                    }
+                    
+                    if (achievements.size > 6) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "und ${achievements.size - 6} weitere...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                } else {
+                    Text(
+                        "Erfolge werden automatisch freigeschaltet, wenn du die App nutzt.",
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline
                     )
                 }
-            } else {
-                Text(
-                    "Erfolge werden automatisch freigeschaltet, wenn du die App nutzt.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline
-                )
             }
         }
     }

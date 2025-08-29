@@ -294,3 +294,30 @@ interface ProgressMilestoneDao {
     suspend fun getMilestone(id: Long): ProgressMilestoneEntity?
 }
 
+@Dao
+interface WeightDao {
+    @Insert
+    suspend fun insert(weight: WeightEntity): Long
+
+    @Update
+    suspend fun update(weight: WeightEntity)
+
+    @Query("DELETE FROM weight_entries WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM weight_entries ORDER BY dateIso DESC")
+    fun allWeightsFlow(): Flow<List<WeightEntity>>
+
+    @Query("SELECT * FROM weight_entries WHERE dateIso = :dateIso")
+    suspend fun getByDate(dateIso: String): WeightEntity?
+
+    @Query("SELECT * FROM weight_entries ORDER BY dateIso DESC LIMIT 1")
+    suspend fun getLatest(): WeightEntity?
+
+    @Query("SELECT * FROM weight_entries WHERE dateIso BETWEEN :fromIso AND :toIso ORDER BY dateIso DESC")
+    suspend fun getBetween(fromIso: String, toIso: String): List<WeightEntity>
+
+    @Query("SELECT COUNT(*) FROM weight_entries WHERE dateIso = :dateIso")
+    suspend fun hasEntryForDate(dateIso: String): Int
+}
+

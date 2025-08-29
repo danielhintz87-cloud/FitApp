@@ -35,8 +35,12 @@ import com.example.fitapp.ui.screens.EquipmentSelectionScreen
 import com.example.fitapp.ui.screens.TodayTrainingScreen
 import com.example.fitapp.ui.screens.DailyWorkoutScreen
 import com.example.fitapp.ui.screens.TrainingExecutionScreen
+import com.example.fitapp.ui.screens.WeightTrackingScreen
 import com.example.fitapp.ui.settings.ApiKeysScreen
+import com.example.fitapp.data.db.AppDatabase
+import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 data class Destination(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
@@ -46,6 +50,7 @@ fun MainScaffold() {
     val nav = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val ctx = LocalContext.current
     var showOverflowMenu by remember { mutableStateOf(false) }
 
     val destinations = listOf(
@@ -118,6 +123,16 @@ fun MainScaffold() {
                                 },
                                 leadingIcon = {
                                     Icon(Icons.Filled.PhotoCamera, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Gewicht tracken") },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    nav.navigate("weight_tracking")
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Timeline, contentDescription = null)
                                 }
                             )
                         }
@@ -204,7 +219,29 @@ fun MainScaffold() {
                         planId = planId,
                         onBackPressed = { nav.popBackStack() },
                         onTrainingCompleted = { 
-                            // TODO: Save training completion
+                            scope.launch {
+                                try {
+                                    val today = LocalDate.now()
+                                    val dateIso = today.toString()
+                                    val repo = NutritionRepository(AppDatabase.get(ctx))
+                                    
+                                    // Mark today's workout as completed
+                                    repo.setWorkoutStatus(
+                                        dateIso = dateIso,
+                                        status = "completed",
+                                        completedAt = System.currentTimeMillis() / 1000
+                                    )
+                                    
+                                    // Trigger workout streak tracking
+                                    val streakManager = com.example.fitapp.services.PersonalStreakManager(
+                                        ctx, 
+                                        com.example.fitapp.data.repo.PersonalMotivationRepository(AppDatabase.get(ctx))
+                                    )
+                                    streakManager.trackWorkoutCompletion(today)
+                                } catch (e: Exception) {
+                                    android.util.Log.e("MainScaffold", "Error saving training completion", e)
+                                }
+                            }
                             nav.popBackStack()
                         }
                     )
@@ -215,6 +252,11 @@ fun MainScaffold() {
                     DailyWorkoutScreen(
                         goal = goal,
                         minutes = minutes,
+                        onBackPressed = { nav.popBackStack() }
+                    )
+                }
+                composable("weight_tracking") {
+                    WeightTrackingScreen(
                         onBackPressed = { nav.popBackStack() }
                     )
                 }

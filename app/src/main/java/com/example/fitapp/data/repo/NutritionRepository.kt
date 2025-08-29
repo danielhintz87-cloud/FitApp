@@ -290,4 +290,14 @@ class NutritionRepository(private val db: AppDatabase) {
     suspend fun saveTodayWorkout(workout: com.example.fitapp.data.db.TodayWorkoutEntity) = db.todayWorkoutDao().upsert(workout)
     suspend fun setWorkoutStatus(dateIso: String, status: String, completedAt: Long?) = db.todayWorkoutDao().setStatus(dateIso, status, completedAt)
     suspend fun getWorkoutsBetween(fromIso: String, toIso: String) = db.todayWorkoutDao().getBetween(fromIso, toIso)
+
+    // Weight tracking methods
+    suspend fun saveWeight(weight: WeightEntity) = db.weightDao().insert(weight)
+    suspend fun updateWeight(weight: WeightEntity) = db.weightDao().update(weight)
+    suspend fun deleteWeight(id: Long) = db.weightDao().delete(id)
+    suspend fun getWeightByDate(dateIso: String) = db.weightDao().getByDate(dateIso)
+    suspend fun getLatestWeight() = db.weightDao().getLatest()
+    suspend fun getWeightsBetween(fromIso: String, toIso: String) = db.weightDao().getBetween(fromIso, toIso)
+    suspend fun hasWeightEntryForDate(dateIso: String) = db.weightDao().hasEntryForDate(dateIso)
+    fun allWeightsFlow() = db.weightDao().allWeightsFlow()
 }

@@ -25,6 +25,7 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
+import com.example.fitapp.R
 
 @Composable
 fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = null) {
@@ -179,7 +180,28 @@ fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = n
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
                             onClick = {
-                                // TODO: Mark today's training as completed
+                                scope.launch {
+                                    try {
+                                        val today = LocalDate.now()
+                                        val dateIso = today.toString()
+                                        
+                                        // Create or update today's workout as completed
+                                        repo.setWorkoutStatus(
+                                            dateIso = dateIso,
+                                            status = "completed",
+                                            completedAt = System.currentTimeMillis() / 1000
+                                        )
+                                        
+                                        // Trigger workout streak tracking
+                                        val streakManager = com.example.fitapp.services.PersonalStreakManager(
+                                            ctx, 
+                                            com.example.fitapp.data.repo.PersonalMotivationRepository(AppDatabase.get(ctx))
+                                        )
+                                        streakManager.trackWorkoutCompletion(today)
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("TodayScreen", "Error marking training as completed", e)
+                                    }
+                                }
                             },
                             modifier = Modifier.weight(1f)
                         ) {
@@ -189,7 +211,23 @@ fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = n
                         }
                         OutlinedButton(
                             onClick = {
-                                // TODO: Skip today's training
+                                scope.launch {
+                                    try {
+                                        val today = LocalDate.now()
+                                        val dateIso = today.toString()
+                                        
+                                        // Create or update today's workout as skipped
+                                        repo.setWorkoutStatus(
+                                            dateIso = dateIso,
+                                            status = "skipped",
+                                            completedAt = System.currentTimeMillis() / 1000
+                                        )
+                                        
+                                        // Note: Skipped workouts don't trigger streak tracking
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("TodayScreen", "Error skipping training", e)
+                                    }
+                                }
                             },
                             modifier = Modifier.weight(1f)
                         ) {
@@ -219,7 +257,19 @@ private fun DailyMotivationCard(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
     ) {
-        Column(Modifier.padding(16.dp)) {
+        Box {
+            // Background motivational image  
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(R.drawable.generated_image),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                alpha = 0.3f
+            )
+            
+            Column(Modifier.padding(16.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -273,6 +323,7 @@ private fun DailyMotivationCard(
             }
         }
     }
+}
 }
 
 @Composable

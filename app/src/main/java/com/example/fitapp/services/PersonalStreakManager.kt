@@ -191,17 +191,13 @@ class PersonalStreakManager(
     }
     
     private suspend fun updateWeightTrackingStreak(streak: PersonalStreakEntity, todayTimestamp: Long) {
-        // TODO: Implement weight tracking streak when weight tracking is added
-        // For now, just maintain existing streak
-        if (streak.lastActivityTimestamp != null) {
-            val hoursSinceActivity = ChronoUnit.HOURS.between(
-                Instant.ofEpochSecond(streak.lastActivityTimestamp),
-                Instant.ofEpochSecond(todayTimestamp)
-            )
-
-            if (hoursSinceActivity > 24 + GRACE_PERIOD_HOURS) {
-                breakStreak(streak)
-            }
+        val todayIso = todayTimestamp.toLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE)
+        val hasWeightEntry = repository.hasWeightEntryForDate(todayIso) > 0
+        
+        if (hasWeightEntry) {
+            incrementStreak(streak, todayTimestamp)
+        } else {
+            checkForStreakBreak(streak, todayTimestamp)
         }
     }
     
