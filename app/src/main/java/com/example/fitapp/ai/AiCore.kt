@@ -62,24 +62,26 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
     /**
      * Routes task to optimal AI provider based on task characteristics
      */
-    private fun selectProviderForTask(@Suppress("UNUSED_PARAMETER") task: TaskType, @Suppress("UNUSED_PARAMETER") hasImage: Boolean = false): AiProvider {
-        // Temporary: Route all requests through Gemini to avoid Perplexity-related crashes
-        // TODO: Restore original provider routing once Perplexity issues are resolved
-        return AiProvider.Gemini
-        
-        /* Original routing logic (disabled temporarily):
+    private fun selectProviderForTask(
+        task: TaskType,
+        hasImage: Boolean = false
+    ): AiProvider {
+        val perplexityAvailable = ApiKeys.isProviderAvailable(context, AiProvider.Perplexity)
+
         return when {
-            // Multimodal tasks → Gemini
+            // Multimodal tasks require Gemini's vision capabilities
             hasImage -> AiProvider.Gemini
-            // Structured fitness plans → Gemini  
+
+            // Structured fitness plans favour Gemini for consistency
             task == TaskType.TRAINING_PLAN -> AiProvider.Gemini
-            // Quick Q&A and web search → Perplexity
-            task == TaskType.SHOPPING_LIST_PARSING -> AiProvider.Perplexity
-            task == TaskType.RECIPE_GENERATION -> AiProvider.Perplexity
-            // Default to Gemini for complex tasks
+
+            // Lightweight tasks can use Perplexity when the key is configured
+            task == TaskType.SHOPPING_LIST_PARSING && perplexityAvailable -> AiProvider.Perplexity
+            task == TaskType.RECIPE_GENERATION && perplexityAvailable -> AiProvider.Perplexity
+
+            // Fallback to Gemini in all other cases or when Perplexity is unavailable
             else -> AiProvider.Gemini
         }
-        */
     }
 
     suspend fun generatePlan(req: PlanRequest): Result<String> {
