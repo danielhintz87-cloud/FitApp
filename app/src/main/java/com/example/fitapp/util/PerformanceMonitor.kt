@@ -101,7 +101,7 @@ object PerformanceMonitor {
     /**
      * Monitor memory usage
      */
-    fun checkMemoryUsage(context: Context) {
+    fun checkMemoryUsage(@Suppress("UNUSED_PARAMETER") context: Context) {
         val runtime = Runtime.getRuntime()
         val usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024 // MB
         memoryUsage.set(usedMemory)

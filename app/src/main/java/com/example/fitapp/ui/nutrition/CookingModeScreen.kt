@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -69,12 +70,12 @@ fun CookingModeScreen(
             },
             navigationIcon = {
                 IconButton(onClick = onBackPressed) {
-                    Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                 }
             },
             actions = {
                 IconButton(onClick = { showIngredients = true }) {
-                    Icon(Icons.Filled.ListAlt, contentDescription = "Zutaten")
+                    Icon(Icons.AutoMirrored.Filled.ListAlt, contentDescription = "Zutaten")
                 }
                 IconButton(onClick = { keepScreenOn = !keepScreenOn }) {
                     Icon(
@@ -93,7 +94,7 @@ fun CookingModeScreen(
             )
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = (currentStep + 1).toFloat() / steps.size.toFloat(),
+                progress = { (currentStep + 1).toFloat() / steps.size.toFloat() },
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -139,7 +140,7 @@ fun CookingModeScreen(
                 enabled = currentStep > 0,
                 modifier = Modifier.weight(1f)
             ) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = null)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                 Spacer(Modifier.width(4.dp))
                 Text("Zurück")
             }
@@ -151,7 +152,7 @@ fun CookingModeScreen(
                 ) {
                     Text("Weiter")
                     Spacer(Modifier.width(4.dp))
-                    Icon(Icons.Filled.ArrowForward, contentDescription = null)
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
                 }
             } else {
                 Button(

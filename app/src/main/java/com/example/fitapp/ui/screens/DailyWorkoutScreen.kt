@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.*
@@ -124,7 +124,7 @@ fun DailyWorkoutScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                     }
                 },
                 actions = {
@@ -222,7 +222,7 @@ fun DailyWorkoutScreen(
                     ) {
                         // Progress bar
                         LinearProgressIndicator(
-                            progress = (currentStepIndex + 1).toFloat() / workoutSteps.size,
+                            progress = { (currentStepIndex + 1).toFloat() / workoutSteps.size },
                             modifier = Modifier.fillMaxWidth()
                         )
                         

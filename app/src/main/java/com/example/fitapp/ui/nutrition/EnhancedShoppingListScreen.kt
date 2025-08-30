@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -134,13 +135,13 @@ fun EnhancedShoppingListScreen(
                 title = { Text("Einkaufsliste") },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                     }
                 },
                 actions = {
                     IconButton(onClick = { sortBySupermarket = !sortBySupermarket }) {
                         Icon(
-                            if (sortBySupermarket) Icons.Filled.Store else Icons.Filled.List,
+                            if (sortBySupermarket) Icons.Filled.Store else Icons.AutoMirrored.Filled.List,
                             contentDescription = "Sortierung"
                         )
                     }
@@ -184,7 +185,7 @@ fun EnhancedShoppingListScreen(
                     Row {
                         IconButton(onClick = { sortBySupermarket = !sortBySupermarket }) {
                             Icon(
-                                if (sortBySupermarket) Icons.Filled.Store else Icons.Filled.List,
+                                if (sortBySupermarket) Icons.Filled.Store else Icons.AutoMirrored.Filled.List,
                                 contentDescription = "Sortierung"
                             )
                         }
@@ -287,7 +288,7 @@ fun EnhancedShoppingListScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    if (sortBySupermarket) Icons.Filled.Store else Icons.Filled.List,
+                    if (sortBySupermarket) Icons.Filled.Store else Icons.AutoMirrored.Filled.List,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary
                 )

@@ -62,7 +62,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
     /**
      * Routes task to optimal AI provider based on task characteristics
      */
-    private fun selectProviderForTask(task: TaskType, hasImage: Boolean = false): AiProvider {
+    private fun selectProviderForTask(@Suppress("UNUSED_PARAMETER") task: TaskType, @Suppress("UNUSED_PARAMETER") hasImage: Boolean = false): AiProvider {
         // Temporary: Route all requests through Gemini to avoid Perplexity-related crashes
         // TODO: Restore original provider routing once Perplexity issues are resolved
         return AiProvider.Gemini

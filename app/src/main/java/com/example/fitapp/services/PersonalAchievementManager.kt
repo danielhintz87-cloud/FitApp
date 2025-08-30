@@ -160,11 +160,11 @@ class PersonalAchievementManager(
         }
     }
     
-    private suspend fun checkWeeklyWarriorAchievement(achievement: PersonalAchievementEntity) {
+    private suspend fun checkWeeklyWarriorAchievement(@Suppress("UNUSED_PARAMETER") achievement: PersonalAchievementEntity) {
         // Already handled in updateWorkoutCountAchievements
     }
     
-    private suspend fun checkNutritionTrackerAchievement(achievement: PersonalAchievementEntity) {
+    private suspend fun checkNutritionTrackerAchievement(@Suppress("UNUSED_PARAMETER") achievement: PersonalAchievementEntity) {
         // Already handled in updateNutritionAchievements
     }
     

@@ -10,7 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.PlanRequest
@@ -144,7 +144,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                 readOnly = true,
                 label = { Text("Trainingsziel") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = goalExpanded) },
-                modifier = Modifier.fillMaxWidth().menuAnchor()
+                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
             )
             ExposedDropdownMenu(
                 expanded = goalExpanded,
@@ -273,7 +273,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                 readOnly = true,
                 label = { Text("Verfügbare Geräte") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = equipmentExpanded) },
-                modifier = Modifier.fillMaxWidth().menuAnchor()
+                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
             )
             ExposedDropdownMenu(
                 expanded = equipmentExpanded,

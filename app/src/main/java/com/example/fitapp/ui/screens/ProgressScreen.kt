@@ -288,7 +288,7 @@ private fun AchievementCard(achievement: PersonalAchievementEntity) {
                 
                 Spacer(Modifier.height(4.dp))
                 LinearProgressIndicator(
-                    progress = progress.toFloat(),
+                    progress = { progress.toFloat() },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
@@ -458,7 +458,7 @@ private fun ProgressMilestonesSection(milestones: List<com.example.fitapp.data.d
                             )
                         }
                         LinearProgressIndicator(
-                            progress = (milestone.progress / 100.0).toFloat(),
+                            progress = { (milestone.progress / 100.0).toFloat() },
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(Modifier.height(8.dp))
