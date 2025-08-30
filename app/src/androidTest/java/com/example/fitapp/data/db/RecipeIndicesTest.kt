@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -47,7 +48,7 @@ class RecipeIndicesTest {
     }
 
     @Test
-    fun testRecipeQueryPerformance() {
+    fun testRecipeQueryPerformance() = runBlocking {
         val recipeDao = database.recipeDao()
         
         // Insert test data
@@ -62,17 +63,9 @@ class RecipeIndicesTest {
         
         // This test verifies the database can be used without errors
         // The indices should make queries faster automatically
-        runBlocking {
-            recipeDao.upsertRecipe(testRecipe)
-            val retrieved = recipeDao.getRecipe("test-1")
-            assert(retrieved != null) { "Recipe should be retrievable" }
-            assert(retrieved?.title == "Test Recipe") { "Recipe title should match" }
-        }
-    }
-}
-
-private suspend fun runBlocking(block: suspend () -> Unit) {
-    kotlinx.coroutines.runBlocking {
-        block()
+        recipeDao.upsertRecipe(testRecipe)
+        val retrieved = recipeDao.getRecipe("test-1")
+        assert(retrieved != null) { "Recipe should be retrievable" }
+        assert(retrieved?.title == "Test Recipe") { "Recipe title should match" }
     }
 }
