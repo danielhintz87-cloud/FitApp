@@ -2,9 +2,8 @@ package com.example.fitapp.util
 
 import android.content.Context
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.OnLifecycleEvent
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -23,7 +22,7 @@ object MemoryLeakPrevention {
     
     private const val TAG = "MemoryLeakPrevention"
     private val activeJobs = ConcurrentHashMap<String, MutableSet<Job>>()
-    private val lifecycleObservers = ConcurrentHashMap<String, LifecycleObserver>()
+    private val lifecycleObservers = ConcurrentHashMap<String, LifecycleEventObserver>()
     
     /**
      * Create a lifecycle-aware coroutine scope that automatically cancels jobs
@@ -35,13 +34,13 @@ object MemoryLeakPrevention {
         val scopeId = "${lifecycleOwner.javaClass.simpleName}_${System.identityHashCode(lifecycleOwner)}"
         val scope = CoroutineScope(dispatcher + SupervisorJob())
         
-        val observer = object : LifecycleObserver {
-            @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-            fun onDestroy() {
+        lateinit var observer: LifecycleEventObserver
+        observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_DESTROY) {
                 try {
                     scope.cancel("Lifecycle destroyed")
                     cancelJobsForScope(scopeId)
-                    lifecycleOwner.lifecycle.removeObserver(this)
+                    lifecycleOwner.lifecycle.removeObserver(observer)
                     lifecycleObservers.remove(scopeId)
                     
                     StructuredLogger.debug(
@@ -106,7 +105,7 @@ object MemoryLeakPrevention {
      * Create a safe flow that handles lifecycle and memory management
      */
     fun <T> createSafeFlow(
-        lifecycleOwner: LifecycleOwner? = null,
+        @Suppress("UNUSED_PARAMETER") lifecycleOwner: LifecycleOwner? = null,
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
         producer: suspend FlowCollector<T>.() -> Unit
     ): Flow<T> = flow {
@@ -356,6 +355,6 @@ fun Context.createSafeContextHolder(): MemoryLeakPrevention.SafeContextHolder {
     return MemoryLeakPrevention.SafeContextHolder(this)
 }
 
-inline fun <T : Any> T.asWeakReference(): MemoryLeakPrevention.WeakReferenceHolder<T> {
+fun <T : Any> T.asWeakReference(): MemoryLeakPrevention.WeakReferenceHolder<T> {
     return MemoryLeakPrevention.WeakReferenceHolder(this)
 }

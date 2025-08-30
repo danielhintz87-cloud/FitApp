@@ -105,7 +105,7 @@ class CleanArchitectureVerification {
  */
 private class MockAiProviderRepository {
     
-    fun selectOptimalProvider(taskType: TaskType, hasImage: Boolean = false): AiProvider {
+    fun selectOptimalProvider(@Suppress("UNUSED_PARAMETER") taskType: TaskType, @Suppress("UNUSED_PARAMETER") hasImage: Boolean = false): AiProvider {
         // Temporary: Route all requests through Gemini to avoid Perplexity-related crashes
         // TODO: Restore original provider routing once Perplexity issues are resolved
         return AiProvider.Gemini
