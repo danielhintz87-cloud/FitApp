@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -37,7 +38,6 @@ fun TrainingExecutionScreen(
 ) {
     val ctx = LocalContext.current
     val db = remember { AppDatabase.get(ctx) }
-    val scope = rememberCoroutineScope()
     
     var plan by remember { mutableStateOf<PlanEntity?>(null) }
     var exercises by remember { mutableStateOf<List<ExerciseStep>>(emptyList()) }
@@ -93,7 +93,7 @@ fun TrainingExecutionScreen(
             },
             navigationIcon = {
                 IconButton(onClick = onBackPressed) {
-                    Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                 }
             },
             actions = {
@@ -107,7 +107,7 @@ fun TrainingExecutionScreen(
                     }
                     IconButton(onClick = { guidedMode = !guidedMode }) {
                         Icon(
-                            if (guidedMode) Icons.Filled.School else Icons.Filled.DirectionsRun,
+                            if (guidedMode) Icons.Filled.School else Icons.AutoMirrored.Filled.DirectionsRun,
                             contentDescription = "Geführter Modus",
                             tint = if (guidedMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
@@ -197,7 +197,7 @@ private fun TrainingOverview(
                 }
                 Spacer(Modifier.height(8.dp))
                 LinearProgressIndicator(
-                    progress = progress,
+                    progress = { progress },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(8.dp))
@@ -352,7 +352,7 @@ private fun ActiveTrainingMode(
     ) {
         // Progress
         LinearProgressIndicator(
-            progress = if (exercises.isNotEmpty()) completedExercises.size.toFloat() / exercises.size else 0f,
+            progress = { if (exercises.isNotEmpty()) completedExercises.size.toFloat() / exercises.size else 0f },
             modifier = Modifier.fillMaxWidth()
         )
         
@@ -392,7 +392,7 @@ private fun ActiveTrainingMode(
                 enabled = currentIndex > 0 && !isResting,
                 modifier = Modifier.weight(1f)
             ) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = null)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                 Spacer(Modifier.width(4.dp))
                 Text("Zurück")
             }

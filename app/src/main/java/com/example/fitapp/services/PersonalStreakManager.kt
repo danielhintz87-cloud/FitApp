@@ -117,7 +117,6 @@ class PersonalStreakManager(
      */
     suspend fun checkStreakWarnings() {
         val activeStreaks = repository.activeStreaksFlow().first()
-        val today = LocalDate.now()
         
         for (streak in activeStreaks) {
             if (streak.lastActivityTimestamp != null) {

@@ -5,7 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +18,7 @@ import com.example.fitapp.data.prefs.UserPreferences
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EquipmentSelectionScreen(
-    selectedEquipment: List<String>,
+    @Suppress("UNUSED_PARAMETER") selectedEquipment: List<String>,
     onEquipmentChanged: (List<String>) -> Unit,
     onBackPressed: () -> Unit
 ) {
@@ -66,7 +66,7 @@ fun EquipmentSelectionScreen(
                 title = { Text("Geräteauswahl") },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                     }
                 }
             )
