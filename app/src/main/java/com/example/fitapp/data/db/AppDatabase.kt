@@ -171,6 +171,11 @@ abstract class AppDatabase : RoomDatabase() {
                 // Add indices for weight entries
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_entries_dateIso` ON `weight_entries` (`dateIso`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_entries_recordedAt` ON `weight_entries` (`recordedAt`)")
+                
+                // Add missing recipe indices to match entity schema
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_recipes_createdAt` ON `recipes` (`createdAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_recipes_calories` ON `recipes` (`calories`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_recipes_title` ON `recipes` (`title`)")
             }
         }
         
@@ -183,7 +188,12 @@ abstract class AppDatabase : RoomDatabase() {
             return try {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
                     .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
-                    .fallbackToDestructiveMigration() // Add fallback for migration issues
+                    .apply {
+                        // Only allow destructive migration in debug builds
+                        if (com.example.fitapp.BuildConfig.DEBUG) {
+                            fallbackToDestructiveMigration()
+                        }
+                    }
                     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING) // Enable WAL mode for better performance
                     .setQueryCallback({ sqlQuery, bindArgs ->
                         // Log slow queries for performance monitoring
@@ -242,7 +252,7 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS idx_progress_milestones_completed ON progress_milestones(isCompleted)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS idx_recipe_favorites_recipe ON recipe_favorites(recipeId)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS idx_recipe_history_recipe ON recipe_history(recipeId)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_ai_logs_timestamp ON ai_logs(timestamp)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_ai_logs_ts ON ai_logs(ts)")
                 // Add recipe indices for better query performance
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_recipes_createdAt ON recipes(createdAt)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_recipes_calories ON recipes(calories)")
