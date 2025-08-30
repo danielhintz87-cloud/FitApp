@@ -107,4 +107,8 @@ class PersonalMotivationRepository(private val db: AppDatabase) {
     // Intake entries for nutrition streak tracking
     suspend fun getTotalIntakeForDay(epochSec: Long): Int = 
         db.intakeDao().totalForDay(epochSec)
+        
+    // Weight entries for weight tracking streaks
+    suspend fun hasWeightEntryForDate(dateIso: String): Int = 
+        db.weightDao().hasEntryForDate(dateIso)
 }

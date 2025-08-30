@@ -213,3 +213,18 @@ data class ProgressMilestoneEntity(
     val createdAt: Long = System.currentTimeMillis() / 1000
 )
 
+@Entity(
+    tableName = "weight_entries",
+    indices = [
+        Index(value = ["dateIso"]),
+        Index(value = ["recordedAt"])
+    ]
+)
+data class WeightEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val weight: Double, // weight in kg
+    val dateIso: String, // e.g., "2025-01-15"
+    val notes: String? = null,
+    val recordedAt: Long = System.currentTimeMillis() / 1000
+)
+
