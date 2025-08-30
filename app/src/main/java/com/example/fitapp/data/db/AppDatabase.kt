@@ -27,7 +27,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         WeightEntity::class
     ],
     version = 8,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun aiLogDao(): AiLogDao
@@ -243,6 +243,10 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS idx_recipe_favorites_recipe ON recipe_favorites(recipeId)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS idx_recipe_history_recipe ON recipe_history(recipeId)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS idx_ai_logs_timestamp ON ai_logs(timestamp)")
+                // Add recipe indices for better query performance
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_recipes_createdAt ON recipes(createdAt)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_recipes_calories ON recipes(calories)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_recipes_title ON recipes(title)")
                 android.util.Log.i("AppDatabase", "Performance indices added successfully")
             } catch (e: Exception) {
                 android.util.Log.w("AppDatabase", "Failed to add some indices", e)

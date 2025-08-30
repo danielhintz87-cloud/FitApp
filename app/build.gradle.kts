@@ -2,7 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.serialization")
-    id("org.jetbrains.kotlin.kapt")
+    id("com.google.devtools.ksp") version "1.9.24-1.0.20"
 }
 
 android {
@@ -13,8 +13,8 @@ android {
         applicationId = "com.example.fitapp"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 8
+        versionName = "1.8"
 
         // API key placeholders - remove in production
         buildConfigField("String", "GEMINI_API_KEY", "\"\"")
@@ -37,6 +37,15 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString() // "17"
         // freeCompilerArgs += listOf(/* falls du hier schon was hast, so lassen */)
+    }
+
+    // Room schema export for migration testing
+    applicationVariants.all {
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+            arg("room.incremental", "true")
+            arg("room.expandProjection", "true")
+        }
     }
 
     kotlin {
@@ -85,7 +94,7 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     implementation("androidx.room:room-paging:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
 
     // Networking & JSON
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
@@ -97,4 +106,11 @@ dependencies {
     // WorkManager for background tasks
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
+    // Testing dependencies
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation("androidx.room:room-testing:2.6.1")
+    androidTestImplementation("androidx.test:core:1.6.1")
 }

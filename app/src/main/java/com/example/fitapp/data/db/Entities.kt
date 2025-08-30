@@ -9,9 +9,9 @@ import java.time.LocalDate
 @Entity(
     tableName = "recipes",
     indices = [
-        Index(value = ["createdAt"]),
-        Index(value = ["title"]),
-        Index(value = ["calories"])
+        Index(value = ["createdAt"], name = "index_recipes_createdAt"),
+        Index(value = ["calories"], name = "index_recipes_calories"), 
+        Index(value = ["title"], name = "index_recipes_title")
     ]
 )
 data class RecipeEntity(
