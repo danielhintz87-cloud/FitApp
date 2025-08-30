@@ -31,13 +31,13 @@ class CleanArchitectureVerification {
             val trainingProvider = mockRepository.selectOptimalProvider(TaskType.TRAINING_PLAN)
             if (trainingProvider != AiProvider.Gemini) return false
             
-            // Test recipe generation routing -> Gemini (temporarily, normally Perplexity)  
+            // Test recipe generation routing -> Perplexity when available
             val recipeProvider = mockRepository.selectOptimalProvider(TaskType.RECIPE_GENERATION)
-            if (recipeProvider != AiProvider.Gemini) return false
-            
-            // Test shopping list parsing routing -> Gemini (temporarily, normally Perplexity)
+            if (recipeProvider != AiProvider.Perplexity) return false
+
+            // Test shopping list parsing routing -> Perplexity when available
             val shoppingProvider = mockRepository.selectOptimalProvider(TaskType.SHOPPING_LIST_PARSING)
-            if (shoppingProvider != AiProvider.Gemini) return false
+            if (shoppingProvider != AiProvider.Perplexity) return false
             
             // Test image task routing -> Gemini
             val imageProvider = mockRepository.selectOptimalProvider(TaskType.CALORIE_ESTIMATION, hasImage = true)
@@ -104,25 +104,20 @@ class CleanArchitectureVerification {
  * Mock implementation for testing routing logic
  */
 private class MockAiProviderRepository {
-    
-    fun selectOptimalProvider(@Suppress("UNUSED_PARAMETER") taskType: TaskType, @Suppress("UNUSED_PARAMETER") hasImage: Boolean = false): AiProvider {
-        // Temporary: Route all requests through Gemini to avoid Perplexity-related crashes
-        // TODO: Restore original provider routing once Perplexity issues are resolved
-        return AiProvider.Gemini
-        
-        /* Original routing logic (disabled temporarily):
+
+    fun selectOptimalProvider(
+        taskType: TaskType,
+        hasImage: Boolean = false
+    ): AiProvider {
+        val perplexityAvailable = true
+
         return when {
-            // Multimodal tasks → Gemini
             hasImage -> AiProvider.Gemini
-            // Structured fitness plans → Gemini  
             taskType == TaskType.TRAINING_PLAN -> AiProvider.Gemini
-            // Quick Q&A and web search → Perplexity
-            taskType == TaskType.SHOPPING_LIST_PARSING -> AiProvider.Perplexity
-            taskType == TaskType.RECIPE_GENERATION -> AiProvider.Perplexity
-            // Default to Gemini for complex tasks
+            taskType == TaskType.SHOPPING_LIST_PARSING && perplexityAvailable -> AiProvider.Perplexity
+            taskType == TaskType.RECIPE_GENERATION && perplexityAvailable -> AiProvider.Perplexity
             else -> AiProvider.Gemini
         }
-        */
     }
     
     fun getFallbackProvider(primary: AiProvider): AiProvider? {

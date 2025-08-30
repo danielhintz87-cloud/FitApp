@@ -65,24 +65,30 @@ class AiProviderRepositoryImpl(
         return getProvider(provider)?.isAvailable() ?: false
     }
     
-    override suspend fun selectOptimalProvider(taskType: TaskType, hasImage: Boolean): com.example.fitapp.domain.entities.AiProvider {
-        // Temporary: Route all requests through Gemini to avoid Perplexity-related crashes
-        // TODO: Restore original provider routing once Perplexity issues are resolved
-        return com.example.fitapp.domain.entities.AiProvider.Gemini
-        
-        /* Original routing logic (disabled temporarily):
+    override suspend fun selectOptimalProvider(
+        taskType: TaskType,
+        hasImage: Boolean
+    ): com.example.fitapp.domain.entities.AiProvider {
+        val perplexityAvailable = isProviderAvailable(
+            com.example.fitapp.domain.entities.AiProvider.Perplexity
+        )
+
         return when {
-            // Multimodal tasks → Gemini
+            // Multimodal tasks always require Gemini's vision support
             hasImage -> com.example.fitapp.domain.entities.AiProvider.Gemini
-            // Structured fitness plans → Gemini  
+
+            // Structured fitness plans favour Gemini for longer responses
             taskType == TaskType.TRAINING_PLAN -> com.example.fitapp.domain.entities.AiProvider.Gemini
-            // Quick Q&A and web search → Perplexity
-            taskType == TaskType.SHOPPING_LIST_PARSING -> com.example.fitapp.domain.entities.AiProvider.Perplexity
-            taskType == TaskType.RECIPE_GENERATION -> com.example.fitapp.domain.entities.AiProvider.Perplexity
-            // Default to Gemini for complex tasks
+
+            // Route lightweight tasks to Perplexity when available
+            taskType == TaskType.SHOPPING_LIST_PARSING && perplexityAvailable ->
+                com.example.fitapp.domain.entities.AiProvider.Perplexity
+            taskType == TaskType.RECIPE_GENERATION && perplexityAvailable ->
+                com.example.fitapp.domain.entities.AiProvider.Perplexity
+
+            // Fallback to Gemini in all other cases or when Perplexity is unavailable
             else -> com.example.fitapp.domain.entities.AiProvider.Gemini
         }
-        */
     }
     
     override suspend fun getFallbackProvider(primary: com.example.fitapp.domain.entities.AiProvider): com.example.fitapp.domain.entities.AiProvider? {
