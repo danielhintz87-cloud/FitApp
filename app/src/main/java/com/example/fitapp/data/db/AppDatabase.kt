@@ -49,9 +49,9 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile private var INSTANCE: AppDatabase? = null
         
         val MIGRATION_5_6 = object : Migration(5, 6) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // Create personal achievements table
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `personal_achievements` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         `title` TEXT NOT NULL,
@@ -68,7 +68,7 @@ abstract class AppDatabase : RoomDatabase() {
                 """.trimIndent())
                 
                 // Create personal streaks table
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `personal_streaks` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         `name` TEXT NOT NULL,
@@ -84,7 +84,7 @@ abstract class AppDatabase : RoomDatabase() {
                 """.trimIndent())
                 
                 // Create personal records table
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `personal_records` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         `exerciseName` TEXT NOT NULL,
@@ -99,7 +99,7 @@ abstract class AppDatabase : RoomDatabase() {
                 """.trimIndent())
                 
                 // Create progress milestones table
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `progress_milestones` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         `title` TEXT NOT NULL,
@@ -119,9 +119,9 @@ abstract class AppDatabase : RoomDatabase() {
         }
         
         val MIGRATION_6_7 = object : Migration(6, 7) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // Migrate personal_streaks table from lastActivityDate (TEXT) to lastActivityTimestamp (INTEGER)
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `personal_streaks_new` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         `name` TEXT NOT NULL,
@@ -137,28 +137,28 @@ abstract class AppDatabase : RoomDatabase() {
                 """.trimIndent())
                 
                 // Convert existing data - parse ISO date strings to epoch seconds
-                database.execSQL("""
+                db.execSQL("""
                     INSERT INTO personal_streaks_new (id, name, description, category, currentStreak, longestStreak, lastActivityTimestamp, isActive, targetDays, createdAt)
-                    SELECT id, name, description, category, currentStreak, longestStreak, 
-                           CASE 
-                               WHEN lastActivityDate IS NOT NULL AND lastActivityDate != '' 
+                    SELECT id, name, description, category, currentStreak, longestStreak,
+                           CASE
+                               WHEN lastActivityDate IS NOT NULL AND lastActivityDate != ''
                                THEN strftime('%s', lastActivityDate || 'T00:00:00Z')
-                               ELSE NULL 
+                               ELSE NULL
                            END as lastActivityTimestamp,
                            isActive, targetDays, createdAt
                     FROM personal_streaks
                 """.trimIndent())
-                
+
                 // Drop old table and rename new table
-                database.execSQL("DROP TABLE personal_streaks")
-                database.execSQL("ALTER TABLE personal_streaks_new RENAME TO personal_streaks")
+                db.execSQL("DROP TABLE personal_streaks")
+                db.execSQL("ALTER TABLE personal_streaks_new RENAME TO personal_streaks")
             }
         }
-        
+
         val MIGRATION_7_8 = object : Migration(7, 8) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // Create weight entries table
-                database.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `weight_entries` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         `weight` REAL NOT NULL,
@@ -169,8 +169,8 @@ abstract class AppDatabase : RoomDatabase() {
                 """.trimIndent())
                 
                 // Add indices for weight entries
-                database.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_entries_dateIso` ON `weight_entries` (`dateIso`)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_entries_recordedAt` ON `weight_entries` (`recordedAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_entries_dateIso` ON `weight_entries` (`dateIso`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_entries_recordedAt` ON `weight_entries` (`recordedAt`)")
             }
         }
         
