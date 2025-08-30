@@ -9,3 +9,7 @@
 /captures/
 .externalNativeBuild/
 .cxx/
+
+# Room schemas should be committed for version control
+# But exclude any temporary KSP-generated files
+app/build/tmp/
