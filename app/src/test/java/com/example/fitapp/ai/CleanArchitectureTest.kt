@@ -1,12 +1,22 @@
 package com.example.fitapp.ai
 
 import com.example.fitapp.domain.entities.*
+import org.junit.Test
+import org.junit.Assert.*
 
 /**
  * Simple verification test for Clean Architecture implementation
  * Demonstrates that the architecture components work correctly
  */
-class CleanArchitectureVerification {
+class CleanArchitectureTest {
+    
+    @Test
+    fun testCleanArchitectureImplementation() {
+        // Test provider routing logic
+        assertTrue("Provider routing should work correctly", testProviderRouting())
+        assertTrue("Fallback provider logic should work correctly", testFallbackProvider())
+        assertTrue("Domain entities should work correctly", testDomainEntities())
+    }
     
     companion object {
         /**
@@ -31,13 +41,13 @@ class CleanArchitectureVerification {
             val trainingProvider = mockRepository.selectOptimalProvider(TaskType.TRAINING_PLAN)
             if (trainingProvider != AiProvider.Gemini) return false
             
-            // Test recipe generation routing -> Perplexity when available
+            // Test recipe generation routing -> Gemini (Perplexity disabled)
             val recipeProvider = mockRepository.selectOptimalProvider(TaskType.RECIPE_GENERATION)
-            if (recipeProvider != AiProvider.Perplexity) return false
+            if (recipeProvider != AiProvider.Gemini) return false
 
-            // Test shopping list parsing routing -> Perplexity when available
+            // Test shopping list parsing routing -> Gemini (Perplexity disabled)
             val shoppingProvider = mockRepository.selectOptimalProvider(TaskType.SHOPPING_LIST_PARSING)
-            if (shoppingProvider != AiProvider.Perplexity) return false
+            if (shoppingProvider != AiProvider.Gemini) return false
             
             // Test image task routing -> Gemini
             val imageProvider = mockRepository.selectOptimalProvider(TaskType.CALORIE_ESTIMATION, hasImage = true)
@@ -109,7 +119,8 @@ private class MockAiProviderRepository {
         taskType: TaskType,
         hasImage: Boolean = false
     ): AiProvider {
-        val perplexityAvailable = true
+        // Perplexity is disabled by default, so all tasks go to Gemini
+        val perplexityAvailable = false
 
         return when {
             hasImage -> AiProvider.Gemini
