@@ -1,8 +1,8 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.serialization")
-    id("com.google.devtools.ksp") version "1.9.24-1.0.20"
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -27,7 +27,7 @@ android {
         compose = true
         buildConfig = true
     }
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
+    composeOptions { kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get() }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -63,54 +63,54 @@ android {
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
+    val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
     // Compose
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    debugImplementation("androidx.compose.ui:ui-tooling")
+    implementation(libs.compose.ui)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.ui.tooling.preview)
+    debugImplementation(libs.compose.ui.tooling)
 
     // AppCompat (for theme compatibility)
-    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation(libs.appcompat)
 
     // Material Icons (stabil & hübsch)
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.compose.material.icons)
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.8.2")
+    implementation(libs.navigation.compose)
 
     // Activity (Compose + Photo Picker)
-    implementation("androidx.activity:activity-compose:1.9.2")
-    implementation("androidx.activity:activity-ktx:1.9.2")
+    implementation(libs.activity.compose)
+    implementation(libs.activity.ktx)
 
     // Lifecycle/Coroutines
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation(libs.lifecycle.runtime.ktx)
+    implementation(libs.kotlinx.coroutines.android)
 
     // Room (AI-Logs)
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    implementation("androidx.room:room-paging:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    implementation(libs.room.paging)
+    ksp(libs.room.compiler)
 
     // Networking & JSON
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
 
     // Coil (Vorschau des gewählten Bildes)
-    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation(libs.coil.compose)
     
     // WorkManager for background tasks
-    implementation("androidx.work:work-runtime-ktx:2.9.1")
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    implementation(libs.work.runtime.ktx)
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     // Testing dependencies
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation("androidx.room:room-testing:2.6.1")
-    androidTestImplementation("androidx.test:core:1.6.1")
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.android.test.junit)
+    androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(libs.room.testing)
+    androidTestImplementation(libs.android.test.core)
 }
