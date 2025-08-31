@@ -27,7 +27,7 @@ fun NutritionScreen(navController: androidx.navigation.NavController? = null) {
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
     val scope = rememberCoroutineScope()
 
-    var tab by remember { mutableStateOf(0) }
+    var tab by remember { mutableIntStateOf(0) }
     var prompt by remember { mutableStateOf("10 Rezepte für Abnehmen, High-Protein, 500-700 kcal pro Portion") }
     var generating by remember { mutableStateOf(false) }
     var results by remember { mutableStateOf<List<UiRecipe>>(emptyList()) }

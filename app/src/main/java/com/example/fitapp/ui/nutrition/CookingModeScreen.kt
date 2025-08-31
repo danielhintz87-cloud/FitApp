@@ -36,7 +36,7 @@ fun CookingModeScreen(
     val repo = remember { NutritionRepository(db) }
     val scope = rememberCoroutineScope()
     
-    var currentStep by remember { mutableStateOf(0) }
+    var currentStep by remember { mutableIntStateOf(0) }
     var showIngredients by remember { mutableStateOf(false) }
     var showFinishDialog by remember { mutableStateOf(false) }
     var keepScreenOn by remember { mutableStateOf(true) }

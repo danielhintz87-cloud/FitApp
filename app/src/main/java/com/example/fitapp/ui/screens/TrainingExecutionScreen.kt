@@ -41,12 +41,12 @@ fun TrainingExecutionScreen(
     
     var plan by remember { mutableStateOf<PlanEntity?>(null) }
     var exercises by remember { mutableStateOf<List<ExerciseStep>>(emptyList()) }
-    var currentExerciseIndex by remember { mutableStateOf(0) }
+    var currentExerciseIndex by remember { mutableIntStateOf(0) }
     var isInTraining by remember { mutableStateOf(false) }
     var showTrainingOverview by remember { mutableStateOf(true) }
     var completedExercises by remember { mutableStateOf(setOf<Int>()) }
     var isResting by remember { mutableStateOf(false) }
-    var restTimeRemaining by remember { mutableStateOf(0) }
+    var restTimeRemaining by remember { mutableIntStateOf(0) }
     var guidedMode by remember { mutableStateOf(false) }
     var keepScreenOn by remember { mutableStateOf(false) }
     
@@ -322,7 +322,7 @@ private fun ActiveTrainingMode(
     val currentExercise = exercises.getOrNull(currentIndex)
     
     // Cardio timer state
-    var cardioTimeRemaining by remember(currentIndex) { mutableStateOf(0) }
+    var cardioTimeRemaining by remember(currentIndex) { mutableIntStateOf(0) }
     var cardioTimerRunning by remember(currentIndex) { mutableStateOf(false) }
     
     // Initialize cardio timer for cardio exercises
