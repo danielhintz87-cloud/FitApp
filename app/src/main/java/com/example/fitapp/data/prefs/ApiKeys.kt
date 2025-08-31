@@ -60,7 +60,11 @@ object ApiKeys {
     fun isProviderAvailable(context: Context, provider: com.example.fitapp.ai.AiProvider): Boolean {
         return when (provider) {
             com.example.fitapp.ai.AiProvider.Gemini -> getGeminiKey(context).isNotBlank()
-            com.example.fitapp.ai.AiProvider.Perplexity -> getPerplexityKey(context).isNotBlank()
+            com.example.fitapp.ai.AiProvider.Perplexity -> {
+                // Perplexity is temporarily disabled by default
+                // To re-enable, remove this comment and return: getPerplexityKey(context).isNotBlank()
+                false
+            }
         }
     }
 
@@ -69,18 +73,17 @@ object ApiKeys {
      */
     fun getConfigurationStatus(context: Context): String {
         val geminiKey = getGeminiKey(context)
-        val perplexityKey = getPerplexityKey(context)
         
         return buildString {
             appendLine("AI Provider Status:")
             append("- Gemini: ${if (geminiKey.isNotBlank()) "✓ Konfiguriert" else "✗ API-Schlüssel erforderlich"}")
             appendLine()
-            append("- Perplexity: ${if (perplexityKey.isNotBlank()) "✓ Konfiguriert" else "✗ API-Schlüssel erforderlich"}")
+            append("- Perplexity: ⏸ Temporär deaktiviert")
             
-            if (geminiKey.isBlank() || perplexityKey.isBlank()) {
+            if (geminiKey.isBlank()) {
                 appendLine()
                 appendLine()
-                append("Bitte beide API-Schlüssel unter Einstellungen → API-Schlüssel eingeben.")
+                append("Bitte Gemini API-Schlüssel unter Einstellungen → API-Schlüssel eingeben.")
             }
         }
     }
