@@ -245,9 +245,9 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 // Track usage for successful vision requests
                 val estimatedTokens = UsageTracker.estimateVisionTokens(prompt + caloriesEstimate.text)
                 UsageTracker.recordUsage(context, provider, estimatedTokens)
-                logDao.insert(AiLog.success("vision_calories", provider.name, prompt + " $note", caloriesEstimate.toString(), took))
+                logDao.insert(AiLog.success("vision_calories", provider.name, "$prompt $note", caloriesEstimate.toString(), took))
             }.onFailure {
-                logDao.insert(AiLog.error("vision_calories", provider.name, prompt + " $note", it.message ?: "unknown", took))
+                logDao.insert(AiLog.error("vision_calories", provider.name, "$prompt $note", it.message ?: "unknown", took))
             }
             r
         }
