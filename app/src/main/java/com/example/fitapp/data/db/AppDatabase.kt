@@ -208,11 +208,18 @@ abstract class AppDatabase : RoomDatabase() {
                         
                         override fun onOpen(db: SupportSQLiteDatabase) {
                             super.onOpen(db)
-                            // Ensure WAL mode is enabled and configure for performance
-                            db.execSQL("PRAGMA wal_autocheckpoint=1000")
-                            db.execSQL("PRAGMA synchronous=NORMAL")
-                            db.execSQL("PRAGMA cache_size=10000")
-                            db.execSQL("PRAGMA temp_store=MEMORY")
+                            // Configure database performance settings safely
+                            try {
+                                // Use query method instead of execSQL for PRAGMA statements
+                                db.query("PRAGMA wal_autocheckpoint=1000").close()
+                                db.query("PRAGMA synchronous=NORMAL").close()
+                                db.query("PRAGMA cache_size=10000").close() 
+                                db.query("PRAGMA temp_store=MEMORY").close()
+                                android.util.Log.d("AppDatabase", "Database performance settings configured")
+                            } catch (e: Exception) {
+                                android.util.Log.w("AppDatabase", "Failed to configure some database settings", e)
+                                // Continue without these optimizations if they fail
+                            }
                         }
                     })
                     .build().also { 
@@ -238,29 +245,39 @@ abstract class AppDatabase : RoomDatabase() {
         }
         
         private fun addPerformanceIndices(db: SupportSQLiteDatabase) {
-            try {
-                // Add indices for commonly queried columns
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_intake_entries_timestamp ON intake_entries(timestamp)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_shopping_items_category ON shopping_items(category)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_shopping_items_checked ON shopping_items(checked)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_personal_achievements_category ON personal_achievements(category)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_personal_achievements_completed ON personal_achievements(isCompleted)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_personal_streaks_category ON personal_streaks(category)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_personal_streaks_active ON personal_streaks(isActive)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_personal_records_exercise ON personal_records(exerciseName)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_progress_milestones_category ON progress_milestones(category)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_progress_milestones_completed ON progress_milestones(isCompleted)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_recipe_favorites_recipe ON recipe_favorites(recipeId)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_recipe_history_recipe ON recipe_history(recipeId)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS idx_ai_logs_ts ON ai_logs(ts)")
-                // Add recipe indices for better query performance
-                db.execSQL("CREATE INDEX IF NOT EXISTS index_recipes_createdAt ON recipes(createdAt)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS index_recipes_calories ON recipes(calories)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS index_recipes_title ON recipes(title)")
-                android.util.Log.i("AppDatabase", "Performance indices added successfully")
-            } catch (e: Exception) {
-                android.util.Log.w("AppDatabase", "Failed to add some indices", e)
+            val indicesToCreate = listOf(
+                "CREATE INDEX IF NOT EXISTS idx_intake_entries_timestamp ON intake_entries(timestamp)",
+                "CREATE INDEX IF NOT EXISTS idx_shopping_items_category ON shopping_items(category)",
+                "CREATE INDEX IF NOT EXISTS idx_shopping_items_checked ON shopping_items(checked)",
+                "CREATE INDEX IF NOT EXISTS idx_personal_achievements_category ON personal_achievements(category)",
+                "CREATE INDEX IF NOT EXISTS idx_personal_achievements_completed ON personal_achievements(isCompleted)",
+                "CREATE INDEX IF NOT EXISTS idx_personal_streaks_category ON personal_streaks(category)",
+                "CREATE INDEX IF NOT EXISTS idx_personal_streaks_active ON personal_streaks(isActive)",
+                "CREATE INDEX IF NOT EXISTS idx_personal_records_exercise ON personal_records(exerciseName)",
+                "CREATE INDEX IF NOT EXISTS idx_progress_milestones_category ON progress_milestones(category)",
+                "CREATE INDEX IF NOT EXISTS idx_progress_milestones_completed ON progress_milestones(isCompleted)",
+                "CREATE INDEX IF NOT EXISTS idx_recipe_favorites_recipe ON recipe_favorites(recipeId)",
+                "CREATE INDEX IF NOT EXISTS idx_recipe_history_recipe ON recipe_history(recipeId)",
+                "CREATE INDEX IF NOT EXISTS idx_ai_logs_ts ON ai_logs(ts)",
+                "CREATE INDEX IF NOT EXISTS index_recipes_createdAt ON recipes(createdAt)",
+                "CREATE INDEX IF NOT EXISTS index_recipes_calories ON recipes(calories)",
+                "CREATE INDEX IF NOT EXISTS index_recipes_title ON recipes(title)"
+            )
+            
+            var successCount = 0
+            var failureCount = 0
+            
+            for (indexSql in indicesToCreate) {
+                try {
+                    db.execSQL(indexSql)
+                    successCount++
+                } catch (e: Exception) {
+                    failureCount++
+                    android.util.Log.w("AppDatabase", "Failed to create index: $indexSql", e)
+                }
             }
+            
+            android.util.Log.i("AppDatabase", "Performance indices creation completed: $successCount successful, $failureCount failed")
         }
     }
 }
