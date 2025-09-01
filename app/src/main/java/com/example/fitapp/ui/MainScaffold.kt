@@ -32,6 +32,7 @@ import com.example.fitapp.ui.screens.DailyWorkoutScreen
 import com.example.fitapp.ui.screens.TrainingExecutionScreen
 import com.example.fitapp.ui.screens.WeightTrackingScreen
 import com.example.fitapp.ui.screens.BMICalculatorScreen
+import com.example.fitapp.ui.screens.WeightLossProgramScreen
 import com.example.fitapp.ui.settings.ApiKeysScreen
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
@@ -72,6 +73,7 @@ fun MainScaffold() {
                 NavigationDrawerItem(label = { Text("Lebensmittel suchen") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("food_search") })
                 NavigationDrawerItem(label = { Text("Ernährungs-Analytics") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("nutrition_analytics") })
                 NavigationDrawerItem(label = { Text("BMI Rechner") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("bmi_calculator") })
+                NavigationDrawerItem(label = { Text("Abnehm-Programm") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("weight_loss_program") })
                 NavigationDrawerItem(label = { Text("AI-Logs") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("logs") })
                 NavigationDrawerItem(label = { Text("API-Schlüssel") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("apikeys") })
             }
@@ -163,6 +165,16 @@ fun MainScaffold() {
                                 },
                                 leadingIcon = {
                                     Icon(Icons.Filled.Calculate, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Abnehm-Programm") },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    nav.navigate("weight_loss_program")
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Flag, contentDescription = null)
                                 }
                             )
                         }
@@ -314,10 +326,21 @@ fun MainScaffold() {
                     BMICalculatorScreen(
                         navController = nav,
                         onWeightLossProgramSuggested = { bmi, targetWeight ->
-                            // TODO: Navigate to weight loss program creation
-                            // nav.navigate("weight_loss_program_create/$bmi/$targetWeight")
+                            nav.navigate("weight_loss_program/$bmi/$targetWeight")
                         }
                     )
+                }
+                composable("weight_loss_program/{bmi}/{targetWeight}") { backStackEntry ->
+                    val bmi = backStackEntry.arguments?.getString("bmi")?.toFloatOrNull()
+                    val targetWeight = backStackEntry.arguments?.getString("targetWeight")?.toFloatOrNull()
+                    WeightLossProgramScreen(
+                        navController = nav,
+                        initialBMI = bmi,
+                        initialTargetWeight = targetWeight
+                    )
+                }
+                composable("weight_loss_program") {
+                    WeightLossProgramScreen(navController = nav)
                 }
 
             }

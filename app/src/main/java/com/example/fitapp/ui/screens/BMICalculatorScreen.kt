@@ -319,7 +319,7 @@ private fun BMIResultCard(
                         onClick = { onCreateWeightLossProgramClick(result.idealWeightRange.endInclusive) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Filled.TrendingDown, contentDescription = null)
+                        Icon(Icons.Filled.Flag, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Abnehm-Programm erstellen")
                     }
