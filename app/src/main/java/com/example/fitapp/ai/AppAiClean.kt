@@ -133,9 +133,9 @@ object AppAiClean {
             appendLine("Usage Statistics:")
             appendLine("- Total Requests: ${totalUsage.totalRequests}")
             appendLine("- Total Tokens: ${totalUsage.totalTokens}")
-            appendLine("- Estimated Cost: $${String.format(Locale.US, "%.3f", totalUsage.totalEstimatedCost)}")
-            appendLine("  - Gemini: ${totalUsage.geminiStats.requests} requests, ${totalUsage.geminiStats.tokens} tokens, $${String.format(Locale.US, "%.3f", totalUsage.geminiStats.estimatedCost)}")
-            appendLine("  - Perplexity: ${totalUsage.perplexityStats.requests} requests, ${totalUsage.perplexityStats.tokens} tokens, $${String.format(Locale.US, "%.3f", totalUsage.perplexityStats.estimatedCost)}")
+            appendLine("- Estimated Cost: $${String.format(Locale.GERMANY, "%.3f", totalUsage.totalEstimatedCost)}")
+            appendLine("  - Gemini: ${totalUsage.geminiStats.requests} requests, ${totalUsage.geminiStats.tokens} tokens, $${String.format(Locale.GERMANY, "%.3f", totalUsage.geminiStats.estimatedCost)}")
+            appendLine("  - Perplexity: ${totalUsage.perplexityStats.requests} requests, ${totalUsage.perplexityStats.tokens} tokens, $${String.format(Locale.GERMANY, "%.3f", totalUsage.perplexityStats.estimatedCost)}")
         }
     }
     

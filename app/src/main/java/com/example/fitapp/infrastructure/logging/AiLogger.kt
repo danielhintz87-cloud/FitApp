@@ -33,7 +33,7 @@ class AiLogger(
         // Log to database
         aiLogDao.insert(
             AiLog.success(
-                taskType.name.lowercase(),
+                taskType.name.lowercase(java.util.Locale.ROOT),
                 provider.name,
                 prompt,
                 response,
@@ -52,7 +52,7 @@ class AiLogger(
         // Log to database
         aiLogDao.insert(
             AiLog.error(
-                taskType.name.lowercase(),
+                taskType.name.lowercase(java.util.Locale.ROOT),
                 provider.name,
                 prompt,
                 error,

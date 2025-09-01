@@ -657,7 +657,7 @@ private fun calculateTotalDuration(exercises: List<ExerciseStep>): Int {
         totalMinutes += when (exercise.type) {
             "reps" -> 2 // 2 minutes per rep exercise
             "time" -> {
-                val timeStr = exercise.value.lowercase()
+                val timeStr = exercise.value.lowercase(java.util.Locale.ROOT)
                 when {
                     timeStr.contains("minute") -> timeStr.filter { it.isDigit() }.toIntOrNull() ?: 3
                     timeStr.contains("sekunde") -> (timeStr.filter { it.isDigit() }.toIntOrNull() ?: 30) / 60
@@ -674,8 +674,8 @@ private fun calculateTotalDuration(exercises: List<ExerciseStep>): Int {
 }
 
 private fun getCardioInstructions(exerciseName: String, exerciseValue: String): String {
-    val lowercaseName = exerciseName.lowercase()
-    val lowercaseValue = exerciseValue.lowercase()
+    val lowercaseName = exerciseName.lowercase(java.util.Locale.ROOT)
+    val lowercaseValue = exerciseValue.lowercase(java.util.Locale.ROOT)
     
     return when {
         lowercaseName.contains("laufband") || lowercaseName.contains("treadmill") -> {

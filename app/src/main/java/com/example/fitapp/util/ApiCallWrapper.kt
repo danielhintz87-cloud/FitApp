@@ -199,7 +199,7 @@ object ApiCallWrapper {
             is UnknownHostException -> true
             is ApiException -> exception.code in 500..599 || exception.code == 429 // Server errors and rate limiting
             else -> {
-                val message = exception.message?.lowercase()
+                val message = exception.message?.lowercase(java.util.Locale.ROOT)
                 message?.contains("timeout") == true ||
                 message?.contains("connection") == true ||
                 message?.contains("network") == true

@@ -135,7 +135,7 @@ class NutritionRepository(private val db: AppDatabase) {
     }
     
     private fun categorizeIngredient(ingredient: String): String {
-        val lowerIngredient = ingredient.lowercase()
+        val lowerIngredient = ingredient.lowercase(java.util.Locale.ROOT)
         return when {
             lowerIngredient.contains("fleisch") || lowerIngredient.contains("hähnchen") || 
             lowerIngredient.contains("rind") || lowerIngredient.contains("schwein") ||
@@ -243,7 +243,7 @@ class NutritionRepository(private val db: AppDatabase) {
             return 2000 // Default fallback
         }
 
-        val baselineKcal = when (latestPlan.goal.lowercase()) {
+        val baselineKcal = when (latestPlan.goal.lowercase(java.util.Locale.ROOT)) {
             "abnehmen", "gewicht verlieren" -> 1800
             "muskelaufbau", "masse aufbauen" -> 2500
             "kraft steigern" -> 2300
