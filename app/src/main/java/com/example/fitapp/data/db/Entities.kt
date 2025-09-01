@@ -80,9 +80,9 @@ data class IntakeEntryEntity(
 data class DailyGoalEntity(
     val dateIso: String,
     val targetKcal: Int,
-    val targetCarbs: Double? = null,      // g per day
-    val targetProtein: Double? = null,    // g per day  
-    val targetFat: Double? = null,        // g per day
+    val targetCarbs: Float? = null,      // g per day
+    val targetProtein: Float? = null,    // g per day  
+    val targetFat: Float? = null,        // g per day
     val targetWaterMl: Int? = null       // ml per day
 )
 
@@ -244,14 +244,14 @@ data class FoodItemEntity(
     val name: String,
     val barcode: String? = null,
     val calories: Int,    // kcal per 100g
-    val carbs: Double,     // g per 100g
-    val protein: Double,   // g per 100g
-    val fat: Double,       // g per 100g
+    val carbs: Float,     // g per 100g
+    val protein: Float,   // g per 100g
+    val fat: Float,       // g per 100g
     val createdAt: Long = System.currentTimeMillis() / 1000,
     // Extended fields for OpenFoodFacts integration
-    val fiber: Double? = null,       // g per 100g
-    val sugar: Double? = null,       // g per 100g
-    val sodium: Double? = null,      // mg per 100g
+    val fiber: Float? = null,       // g per 100g
+    val sugar: Float? = null,       // g per 100g
+    val sodium: Float? = null,      // mg per 100g
     val brands: String? = null,
     val categories: String? = null,
     val imageUrl: String? = null,
@@ -278,7 +278,7 @@ data class MealEntryEntity(
     val foodItemId: String,
     val date: String,           // ISO-Date (yyyy-MM-dd)
     val mealType: String,       // breakfast, lunch, dinner, snack
-    val quantityGrams: Double,   // Consumed amount in grams
+    val quantityGrams: Float,   // Consumed amount in grams
     val notes: String? = null
 )
 

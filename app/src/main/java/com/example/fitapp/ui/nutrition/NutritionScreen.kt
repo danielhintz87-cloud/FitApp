@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.fitapp.ui.nutrition
 
 import android.content.Context
@@ -22,7 +24,10 @@ import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.launch
 
 @Composable
-fun NutritionScreen(navController: androidx.navigation.NavController? = null) {
+fun NutritionScreen(
+    navController: androidx.navigation.NavController? = null,
+    modifier: Modifier = Modifier
+) {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
     val scope = rememberCoroutineScope()
@@ -37,7 +42,7 @@ fun NutritionScreen(navController: androidx.navigation.NavController? = null) {
     val history by repo.history().collectAsState(initial = emptyList())
     val tabs = listOf("Generieren", "Favoriten", "Historie", "Einkaufsliste")
 
-    Column(Modifier.fillMaxSize()) {
+    Column(modifier.fillMaxSize()) {
         ScrollableTabRow(selectedTabIndex = tab) {
             tabs.forEachIndexed { i, title ->
                 Tab(selected = tab == i, onClick = { tab = i }, text = { Text(title) })
@@ -59,8 +64,8 @@ fun NutritionScreen(navController: androidx.navigation.NavController? = null) {
                 repo.logIntake(r.calories ?: 0, "Rezept: ${'$'}{r.title}", "RECIPE", r.id)
                 repo.adjustDailyGoal(java.time.LocalDate.now())
             } })
-            1 -> RecipeList("Favoriten", favorites) { id, fav -> scope.launch { repo.setFavorite(id, fav) } }
-            2 -> RecipeList("Historie", history) { id, fav -> scope.launch { repo.setFavorite(id, fav) } }
+            1 -> RecipeList("Favoriten", favorites, onFavClick = { id, fav -> scope.launch { repo.setFavorite(id, fav) } })
+            2 -> RecipeList("Historie", history, onFavClick = { id, fav -> scope.launch { repo.setFavorite(id, fav) } })
             3 -> SimpleShoppingListTab(repo)
         }
     }
@@ -77,7 +82,8 @@ private fun GenerateTab(
     onGenerate: () -> Unit,
     onFav: (String, Boolean) -> Unit,
     onToShopping: (String) -> Unit,
-    onLog: (UiRecipe) -> Unit
+    onLog: (UiRecipe) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -121,12 +127,21 @@ private fun GenerateTab(
 }
 
 @Composable
-private fun RecipeList(title: String, items: List<RecipeEntity>, onFavClick: (String, Boolean) -> Unit) {
+private fun RecipeList(
+    title: String, 
+    items: List<RecipeEntity>, 
+    onFavClick: (String, Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
     val scope = rememberCoroutineScope()
     
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp,16.dp,16.dp,96.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(), 
+        contentPadding = PaddingValues(16.dp,16.dp,16.dp,96.dp), 
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         item { Text(title, style = MaterialTheme.typography.titleLarge) }
         items(items) { r ->
             ElevatedCard {
@@ -165,12 +180,13 @@ private fun IndividualRecipeCard(
     onAddToShopping: () -> Unit,
     onLogCalories: () -> Unit,
     onSaveRecipe: () -> Unit,
-    onPrepareRecipe: () -> Unit
+    onPrepareRecipe: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var isFavorite by remember(recipe.id) { mutableStateOf(false) }
     var showFullRecipe by remember(recipe.id) { mutableStateOf(false) }
     
-    ElevatedCard {
+    ElevatedCard(modifier = modifier) {
         Column(Modifier.padding(16.dp)) {
             // Header with title and calories
             Row(
@@ -404,12 +420,15 @@ private fun extractServings(markdown: String): Int? {
 }
 
 @Composable
-private fun SimpleShoppingListTab(repo: NutritionRepository) {
+private fun SimpleShoppingListTab(
+    repo: NutritionRepository,
+    modifier: Modifier = Modifier
+) {
     val items by repo.shoppingItems().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
