@@ -295,6 +295,55 @@ class PersonalAchievementManager(
                 iconName = "book",
                 targetValue = 30.0,
                 unit = "Tage"
+            ),
+            // Additional nutrition achievements
+            PersonalAchievementEntity(
+                title = "Protein-Power",
+                description = "Erreiche dein Protein-Ziel 10 Tage lang",
+                category = CATEGORY_NUTRITION,
+                iconName = "fitness_center",
+                targetValue = 10.0,
+                unit = "Tage"
+            ),
+            PersonalAchievementEntity(
+                title = "Hydrations-Held",
+                description = "Trinke 7 Tage lang genug Wasser",
+                category = CATEGORY_NUTRITION,
+                iconName = "water_drop",
+                targetValue = 7.0,
+                unit = "Tage"
+            ),
+            PersonalAchievementEntity(
+                title = "Kalorie-Kontrolle",
+                description = "Bleibe 14 Tage im Kalorienziel-Bereich",
+                category = CATEGORY_NUTRITION,
+                iconName = "target",
+                targetValue = 14.0,
+                unit = "Tage"
+            ),
+            PersonalAchievementEntity(
+                title = "Barcode-Scanner",
+                description = "Scanne 25 Barcodes",
+                category = CATEGORY_NUTRITION,
+                iconName = "qr_code_scanner",
+                targetValue = 25.0,
+                unit = "Scans"
+            ),
+            PersonalAchievementEntity(
+                title = "Makro-Meister",
+                description = "Erreiche alle Makronährstoff-Ziele 5 Tage lang",
+                category = CATEGORY_NUTRITION,
+                iconName = "pie_chart",
+                targetValue = 5.0,
+                unit = "Tage"
+            ),
+            PersonalAchievementEntity(
+                title = "Gewichtswächter",
+                description = "Protokolliere dein Gewicht 14 Tage lang",
+                category = CATEGORY_NUTRITION,
+                iconName = "monitor_weight",
+                targetValue = 14.0,
+                unit = "Tage"
             )
         )
     }

@@ -28,6 +28,7 @@ import com.example.fitapp.ui.food.FoodScanScreen
 import com.example.fitapp.ui.nutrition.CookingModeScreen
 import com.example.fitapp.ui.nutrition.FoodDiaryScreen
 import com.example.fitapp.ui.nutrition.FoodSearchScreen
+import com.example.fitapp.ui.nutrition.NutritionAnalyticsScreen
 import com.example.fitapp.ui.nutrition.NutritionScreen
 import com.example.fitapp.ui.nutrition.SavedRecipesScreen
 import com.example.fitapp.ui.screens.PlanScreen
@@ -76,6 +77,7 @@ fun MainScaffold() {
                 NavigationDrawerItem(label = { Text("Food Scan") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("foodscan") })
                 NavigationDrawerItem(label = { Text("Ernährungstagbuch") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("food_diary") })
                 NavigationDrawerItem(label = { Text("Lebensmittel suchen") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("food_search") })
+                NavigationDrawerItem(label = { Text("Ernährungs-Analytics") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("nutrition_analytics") })
                 NavigationDrawerItem(label = { Text("AI-Logs") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("logs") })
                 NavigationDrawerItem(label = { Text("API-Schlüssel") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("apikeys") })
             }
@@ -137,6 +139,16 @@ fun MainScaffold() {
                                 },
                                 leadingIcon = {
                                     Icon(Icons.Filled.Fastfood, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Ernährungs-Analytics") },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    nav.navigate("nutrition_analytics")
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Insights, contentDescription = null)
                                 }
                             )
                             DropdownMenuItem(
@@ -286,6 +298,12 @@ fun MainScaffold() {
                         contentPadding = padding,
                         onBackPressed = { nav.popBackStack() },
                         onFoodAdded = { nav.popBackStack() }
+                    )
+                }
+                composable("nutrition_analytics") {
+                    NutritionAnalyticsScreen(
+                        contentPadding = padding,
+                        onBackPressed = { nav.popBackStack() }
                     )
                 }
 
