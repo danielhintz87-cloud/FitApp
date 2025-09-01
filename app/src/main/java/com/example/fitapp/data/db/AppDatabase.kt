@@ -265,6 +265,49 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_water_entries_date` ON `water_entries` (`date`)")
             }
         }
+
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Extend food_items table with OpenFoodFacts integration fields
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `food_items_new` (
+                        `id` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `barcode` TEXT,
+                        `calories` INTEGER NOT NULL,
+                        `carbs` REAL NOT NULL,
+                        `protein` REAL NOT NULL,
+                        `fat` REAL NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `fiber` REAL,
+                        `sugar` REAL,
+                        `sodium` REAL,
+                        `brands` TEXT,
+                        `categories` TEXT,
+                        `imageUrl` TEXT,
+                        `servingSize` TEXT,
+                        `ingredients` TEXT,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Copy existing data
+                db.execSQL("""
+                    INSERT INTO food_items_new (id, name, barcode, calories, carbs, protein, fat, createdAt)
+                    SELECT id, name, barcode, calories, carbs, protein, fat, createdAt FROM food_items
+                """.trimIndent())
+                
+                // Drop old table and rename new table
+                db.execSQL("DROP TABLE food_items")
+                db.execSQL("ALTER TABLE food_items_new RENAME TO food_items")
+                
+                // Recreate indices for food_items table
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_food_items_name` ON `food_items` (`name`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_food_items_barcode` ON `food_items` (`barcode`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_food_items_categories` ON `food_items` (`categories`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_food_items_brands` ON `food_items` (`brands`)")
+            }
+        }
         
         val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(db: SupportSQLiteDatabase) {
