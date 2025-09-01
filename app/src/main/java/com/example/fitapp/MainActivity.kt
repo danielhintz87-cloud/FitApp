@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.example.fitapp.data.db.AppDatabase
+import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.data.repo.PersonalMotivationRepository
 import com.example.fitapp.services.*
 import com.example.fitapp.ui.MainScaffold
@@ -117,12 +118,16 @@ class MainActivity : ComponentActivity() {
                     withTimeout(10_000) { // 10 second timeout
                         val database = AppDatabase.get(this@MainActivity)
                         val repository = PersonalMotivationRepository(database)
+                        val nutritionRepository = NutritionRepository(database)
                         val achievementManager = PersonalAchievementManager(this@MainActivity, repository)
                         val streakManager = PersonalStreakManager(this@MainActivity, repository)
                         
                         // Initialize default achievements and streaks
                         achievementManager.initializeDefaultAchievements()
                         streakManager.initializeDefaultStreaks()
+                        
+                        // Initialize default food database
+                        nutritionRepository.initializeDefaultFoodDatabase()
                         
                         isInitialized = true
                         StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Personal motivation data initialized successfully")

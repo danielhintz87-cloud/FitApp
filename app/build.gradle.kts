@@ -103,6 +103,12 @@ dependencies {
     // Coil (Vorschau des gewählten Bildes)
     implementation(libs.coil.compose)
     
+    // Google ML Kit for barcode scanning
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    implementation("androidx.camera:camera-camera2:1.3.1")
+    implementation("androidx.camera:camera-lifecycle:1.3.1")
+    implementation("androidx.camera:camera-view:1.3.1")
+    
     // WorkManager for background tasks
     implementation(libs.work.runtime.ktx)
     coreLibraryDesugaring(libs.desugar.jdk.libs)

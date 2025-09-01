@@ -24,9 +24,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PersonalStreakEntity::class,
         PersonalRecordEntity::class,
         ProgressMilestoneEntity::class,
-        WeightEntity::class
+        WeightEntity::class,
+        FoodItemEntity::class,
+        MealEntryEntity::class,
+        WaterEntryEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -44,6 +47,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun personalRecordDao(): PersonalRecordDao
     abstract fun progressMilestoneDao(): ProgressMilestoneDao
     abstract fun weightDao(): WeightDao
+    abstract fun foodItemDao(): FoodItemDao
+    abstract fun mealEntryDao(): MealEntryDao
+    abstract fun waterEntryDao(): WaterEntryDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -178,6 +184,79 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_recipes_title` ON `recipes` (`title`)")
             }
         }
+
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Extend daily_goals table with macro targets
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `daily_goals_new` (
+                        `dateIso` TEXT NOT NULL,
+                        `targetKcal` INTEGER NOT NULL,
+                        `targetCarbs` REAL,
+                        `targetProtein` REAL,
+                        `targetFat` REAL,
+                        `targetWaterMl` INTEGER,
+                        PRIMARY KEY(`dateIso`)
+                    )
+                """.trimIndent())
+                
+                // Copy existing data
+                db.execSQL("""
+                    INSERT INTO daily_goals_new (dateIso, targetKcal)
+                    SELECT dateIso, targetKcal FROM daily_goals
+                """.trimIndent())
+                
+                // Drop old table and rename new table
+                db.execSQL("DROP TABLE daily_goals")
+                db.execSQL("ALTER TABLE daily_goals_new RENAME TO daily_goals")
+                
+                // Create food_items table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `food_items` (
+                        `id` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `barcode` TEXT,
+                        `calories` INTEGER NOT NULL,
+                        `carbs` REAL NOT NULL,
+                        `protein` REAL NOT NULL,
+                        `fat` REAL NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Create meal_entries table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `meal_entries` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `foodItemId` TEXT NOT NULL,
+                        `date` TEXT NOT NULL,
+                        `mealType` TEXT NOT NULL,
+                        `quantityGrams` REAL NOT NULL,
+                        `notes` TEXT,
+                        FOREIGN KEY(`foodItemId`) REFERENCES `food_items`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                
+                // Create water_entries table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `water_entries` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `date` TEXT NOT NULL,
+                        `amountMl` INTEGER NOT NULL,
+                        `timestamp` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                
+                // Add indices for new tables
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_food_items_name` ON `food_items` (`name`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_food_items_barcode` ON `food_items` (`barcode`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_meal_entries_foodItemId` ON `meal_entries` (`foodItemId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_meal_entries_date` ON `meal_entries` (`date`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_meal_entries_mealType` ON `meal_entries` (`mealType`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_water_entries_date` ON `water_entries` (`date`)")
+            }
+        }
         
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
@@ -187,7 +266,7 @@ abstract class AppDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): AppDatabase {
             return try {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
-                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                     .apply {
                         // Only allow destructive migration in debug builds
                         if (com.example.fitapp.BuildConfig.DEBUG) {

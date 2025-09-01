@@ -79,7 +79,11 @@ data class IntakeEntryEntity(
 @Entity(tableName = "daily_goals", primaryKeys = ["dateIso"])
 data class DailyGoalEntity(
     val dateIso: String,
-    val targetKcal: Int
+    val targetKcal: Int,
+    val targetCarbs: Float? = null,      // g per day
+    val targetProtein: Float? = null,    // g per day  
+    val targetFat: Float? = null,        // g per day
+    val targetWaterMl: Int? = null       // ml per day
 )
 
 @Entity(tableName = "shopping_items")
@@ -226,5 +230,57 @@ data class WeightEntity(
     val dateIso: String, // e.g., "2025-01-15"
     val notes: String? = null,
     val recordedAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "food_items", 
+    indices = [
+        Index(value = ["name"]), 
+        Index(value = ["barcode"])
+    ]
+)
+data class FoodItemEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val name: String,
+    val barcode: String? = null,
+    val calories: Int,    // kcal per 100g
+    val carbs: Float,     // g per 100g
+    val protein: Float,   // g per 100g
+    val fat: Float,       // g per 100g
+    val createdAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "meal_entries",
+    foreignKeys = [ForeignKey(
+        entity = FoodItemEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["foodItemId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [
+        Index(value = ["foodItemId"]),
+        Index(value = ["date"]),
+        Index(value = ["mealType"])
+    ]
+)
+data class MealEntryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val foodItemId: String,
+    val date: String,           // ISO-Date (yyyy-MM-dd)
+    val mealType: String,       // breakfast, lunch, dinner, snack
+    val quantityGrams: Float,   // Consumed amount in grams
+    val notes: String? = null
+)
+
+@Entity(
+    tableName = "water_entries",
+    indices = [Index(value = ["date"])]
+)
+data class WaterEntryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val date: String,  // ISO-Date (yyyy-MM-dd)
+    val amountMl: Int,
+    val timestamp: Long = System.currentTimeMillis() / 1000
 )
 
