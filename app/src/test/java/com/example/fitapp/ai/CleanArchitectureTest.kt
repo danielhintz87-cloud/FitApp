@@ -51,9 +51,7 @@ class CleanArchitectureTest {
             
             // Test image task routing -> Gemini
             val imageProvider = mockRepository.selectOptimalProvider(TaskType.CALORIE_ESTIMATION, hasImage = true)
-            if (imageProvider != AiProvider.Gemini) return false
-            
-            return true
+            return imageProvider == AiProvider.Gemini
         }
         
         private fun testFallbackProvider(): Boolean {
@@ -64,9 +62,7 @@ class CleanArchitectureTest {
             if (geminiFallback != AiProvider.Perplexity) return false
             
             val perplexityFallback = mockRepository.getFallbackProvider(AiProvider.Perplexity)
-            if (perplexityFallback != AiProvider.Gemini) return false
-            
-            return true
+            return perplexityFallback == AiProvider.Gemini
         }
         
         private fun testDomainEntities(): Boolean {

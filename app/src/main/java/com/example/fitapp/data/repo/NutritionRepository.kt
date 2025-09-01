@@ -298,7 +298,7 @@ class NutritionRepository(private val db: AppDatabase) {
 
     // Today workout methods
     suspend fun getTodayWorkout(dateIso: String) = db.todayWorkoutDao().getByDate(dateIso)
-    suspend fun saveTodayWorkout(workout: com.example.fitapp.data.db.TodayWorkoutEntity) = db.todayWorkoutDao().upsert(workout)
+    suspend fun saveTodayWorkout(workout: TodayWorkoutEntity) = db.todayWorkoutDao().upsert(workout)
     suspend fun setWorkoutStatus(dateIso: String, status: String, completedAt: Long?) = db.todayWorkoutDao().setStatus(dateIso, status, completedAt)
     suspend fun getWorkoutsBetween(fromIso: String, toIso: String) = db.todayWorkoutDao().getBetween(fromIso, toIso)
 

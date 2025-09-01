@@ -319,7 +319,7 @@ private fun CookingModeFromId(
     onFinishCooking: () -> Unit
 ) {
     val ctx = LocalContext.current
-    val db = remember { com.example.fitapp.data.db.AppDatabase.get(ctx) }
+    val db = remember { AppDatabase.get(ctx) }
     var recipe by remember { mutableStateOf<com.example.fitapp.data.db.SavedRecipeEntity?>(null) }
     
     LaunchedEffect(recipeId) {
@@ -335,10 +335,10 @@ private fun CookingModeFromId(
     } ?: run {
         // Loading or error state
         androidx.compose.foundation.layout.Box(
-            modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = androidx.compose.ui.Alignment.Center
         ) {
-            androidx.compose.material3.CircularProgressIndicator()
+            CircularProgressIndicator()
         }
     }
 }

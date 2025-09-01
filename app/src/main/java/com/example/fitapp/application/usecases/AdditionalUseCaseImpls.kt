@@ -17,7 +17,7 @@ class EstimateCaloriesForManualEntryUseCaseImpl(
         
         val aiRequest = AiRequest(
             prompt = prompt,
-            provider = com.example.fitapp.domain.entities.AiProvider.Gemini, // Temporarily use Gemini instead of Perplexity
+            provider = AiProvider.Gemini, // Temporarily use Gemini instead of Perplexity
             taskType = TaskType.CALORIE_ESTIMATION
         )
         
@@ -59,7 +59,7 @@ Erstelle 8-12 Übungen inklusive Pausen. Keine zusätzlichen Texte oder Disclaim
         
         val aiRequest = AiRequest(
             prompt = prompt,
-            provider = com.example.fitapp.domain.entities.AiProvider.Gemini,
+            provider = AiProvider.Gemini,
             taskType = TaskType.TRAINING_PLAN
         )
         

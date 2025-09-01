@@ -141,7 +141,7 @@ class EstimateCaloriesUseCaseImpl(
             }
         }
         
-        return repository.analyzeImage(prompt, bitmap, com.example.fitapp.domain.entities.AiProvider.Gemini)
+        return repository.analyzeImage(prompt, bitmap, AiProvider.Gemini)
     }
 }
 

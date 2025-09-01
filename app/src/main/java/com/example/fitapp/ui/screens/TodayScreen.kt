@@ -194,8 +194,8 @@ fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = n
                                         
                                         // Trigger workout streak tracking
                                         val streakManager = com.example.fitapp.services.PersonalStreakManager(
-                                            ctx, 
-                                            com.example.fitapp.data.repo.PersonalMotivationRepository(AppDatabase.get(ctx))
+                                            ctx,
+                                            PersonalMotivationRepository(AppDatabase.get(ctx))
                                         )
                                         streakManager.trackWorkoutCompletion(today)
                                     } catch (e: Exception) {
