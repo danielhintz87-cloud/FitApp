@@ -270,10 +270,10 @@ object StructuredLogger {
      */
     fun getLogStatistics(): Map<String, Any> {
         val logs = logBuffer.toList()
-        val levelCounts = LogLevel.values().associateWith { level ->
+        val levelCounts = LogLevel.entries.associateWith { level ->
             logs.count { it.level == level }
         }
-        val categoryCounts = LogCategory.values().associateWith { category ->
+        val categoryCounts = LogCategory.entries.associateWith { category ->
             logs.count { it.category == category }
         }
         

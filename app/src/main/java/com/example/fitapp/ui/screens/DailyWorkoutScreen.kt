@@ -42,12 +42,12 @@ fun DailyWorkoutScreen(
     val streakManager = remember { PersonalStreakManager(ctx, motivationRepo) }
     
     var workoutSteps by remember { mutableStateOf<List<String>>(emptyList()) }
-    var currentStepIndex by remember { mutableStateOf(0) }
+    var currentStepIndex by remember { mutableIntStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var isCompleted by remember { mutableStateOf(false) }
     var keepScreenOn by remember { mutableStateOf(true) }
-    var restTimer by remember { mutableStateOf(0) }
+    var restTimer by remember { mutableIntStateOf(0) }
     var isResting by remember { mutableStateOf(false) }
     
     // Keep screen on functionality

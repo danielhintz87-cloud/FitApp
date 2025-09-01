@@ -48,7 +48,7 @@ fun FoodScanScreen(
     var showConfirmDialog by remember { mutableStateOf(false) }
     var editedKcal by remember { mutableStateOf("") }
     var editedLabel by remember { mutableStateOf("") }
-    var analysisAttempts by remember { mutableStateOf(0) }
+    var analysisAttempts by remember { mutableIntStateOf(0) }
     var manualFoodDescription by remember { mutableStateOf("") }
     var isEstimatingManualCalories by remember { mutableStateOf(false) }
     
