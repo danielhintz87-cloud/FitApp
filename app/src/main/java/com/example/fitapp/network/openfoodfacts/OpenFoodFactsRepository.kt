@@ -1,7 +1,7 @@
 package com.example.fitapp.network.openfoodfacts
 
 import android.util.Log
-import com.example.fitapp.data.entities.FoodItemEntity
+import com.example.fitapp.data.db.FoodItemEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient

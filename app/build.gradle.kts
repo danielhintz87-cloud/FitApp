@@ -120,8 +120,8 @@ dependencies {
     // ML Kit Barcode Scanning
     implementation(libs.mlkit.barcode.scanning)
     
-    // Health Connect for Activity/Calorie Sync
-    implementation(libs.health.connect.client)
+    // Health Connect for Activity/Calorie Sync (disabled for now due to API compatibility)
+    // implementation(libs.health.connect.client)
     
     // WorkManager for background tasks
     implementation(libs.work.runtime.ktx)
