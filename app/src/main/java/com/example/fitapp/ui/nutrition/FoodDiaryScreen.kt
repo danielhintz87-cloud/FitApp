@@ -36,7 +36,8 @@ import kotlin.math.min
 fun FoodDiaryScreen(
     contentPadding: PaddingValues,
     onBackPressed: () -> Unit,
-    onAddFoodClick: () -> Unit
+    onAddFoodClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -81,7 +82,7 @@ fun FoodDiaryScreen(
     }
     
     Column(
-        modifier = Modifier
+        modifier = modifier
             .padding(contentPadding)
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
@@ -160,12 +161,13 @@ fun FoodDiaryScreen(
 private fun CaloriesOverviewCard(
     consumedCalories: Int,
     targetCalories: Int,
-    burnedCalories: Int
+    burnedCalories: Int,
+    modifier: Modifier = Modifier
 ) {
     val remainingCalories = targetCalories - consumedCalories + burnedCalories
     val progress = (consumedCalories.toFloat() / targetCalories.toFloat()).coerceIn(0f, 1f)
     
-    ElevatedCard {
+    ElevatedCard(modifier = modifier) {
         Column(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -221,8 +223,14 @@ private fun CaloriesOverviewCard(
 }
 
 @Composable
-private fun CaloriesStat(label: String, value: Int, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+private fun CaloriesStat(
+    label: String, 
+    value: Int, 
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier = Modifier
+) {
     Column(
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
