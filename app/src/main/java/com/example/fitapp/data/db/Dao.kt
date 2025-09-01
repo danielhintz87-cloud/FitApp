@@ -321,3 +321,112 @@ interface WeightDao {
     suspend fun hasEntryForDate(dateIso: String): Int
 }
 
+@Dao
+interface FoodItemDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(foodItem: FoodItemEntity)
+
+    @Update
+    suspend fun update(foodItem: FoodItemEntity)
+
+    @Query("DELETE FROM food_items WHERE id = :id")
+    suspend fun delete(id: String)
+
+    @Query("SELECT * FROM food_items WHERE id = :id")
+    suspend fun getById(id: String): FoodItemEntity?
+
+    @Query("SELECT * FROM food_items WHERE barcode = :barcode LIMIT 1")
+    suspend fun getByBarcode(barcode: String): FoodItemEntity?
+
+    @Query("SELECT * FROM food_items WHERE name LIKE '%' || :query || '%' ORDER BY name LIMIT :limit")
+    suspend fun searchByName(query: String, limit: Int = 20): List<FoodItemEntity>
+
+    @Query("SELECT * FROM food_items ORDER BY createdAt DESC LIMIT :limit")
+    suspend fun getRecent(limit: Int = 20): List<FoodItemEntity>
+
+    @Query("SELECT * FROM food_items ORDER BY name")
+    fun allFoodItemsFlow(): Flow<List<FoodItemEntity>>
+}
+
+@Dao
+interface MealEntryDao {
+    @Insert
+    suspend fun insert(mealEntry: MealEntryEntity): Long
+
+    @Update
+    suspend fun update(mealEntry: MealEntryEntity)
+
+    @Query("DELETE FROM meal_entries WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM meal_entries WHERE date = :date ORDER BY id")
+    suspend fun getByDate(date: String): List<MealEntryEntity>
+
+    @Query("SELECT * FROM meal_entries WHERE date = :date ORDER BY id")
+    fun getByDateFlow(date: String): Flow<List<MealEntryEntity>>
+
+    @Query("SELECT * FROM meal_entries WHERE date = :date AND mealType = :mealType ORDER BY id")
+    suspend fun getByDateAndMealType(date: String, mealType: String): List<MealEntryEntity>
+
+    @Query("SELECT * FROM meal_entries WHERE date = :date AND mealType = :mealType ORDER BY id")
+    fun getByDateAndMealTypeFlow(date: String, mealType: String): Flow<List<MealEntryEntity>>
+
+    @Query("""
+        SELECT SUM(
+            CASE mealType
+                WHEN 'breakfast' THEN (quantityGrams / 100.0) * (SELECT calories FROM food_items WHERE id = foodItemId)
+                WHEN 'lunch' THEN (quantityGrams / 100.0) * (SELECT calories FROM food_items WHERE id = foodItemId)
+                WHEN 'dinner' THEN (quantityGrams / 100.0) * (SELECT calories FROM food_items WHERE id = foodItemId)
+                WHEN 'snack' THEN (quantityGrams / 100.0) * (SELECT calories FROM food_items WHERE id = foodItemId)
+                ELSE 0
+            END
+        ) FROM meal_entries WHERE date = :date
+    """)
+    suspend fun getTotalCaloriesForDate(date: String): Float?
+
+    @Query("""
+        SELECT SUM((quantityGrams / 100.0) * (SELECT carbs FROM food_items WHERE id = foodItemId))
+        FROM meal_entries WHERE date = :date
+    """)
+    suspend fun getTotalCarbsForDate(date: String): Float?
+
+    @Query("""
+        SELECT SUM((quantityGrams / 100.0) * (SELECT protein FROM food_items WHERE id = foodItemId))
+        FROM meal_entries WHERE date = :date
+    """)
+    suspend fun getTotalProteinForDate(date: String): Float?
+
+    @Query("""
+        SELECT SUM((quantityGrams / 100.0) * (SELECT fat FROM food_items WHERE id = foodItemId))
+        FROM meal_entries WHERE date = :date
+    """)
+    suspend fun getTotalFatForDate(date: String): Float?
+}
+
+@Dao
+interface WaterEntryDao {
+    @Insert
+    suspend fun insert(waterEntry: WaterEntryEntity): Long
+
+    @Update
+    suspend fun update(waterEntry: WaterEntryEntity)
+
+    @Query("DELETE FROM water_entries WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM water_entries WHERE date = :date ORDER BY timestamp")
+    suspend fun getByDate(date: String): List<WaterEntryEntity>
+
+    @Query("SELECT * FROM water_entries WHERE date = :date ORDER BY timestamp")
+    fun getByDateFlow(date: String): Flow<List<WaterEntryEntity>>
+
+    @Query("SELECT COALESCE(SUM(amountMl), 0) FROM water_entries WHERE date = :date")
+    suspend fun getTotalWaterForDate(date: String): Int
+
+    @Query("SELECT COALESCE(SUM(amountMl), 0) FROM water_entries WHERE date = :date")
+    fun getTotalWaterForDateFlow(date: String): Flow<Int>
+
+    @Query("DELETE FROM water_entries WHERE date = :date")
+    suspend fun clearForDate(date: String)
+}
+

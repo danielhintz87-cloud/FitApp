@@ -26,6 +26,8 @@ import androidx.navigation.compose.rememberNavController
 import com.example.fitapp.ui.AiLogsScreen
 import com.example.fitapp.ui.food.FoodScanScreen
 import com.example.fitapp.ui.nutrition.CookingModeScreen
+import com.example.fitapp.ui.nutrition.FoodDiaryScreen
+import com.example.fitapp.ui.nutrition.FoodSearchScreen
 import com.example.fitapp.ui.nutrition.NutritionScreen
 import com.example.fitapp.ui.nutrition.SavedRecipesScreen
 import com.example.fitapp.ui.screens.PlanScreen
@@ -72,6 +74,8 @@ fun MainScaffold() {
                 NavigationDrawerItem(label = { Text("Gespeicherte Rezepte") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("saved_recipes") })
                 NavigationDrawerItem(label = { Text("Einkaufsliste") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("shopping_list") })
                 NavigationDrawerItem(label = { Text("Food Scan") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("foodscan") })
+                NavigationDrawerItem(label = { Text("Ernährungstagbuch") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("food_diary") })
+                NavigationDrawerItem(label = { Text("Lebensmittel suchen") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("food_search") })
                 NavigationDrawerItem(label = { Text("AI-Logs") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("logs") })
                 NavigationDrawerItem(label = { Text("API-Schlüssel") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("apikeys") })
             }
@@ -123,6 +127,16 @@ fun MainScaffold() {
                                 },
                                 leadingIcon = {
                                     Icon(Icons.Filled.PhotoCamera, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Ernährungstagbuch") },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    nav.navigate("food_diary")
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Fastfood, contentDescription = null)
                                 }
                             )
                             DropdownMenuItem(
@@ -258,6 +272,20 @@ fun MainScaffold() {
                 composable("weight_tracking") {
                     WeightTrackingScreen(
                         onBackPressed = { nav.popBackStack() }
+                    )
+                }
+                composable("food_diary") {
+                    FoodDiaryScreen(
+                        contentPadding = padding,
+                        onBackPressed = { nav.popBackStack() },
+                        onAddFoodClick = { nav.navigate("food_search") }
+                    )
+                }
+                composable("food_search") {
+                    FoodSearchScreen(
+                        contentPadding = padding,
+                        onBackPressed = { nav.popBackStack() },
+                        onFoodAdded = { nav.popBackStack() }
                     )
                 }
 
