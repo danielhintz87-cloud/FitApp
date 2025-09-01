@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.fitapp"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 8
         versionName = "1.8"
@@ -99,15 +99,29 @@ dependencies {
     // Networking & JSON
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
+    
+    // Retrofit Stack for OpenFoodFacts API
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.moshi)
+    implementation(libs.retrofit.logging.interceptor)
+    implementation(libs.moshi)
+    implementation(libs.moshi.kotlin)
+    ksp(libs.moshi.codegen)
 
     // Coil (Vorschau des gewählten Bildes)
     implementation(libs.coil.compose)
     
-    // Google ML Kit for barcode scanning
-    implementation("com.google.mlkit:barcode-scanning:17.2.0")
-    implementation("androidx.camera:camera-camera2:1.3.1")
-    implementation("androidx.camera:camera-lifecycle:1.3.1")
-    implementation("androidx.camera:camera-view:1.3.1")
+    // CameraX Stack for Professional Barcode Scanning
+    implementation(libs.camerax.core)
+    implementation(libs.camerax.camera2)
+    implementation(libs.camerax.lifecycle)
+    implementation(libs.camerax.view)
+    
+    // ML Kit Barcode Scanning
+    implementation(libs.mlkit.barcode.scanning)
+    
+    // Health Connect for Activity/Calorie Sync
+    implementation(libs.health.connect.client)
     
     // WorkManager for background tasks
     implementation(libs.work.runtime.ktx)
