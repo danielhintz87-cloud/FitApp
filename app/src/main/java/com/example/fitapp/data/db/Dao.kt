@@ -430,3 +430,122 @@ interface WaterEntryDao {
     suspend fun clearForDate(date: String)
 }
 
+@Dao
+interface BMIHistoryDao {
+    @Insert
+    suspend fun insert(bmiHistory: BMIHistoryEntity): Long
+
+    @Update
+    suspend fun update(bmiHistory: BMIHistoryEntity)
+
+    @Query("DELETE FROM bmi_history WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM bmi_history WHERE date = :date")
+    suspend fun getByDate(date: String): BMIHistoryEntity?
+
+    @Query("SELECT * FROM bmi_history ORDER BY date DESC")
+    suspend fun getAll(): List<BMIHistoryEntity>
+
+    @Query("SELECT * FROM bmi_history ORDER BY date DESC")
+    fun getAllFlow(): Flow<List<BMIHistoryEntity>>
+
+    @Query("SELECT * FROM bmi_history ORDER BY date DESC LIMIT :limit")
+    suspend fun getRecent(limit: Int): List<BMIHistoryEntity>
+
+    @Query("SELECT * FROM bmi_history WHERE date BETWEEN :startDate AND :endDate ORDER BY date")
+    suspend fun getByDateRange(startDate: String, endDate: String): List<BMIHistoryEntity>
+}
+
+@Dao
+interface WeightLossProgramDao {
+    @Insert
+    suspend fun insert(program: WeightLossProgramEntity): Long
+
+    @Update
+    suspend fun update(program: WeightLossProgramEntity)
+
+    @Query("DELETE FROM weight_loss_programs WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM weight_loss_programs WHERE id = :id")
+    suspend fun getById(id: Long): WeightLossProgramEntity?
+
+    @Query("SELECT * FROM weight_loss_programs WHERE isActive = 1 ORDER BY startDate DESC LIMIT 1")
+    suspend fun getActiveProgram(): WeightLossProgramEntity?
+
+    @Query("SELECT * FROM weight_loss_programs WHERE isActive = 1 ORDER BY startDate DESC LIMIT 1")
+    fun getActiveProgramFlow(): Flow<WeightLossProgramEntity?>
+
+    @Query("SELECT * FROM weight_loss_programs ORDER BY startDate DESC")
+    suspend fun getAll(): List<WeightLossProgramEntity>
+
+    @Query("SELECT * FROM weight_loss_programs ORDER BY startDate DESC")
+    fun getAllFlow(): Flow<List<WeightLossProgramEntity>>
+
+    @Query("UPDATE weight_loss_programs SET isActive = 0 WHERE isActive = 1")
+    suspend fun deactivateAllPrograms()
+}
+
+@Dao
+interface BehavioralCheckInDao {
+    @Insert
+    suspend fun insert(checkIn: BehavioralCheckInEntity): Long
+
+    @Update
+    suspend fun update(checkIn: BehavioralCheckInEntity)
+
+    @Query("DELETE FROM behavioral_check_ins WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM behavioral_check_ins WHERE id = :id")
+    suspend fun getById(id: Long): BehavioralCheckInEntity?
+
+    @Query("SELECT * FROM behavioral_check_ins ORDER BY timestamp DESC")
+    suspend fun getAll(): List<BehavioralCheckInEntity>
+
+    @Query("SELECT * FROM behavioral_check_ins ORDER BY timestamp DESC")
+    fun getAllFlow(): Flow<List<BehavioralCheckInEntity>>
+
+    @Query("SELECT * FROM behavioral_check_ins ORDER BY timestamp DESC LIMIT :limit")
+    suspend fun getRecent(limit: Int): List<BehavioralCheckInEntity>
+
+    @Query("""
+        SELECT * FROM behavioral_check_ins 
+        WHERE timestamp BETWEEN :startTimestamp AND :endTimestamp 
+        ORDER BY timestamp
+    """)
+    suspend fun getByDateRange(startTimestamp: Long, endTimestamp: Long): List<BehavioralCheckInEntity>
+}
+
+@Dao
+interface ProgressPhotoDao {
+    @Insert
+    suspend fun insert(photo: ProgressPhotoEntity): Long
+
+    @Update
+    suspend fun update(photo: ProgressPhotoEntity)
+
+    @Query("DELETE FROM progress_photos WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM progress_photos WHERE id = :id")
+    suspend fun getById(id: Long): ProgressPhotoEntity?
+
+    @Query("SELECT * FROM progress_photos ORDER BY timestamp DESC")
+    suspend fun getAll(): List<ProgressPhotoEntity>
+
+    @Query("SELECT * FROM progress_photos ORDER BY timestamp DESC")
+    fun getAllFlow(): Flow<List<ProgressPhotoEntity>>
+
+    @Query("SELECT * FROM progress_photos ORDER BY timestamp DESC LIMIT :limit")
+    suspend fun getRecent(limit: Int): List<ProgressPhotoEntity>
+
+    @Query("""
+        SELECT * FROM progress_photos 
+        WHERE timestamp BETWEEN :startTimestamp AND :endTimestamp 
+        ORDER BY timestamp
+    """)
+    suspend fun getByDateRange(startTimestamp: Long, endTimestamp: Long): List<ProgressPhotoEntity>
+}
+

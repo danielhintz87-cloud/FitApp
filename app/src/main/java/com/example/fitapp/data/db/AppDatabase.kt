@@ -27,7 +27,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         WeightEntity::class,
         FoodItemEntity::class,
         MealEntryEntity::class,
-        WaterEntryEntity::class
+        WaterEntryEntity::class,
+        BMIHistoryEntity::class,
+        WeightLossProgramEntity::class,
+        BehavioralCheckInEntity::class,
+        ProgressPhotoEntity::class
     ],
     version = 10,
     exportSchema = true
@@ -50,6 +54,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun foodItemDao(): FoodItemDao
     abstract fun mealEntryDao(): MealEntryDao
     abstract fun waterEntryDao(): WaterEntryDao
+    abstract fun bmiHistoryDao(): BMIHistoryDao
+    abstract fun weightLossProgramDao(): WeightLossProgramDao
+    abstract fun behavioralCheckInDao(): BehavioralCheckInDao
+    abstract fun progressPhotoDao(): ProgressPhotoDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -298,6 +306,85 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_food_items_barcode` ON `food_items` (`barcode`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_food_items_categories` ON `food_items` (`categories`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_food_items_brands` ON `food_items` (`brands`)")
+            }
+        }
+        
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create BMI history table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `bmi_history` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `date` TEXT NOT NULL,
+                        `height` REAL NOT NULL,
+                        `weight` REAL NOT NULL,
+                        `bmi` REAL NOT NULL,
+                        `category` TEXT NOT NULL,
+                        `notes` TEXT,
+                        `recordedAt` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                
+                // Create weight loss programs table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `weight_loss_programs` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `startDate` TEXT NOT NULL,
+                        `endDate` TEXT,
+                        `startWeight` REAL NOT NULL,
+                        `targetWeight` REAL NOT NULL,
+                        `currentWeight` REAL NOT NULL,
+                        `dailyCalorieTarget` INTEGER NOT NULL,
+                        `weeklyWeightLossGoal` REAL NOT NULL,
+                        `isActive` INTEGER NOT NULL,
+                        `programType` TEXT NOT NULL,
+                        `createdAt` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                
+                // Create behavioral check-ins table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `behavioral_check_ins` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `timestamp` INTEGER NOT NULL,
+                        `moodScore` INTEGER NOT NULL,
+                        `hungerLevel` INTEGER NOT NULL,
+                        `stressLevel` INTEGER NOT NULL,
+                        `sleepQuality` INTEGER,
+                        `triggers` TEXT NOT NULL,
+                        `copingStrategy` TEXT,
+                        `mealContext` TEXT
+                    )
+                """.trimIndent())
+                
+                // Create progress photos table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `progress_photos` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `filePath` TEXT NOT NULL,
+                        `timestamp` INTEGER NOT NULL,
+                        `weight` REAL NOT NULL,
+                        `bmi` REAL NOT NULL,
+                        `notes` TEXT
+                    )
+                """.trimIndent())
+                
+                // Add indices for new tables
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_bmi_history_date` ON `bmi_history` (`date`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_bmi_history_bmi` ON `bmi_history` (`bmi`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_bmi_history_recordedAt` ON `bmi_history` (`recordedAt`)")
+                
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_loss_programs_startDate` ON `weight_loss_programs` (`startDate`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_loss_programs_isActive` ON `weight_loss_programs` (`isActive`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_loss_programs_programType` ON `weight_loss_programs` (`programType`)")
+                
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_behavioral_check_ins_timestamp` ON `behavioral_check_ins` (`timestamp`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_behavioral_check_ins_moodScore` ON `behavioral_check_ins` (`moodScore`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_behavioral_check_ins_stressLevel` ON `behavioral_check_ins` (`stressLevel`)")
+                
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_progress_photos_timestamp` ON `progress_photos` (`timestamp`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_progress_photos_weight` ON `progress_photos` (`weight`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_progress_photos_bmi` ON `progress_photos` (`bmi`)")
             }
         }
         
