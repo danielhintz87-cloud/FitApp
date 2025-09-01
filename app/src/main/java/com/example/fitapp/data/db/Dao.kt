@@ -382,25 +382,25 @@ interface MealEntryDao {
             END
         ) FROM meal_entries WHERE date = :date
     """)
-    suspend fun getTotalCaloriesForDate(date: String): Float?
+    suspend fun getTotalCaloriesForDate(date: String): Double?
 
     @Query("""
         SELECT SUM((quantityGrams / 100.0) * (SELECT carbs FROM food_items WHERE id = foodItemId))
         FROM meal_entries WHERE date = :date
     """)
-    suspend fun getTotalCarbsForDate(date: String): Float?
+    suspend fun getTotalCarbsForDate(date: String): Double?
 
     @Query("""
         SELECT SUM((quantityGrams / 100.0) * (SELECT protein FROM food_items WHERE id = foodItemId))
         FROM meal_entries WHERE date = :date
     """)
-    suspend fun getTotalProteinForDate(date: String): Float?
+    suspend fun getTotalProteinForDate(date: String): Double?
 
     @Query("""
         SELECT SUM((quantityGrams / 100.0) * (SELECT fat FROM food_items WHERE id = foodItemId))
         FROM meal_entries WHERE date = :date
     """)
-    suspend fun getTotalFatForDate(date: String): Float?
+    suspend fun getTotalFatForDate(date: String): Double?
 }
 
 @Dao

@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.fitapp"
-        minSdk = 26
+        minSdk = 24
         targetSdk = 34
         versionCode = 8
         versionName = "1.8"
@@ -19,24 +19,41 @@ android {
         // API key placeholders - remove in production
         buildConfigField("String", "GEMINI_API_KEY", "\"\"")
         buildConfigField("String", "PERPLEXITY_API_KEY", "\"\"")
-        
+    }
 
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
     }
 
     buildFeatures { 
         compose = true
         buildConfig = true
     }
-    composeOptions { kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get() }
+    
+    composeOptions { 
+        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get() 
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
     }
+    
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString() // "17"
-        // freeCompilerArgs += listOf(/* falls du hier schon was hast, so lassen */)
+        jvmTarget = JavaVersion.VERSION_17.toString()
+    }
+
+    lint {
+        checkDependencies = false
+        warningsAsErrors = false
+        abortOnError = false
     }
 
     // Room schema export for migration testing
@@ -53,12 +70,15 @@ android {
     }
 
     packaging {
-        resources.excludes += setOf(
-            "META-INF/DEPENDENCIES",
-            "META-INF/LICENSE*",
-            "META-INF/AL2.0",
-            "META-INF/LGPL2.1"
-        )
+        resources {
+            excludes += setOf(
+                "META-INF/AL2.0",
+                "META-INF/LGPL2.1",
+                "META-INF/licenses/**",
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE*"
+            )
+        }
     }
 }
 

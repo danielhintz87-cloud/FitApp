@@ -25,9 +25,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PersonalRecordEntity::class,
         ProgressMilestoneEntity::class,
         WeightEntity::class,
+        // Nutrition & Hydration
         FoodItemEntity::class,
         MealEntryEntity::class,
         WaterEntryEntity::class,
+        // BMI and Weight Loss tracking
         BMIHistoryEntity::class,
         WeightLossProgramEntity::class,
         BehavioralCheckInEntity::class,
@@ -306,11 +308,7 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_food_items_barcode` ON `food_items` (`barcode`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_food_items_categories` ON `food_items` (`categories`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_food_items_brands` ON `food_items` (`brands`)")
-            }
-        }
-        
-        val MIGRATION_9_10 = object : Migration(9, 10) {
-            override fun migrate(db: SupportSQLiteDatabase) {
+                
                 // Create BMI history table
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `bmi_history` (

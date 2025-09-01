@@ -187,7 +187,7 @@ class NutritionRepository(private val db: AppDatabase) {
         db.goalDao().upsert(DailyGoalEntity(dateIso = date.toString(), targetKcal = targetKcal))
     }
 
-    suspend fun setDailyGoal(date: LocalDate, targetKcal: Int, targetCarbs: Float?, targetProtein: Float?, targetFat: Float?, targetWaterMl: Int?) {
+    suspend fun setDailyGoal(date: LocalDate, targetKcal: Int, targetCarbs: Double?, targetProtein: Double?, targetFat: Double?, targetWaterMl: Int?) {
         db.goalDao().upsert(DailyGoalEntity(
             dateIso = date.toString(), 
             targetKcal = targetKcal,
@@ -334,10 +334,10 @@ class NutritionRepository(private val db: AppDatabase) {
     fun getMealEntriesForDateAndTypeFlow(date: String, mealType: String) = db.mealEntryDao().getByDateAndMealTypeFlow(date, mealType)
     
     // Nutrition calculations  
-    suspend fun getTotalCaloriesForDate(date: String) = db.mealEntryDao().getTotalCaloriesForDate(date) ?: 0f
-    suspend fun getTotalCarbsForDate(date: String) = db.mealEntryDao().getTotalCarbsForDate(date) ?: 0f
-    suspend fun getTotalProteinForDate(date: String) = db.mealEntryDao().getTotalProteinForDate(date) ?: 0f
-    suspend fun getTotalFatForDate(date: String) = db.mealEntryDao().getTotalFatForDate(date) ?: 0f
+    suspend fun getTotalCaloriesForDate(date: String) = db.mealEntryDao().getTotalCaloriesForDate(date) ?: 0.0
+    suspend fun getTotalCarbsForDate(date: String) = db.mealEntryDao().getTotalCarbsForDate(date) ?: 0.0
+    suspend fun getTotalProteinForDate(date: String) = db.mealEntryDao().getTotalProteinForDate(date) ?: 0.0
+    suspend fun getTotalFatForDate(date: String) = db.mealEntryDao().getTotalFatForDate(date) ?: 0.0
     
     // Water tracking methods
     suspend fun addWaterEntry(waterEntry: WaterEntryEntity) = db.waterEntryDao().insert(waterEntry)
@@ -355,7 +355,7 @@ class NutritionRepository(private val db: AppDatabase) {
     }
     
     // Comprehensive meal logging method
-    suspend fun logMeal(foodItemId: String, date: String, mealType: String, quantityGrams: Float, notes: String? = null) {
+    suspend fun logMeal(foodItemId: String, date: String, mealType: String, quantityGrams: Double, notes: String? = null) {
         val mealEntry = MealEntryEntity(
             foodItemId = foodItemId,
             date = date,
@@ -375,7 +375,7 @@ class NutritionRepository(private val db: AppDatabase) {
     }
     
     // Barcode scanning integration
-    suspend fun findOrCreateFoodByBarcode(barcode: String, name: String, calories: Int, carbs: Float, protein: Float, fat: Float): FoodItemEntity {
+    suspend fun findOrCreateFoodByBarcode(barcode: String, name: String, calories: Int, carbs: Double, protein: Double, fat: Double): FoodItemEntity {
         // First try to find existing food item by barcode
         val existing = getFoodItemByBarcode(barcode)
         if (existing != null) {
@@ -398,16 +398,16 @@ class NutritionRepository(private val db: AppDatabase) {
     // Initialize default food database with common items
     suspend fun initializeDefaultFoodDatabase() {
         val commonFoods = listOf(
-            FoodItemEntity(name = "Banane", calories = 89, carbs = 23f, protein = 1.1f, fat = 0.3f),
-            FoodItemEntity(name = "Apfel", calories = 52, carbs = 14f, protein = 0.3f, fat = 0.2f),
-            FoodItemEntity(name = "Hähnchenbrust", calories = 165, carbs = 0f, protein = 31f, fat = 3.6f),
-            FoodItemEntity(name = "Reis (gekocht)", calories = 130, carbs = 28f, protein = 2.7f, fat = 0.3f),
-            FoodItemEntity(name = "Haferflocken", calories = 389, carbs = 66f, protein = 17f, fat = 7f),
-            FoodItemEntity(name = "Vollmilch", calories = 60, carbs = 4.8f, protein = 3.2f, fat = 3.2f),
-            FoodItemEntity(name = "Eier", calories = 155, carbs = 1.1f, protein = 13f, fat = 11f),
-            FoodItemEntity(name = "Brokkoli", calories = 34, carbs = 7f, protein = 2.8f, fat = 0.4f),
-            FoodItemEntity(name = "Süßkartoffel", calories = 86, carbs = 20f, protein = 1.6f, fat = 0.1f),
-            FoodItemEntity(name = "Lachs", calories = 208, carbs = 0f, protein = 25f, fat = 12f)
+            FoodItemEntity(name = "Banane", calories = 89, carbs = 23.0, protein = 1.1, fat = 0.3),
+            FoodItemEntity(name = "Apfel", calories = 52, carbs = 14.0, protein = 0.3, fat = 0.2),
+            FoodItemEntity(name = "Hähnchenbrust", calories = 165, carbs = 0.0, protein = 31.0, fat = 3.6),
+            FoodItemEntity(name = "Reis (gekocht)", calories = 130, carbs = 28.0, protein = 2.7, fat = 0.3),
+            FoodItemEntity(name = "Haferflocken", calories = 389, carbs = 66.0, protein = 17.0, fat = 7.0),
+            FoodItemEntity(name = "Vollmilch", calories = 60, carbs = 4.8, protein = 3.2, fat = 3.2),
+            FoodItemEntity(name = "Eier", calories = 155, carbs = 1.1, protein = 13.0, fat = 11.0),
+            FoodItemEntity(name = "Brokkoli", calories = 34, carbs = 7.0, protein = 2.8, fat = 0.4),
+            FoodItemEntity(name = "Süßkartoffel", calories = 86, carbs = 20.0, protein = 1.6, fat = 0.1),
+            FoodItemEntity(name = "Lachs", calories = 208, carbs = 0.0, protein = 25.0, fat = 12.0)
         )
         
         commonFoods.forEach { foodItem ->
