@@ -247,7 +247,16 @@ data class FoodItemEntity(
     val carbs: Float,     // g per 100g
     val protein: Float,   // g per 100g
     val fat: Float,       // g per 100g
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
+    // Extended fields for OpenFoodFacts integration
+    val fiber: Float? = null,       // g per 100g
+    val sugar: Float? = null,       // g per 100g
+    val sodium: Float? = null,      // mg per 100g
+    val brands: String? = null,
+    val categories: String? = null,
+    val imageUrl: String? = null,
+    val servingSize: String? = null,
+    val ingredients: String? = null
 )
 
 @Entity(
