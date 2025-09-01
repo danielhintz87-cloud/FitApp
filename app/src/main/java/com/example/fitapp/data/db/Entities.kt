@@ -284,3 +284,81 @@ data class WaterEntryEntity(
     val timestamp: Long = System.currentTimeMillis() / 1000
 )
 
+@Entity(
+    tableName = "bmi_history",
+    indices = [
+        Index(value = ["date"]),
+        Index(value = ["bmi"]),
+        Index(value = ["recordedAt"])
+    ]
+)
+data class BMIHistoryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val date: String, // ISO date (yyyy-MM-dd)
+    val height: Float, // cm
+    val weight: Float, // kg
+    val bmi: Float,
+    val category: String, // UNDERWEIGHT, NORMAL, OVERWEIGHT, OBESE
+    val notes: String? = null,
+    val recordedAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "weight_loss_programs",
+    indices = [
+        Index(value = ["startDate"]),
+        Index(value = ["isActive"]),
+        Index(value = ["programType"])
+    ]
+)
+data class WeightLossProgramEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val startDate: String, // ISO date
+    val endDate: String?, // ISO date
+    val startWeight: Float, // kg
+    val targetWeight: Float, // kg
+    val currentWeight: Float, // kg
+    val dailyCalorieTarget: Int,
+    val weeklyWeightLossGoal: Float, // kg per week
+    val isActive: Boolean = true,
+    val programType: String, // "standard", "intensive", "maintenance"
+    val createdAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "behavioral_check_ins",
+    indices = [
+        Index(value = ["timestamp"]),
+        Index(value = ["moodScore"]),
+        Index(value = ["stressLevel"])
+    ]
+)
+data class BehavioralCheckInEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val timestamp: Long,
+    val moodScore: Int, // 1-10 scale
+    val hungerLevel: Int, // 1-10 scale
+    val stressLevel: Int, // 1-10 scale
+    val sleepQuality: Int?, // 1-10 scale
+    val triggers: String, // JSON encoded list of EmotionalTrigger
+    val copingStrategy: String?,
+    val mealContext: String? // "before_meal", "after_meal", "snack"
+)
+
+@Entity(
+    tableName = "progress_photos",
+    indices = [
+        Index(value = ["timestamp"]),
+        Index(value = ["weight"]),
+        Index(value = ["bmi"])
+    ]
+)
+data class ProgressPhotoEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val filePath: String,
+    val timestamp: Long,
+    val weight: Float,
+    val bmi: Float,
+    val notes: String? = null
+)
+

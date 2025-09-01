@@ -4,15 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Fastfood
-import androidx.compose.material.icons.filled.Insights
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Timeline
-import androidx.compose.material.icons.filled.Today
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -39,6 +31,7 @@ import com.example.fitapp.ui.screens.TodayTrainingScreen
 import com.example.fitapp.ui.screens.DailyWorkoutScreen
 import com.example.fitapp.ui.screens.TrainingExecutionScreen
 import com.example.fitapp.ui.screens.WeightTrackingScreen
+import com.example.fitapp.ui.screens.BMICalculatorScreen
 import com.example.fitapp.ui.settings.ApiKeysScreen
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
@@ -78,6 +71,7 @@ fun MainScaffold() {
                 NavigationDrawerItem(label = { Text("Ernährungstagbuch") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("food_diary") })
                 NavigationDrawerItem(label = { Text("Lebensmittel suchen") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("food_search") })
                 NavigationDrawerItem(label = { Text("Ernährungs-Analytics") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("nutrition_analytics") })
+                NavigationDrawerItem(label = { Text("BMI Rechner") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("bmi_calculator") })
                 NavigationDrawerItem(label = { Text("AI-Logs") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("logs") })
                 NavigationDrawerItem(label = { Text("API-Schlüssel") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("apikeys") })
             }
@@ -159,6 +153,16 @@ fun MainScaffold() {
                                 },
                                 leadingIcon = {
                                     Icon(Icons.Filled.Timeline, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("BMI Rechner") },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    nav.navigate("bmi_calculator")
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Calculate, contentDescription = null)
                                 }
                             )
                         }
@@ -304,6 +308,15 @@ fun MainScaffold() {
                     NutritionAnalyticsScreen(
                         contentPadding = padding,
                         onBackPressed = { nav.popBackStack() }
+                    )
+                }
+                composable("bmi_calculator") {
+                    BMICalculatorScreen(
+                        navController = nav,
+                        onWeightLossProgramSuggested = { bmi, targetWeight ->
+                            // TODO: Navigate to weight loss program creation
+                            // nav.navigate("weight_loss_program_create/$bmi/$targetWeight")
+                        }
                     )
                 }
 
