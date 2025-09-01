@@ -511,7 +511,7 @@ private suspend fun initializeDefaultCategories(db: AppDatabase) {
 }
 
 private fun categorizeItem(itemName: String): String {
-    val name = itemName.lowercase()
+    val name = itemName.lowercase(java.util.Locale.ROOT)
     return when {
         name.contains("apfel") || name.contains("banane") || name.contains("tomate") || 
         name.contains("zwiebel") || name.contains("karotte") || name.contains("salat") -> "Obst & Gemüse"

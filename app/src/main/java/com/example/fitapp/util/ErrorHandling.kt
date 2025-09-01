@@ -196,7 +196,7 @@ object ErrorHandling {
             is UnknownHostException,
             is TimeoutCancellationException -> true
             else -> {
-                val message = exception.message?.lowercase()
+                val message = exception.message?.lowercase(java.util.Locale.ROOT)
                 message?.contains("timeout") == true ||
                 message?.contains("connection") == true ||
                 message?.contains("network") == true

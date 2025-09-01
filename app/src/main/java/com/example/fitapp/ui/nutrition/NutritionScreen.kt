@@ -333,7 +333,7 @@ suspend fun saveToSavedRecipes(context: Context, recipe: UiRecipe) {
     
     // Parse recipe details for better categorization
     val tags = mutableListOf<String>()
-    val markdown = recipe.markdown.lowercase()
+    val markdown = recipe.markdown.lowercase(java.util.Locale.ROOT)
     
     // Detect dietary tags
     if (markdown.contains("vegetarisch") || markdown.contains("vegetarian")) tags.add("vegetarian")
@@ -395,7 +395,7 @@ private fun extractPrepTime(markdown: String): Int? {
 
 private fun extractDifficulty(markdown: String): String? {
     val difficultyRegex = Regex("""(einfach|leicht|mittel|schwer|schwierig|easy|medium|hard)""", RegexOption.IGNORE_CASE)
-    return difficultyRegex.find(markdown)?.value?.lowercase()
+    return difficultyRegex.find(markdown)?.value?.lowercase(java.util.Locale.ROOT)
 }
 
 private fun extractServings(markdown: String): Int? {

@@ -403,7 +403,7 @@ private fun parseIngredients(markdown: String): List<String> {
 }
 
 private fun categorizeIngredient(ingredient: String): String {
-    val lowercaseIngredient = ingredient.lowercase()
+    val lowercaseIngredient = ingredient.lowercase(java.util.Locale.ROOT)
     
     return when {
         // Fruits & Vegetables
