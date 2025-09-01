@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
                         Column(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text("Fehler beim Laden der App")
                             Text("Bitte starten Sie die App neu")

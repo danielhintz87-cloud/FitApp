@@ -316,12 +316,12 @@ abstract class AppDatabase : RoomDatabase() {
                             fallbackToDestructiveMigration()
                         }
                     }
-                    .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING) // Enable WAL mode for better performance
+                    .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING) // Enable WAL mode for better performance
                     .setQueryCallback({ sqlQuery, bindArgs ->
                         // Log slow queries for performance monitoring
                         android.util.Log.d("Database", "Query: $sqlQuery Args: $bindArgs")
                     }, java.util.concurrent.Executors.newSingleThreadExecutor())
-                    .addCallback(object : RoomDatabase.Callback() {
+                    .addCallback(object : Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
                             // Add indices for better query performance
@@ -354,7 +354,7 @@ abstract class AppDatabase : RoomDatabase() {
                 try {
                     Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp_fallback.db")
                         .fallbackToDestructiveMigration()
-                        .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
+                        .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
                         .build().also { 
                             INSTANCE = it 
                             android.util.Log.w("AppDatabase", "Using fallback database")
