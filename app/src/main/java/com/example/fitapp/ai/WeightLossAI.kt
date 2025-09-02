@@ -713,3 +713,466 @@ private fun generateBasicRecommendations(): List<AIRecommendation> {
         )
     )
 }
+
+// Advanced Workout Execution Enhancement - Phase 1 AI Extensions
+
+/**
+ * Generate intelligent workout progression recommendations based on performance history
+ */
+suspend fun AppAi.generateWorkoutProgression(
+    context: Context,
+    exercise: com.example.fitapp.ui.screens.ExerciseStep,
+    performanceHistory: List<com.example.fitapp.data.db.WorkoutPerformanceEntity>,
+    userProfile: com.example.fitapp.ai.UserWorkoutProfile
+): Result<com.example.fitapp.ai.ProgressionSuggestion> {
+    
+    if (performanceHistory.isEmpty()) {
+        return Result.success(createDefaultProgression(exercise, userProfile))
+    }
+    
+    val prompt = """
+        Als erfahrener Personal Trainer analysiere die Trainingsleistung und erstelle eine optimale Progression.
+        
+        Übung: ${exercise.name}
+        Aktueller Status: ${exercise.value}
+        
+        Leistungshistorie (letzte 5 Einheiten):
+        ${performanceHistory.takeLast(5).joinToString("\n") { perf ->
+            "Gewicht: ${perf.weight}kg, Wiederholungen: ${perf.reps}, Volume: ${perf.volume}, Form: ${(perf.formQuality * 100).toInt()}%, RPE: ${perf.perceivedExertion}"
+        }}
+        
+        Benutzerprofil:
+        - Fitnesslevel: ${userProfile.fitnessLevel}
+        - Ziele: ${userProfile.primaryGoals.joinToString(", ")}
+        - Verfügbare Ausrüstung: ${userProfile.availableEquipment.joinToString(", ")}
+        - Verletzungen: ${userProfile.injuries.joinToString(", ").ifEmpty { "Keine" }}
+        
+        Analysiere die Entwicklung und erstelle eine Empfehlung für die nächste Trainingseinheit:
+        
+        1. Progressionstrend analysieren (verbessernd, stagnierend, abnehmend)
+        2. Gewichts- und Wiederholungsempfehlung
+        3. Begründung der Empfehlung
+        4. Alternative Ansätze
+        5. Sicherheitshinweise
+        
+        Format:
+        EMPFEHLUNG:
+        Gewicht: [Zahl]kg
+        Wiederholungen: [Zahl]
+        Begründung: [Erklärung]
+        
+        ALTERNATIVEN:
+        - Alternative 1: [Beschreibung]
+        - Alternative 2: [Beschreibung]
+        
+        SICHERHEIT:
+        - [Hinweis 1]
+        - [Hinweis 2]
+    """.trimIndent()
+    
+    return try {
+        val response = planWithOptimalProvider(context, PlanRequest(
+            goal = "Workout Progression für ${exercise.name}",
+            weeks = 1,
+            sessionsPerWeek = 3,
+            minutesPerSession = 30,
+            equipment = userProfile.availableEquipment
+        ))
+        Result.success(parseProgressionResponse(response.getOrThrow(), exercise, performanceHistory))
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+}
+
+/**
+ * Analyze movement form quality using AI and sensor data
+ */
+suspend fun AppAi.analyzeFormQuality(
+    context: Context,
+    sensorData: com.example.fitapp.ai.MovementData,
+    exerciseType: String
+): Result<com.example.fitapp.ai.FormQualityAssessment> {
+    
+    val prompt = """
+        Als Bewegungsanalyst bewerte die Übungsausführung basierend auf Sensordaten.
+        
+        Übung: $exerciseType
+        
+        Sensordaten:
+        Beschleunigung: X=${sensorData.accelerometer.first}, Y=${sensorData.accelerometer.second}, Z=${sensorData.accelerometer.third}
+        Gyroskop: X=${sensorData.gyroscope.first}, Y=${sensorData.gyroscope.second}, Z=${sensorData.gyroscope.third}
+        
+        Analysiere die Bewegungsqualität und gib Feedback:
+        
+        1. Gesamtbewertung (0-100%)
+        2. Verbesserungsvorschläge
+        3. Risikofaktoren
+        4. Positive Aspekte
+        
+        Format:
+        BEWERTUNG: [0-100]%
+        
+        VERBESSERUNGEN:
+        - [Vorschlag 1]
+        - [Vorschlag 2]
+        
+        RISIKEN:
+        - [Risiko 1]
+        - [Risiko 2]
+        
+        POSITIV:
+        - [Aspekt 1]
+        - [Aspekt 2]
+    """.trimIndent()
+    
+    return try {
+        val response = planWithOptimalProvider(context, PlanRequest(
+            goal = "Form Analysis für $exerciseType",
+            weeks = 1,
+            sessionsPerWeek = 1,
+            minutesPerSession = 10,
+            equipment = listOf("Sensoren")
+        ))
+        Result.success(parseFormAnalysisResponse(response.getOrThrow()))
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+}
+
+/**
+ * Generate real-time coaching tips based on current performance
+ */
+suspend fun AppAi.generateCoachingTips(
+    context: Context,
+    currentPerformance: com.example.fitapp.data.db.WorkoutPerformanceEntity,
+    exerciseContext: com.example.fitapp.ai.WorkoutContext
+): Result<List<com.example.fitapp.ai.CoachingTip>> {
+    
+    val prompt = """
+        Als Personal Trainer gib sofortige Coaching-Tipps für die aktuelle Übung.
+        
+        Aktuelle Übung: ${exerciseContext.currentExercise?.name}
+        Aktuelle Leistung:
+        - Gewicht: ${currentPerformance.weight}kg
+        - Wiederholungen: ${currentPerformance.reps}
+        - Form-Qualität: ${(currentPerformance.formQuality * 100).toInt()}%
+        - RPE: ${currentPerformance.perceivedExertion}/10
+        - Herzfrequenz: ${currentPerformance.heartRateAvg ?: "Unbekannt"}
+        
+        Session Fortschritt: ${(exerciseContext.sessionProgress * 100).toInt()}%
+        Ermüdungslevel: ${exerciseContext.userFatigueLevel}
+        
+        Erstelle 2-3 präzise, motivierende Coaching-Tipps:
+        
+        Format pro Tipp:
+        TYP: [FORM_IMPROVEMENT/REST_OPTIMIZATION/MOTIVATION/SAFETY_WARNING/TECHNIQUE_TIP]
+        PRIORITÄT: [LOW/MEDIUM/HIGH/CRITICAL]
+        NACHRICHT: [Kurzer, präziser Tipp]
+        AKTION: [Optionale konkrete Handlung]
+    """.trimIndent()
+    
+    return try {
+        val response = planWithOptimalProvider(context, PlanRequest(
+            goal = "Coaching Tips für ${exerciseContext.currentExercise?.name}",
+            weeks = 1,
+            sessionsPerWeek = 1,
+            minutesPerSession = 5,
+            equipment = emptyList()
+        ))
+        Result.success(parseCoachingTipsResponse(response.getOrThrow()))
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+}
+
+/**
+ * Predict workout outcome and optimize performance
+ */
+suspend fun AppAi.predictWorkoutOutcome(
+    context: Context,
+    currentSession: com.example.fitapp.data.db.WorkoutSessionEntity,
+    userHistory: com.example.fitapp.ai.UserWorkoutProfile
+): Result<com.example.fitapp.ai.PerformancePrediction> {
+    
+    val prompt = """
+        Als Trainingsanalyst prognostiziere das Workout-Ergebnis basierend auf aktuellen Daten.
+        
+        Aktuelle Session:
+        - Gesamt-Volume: ${currentSession.totalVolume}
+        - Durchschnittliche Herzfrequenz: ${currentSession.averageHeartRate ?: "Unbekannt"}
+        - Effizienz-Score: ${currentSession.workoutEfficiencyScore}
+        - Ermüdungslevel: ${currentSession.fatigueLevel}
+        - Fortschritt: ${currentSession.completionPercentage}%
+        
+        Benutzerhistorie:
+        - Fitnesslevel: ${userHistory.fitnessLevel}
+        - Bevorzugte Intensität: ${userHistory.preferredIntensity}
+        - Max Herzfrequenz: ${userHistory.maxHeartRate}
+        - Ruhe Herzfrequenz: ${userHistory.restingHeartRate}
+        
+        Erstelle eine Prognose mit Optimierungsempfehlungen:
+        
+        Format:
+        ERWARTETES_VOLUME: [Zahl]
+        ERWARTETE_DAUER: [Minuten]
+        ERMÜDUNGS_PROGNOSE: [low/medium/high]
+        REST_ANPASSUNG: [+/-Sekunden]
+        VERTRAUEN: [0-100]%
+        
+        OPTIMIERUNGEN:
+        - [Empfehlung 1]
+        - [Empfehlung 2]
+    """.trimIndent()
+    
+    return try {
+        val response = planWithOptimalProvider(context, PlanRequest(
+            goal = "Performance Prediction für Training",
+            weeks = 1,
+            sessionsPerWeek = 1,
+            minutesPerSession = 60,
+            equipment = emptyList()
+        ))
+        Result.success(parsePerformancePredictionResponse(response.getOrThrow()))
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+}
+
+// Private helper functions for parsing AI responses
+
+private fun createDefaultProgression(
+    exercise: com.example.fitapp.ui.screens.ExerciseStep,
+    userProfile: com.example.fitapp.ai.UserWorkoutProfile
+): com.example.fitapp.ai.ProgressionSuggestion {
+    return com.example.fitapp.ai.ProgressionSuggestion(
+        exerciseId = exercise.name,
+        exerciseName = exercise.name,
+        currentWeight = 0f,
+        recommendedWeight = when (userProfile.fitnessLevel) {
+            "beginner" -> 5f
+            "intermediate" -> 10f
+            "advanced" -> 15f
+            else -> 8f
+        },
+        currentReps = 8,
+        recommendedReps = 10,
+        reason = "Basis-Progression für ${userProfile.fitnessLevel} Level",
+        confidence = 0.7f,
+        alternatives = listOf(
+            com.example.fitapp.ai.ProgressionAlternative(
+                type = "rep_increase",
+                description = "Erhöhe Wiederholungen statt Gewicht",
+                weight = null,
+                reps = 12,
+                difficulty = "easier"
+            )
+        )
+    )
+}
+
+private fun parseProgressionResponse(
+    response: String,
+    exercise: com.example.fitapp.ui.screens.ExerciseStep,
+    history: List<com.example.fitapp.data.db.WorkoutPerformanceEntity>
+): com.example.fitapp.ai.ProgressionSuggestion {
+    val lines = response.lines()
+    
+    var recommendedWeight = history.lastOrNull()?.weight ?: 5f
+    var recommendedReps = history.lastOrNull()?.reps ?: 10
+    var reason = "AI-basierte Progression"
+    
+    for (line in lines) {
+        when {
+            line.startsWith("Gewicht:") -> {
+                recommendedWeight = line.substringAfter(":").replace("kg", "").trim().toFloatOrNull() ?: recommendedWeight
+            }
+            line.startsWith("Wiederholungen:") -> {
+                recommendedReps = line.substringAfter(":").trim().toIntOrNull() ?: recommendedReps
+            }
+            line.startsWith("Begründung:") -> {
+                reason = line.substringAfter(":").trim()
+            }
+        }
+    }
+    
+    return com.example.fitapp.ai.ProgressionSuggestion(
+        exerciseId = exercise.name,
+        exerciseName = exercise.name,
+        currentWeight = history.lastOrNull()?.weight ?: 0f,
+        recommendedWeight = recommendedWeight,
+        currentReps = history.lastOrNull()?.reps ?: 8,
+        recommendedReps = recommendedReps,
+        reason = reason,
+        confidence = 0.85f,
+        alternatives = parseAlternatives(response)
+    )
+}
+
+private fun parseFormAnalysisResponse(response: String): com.example.fitapp.ai.FormQualityAssessment {
+    val lines = response.lines()
+    
+    var overallQuality = 0.8f
+    val improvements = mutableListOf<String>()
+    val risks = mutableListOf<String>()
+    val positives = mutableListOf<String>()
+    
+    var currentSection = ""
+    
+    for (line in lines) {
+        when {
+            line.startsWith("BEWERTUNG:") -> {
+                val percentage = line.substringAfter(":").replace("%", "").trim().toIntOrNull() ?: 80
+                overallQuality = percentage / 100f
+            }
+            line.startsWith("VERBESSERUNGEN:") -> currentSection = "improvements"
+            line.startsWith("RISIKEN:") -> currentSection = "risks"
+            line.startsWith("POSITIV:") -> currentSection = "positives"
+            line.startsWith("- ") -> {
+                val item = line.substring(2).trim()
+                when (currentSection) {
+                    "improvements" -> improvements.add(item)
+                    "risks" -> risks.add(item)
+                    "positives" -> positives.add(item)
+                }
+            }
+        }
+    }
+    
+    return com.example.fitapp.ai.FormQualityAssessment(
+        overallQuality = overallQuality,
+        improvements = improvements,
+        riskFactors = risks,
+        positiveAspects = positives
+    )
+}
+
+private fun parseCoachingTipsResponse(response: String): List<com.example.fitapp.ai.CoachingTip> {
+    val tips = mutableListOf<com.example.fitapp.ai.CoachingTip>()
+    val lines = response.lines()
+    
+    var currentTip: MutableMap<String, String> = mutableMapOf()
+    
+    for (line in lines) {
+        when {
+            line.startsWith("TYP:") -> {
+                if (currentTip.isNotEmpty()) {
+                    tips.add(createCoachingTip(currentTip))
+                    currentTip = mutableMapOf()
+                }
+                currentTip["type"] = line.substringAfter(":").trim()
+            }
+            line.startsWith("PRIORITÄT:") -> currentTip["priority"] = line.substringAfter(":").trim()
+            line.startsWith("NACHRICHT:") -> currentTip["message"] = line.substringAfter(":").trim()
+            line.startsWith("AKTION:") -> currentTip["action"] = line.substringAfter(":").trim()
+        }
+    }
+    
+    if (currentTip.isNotEmpty()) {
+        tips.add(createCoachingTip(currentTip))
+    }
+    
+    return tips.ifEmpty {
+        listOf(
+            com.example.fitapp.ai.CoachingTip(
+                type = com.example.fitapp.ai.CoachingTipType.MOTIVATION,
+                message = "Du machst das großartig! Bleib fokussiert.",
+                priority = com.example.fitapp.ai.Priority.MEDIUM
+            )
+        )
+    }
+}
+
+private fun createCoachingTip(tipData: Map<String, String>): com.example.fitapp.ai.CoachingTip {
+    val type = when (tipData["type"]?.uppercase()) {
+        "FORM_IMPROVEMENT" -> com.example.fitapp.ai.CoachingTipType.FORM_IMPROVEMENT
+        "REST_OPTIMIZATION" -> com.example.fitapp.ai.CoachingTipType.REST_OPTIMIZATION
+        "MOTIVATION" -> com.example.fitapp.ai.CoachingTipType.MOTIVATION
+        "SAFETY_WARNING" -> com.example.fitapp.ai.CoachingTipType.SAFETY_WARNING
+        "TECHNIQUE_TIP" -> com.example.fitapp.ai.CoachingTipType.TECHNIQUE_TIP
+        else -> com.example.fitapp.ai.CoachingTipType.MOTIVATION
+    }
+    
+    val priority = when (tipData["priority"]?.uppercase()) {
+        "LOW" -> com.example.fitapp.ai.Priority.LOW
+        "MEDIUM" -> com.example.fitapp.ai.Priority.MEDIUM
+        "HIGH" -> com.example.fitapp.ai.Priority.HIGH
+        "CRITICAL" -> com.example.fitapp.ai.Priority.CRITICAL
+        else -> com.example.fitapp.ai.Priority.MEDIUM
+    }
+    
+    return com.example.fitapp.ai.CoachingTip(
+        type = type,
+        message = tipData["message"] ?: "Bleib dran!",
+        priority = priority,
+        actionable = tipData["action"]?.isNotBlank() == true,
+        action = tipData["action"]
+    )
+}
+
+private fun parsePerformancePredictionResponse(response: String): com.example.fitapp.ai.PerformancePrediction {
+    val lines = response.lines()
+    
+    var expectedVolume = 0f
+    var expectedDuration = 60
+    var fatigueForecast = "medium"
+    var restAdjustment = 0
+    var confidence = 0.75f
+    
+    for (line in lines) {
+        when {
+            line.startsWith("ERWARTETES_VOLUME:") -> {
+                expectedVolume = line.substringAfter(":").trim().toFloatOrNull() ?: 0f
+            }
+            line.startsWith("ERWARTETE_DAUER:") -> {
+                expectedDuration = line.substringAfter(":").replace("Minuten", "").trim().toIntOrNull() ?: 60
+            }
+            line.startsWith("ERMÜDUNGS_PROGNOSE:") -> {
+                fatigueForecast = line.substringAfter(":").trim()
+            }
+            line.startsWith("REST_ANPASSUNG:") -> {
+                val adjustment = line.substringAfter(":").replace("Sekunden", "").trim()
+                restAdjustment = adjustment.toIntOrNull() ?: 0
+            }
+            line.startsWith("VERTRAUEN:") -> {
+                val conf = line.substringAfter(":").replace("%", "").trim().toIntOrNull() ?: 75
+                confidence = conf / 100f
+            }
+        }
+    }
+    
+    return com.example.fitapp.ai.PerformancePrediction(
+        expectedVolume = expectedVolume,
+        expectedDuration = expectedDuration,
+        fatigueForecast = fatigueForecast,
+        recommendedRestAdjustment = restAdjustment,
+        confidence = confidence
+    )
+}
+
+private fun parseAlternatives(response: String): List<com.example.fitapp.ai.ProgressionAlternative> {
+    val alternatives = mutableListOf<com.example.fitapp.ai.ProgressionAlternative>()
+    val lines = response.lines()
+    
+    var inAlternativesSection = false
+    
+    for (line in lines) {
+        when {
+            line.startsWith("ALTERNATIVEN:") -> inAlternativesSection = true
+            line.startsWith("- ") && inAlternativesSection -> {
+                val description = line.substring(2).trim()
+                alternatives.add(
+                    com.example.fitapp.ai.ProgressionAlternative(
+                        type = "alternative",
+                        description = description,
+                        weight = null,
+                        reps = null,
+                        difficulty = "same"
+                    )
+                )
+            }
+            line.startsWith("SICHERHEIT:") -> inAlternativesSection = false
+        }
+    }
+    
+    return alternatives
+}
