@@ -63,22 +63,122 @@ fun MainScaffold() {
         drawerContent = {
             ModalDrawerSheet {
                 Text("Navigation", style = MaterialTheme.typography.titleMedium, modifier = Modifier.statusBarsPadding())
-                NavigationDrawerItem(label = { Text("Trainingsplan") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("plan") })
-                NavigationDrawerItem(label = { Text("Heute") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("today") })
-                NavigationDrawerItem(label = { Text("Rezepte") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("nutrition") })
-                NavigationDrawerItem(label = { Text("Progress") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("progress") })
-                NavigationDrawerItem(label = { Text("Gespeicherte Rezepte") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("saved_recipes") })
-                NavigationDrawerItem(label = { Text("Einkaufsliste") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("shopping_list") })
-                NavigationDrawerItem(label = { Text("Food Scan") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("foodscan") })
-                NavigationDrawerItem(label = { Text("Ernährungstagbuch") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("food_diary") })
-                NavigationDrawerItem(label = { Text("Lebensmittel suchen") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("food_search") })
-                NavigationDrawerItem(label = { Text("Ernährungs-Analytics") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("nutrition_analytics") })
-                NavigationDrawerItem(label = { Text("Enhanced Analytics") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("enhanced_analytics") })
-                NavigationDrawerItem(label = { Text("BMI Rechner") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("bmi_calculator") })
-                NavigationDrawerItem(label = { Text("Abnehm-Programm") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("weight_loss_program") })
-                NavigationDrawerItem(label = { Text("AI Personal Trainer") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("ai_personal_trainer") })
-                NavigationDrawerItem(label = { Text("AI-Logs") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("logs") })
-                NavigationDrawerItem(label = { Text("API-Schlüssel") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("apikeys") })
+                
+                // AI Features Section
+                Text(
+                    text = "AI Features", 
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+                NavigationDrawerItem(
+                    label = { Text("AI Personal Trainer") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("ai_personal_trainer") },
+                    icon = { Icon(Icons.Filled.Psychology, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("AI Recipe Generator") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("nutrition") },
+                    icon = { Icon(Icons.Filled.Fastfood, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("AI Workout Plans") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("plan") },
+                    icon = { Icon(Icons.Filled.Timeline, contentDescription = null) }
+                )
+                
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                
+                // Health & Fitness Section
+                Text(
+                    text = "Health & Fitness", 
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+                NavigationDrawerItem(
+                    label = { Text("BMI Calculator") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("bmi_calculator") },
+                    icon = { Icon(Icons.Filled.Calculate, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Weight Loss Program") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("weight_loss_program") },
+                    icon = { Icon(Icons.Filled.Flag, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Progress Analytics") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("enhanced_analytics") },
+                    icon = { Icon(Icons.Filled.Insights, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Weight Tracking") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("weight_tracking") },
+                    icon = { Icon(Icons.Filled.TrendingUp, contentDescription = null) }
+                )
+                
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                
+                // Tools Section
+                Text(
+                    text = "Tools", 
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+                NavigationDrawerItem(
+                    label = { Text("Shopping List") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("shopping_list") },
+                    icon = { Icon(Icons.Filled.ShoppingCart, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Food Scanner") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("foodscan") },
+                    icon = { Icon(Icons.Filled.PhotoCamera, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Food Diary") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("food_diary") },
+                    icon = { Icon(Icons.Filled.MenuBook, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Saved Recipes") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("saved_recipes") },
+                    icon = { Icon(Icons.Filled.Bookmark, contentDescription = null) }
+                )
+                
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                
+                // Settings Section
+                Text(
+                    text = "Settings", 
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+                NavigationDrawerItem(
+                    label = { Text("API Key Configuration") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("apikeys") },
+                    icon = { Icon(Icons.Filled.Key, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("AI Logs") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("logs") },
+                    icon = { Icon(Icons.Filled.History, contentDescription = null) }
+                )
             }
         }
     ) {
@@ -101,103 +201,43 @@ fun MainScaffold() {
                             onDismissRequest = { showOverflowMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Gespeicherte Rezepte") },
+                                text = { Text("Quick Settings") },
                                 onClick = {
                                     showOverflowMenu = false
-                                    nav.navigate("saved_recipes")
+                                    nav.navigate("apikeys")
                                 },
                                 leadingIcon = {
-                                    Icon(Icons.Filled.Bookmark, contentDescription = null)
+                                    Icon(Icons.Filled.Settings, contentDescription = null)
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Einkaufsliste") },
+                                text = { Text("Food Search") },
                                 onClick = {
                                     showOverflowMenu = false
-                                    nav.navigate("shopping_list")
+                                    nav.navigate("food_search")
                                 },
                                 leadingIcon = {
-                                    Icon(Icons.Filled.ShoppingCart, contentDescription = null)
+                                    Icon(Icons.Filled.Search, contentDescription = null)
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Essen fotografieren") },
+                                text = { Text("Help & Support") },
                                 onClick = {
                                     showOverflowMenu = false
-                                    nav.navigate("foodscan")
+                                    // TODO: Add help/support screen
                                 },
                                 leadingIcon = {
-                                    Icon(Icons.Filled.PhotoCamera, contentDescription = null)
+                                    Icon(Icons.Filled.Help, contentDescription = null)
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Ernährungstagbuch") },
+                                text = { Text("About") },
                                 onClick = {
                                     showOverflowMenu = false
-                                    nav.navigate("food_diary")
+                                    // TODO: Add about screen
                                 },
                                 leadingIcon = {
-                                    Icon(Icons.Filled.Fastfood, contentDescription = null)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Enhanced Analytics") },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    nav.navigate("enhanced_analytics")
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Filled.Dashboard, contentDescription = null)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Ernährungs-Analytics") },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    nav.navigate("nutrition_analytics")
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Filled.Insights, contentDescription = null)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Gewicht tracken") },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    nav.navigate("weight_tracking")
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Filled.Timeline, contentDescription = null)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("BMI Rechner") },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    nav.navigate("bmi_calculator")
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Filled.Calculate, contentDescription = null)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Abnehm-Programm") },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    nav.navigate("weight_loss_program")
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Filled.Flag, contentDescription = null)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("AI Personal Trainer") },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    nav.navigate("ai_personal_trainer")
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Filled.Psychology, contentDescription = null)
+                                    Icon(Icons.Filled.Info, contentDescription = null)
                                 }
                             )
                         }
