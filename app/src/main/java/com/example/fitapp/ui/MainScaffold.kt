@@ -179,6 +179,16 @@ fun MainScaffold() {
                                     Icon(Icons.Filled.Flag, contentDescription = null)
                                 }
                             )
+                            DropdownMenuItem(
+                                text = { Text("AI Personal Trainer") },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    nav.navigate("ai_personal_trainer")
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Psychology, contentDescription = null)
+                                }
+                            )
                         }
                     }
                 )
