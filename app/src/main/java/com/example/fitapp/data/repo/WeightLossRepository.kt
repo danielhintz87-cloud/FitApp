@@ -12,6 +12,7 @@ import com.example.fitapp.domain.ActivityLevel
 import com.example.fitapp.domain.MacroTargets
 import com.example.fitapp.domain.WeightLossMilestone
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -273,5 +274,19 @@ class WeightLossRepository(private val database: AppDatabase) {
     
     suspend fun getProgressPhotosByDateRange(startTimestamp: Long, endTimestamp: Long): List<ProgressPhotoEntity> {
         return database.progressPhotoDao().getByDateRange(startTimestamp, endTimestamp)
+    }
+    
+    // Analytics methods for Enhanced Analytics Dashboard
+    suspend fun getWeightHistoryForPeriod(days: Int): List<BMIHistoryEntity> {
+        return getAllBMIHistory().takeLast(days)
+    }
+    
+    fun weightHistoryFlow(days: Int): Flow<List<BMIHistoryEntity>> = flow {
+        val history = getWeightHistoryForPeriod(days)
+        emit(history)
+    }
+    
+    fun weightTrendFlow(): Flow<List<BMIHistoryEntity>> {
+        return getAllBMIHistoryFlow()
     }
 }
