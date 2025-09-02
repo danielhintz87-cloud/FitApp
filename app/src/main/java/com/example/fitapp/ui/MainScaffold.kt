@@ -3,12 +3,15 @@ package com.example.fitapp.ui
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -121,7 +124,7 @@ fun MainScaffold() {
                     label = { Text("Weight Tracking") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("weight_tracking") },
-                    icon = { Icon(Icons.Filled.TrendingUp, contentDescription = null) }
+                    icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null) }
                 )
                 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -149,7 +152,7 @@ fun MainScaffold() {
                     label = { Text("Food Diary") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("food_diary") },
-                    icon = { Icon(Icons.Filled.MenuBook, contentDescription = null) }
+                    icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null) }
                 )
                 NavigationDrawerItem(
                     label = { Text("Saved Recipes") }, 
@@ -227,7 +230,7 @@ fun MainScaffold() {
                                     // TODO: Add help/support screen
                                 },
                                 leadingIcon = {
-                                    Icon(Icons.Filled.Help, contentDescription = null)
+                                    Icon(Icons.AutoMirrored.Filled.Help, contentDescription = null)
                                 }
                             )
                             DropdownMenuItem(
