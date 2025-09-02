@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    jacoco
 }
 
 android {
@@ -56,6 +57,14 @@ android {
         abortOnError = false
     }
 
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+        }
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
+    }
+    
     // Room schema export for migration testing
     applicationVariants.all {
         ksp {
@@ -147,10 +156,65 @@ dependencies {
     implementation(libs.work.runtime.ktx)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
-    // Testing dependencies
+    // Unit Testing Dependencies
     testImplementation(libs.junit)
+    testImplementation("org.mockito:mockito-core:5.1.1")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:4.1.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+    testImplementation("androidx.room:room-testing:2.5.0")
+    
+    // Instrumented Testing Dependencies
     androidTestImplementation(libs.android.test.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.room.testing)
     androidTestImplementation(libs.android.test.core)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.5.4")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
+    
+    // Debug Dependencies for Compose Testing
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.5.4")
+}
+
+// Jacoco Test Coverage Configuration
+jacoco {
+    toolVersion = "0.8.8"
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+    
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+    
+    val fileFilter = listOf(
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*",
+        "**/databinding/**",
+        "**/android/databinding/**",
+        "**/androidx/databinding/**",
+        "**/*_MembersInjector.class",
+        "**/Dagger*Component*.class",
+        "**/*Module_*Factory.class",
+        "**/di/module/*",
+        "**/*_Factory*.*",
+        "**/*Module*.*",
+        "**/*Dagger*.*",
+        "**/*Hilt*.*"
+    )
+    
+    val debugTree = fileTree("${layout.buildDirectory.get()}/tmp/kotlin-classes/debug")
+    val mainSrc = "${project.projectDir}/src/main/java"
+    
+    sourceDirectories.setFrom(files(mainSrc))
+    classDirectories.setFrom(files(debugTree.exclude(fileFilter)))
+    executionData.setFrom(fileTree(layout.buildDirectory.get()).include("jacoco/testDebugUnitTest.exec"))
 }
