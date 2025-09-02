@@ -68,7 +68,6 @@ fun EnhancedFoodSearchInterface(
     
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val scope = rememberCoroutineScope()
     
     // Debounced search
     LaunchedEffect(searchQuery) {
@@ -126,7 +125,7 @@ fun EnhancedFoodSearchInterface(
                 else -> SearchState.EMPTY
             },
             transitionSpec = {
-                fadeIn() with fadeOut()
+                fadeIn() togetherWith fadeOut()
             },
             label = "search_content"
         ) { state ->

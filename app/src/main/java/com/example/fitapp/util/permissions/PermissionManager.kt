@@ -124,7 +124,6 @@ fun PermissionRequestScreen(
     onSkip: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
@@ -269,7 +268,6 @@ private fun PermissionCard(
  */
 @Composable
 fun HealthConnectPermissionScreen(
-    onPermissionsResult: (Set<String>) -> Unit,
     onSkip: () -> Unit,
     modifier: Modifier = Modifier
 ) {

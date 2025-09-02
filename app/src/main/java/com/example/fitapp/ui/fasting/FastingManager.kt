@@ -118,8 +118,7 @@ class FastingManager(context: Context) {
         val currentState = _fastingState.value
         
         if (currentState.isFasting && currentState.fastStartTime != null) {
-            val fastingDuration = ChronoUnit.HOURS.between(currentState.fastStartTime, LocalDateTime.now())
-            updateStats(fastingDuration.toInt())
+            updateStats()
         }
         
         prefs.edit()
@@ -254,7 +253,7 @@ class FastingManager(context: Context) {
         }
     }
     
-    private fun updateStats(fastingHours: Int) {
+    private fun updateStats() {
         val currentStreak = prefs.getInt(KEY_CURRENT_STREAK, 0) + 1
         val longestStreak = max(currentStreak, prefs.getInt(KEY_LONGEST_STREAK, 0))
         val today = LocalDateTime.now().toLocalDate().toString()

@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -58,6 +59,15 @@ fun WeightLossProgramScreen(
         activeProgram = repository.getActiveWeightLossProgram()
     }
     
+    // Show BMI-based suggestion when coming from BMI calculator
+    val bmiSuggestion = initialBMI?.let { bmi ->
+        when {
+            bmi > 25f -> "Basierend auf Ihrem BMI von %.1f könnte ein Gewichtsverlust-Programm hilfreich sein.".format(bmi)
+            bmi < 18.5f -> "Ihr BMI von %.1f liegt im untergewichtigen Bereich. Konsultieren Sie einen Arzt vor einem Gewichtsprogramm.".format(bmi)
+            else -> "Ihr BMI von %.1f ist im normalen Bereich. Ein Programm kann bei der Erhaltung helfen.".format(bmi)
+        }
+    }
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -92,6 +102,32 @@ fun WeightLossProgramScreen(
                     }
                 }
             )
+        }
+        
+        // BMI-based suggestion when coming from BMI calculator
+        bmiSuggestion?.let { suggestion ->
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(
+                        text = suggestion,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
         }
         
         // Program creation form
@@ -208,7 +244,7 @@ fun WeightLossProgramScreen(
                         onClick = { showActivityLevelDialog = true },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Filled.DirectionsRun, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.DirectionsRun, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(selectedActivityLevel.germanName)
                     }
@@ -467,6 +503,11 @@ private fun WeightLossProgramCard(
                     title = "Gesamt",
                     value = "%.1f".format(currentWeight - targetWeight),
                     unit = "kg"
+                )
+                MetricCard(
+                    title = "Dauer",
+                    value = "$timeframeWeeks",
+                    unit = "Wochen"
                 )
             }
             
