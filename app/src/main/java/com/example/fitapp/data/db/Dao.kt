@@ -549,3 +549,81 @@ interface ProgressPhotoDao {
     suspend fun getByDateRange(startTimestamp: Long, endTimestamp: Long): List<ProgressPhotoEntity>
 }
 
+@Dao
+interface CookingSessionDao {
+    @Insert
+    suspend fun insert(session: CookingSessionEntity): Long
+
+    @Update
+    suspend fun update(session: CookingSessionEntity)
+
+    @Query("DELETE FROM cooking_sessions WHERE id = :id")
+    suspend fun delete(id: String)
+
+    @Query("SELECT * FROM cooking_sessions WHERE id = :id")
+    suspend fun getById(id: String): CookingSessionEntity?
+
+    @Query("SELECT * FROM cooking_sessions WHERE recipeId = :recipeId ORDER BY startTime DESC")
+    suspend fun getByRecipeId(recipeId: String): List<CookingSessionEntity>
+
+    @Query("SELECT * FROM cooking_sessions WHERE recipeId = :recipeId ORDER BY startTime DESC")
+    fun getByRecipeIdFlow(recipeId: String): Flow<List<CookingSessionEntity>>
+
+    @Query("SELECT * FROM cooking_sessions ORDER BY startTime DESC")
+    suspend fun getAll(): List<CookingSessionEntity>
+
+    @Query("SELECT * FROM cooking_sessions ORDER BY startTime DESC")
+    fun getAllFlow(): Flow<List<CookingSessionEntity>>
+
+    @Query("SELECT * FROM cooking_sessions ORDER BY startTime DESC LIMIT :limit")
+    suspend fun getRecent(limit: Int): List<CookingSessionEntity>
+
+    @Query("SELECT * FROM cooking_sessions WHERE endTime IS NULL ORDER BY startTime DESC LIMIT 1")
+    suspend fun getActiveSession(): CookingSessionEntity?
+
+    @Query("SELECT * FROM cooking_sessions WHERE endTime IS NULL ORDER BY startTime DESC LIMIT 1")
+    fun getActiveSessionFlow(): Flow<CookingSessionEntity?>
+
+    @Query("UPDATE cooking_sessions SET endTime = :endTime, rating = :rating, notes = :notes WHERE id = :id")
+    suspend fun finishSession(id: String, endTime: Long, rating: Int?, notes: String?)
+}
+
+@Dao
+interface CookingTimerDao {
+    @Insert
+    suspend fun insert(timer: CookingTimerEntity): Long
+
+    @Update
+    suspend fun update(timer: CookingTimerEntity)
+
+    @Query("DELETE FROM cooking_timers WHERE id = :id")
+    suspend fun delete(id: String)
+
+    @Query("SELECT * FROM cooking_timers WHERE id = :id")
+    suspend fun getById(id: String): CookingTimerEntity?
+
+    @Query("SELECT * FROM cooking_timers WHERE sessionId = :sessionId ORDER BY createdAt")
+    suspend fun getBySessionId(sessionId: String): List<CookingTimerEntity>
+
+    @Query("SELECT * FROM cooking_timers WHERE sessionId = :sessionId ORDER BY createdAt")
+    fun getBySessionIdFlow(sessionId: String): Flow<List<CookingTimerEntity>>
+
+    @Query("SELECT * FROM cooking_timers WHERE isActive = 1 ORDER BY createdAt")
+    suspend fun getActiveTimers(): List<CookingTimerEntity>
+
+    @Query("SELECT * FROM cooking_timers WHERE isActive = 1 ORDER BY createdAt")
+    fun getActiveTimersFlow(): Flow<List<CookingTimerEntity>>
+
+    @Query("UPDATE cooking_timers SET remainingTime = :remainingTime WHERE id = :id")
+    suspend fun updateRemainingTime(id: String, remainingTime: Long)
+
+    @Query("UPDATE cooking_timers SET isActive = :isActive WHERE id = :id")
+    suspend fun updateActiveStatus(id: String, isActive: Boolean)
+
+    @Query("UPDATE cooking_timers SET isActive = 0 WHERE id = :id")
+    suspend fun stopTimer(id: String)
+
+    @Query("DELETE FROM cooking_timers WHERE sessionId = :sessionId")
+    suspend fun clearSessionTimers(sessionId: String)
+}
+

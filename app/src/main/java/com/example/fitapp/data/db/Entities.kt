@@ -371,3 +371,59 @@ data class ProgressPhotoEntity(
     val notes: String? = null
 )
 
+@Entity(
+    tableName = "cooking_sessions",
+    foreignKeys = [
+        ForeignKey(
+            entity = SavedRecipeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["recipeId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["recipeId"]),
+        Index(value = ["startTime"]),
+        Index(value = ["endTime"]),
+        Index(value = ["rating"])
+    ]
+)
+data class CookingSessionEntity(
+    @PrimaryKey val id: String,
+    val recipeId: String,
+    val startTime: Long,
+    val endTime: Long?,
+    val notes: String?,
+    val photos: String, // JSON array of photo paths
+    val rating: Int?, // 1-5 stars
+    val difficulty: String?, // "easy", "medium", "hard"
+    val modifications: String? // User modifications to the recipe
+)
+
+@Entity(
+    tableName = "cooking_timers",
+    foreignKeys = [
+        ForeignKey(
+            entity = CookingSessionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["sessionId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["sessionId"]),
+        Index(value = ["isActive"]),
+        Index(value = ["stepIndex"])
+    ]
+)
+data class CookingTimerEntity(
+    @PrimaryKey val id: String,
+    val sessionId: String,
+    val name: String,
+    val duration: Long, // Duration in seconds
+    val remainingTime: Long, // Remaining time in seconds
+    val isActive: Boolean,
+    val stepIndex: Int?, // Associated recipe step
+    val createdAt: Long = System.currentTimeMillis() / 1000
+)
+

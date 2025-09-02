@@ -1,9 +1,11 @@
 package com.example.fitapp.ai
 
 import android.content.Context
+import com.example.fitapp.application.di.AiDiContainer
 import com.example.fitapp.data.db.WeightLossProgramEntity
 import com.example.fitapp.data.db.BMIHistoryEntity
 import com.example.fitapp.data.db.BehavioralCheckInEntity
+import com.example.fitapp.data.prefs.ApiKeys
 import com.example.fitapp.domain.ActivityLevel
 import com.example.fitapp.domain.BMICategory
 import com.example.fitapp.domain.entities.*
@@ -710,6 +712,327 @@ private fun generateBasicRecommendations(): List<AIRecommendation> {
             description = "7-9 Stunden Schlaf für beste Erholung",
             type = "habit",
             priority = "high"
+        )
+    )
+}
+
+// ============================================================================
+// COOKING ASSISTANCE AI EXTENSIONS
+// ============================================================================
+
+/**
+ * AI request for cooking assistance and tips
+ */
+data class CookingAssistanceRequest(
+    val recipeName: String,
+    val currentStep: Int,
+    val totalSteps: Int,
+    val ingredients: List<String>,
+    val userSkillLevel: String, // "beginner", "intermediate", "advanced"
+    val cookingMethod: String?, // "frying", "baking", "boiling", etc.
+    val estimatedCookingTime: Int?, // in minutes
+    val availableEquipment: List<String>? = null
+)
+
+/**
+ * AI response for cooking assistance
+ */
+data class CookingAssistance(
+    val tips: List<String>,
+    val temperatureGuide: TemperatureGuide?,
+    val timingAdvice: String?,
+    val troubleshooting: List<Troubleshoot>,
+    val substitutions: List<IngredientSubstitution>
+)
+
+data class TemperatureGuide(
+    val method: String,
+    val temperature: String,
+    val duration: String,
+    val doneness_check: String
+)
+
+data class Troubleshoot(
+    val problem: String,
+    val solution: String,
+    val prevention: String
+)
+
+data class IngredientSubstitution(
+    val original: String,
+    val substitute: String,
+    val ratio: String,
+    val notes: String
+)
+
+/**
+ * Generate cooking tips and assistance using AI
+ */
+suspend fun AppAi.generateCookingTips(
+    context: Context,
+    request: CookingAssistanceRequest
+): Result<CookingAssistance> {
+    return try {
+        if (!ApiKeys.isPrimaryProviderAvailable(context)) {
+            val statusInfo = ApiKeys.getConfigurationStatus(context)
+            return Result.failure(IllegalStateException("$statusInfo\n\nBitte beide API-Schlüssel unter Einstellungen → API-Schlüssel eingeben."))
+        }
+        
+        val prompt = buildCookingAssistancePrompt(request)
+        
+        // Use the DI container to get the AI provider repository
+        val container = AiDiContainer.getInstance(context)
+        val aiProviderRepository = container.aiProviderRepository
+        
+        val response = aiProviderRepository.generateText(
+            AiRequest(
+                prompt = prompt,
+                provider = com.example.fitapp.domain.entities.AiProvider.Gemini,
+                taskType = com.example.fitapp.domain.entities.TaskType.NUTRITION_ADVICE
+            )
+        )
+        if (response.isSuccess) {
+            val assistance = parseCookingAssistance(response.getOrNull()!!, request)
+            Result.success(assistance)
+        } else {
+            Result.failure(response.exceptionOrNull() ?: Exception("Failed to generate cooking tips"))
+        }
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+}
+
+/**
+ * Build prompt for cooking assistance
+ */
+private fun buildCookingAssistancePrompt(request: CookingAssistanceRequest): String {
+    return """
+        Du bist ein erfahrener Koch und AI-Assistent. Gib praktische Kochberatung für folgendes Rezept:
+        
+        Rezept: ${request.recipeName}
+        Aktueller Schritt: ${request.currentStep} von ${request.totalSteps}
+        Zutaten: ${request.ingredients.joinToString(", ")}
+        Kochfähigkeiten: ${request.userSkillLevel}
+        ${request.cookingMethod?.let { "Kochmethode: $it" } ?: ""}
+        ${request.estimatedCookingTime?.let { "Geschätzte Kochzeit: $it Minuten" } ?: ""}
+        
+        Bitte gib folgende Informationen zurück:
+        
+        TIPS:
+        - 3-5 praktische Tipps für den aktuellen Kochschritt
+        - Angepasst an ${request.userSkillLevel} Niveau
+        - Spezifisch für die verwendeten Zutaten
+        
+        TEMPERATURE:
+        - Optimale Temperatur für die aktuelle Kochmethode
+        - Empfohlene Dauer
+        - Wie man Gargrad prüft
+        
+        TIMING:
+        - Zeitmanagement-Tipps für diesen Schritt
+        - Was parallel gemacht werden kann
+        
+        TROUBLESHOOTING:
+        - Häufige Probleme bei diesem Kochschritt
+        - Lösungen für typische Fehler
+        - Präventions-Tipps
+        
+        SUBSTITUTIONS:
+        - Alternative Zutaten falls etwas fehlt
+        - Umrechnungsverhältnisse
+        - Geschmacksunterschiede
+        
+        Formatiere die Antwort strukturiert und praxisnah. Verwende deutsche Sprache.
+    """.trimIndent()
+}
+
+/**
+ * Parse cooking assistance response from AI
+ */
+private fun parseCookingAssistance(response: String, request: CookingAssistanceRequest): CookingAssistance {
+    val lines = response.lines()
+    
+    val tips = mutableListOf<String>()
+    val troubleshooting = mutableListOf<Troubleshoot>()
+    val substitutions = mutableListOf<IngredientSubstitution>()
+    
+    var temperatureGuide: TemperatureGuide? = null
+    var timingAdvice: String? = null
+    
+    var currentSection = ""
+    var currentItem = mutableMapOf<String, String>()
+    
+    for (line in lines) {
+        when {
+            line.uppercase().contains("TIPS:") -> {
+                currentSection = "tips"
+            }
+            line.uppercase().contains("TEMPERATURE:") -> {
+                currentSection = "temperature"
+            }
+            line.uppercase().contains("TIMING:") -> {
+                currentSection = "timing"
+            }
+            line.uppercase().contains("TROUBLESHOOTING:") -> {
+                currentSection = "troubleshooting"
+            }
+            line.uppercase().contains("SUBSTITUTIONS:") -> {
+                currentSection = "substitutions"
+            }
+            line.startsWith("- ") -> {
+                when (currentSection) {
+                    "tips" -> tips.add(line.substring(2).trim())
+                    "timing" -> timingAdvice = line.substring(2).trim()
+                }
+            }
+            line.isNotBlank() -> {
+                when (currentSection) {
+                    "temperature" -> {
+                        if (temperatureGuide == null) {
+                            temperatureGuide = TemperatureGuide(
+                                method = request.cookingMethod ?: "Standard",
+                                temperature = line.trim(),
+                                duration = "Nach Rezept",
+                                doneness_check = "Visuell prüfen"
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Fallback data if parsing fails
+    if (tips.isEmpty()) {
+        tips.addAll(generateFallbackTips(request))
+    }
+    
+    if (temperatureGuide == null) {
+        temperatureGuide = generateFallbackTemperatureGuide(request)
+    }
+    
+    if (troubleshooting.isEmpty()) {
+        troubleshooting.addAll(generateFallbackTroubleshooting(request))
+    }
+    
+    if (substitutions.isEmpty()) {
+        substitutions.addAll(generateFallbackSubstitutions(request))
+    }
+    
+    return CookingAssistance(
+        tips = tips,
+        temperatureGuide = temperatureGuide,
+        timingAdvice = timingAdvice ?: "Folgen Sie dem Rezept für optimale Ergebnisse",
+        troubleshooting = troubleshooting,
+        substitutions = substitutions
+    )
+}
+
+/**
+ * Generate fallback cooking tips if AI response parsing fails
+ */
+private fun generateFallbackTips(request: CookingAssistanceRequest): List<String> {
+    val tips = mutableListOf<String>()
+    
+    when (request.userSkillLevel) {
+        "beginner" -> {
+            tips.add("Lesen Sie das gesamte Rezept bevor Sie beginnen")
+            tips.add("Bereiten Sie alle Zutaten vor dem Kochen vor")
+            tips.add("Verwenden Sie mittlere Hitze um Anbrennen zu vermeiden")
+            tips.add("Probieren Sie regelmäßig und würzen Sie nach")
+        }
+        "intermediate" -> {
+            tips.add("Achten Sie auf die richtige Reihenfolge der Zutaten")
+            tips.add("Nutzen Sie verschiedene Texturen für mehr Geschmack")
+            tips.add("Temperatur und Zeit präzise einhalten")
+        }
+        "advanced" -> {
+            tips.add("Experimentieren Sie mit Gewürzkombinationen")
+            tips.add("Nutzen Sie professionelle Techniken für bessere Ergebnisse")
+            tips.add("Achten Sie auf optimale Gartemperaturen")
+        }
+    }
+    
+    return tips
+}
+
+/**
+ * Generate fallback temperature guide
+ */
+private fun generateFallbackTemperatureGuide(request: CookingAssistanceRequest): TemperatureGuide {
+    return when (request.cookingMethod?.lowercase()) {
+        "frying", "braten" -> TemperatureGuide(
+            method = "Braten",
+            temperature = "Medium-hohe Hitze (160-180°C)",
+            duration = "Je nach Dicke 3-8 Minuten pro Seite",
+            doneness_check = "Goldbraune Farbe und feste Textur"
+        )
+        "baking", "backen" -> TemperatureGuide(
+            method = "Backen",
+            temperature = "Vorgeheizt 180-200°C",
+            duration = "Nach Rezeptangabe",
+            doneness_check = "Zahnstocher-Test oder goldbraune Oberfläche"
+        )
+        "boiling", "kochen" -> TemperatureGuide(
+            method = "Kochen",
+            temperature = "Sprudelndes Wasser (100°C)",
+            duration = "Bis gewünschte Konsistenz erreicht",
+            doneness_check = "Gabel-Test für Gemüse, Biss-Test für Pasta"
+        )
+        else -> TemperatureGuide(
+            method = "Standard",
+            temperature = "Mittlere Hitze",
+            duration = "Nach Rezept",
+            doneness_check = "Visuell und durch Probieren prüfen"
+        )
+    }
+}
+
+/**
+ * Generate fallback troubleshooting tips
+ */
+private fun generateFallbackTroubleshooting(request: CookingAssistanceRequest): List<Troubleshoot> {
+    return listOf(
+        Troubleshoot(
+            problem = "Essen brennt an",
+            solution = "Hitze reduzieren und Pfanne vom Herd nehmen",
+            prevention = "Niedrigere Temperatur verwenden und häufiger umrühren"
+        ),
+        Troubleshoot(
+            problem = "Zu salzig",
+            solution = "Säure (Zitrone) oder süße Komponente hinzufügen",
+            prevention = "Schrittweise würzen und regelmäßig probieren"
+        ),
+        Troubleshoot(
+            problem = "Zu trocken",
+            solution = "Flüssigkeit oder Fett hinzufügen",
+            prevention = "Nicht zu lange garen und bei niedrigerer Temperatur"
+        )
+    )
+}
+
+/**
+ * Generate fallback ingredient substitutions
+ */
+private fun generateFallbackSubstitutions(request: CookingAssistanceRequest): List<IngredientSubstitution> {
+    return listOf(
+        IngredientSubstitution(
+            original = "Butter",
+            substitute = "Olivenöl oder Margarine",
+            ratio = "1:1 oder etwas weniger Öl",
+            notes = "Geschmack kann sich leicht ändern"
+        ),
+        IngredientSubstitution(
+            original = "Milch",
+            substitute = "Pflanzenmilch",
+            ratio = "1:1",
+            notes = "Hafermilch für cremigere Konsistenz"
+        ),
+        IngredientSubstitution(
+            original = "Ei",
+            substitute = "Apfelmus oder Banane",
+            ratio = "1 Ei = 60ml Apfelmus",
+            notes = "Nur für süße Gerichte geeignet"
         )
     )
 }

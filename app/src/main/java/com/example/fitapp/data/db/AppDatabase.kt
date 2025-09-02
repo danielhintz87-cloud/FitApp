@@ -33,9 +33,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         BMIHistoryEntity::class,
         WeightLossProgramEntity::class,
         BehavioralCheckInEntity::class,
-        ProgressPhotoEntity::class
+        ProgressPhotoEntity::class,
+        // Cooking assistance
+        CookingSessionEntity::class,
+        CookingTimerEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -60,6 +63,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun weightLossProgramDao(): WeightLossProgramDao
     abstract fun behavioralCheckInDao(): BehavioralCheckInDao
     abstract fun progressPhotoDao(): ProgressPhotoDao
+    abstract fun cookingSessionDao(): CookingSessionDao
+    abstract fun cookingTimerDao(): CookingTimerDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -386,6 +391,54 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
         
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create cooking_sessions table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `cooking_sessions` (
+                        `id` TEXT NOT NULL,
+                        `recipeId` TEXT NOT NULL,
+                        `startTime` INTEGER NOT NULL,
+                        `endTime` INTEGER,
+                        `notes` TEXT,
+                        `photos` TEXT,
+                        `rating` INTEGER,
+                        `difficulty` TEXT,
+                        `modifications` TEXT,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`recipeId`) REFERENCES `saved_recipes`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                
+                // Create cooking_timers table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `cooking_timers` (
+                        `id` TEXT NOT NULL,
+                        `sessionId` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `duration` INTEGER NOT NULL,
+                        `remainingTime` INTEGER NOT NULL,
+                        `isActive` INTEGER NOT NULL,
+                        `stepIndex` INTEGER,
+                        `createdAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`sessionId`) REFERENCES `cooking_sessions`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                
+                // Create indices for cooking_sessions
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cooking_sessions_recipeId` ON `cooking_sessions` (`recipeId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cooking_sessions_startTime` ON `cooking_sessions` (`startTime`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cooking_sessions_endTime` ON `cooking_sessions` (`endTime`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cooking_sessions_rating` ON `cooking_sessions` (`rating`)")
+                
+                // Create indices for cooking_timers
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cooking_timers_sessionId` ON `cooking_timers` (`sessionId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cooking_timers_isActive` ON `cooking_timers` (`isActive`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cooking_timers_stepIndex` ON `cooking_timers` (`stepIndex`)")
+            }
+        }
+        
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: buildDatabase(context)
@@ -394,7 +447,7 @@ abstract class AppDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): AppDatabase {
             return try {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
-                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                     .apply {
                         // Only allow destructive migration in debug builds
                         if (com.example.fitapp.BuildConfig.DEBUG) {
