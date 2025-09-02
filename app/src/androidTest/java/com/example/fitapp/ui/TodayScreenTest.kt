@@ -1,7 +1,9 @@
 package com.example.fitapp.ui
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.fitapp.ui.screens.TodayScreen
 import org.junit.Rule
@@ -22,7 +24,7 @@ class TodayScreenTest {
     fun training_completion_button_updates_streak_counter() {
         // Given: Today screen is displayed
         composeTestRule.setContent {
-            TodayScreen()
+            TodayScreen(contentPadding = PaddingValues(0.dp))
         }
 
         // When: User taps training completed button
@@ -41,7 +43,7 @@ class TodayScreenTest {
     fun training_skip_button_maintains_current_streak() {
         // Given: Today screen is displayed
         composeTestRule.setContent {
-            TodayScreen()
+            TodayScreen(contentPadding = PaddingValues(0.dp))
         }
 
         // When: User taps skip training button
@@ -59,7 +61,7 @@ class TodayScreenTest {
     fun daily_motivation_displays_with_background_image() {
         // Given: Today screen is displayed
         composeTestRule.setContent {
-            TodayScreen()
+            TodayScreen(contentPadding = PaddingValues(0.dp))
         }
 
         // Then: Motivation section should be visible
@@ -77,7 +79,7 @@ class TodayScreenTest {
     fun streak_counter_displays_current_values() {
         // Given: Today screen is displayed
         composeTestRule.setContent {
-            TodayScreen()
+            TodayScreen(contentPadding = PaddingValues(0.dp))
         }
 
         // Then: Streak counters should be visible
@@ -103,7 +105,7 @@ class TodayScreenTest {
     fun navigation_buttons_are_accessible() {
         // Given: Today screen is displayed
         composeTestRule.setContent {
-            TodayScreen()
+            TodayScreen(contentPadding = PaddingValues(0.dp))
         }
 
         // Then: Navigation buttons should be present and clickable
@@ -127,7 +129,7 @@ class TodayScreenTest {
     fun today_workout_section_displays_correctly() {
         // Given: Today screen is displayed
         composeTestRule.setContent {
-            TodayScreen()
+            TodayScreen(contentPadding = PaddingValues(0.dp))
         }
 
         // Then: Today's workout section should be visible
@@ -145,7 +147,7 @@ class TodayScreenTest {
     fun user_can_interact_with_floating_action_button() {
         // Given: Today screen is displayed
         composeTestRule.setContent {
-            TodayScreen()
+            TodayScreen(contentPadding = PaddingValues(0.dp))
         }
 
         // When: User taps the floating action button

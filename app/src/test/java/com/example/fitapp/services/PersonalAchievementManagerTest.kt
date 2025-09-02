@@ -251,12 +251,7 @@ class PersonalAchievementManagerTest {
 
     @Test
     fun `completed achievements are not checked again`() = runTest {
-        // Given: A completed achievement
-        val completedAchievement = createTestAchievement(
-            title = "Erste Schritte",
-            isCompleted = true
-        )
-        
+        // Given: No pending achievements (completed ones are filtered out)
         whenever(repository.achievementsByCompletionFlow(false))
             .thenReturn(flowOf(emptyList())) // No pending achievements
         
