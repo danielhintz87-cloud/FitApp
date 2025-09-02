@@ -257,6 +257,9 @@ interface PersonalRecordDao {
     @Query("SELECT * FROM personal_records WHERE exerciseName = :exerciseName AND recordType = :recordType ORDER BY value DESC LIMIT 1")
     suspend fun getBestRecord(exerciseName: String, recordType: String): PersonalRecordEntity?
 
+    @Query("SELECT * FROM personal_records WHERE exerciseName = :exerciseName AND recordType = :recordType ORDER BY achievedAt DESC LIMIT 1")
+    suspend fun getRecord(exerciseName: String, recordType: String): PersonalRecordEntity?
+
     @Query("SELECT DISTINCT exerciseName FROM personal_records ORDER BY exerciseName")
     suspend fun getExerciseNames(): List<String>
 
