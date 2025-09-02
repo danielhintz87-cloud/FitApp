@@ -179,3 +179,47 @@ data class AIPersonalTrainerResponse(
     val motivation: MotivationalMessage?,
     val recommendations: List<AIRecommendation>
 )
+
+// Consolidated workout analysis entities to resolve duplicate declarations
+data class PlateauDetectionResult(
+    val exerciseId: String,
+    val isPlateaued: Boolean,
+    val plateauDuration: Int,
+    val progressRate: Float,
+    val plateauScore: Float,
+    val confidence: Float,
+    val recommendations: List<String>
+) {
+    companion object {
+        fun error(exerciseId: String) = PlateauDetectionResult(
+            exerciseId = exerciseId,
+            isPlateaued = false,
+            plateauDuration = 0,
+            progressRate = 0f,
+            plateauScore = 0f,
+            confidence = 0f,
+            recommendations = listOf("Daten nicht verfügbar")
+        )
+    }
+}
+
+enum class TrendDirection {
+    UP, DOWN, STABLE
+}
+
+data class ProgressionRecommendation(
+    val type: ProgressionType,
+    val weightIncrease: Float?,
+    val repIncrease: Int?,
+    val description: String,
+    val confidence: Float,
+    val nextEvaluationWeeks: Int
+)
+
+enum class ProgressionType {
+    WEIGHT_INCREASE,
+    REP_INCREASE, 
+    DELOAD,
+    MAINTAIN,
+    TECHNIQUE_FOCUS
+}

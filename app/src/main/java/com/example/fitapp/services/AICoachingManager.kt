@@ -3,6 +3,8 @@ package com.example.fitapp.services
 import android.content.Context
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.util.StructuredLogger
+import com.example.fitapp.domain.entities.PlateauDetectionResult
+import com.example.fitapp.domain.entities.TrendDirection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
@@ -288,8 +290,8 @@ class AICoachingManager(
             averageRpe = avgRpe,
             volumeProgression = volumeProgression,
             consistencyScore = consistencyScore,
-            trendDirection = if (volumeProgression > 0.05f) TrendDirection.IMPROVING 
-                            else if (volumeProgression < -0.05f) TrendDirection.DECLINING 
+            trendDirection = if (volumeProgression > 0.05f) TrendDirection.UP 
+                            else if (volumeProgression < -0.05f) TrendDirection.DOWN 
                             else TrendDirection.STABLE
         )
     }
@@ -320,8 +322,8 @@ class AICoachingManager(
         return when {
             injuryRisk > INJURY_RISK_THRESHOLD -> AdjustmentType.INJURY_PREVENTION
             fatigue > FATIGUE_THRESHOLD -> AdjustmentType.RECOVERY_FOCUS
-            performance.trendDirection == TrendDirection.DECLINING -> AdjustmentType.VOLUME_REDUCTION
-            performance.trendDirection == TrendDirection.IMPROVING && fatigue < 0.5f -> AdjustmentType.PROGRESSION
+            performance.trendDirection == TrendDirection.DOWN -> AdjustmentType.VOLUME_REDUCTION
+            performance.trendDirection == TrendDirection.UP && fatigue < 0.5f -> AdjustmentType.PROGRESSION
             performance.consistencyScore < 0.6f -> AdjustmentType.CONSISTENCY_IMPROVEMENT
             else -> AdjustmentType.MAINTENANCE
         }
@@ -375,7 +377,7 @@ class AICoachingManager(
         return when {
             injuryRisk > INJURY_RISK_THRESHOLD -> "Erhöhtes Verletzungsrisiko durch Form-Verschlechterung"
             fatigue > FATIGUE_THRESHOLD -> "Hohe Ermüdung durch intensives Training"
-            performance.trendDirection == TrendDirection.IMPROVING -> "Positive Entwicklung - Progression möglich"
+            performance.trendDirection == TrendDirection.UP -> "Positive Entwicklung - Progression möglich"
             else -> "Erhaltung der aktuellen Leistung"
         }
     }
@@ -457,27 +459,6 @@ class AICoachingManager(
 }
 
 // Data classes for AI coaching
-data class PlateauDetectionResult(
-    val exerciseId: String,
-    val isPlateaued: Boolean,
-    val plateauDuration: Int,
-    val progressRate: Float,
-    val plateauScore: Float,
-    val confidence: Float,
-    val recommendations: List<String>
-) {
-    companion object {
-        fun error(exerciseId: String) = PlateauDetectionResult(
-            exerciseId = exerciseId,
-            isPlateaued = false,
-            plateauDuration = 0,
-            progressRate = 0f,
-            plateauScore = 0f,
-            confidence = 0f,
-            recommendations = listOf("Fehler bei Plateau-Analyse")
-        )
-    }
-}
 
 data class WorkoutAdjustmentSuggestion(
     val adjustmentType: AdjustmentType,
@@ -602,7 +583,6 @@ data class SupplementRecommendation(val supplement: String, val dosage: String, 
 data class HydrationGuidance(val dailyTarget: Float, val timingRecommendations: List<String>)
 data class ImplementationStrategy(val phases: List<String>, val durationWeeks: Int)
 
-enum class TrendDirection { IMPROVING, STABLE, DECLINING }
 enum class AdjustmentType { PROGRESSION, MAINTENANCE, VOLUME_REDUCTION, RECOVERY_FOCUS, INJURY_PREVENTION, CONSISTENCY_IMPROVEMENT }
 enum class AdjustmentPriority { LOW, MEDIUM, HIGH, URGENT }
 enum class RiskLevel { LOW, MEDIUM, HIGH, CRITICAL, UNKNOWN }

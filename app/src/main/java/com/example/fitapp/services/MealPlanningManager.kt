@@ -660,12 +660,20 @@ enum class CookingSkillLevel {
 }
 
 enum class IngredientCategory {
-    PROTEIN,
+    PRODUCE,      // Obst & Gemüse
+    PROTEIN,      // Fleisch & Fisch
+    DAIRY,        // Milchprodukte
+    GRAINS,       // Getreide & Brot
+    PANTRY,       // Vorräte
+    FROZEN,       // Tiefkühlprodukte
+    BEVERAGES,    // Getränke
+    SNACKS,       // Snacks
+    SPICES,       // Gewürze
+    OTHER,        // Sonstiges
+    // Legacy values for compatibility
     VEGETABLE,
     GRAIN,
-    DAIRY,
-    SPICE,
-    OTHER
+    SPICE
 }
 
 enum class SpiceLevel {

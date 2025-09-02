@@ -373,6 +373,9 @@ interface FoodItemDao {
 
     @Query("SELECT * FROM food_items ORDER BY name")
     fun allFoodItemsFlow(): Flow<List<FoodItemEntity>>
+
+    @Query("DELETE FROM food_items")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -428,6 +431,9 @@ interface MealEntryDao {
         FROM meal_entries WHERE date = :date
     """)
     suspend fun getTotalFatForDate(date: String): Float?
+
+    @Query("DELETE FROM meal_entries")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -455,6 +461,9 @@ interface WaterEntryDao {
 
     @Query("DELETE FROM water_entries WHERE date = :date")
     suspend fun clearForDate(date: String)
+
+    @Query("DELETE FROM water_entries")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -628,6 +637,9 @@ interface WorkoutPerformanceDao {
         WHERE exerciseId = :exerciseId
     """)
     suspend fun getMaxVolumeForExercise(exerciseId: String): Float?
+
+    @Query("DELETE FROM workout_performance")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -680,6 +692,9 @@ interface WorkoutSessionDao {
         WHERE userId = :userId AND startTime >= :sinceTimestamp
     """)
     suspend fun getTotalPersonalRecords(userId: String, sinceTimestamp: Long): Int?
+
+    @Query("DELETE FROM workout_sessions")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -733,6 +748,9 @@ interface ExerciseProgressionDao {
         WHERE userId = :userId AND lastProgressDate >= :sinceTimestamp
     """)
     suspend fun getAverageAIConfidence(userId: String, sinceTimestamp: Long): Float?
+
+    @Query("DELETE FROM exercise_progressions")
+    suspend fun deleteAll()
 }
 
 // Cooking Mode DAOs

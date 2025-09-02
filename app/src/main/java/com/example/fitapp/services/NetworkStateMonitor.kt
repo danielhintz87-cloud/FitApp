@@ -319,6 +319,13 @@ enum class ConnectionQuality(val displayName: String) {
     UNKNOWN("Unbekannt")
 }
 
+// Missing enum referenced in build errors
+enum class NetworkStatus {
+    CONNECTED,
+    DISCONNECTED,
+    CONNECTING
+}
+
 /**
  * Extension function to easily integrate network monitoring into components
  */

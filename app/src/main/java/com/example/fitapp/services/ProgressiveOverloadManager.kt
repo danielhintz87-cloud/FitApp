@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.delay
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.ai.AdvancedAICoach
-import com.example.fitapp.ai.PlateauDetectionResult
+import com.example.fitapp.domain.entities.PlateauDetectionResult
 import com.example.fitapp.util.StructuredLogger
 import kotlin.math.*
 
