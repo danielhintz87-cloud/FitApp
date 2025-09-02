@@ -20,6 +20,13 @@ import com.example.fitapp.data.db.WorkoutPerformanceEntity
 import com.example.fitapp.data.db.WorkoutSessionEntity
 import com.example.fitapp.network.healthconnect.HealthConnectManager
 import com.example.fitapp.services.WorkoutSensorService
+import com.example.fitapp.services.VideoManager
+import com.example.fitapp.services.SmartRestTimer
+import com.example.fitapp.services.VoiceCommandManager
+import com.example.fitapp.services.VoiceCommand
+import com.example.fitapp.services.VideoResource
+import com.example.fitapp.services.RestTimerState
+import com.example.fitapp.services.SetData
 import com.example.fitapp.ui.components.advanced.*
 import com.example.fitapp.ui.screens.ExerciseStep
 // Remove parseTrainingContent import as it's private
@@ -58,6 +65,83 @@ fun EnhancedTrainingExecutionScreen(
     // Services
     val healthConnectManager = remember { HealthConnectManager(context) }
     val sensorService = remember { WorkoutSensorService(context, healthConnectManager) }
+    
+    // New Pro-Feature Services
+    val videoManager = remember { VideoManager(context) }
+    val smartRestTimer = remember { SmartRestTimer(context) }
+    val voiceCommandManager = remember { VoiceCommandManager(context) }
+    
+    // Pro-feature states
+    var currentVideo by remember { mutableStateOf<VideoResource?>(null) }
+    var isVideoPlaying by remember { mutableStateOf(false) }
+    var showVideoOverlays by remember { mutableStateOf(true) }
+    var currentVideoAngle by remember { mutableIntStateOf(0) }
+    
+    // Voice command state
+    var isVoiceCommandActive by remember { mutableStateOf(false) }
+    val voiceCommandState by voiceCommandManager.isListening.collectAsState()
+    val lastVoiceCommand by voiceCommandManager.lastCommand.collectAsState()
+    
+    // Rest timer state
+    val restTimerState by smartRestTimer.timerState.collectAsState()
+    val restSuggestions by smartRestTimer.restSuggestions.collectAsState()
+    
+    // Initialize voice commands
+    LaunchedEffect(Unit) {
+        voiceCommandManager.initialize()
+    }
+    
+    // Handle voice commands
+    LaunchedEffect(lastVoiceCommand) {
+        lastVoiceCommand?.let { command ->
+            when (command) {
+                VoiceCommand.EXERCISE_COMPLETE -> {
+                    // Complete current exercise
+                    completedExercises = completedExercises + currentExerciseIndex
+                    if (currentExerciseIndex < exercises.size - 1) {
+                        currentExerciseIndex++
+                    }
+                }
+                VoiceCommand.NEXT_EXERCISE -> {
+                    if (currentExerciseIndex < exercises.size - 1) {
+                        currentExerciseIndex++
+                    }
+                }
+                VoiceCommand.PAUSE_WORKOUT -> {
+                    isInTraining = false
+                    smartRestTimer.pauseTimer()
+                }
+                VoiceCommand.RESUME_WORKOUT -> {
+                    isInTraining = true
+                    smartRestTimer.resumeTimer()
+                }
+                VoiceCommand.START_REST_TIMER -> {
+                    if (exercises.isNotEmpty()) {
+                        smartRestTimer.startAdaptiveRest(
+                            exerciseId = exercises[currentExerciseIndex].name,
+                            intensity = 0.7f, // Default intensity
+                            heartRate = advancedState.currentHeartRate,
+                            perceivedExertion = advancedState.currentRPE
+                        )
+                    }
+                }
+                VoiceCommand.SKIP_REST -> {
+                    smartRestTimer.skipRest()
+                }
+                is VoiceCommand.SET_WEIGHT -> {
+                    // Handle weight setting via voice
+                    // This would integrate with existing set logging
+                }
+                is VoiceCommand.SET_REPS -> {
+                    // Handle rep setting via voice
+                    // This would integrate with existing set logging  
+                }
+                else -> {
+                    // Handle other commands
+                }
+            }
+        }
+    }
     
     // Load plan and initialize
     LaunchedEffect(planId) {
@@ -119,6 +203,26 @@ fun EnhancedTrainingExecutionScreen(
                 advancedState = advancedState.copy(
                     error = "Fehler beim Starten der Session: ${e.message}"
                 )
+            }
+        }
+    }
+    
+    // Load exercise video when current exercise changes
+    LaunchedEffect(currentExerciseIndex, exercises) {
+        if (exercises.isNotEmpty() && currentExerciseIndex < exercises.size) {
+            val currentExercise = exercises[currentExerciseIndex]
+            try {
+                val video = videoManager.adaptiveQualityStreaming(currentExercise.name)
+                currentVideo = video
+                
+                // Preload next exercise video
+                if (currentExerciseIndex + 1 < exercises.size) {
+                    val nextExercise = exercises[currentExerciseIndex + 1]
+                    videoManager.preloadWorkoutVideos(listOf(nextExercise.name))
+                }
+            } catch (e: Exception) {
+                // Handle video loading errors gracefully
+                currentVideo = null
             }
         }
     }
@@ -310,6 +414,101 @@ fun EnhancedTrainingExecutionScreen(
                     )
                 }
                 
+                // Exercise Video Player - NEW PRO FEATURE
+                if (currentVideo != null && exercises.isNotEmpty() && currentExerciseIndex < exercises.size) {
+                    item {
+                        ExerciseVideoPlayer(
+                            videoResource = currentVideo,
+                            exerciseTitle = exercises[currentExerciseIndex].name,
+                            isPlaying = isVideoPlaying,
+                            showOverlays = showVideoOverlays,
+                            currentAngle = currentVideoAngle,
+                            availableAngles = listOf("Front", "Side", "Back"),
+                            onPlayPause = { isVideoPlaying = !isVideoPlaying },
+                            onSpeedChange = { speed ->
+                                // Handle speed change for slow-motion
+                            },
+                            onAngleChange = { angle -> currentVideoAngle = angle },
+                            onRepeat = { 
+                                isVideoPlaying = false
+                                // Reset video to beginning
+                                isVideoPlaying = true
+                            }
+                        )
+                    }
+                }
+                
+                // Voice Command Panel - NEW PRO FEATURE
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (voiceCommandState) MaterialTheme.colorScheme.primaryContainer 
+                                          else MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (voiceCommandState) "🎤 Höre zu..." else "🗣️ Voice Commands",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = if (voiceCommandState) "Sage: 'Fertig', 'Nächste Übung', 'Timer Start'" 
+                                          else "Tap to activate voice control",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                lastVoiceCommand?.let { command ->
+                                    Text(
+                                        text = "Last: ${command.getDisplayText()}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                            
+                            Button(
+                                onClick = {
+                                    if (voiceCommandState) {
+                                        voiceCommandManager.stopListening()
+                                    } else {
+                                        voiceCommandManager.startListening { command ->
+                                            // Commands are handled in LaunchedEffect above
+                                        }
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = if (voiceCommandState) Icons.Filled.MicOff else Icons.Filled.Mic,
+                                    contentDescription = if (voiceCommandState) "Stop listening" else "Start listening"
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                // Smart Rest Timer - NEW PRO FEATURE
+                if (restTimerState !is RestTimerState.IDLE) {
+                    item {
+                        SmartRestTimerDisplay(
+                            timerState = restTimerState,
+                            restSuggestion = restSuggestions,
+                            onPause = { smartRestTimer.pauseTimer() },
+                            onResume = { scope.launch { smartRestTimer.resumeTimer() } },
+                            onSkip = { smartRestTimer.skipRest() },
+                            onStop = { smartRestTimer.stopTimer() }
+                        )
+                    }
+                }
+                
                 // Current Exercise with Advanced Display
                 if (exercises.isNotEmpty() && currentExerciseIndex < exercises.size) {
                     item {
@@ -368,56 +567,101 @@ fun EnhancedTrainingExecutionScreen(
                 // Exercise Controls
                 item {
                     Card {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            OutlinedButton(
-                                onClick = { 
-                                    // Skip exercise
-                                    if (currentExerciseIndex < exercises.size - 1) {
-                                        currentExerciseIndex++
-                                    }
-                                },
-                                modifier = Modifier.weight(1f)
+                            // Primary exercise controls
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text("Überspringen")
+                                OutlinedButton(
+                                    onClick = { 
+                                        // Skip exercise
+                                        if (currentExerciseIndex < exercises.size - 1) {
+                                            currentExerciseIndex++
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Überspringen")
+                                }
+                                
+                                Button(
+                                    onClick = {
+                                        // Complete exercise and start smart rest timer
+                                        completedExercises = completedExercises + currentExerciseIndex
+                                        generateProgressionSuggestion(currentExerciseIndex)
+                                        
+                                        // Start adaptive rest timer with current exercise data
+                                        scope.launch {
+                                            smartRestTimer.startAdaptiveRest(
+                                                exerciseId = exercises[currentExerciseIndex].name,
+                                                intensity = advancedState.formQuality,
+                                                heartRate = advancedState.currentHeartRate,
+                                                perceivedExertion = advancedState.currentRPE,
+                                                previousSetData = SetData(
+                                                    weight = 20f, // Would come from actual set data
+                                                    reps = advancedState.repCount,
+                                                    formQuality = advancedState.formQuality,
+                                                    rpe = advancedState.currentRPE,
+                                                    heartRate = advancedState.currentHeartRate
+                                                )
+                                            )
+                                        }
+                                        
+                                        if (currentExerciseIndex < exercises.size - 1) {
+                                            currentExerciseIndex++
+                                        } else {
+                                            // Training completed
+                                            scope.launch {
+                                                advancedState.sessionId?.let { sessionId ->
+                                                    val updatedSession = WorkoutSessionEntity(
+                                                        id = sessionId,
+                                                        planId = planId,
+                                                        userId = "current_user",
+                                                        startTime = System.currentTimeMillis() / 1000 - 1800, // 30 min ago
+                                                        endTime = System.currentTimeMillis() / 1000,
+                                                        completionPercentage = 100f
+                                                    )
+                                                    db.workoutSessionDao().update(updatedSession)
+                                                }
+                                                sensorService.stopTracking()
+                                                voiceCommandManager.cleanup()
+                                                onTrainingCompleted()
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(Icons.Filled.Check, contentDescription = null)
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Fertig")
+                                }
                             }
                             
+                            // Smart rest timer quick action
                             Button(
                                 onClick = {
-                                    // Complete exercise
-                                    completedExercises = completedExercises + currentExerciseIndex
-                                    generateProgressionSuggestion(currentExerciseIndex)
-                                    
-                                    if (currentExerciseIndex < exercises.size - 1) {
-                                        currentExerciseIndex++
-                                    } else {
-                                        // Training completed
-                                        scope.launch {
-                                            advancedState.sessionId?.let { sessionId ->
-                                                val updatedSession = WorkoutSessionEntity(
-                                                    id = sessionId,
-                                                    planId = planId,
-                                                    userId = "current_user",
-                                                    startTime = System.currentTimeMillis() / 1000 - 1800, // 30 min ago
-                                                    endTime = System.currentTimeMillis() / 1000,
-                                                    completionPercentage = 100f
-                                                )
-                                                db.workoutSessionDao().update(updatedSession)
-                                            }
-                                            sensorService.stopTracking()
-                                            onTrainingCompleted()
-                                        }
+                                    scope.launch {
+                                        smartRestTimer.startAdaptiveRest(
+                                            exerciseId = exercises[currentExerciseIndex].name,
+                                            intensity = 0.7f, // Default intensity
+                                            heartRate = advancedState.currentHeartRate,
+                                            perceivedExertion = advancedState.currentRPE
+                                        )
                                     }
                                 },
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondary
+                                )
                             ) {
-                                Icon(Icons.Filled.Check, contentDescription = null)
-                                Spacer(Modifier.width(4.dp))
-                                Text("Fertig")
+                                Icon(Icons.Filled.Timer, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("🧠 Smart Rest Timer starten")
+                            }
                             }
                         }
                     }

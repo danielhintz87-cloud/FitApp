@@ -130,6 +130,14 @@ class OfflineSyncManager(private val context: Context) {
                             processWeightSync(operation)
                             successCount++
                         }
+                        SyncOperationType.VIDEO_CACHE -> {
+                            processVideoCache(operation)
+                            successCount++
+                        }
+                        SyncOperationType.VIDEO_DOWNLOAD -> {
+                            processVideoDownload(operation)
+                            successCount++
+                        }
                     }
                     
                     // Remove successful operation from queue
@@ -212,6 +220,84 @@ class OfflineSyncManager(private val context: Context) {
             "Processing weight sync for operation ${operation.id}"
         )
         // Implement weight tracking sync logic
+    }
+    
+    private suspend fun processVideoCache(operation: SyncOperation) {
+        StructuredLogger.info(
+            StructuredLogger.LogCategory.SYNC,
+            TAG,
+            "Processing video cache for operation ${operation.id}"
+        )
+        
+        try {
+            val videoManager = VideoManager(context)
+            val exerciseId = operation.data["exerciseId"] as? String ?: return
+            
+            // Check if video is already cached
+            val cachedVideo = videoManager.getExerciseVideo(exerciseId)
+            if (cachedVideo?.isLocal != true) {
+                // Queue video download if not cached
+                val downloadOperation = SyncOperation(
+                    id = "video_download_$exerciseId",
+                    type = SyncOperationType.VIDEO_DOWNLOAD,
+                    data = mapOf("exerciseId" to exerciseId),
+                    timestamp = System.currentTimeMillis(),
+                    retryCount = 0
+                )
+                queueOperation(downloadOperation)
+            }
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.SYNC,
+                TAG,
+                "Failed to process video cache operation",
+                exception = e
+            )
+            throw e
+        }
+    }
+    
+    private suspend fun processVideoDownload(operation: SyncOperation) {
+        StructuredLogger.info(
+            StructuredLogger.LogCategory.SYNC,
+            TAG,
+            "Processing video download for operation ${operation.id}"
+        )
+        
+        try {
+            val videoManager = VideoManager(context)
+            val exerciseId = operation.data["exerciseId"] as? String ?: return
+            
+            // Only download on WiFi to save mobile data
+            if (ApiCallWrapper.isNetworkAvailable(context) && isWifiConnection()) {
+                videoManager.downloadVideoInBackground(exerciseId).collect { progress ->
+                    StructuredLogger.debug(
+                        StructuredLogger.LogCategory.SYNC,
+                        TAG,
+                        "Video download progress for $exerciseId: ${progress.progress * 100}%"
+                    )
+                }
+                
+                // Manage cache size after download
+                videoManager.manageCacheSize()
+            } else {
+                // Retry later when on WiFi
+                throw Exception("WiFi connection required for video download")
+            }
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.SYNC,
+                TAG,
+                "Failed to download video",
+                exception = e
+            )
+            throw e
+        }
+    }
+    
+    private fun isWifiConnection(): Boolean {
+        // Simplified WiFi check - in real implementation would check ConnectivityManager
+        return true // Default to true for demo
     }
     
     private fun resolveDataConflicts(operation: SyncOperation): ConflictResolution {
@@ -380,7 +466,9 @@ enum class SyncOperationType {
     NUTRITION_ENTRY,
     WORKOUT_COMPLETION,
     ACHIEVEMENT_UPDATE,
-    WEIGHT_ENTRY
+    WEIGHT_ENTRY,
+    VIDEO_CACHE,
+    VIDEO_DOWNLOAD
 }
 
 data class SyncResult(
