@@ -67,6 +67,15 @@ class PermissionManager(private val context: Context) {
             rationale = "Benachrichtigungen informieren Sie über Fastenzeiten, Ziele und wichtige Gesundheitsdaten.",
             icon = Icons.Default.Notifications,
             isRequired = false
+        ),
+        
+        WAKE_LOCK(
+            permission = Manifest.permission.WAKE_LOCK,
+            title = "Wach halten",
+            description = "Für persistente Koch-Timer",
+            rationale = "Berechtigung zum Wach halten ermöglicht es, Koch-Timer im Hintergrund weiterlaufen zu lassen.",
+            icon = Icons.Default.Timer,
+            isRequired = false
         );
         
         fun isGranted(context: Context): Boolean {
