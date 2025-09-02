@@ -33,6 +33,7 @@ import com.example.fitapp.ui.screens.TrainingExecutionScreen
 import com.example.fitapp.ui.screens.WeightTrackingScreen
 import com.example.fitapp.ui.screens.BMICalculatorScreen
 import com.example.fitapp.ui.screens.WeightLossProgramScreen
+import com.example.fitapp.ui.screens.AIPersonalTrainerScreen
 import com.example.fitapp.ui.settings.ApiKeysScreen
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
@@ -74,6 +75,7 @@ fun MainScaffold() {
                 NavigationDrawerItem(label = { Text("Ernährungs-Analytics") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("nutrition_analytics") })
                 NavigationDrawerItem(label = { Text("BMI Rechner") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("bmi_calculator") })
                 NavigationDrawerItem(label = { Text("Abnehm-Programm") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("weight_loss_program") })
+                NavigationDrawerItem(label = { Text("AI Personal Trainer") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("ai_personal_trainer") })
                 NavigationDrawerItem(label = { Text("AI-Logs") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("logs") })
                 NavigationDrawerItem(label = { Text("API-Schlüssel") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("apikeys") })
             }
@@ -341,6 +343,9 @@ fun MainScaffold() {
                 }
                 composable("weight_loss_program") {
                     WeightLossProgramScreen(navController = nav)
+                }
+                composable("ai_personal_trainer") {
+                    AIPersonalTrainerScreen(navController = nav)
                 }
 
             }
