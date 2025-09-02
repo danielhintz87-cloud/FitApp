@@ -38,6 +38,8 @@ import com.example.fitapp.ui.screens.BMICalculatorScreen
 import com.example.fitapp.ui.screens.WeightLossProgramScreen
 import com.example.fitapp.ui.screens.AIPersonalTrainerScreen
 import com.example.fitapp.ui.settings.ApiKeysScreen
+import com.example.fitapp.ui.settings.NotificationSettingsScreen
+import com.example.fitapp.ui.settings.HealthConnectSettingsScreen
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.launch
@@ -177,6 +179,18 @@ fun MainScaffold() {
                     icon = { Icon(Icons.Filled.Key, contentDescription = null) }
                 )
                 NavigationDrawerItem(
+                    label = { Text("Benachrichtigungen") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("notification_settings") },
+                    icon = { Icon(Icons.Filled.Notifications, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Health Connect") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("health_connect_settings") },
+                    icon = { Icon(Icons.Filled.HealthAndSafety, contentDescription = null) }
+                )
+                NavigationDrawerItem(
                     label = { Text("AI Logs") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("logs") },
@@ -280,6 +294,12 @@ fun MainScaffold() {
                 }
                 composable("apikeys") {
                     ApiKeysScreen(padding)
+                }
+                composable("notification_settings") {
+                    NotificationSettingsScreen(navController = nav)
+                }
+                composable("health_connect_settings") {
+                    HealthConnectSettingsScreen(navController = nav)
                 }
                 composable("equipment") { 
                     EquipmentSelectionScreen(
