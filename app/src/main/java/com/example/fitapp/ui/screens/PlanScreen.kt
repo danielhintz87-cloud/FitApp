@@ -133,6 +133,53 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         )
         Spacer(Modifier.height(24.dp))
         
+        // Weight Loss Integration Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "Personalized Weight Loss Program",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Combine your training plan with a personalized weight loss program for optimal results.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            navController?.navigate("bmi_calculator")
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Calculate BMI")
+                    }
+                    Button(
+                        onClick = {
+                            navController?.navigate("weight_loss_program")
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Weight Program")
+                    }
+                }
+            }
+        }
+        
+        Spacer(Modifier.height(24.dp))
+        
         // Goal Dropdown
         ExposedDropdownMenuBox(
             expanded = goalExpanded,
