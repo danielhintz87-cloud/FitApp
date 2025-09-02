@@ -2,6 +2,7 @@ package com.example.fitapp.services
 
 import android.content.Context
 import com.example.fitapp.data.db.PersonalAchievementEntity
+import com.example.fitapp.data.db.TodayWorkoutEntity
 import com.example.fitapp.data.repo.PersonalMotivationRepository
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -297,12 +298,14 @@ class PersonalAchievementManagerTest {
         category: String = PersonalAchievementManager.CATEGORY_FITNESS,
         targetValue: Double? = null,
         currentValue: Double = 0.0,
-        isCompleted: Boolean = false
+        isCompleted: Boolean = false,
+        iconName: String = "trophy"
     ): PersonalAchievementEntity {
         return PersonalAchievementEntity(
             id = id,
             title = title,
             description = description,
+            iconName = iconName,
             category = category,
             targetValue = targetValue,
             currentValue = currentValue,
@@ -312,10 +315,14 @@ class PersonalAchievementManagerTest {
         )
     }
 
-    private fun createMockWorkout(status: String = "completed"): MockWorkout {
-        return MockWorkout(status)
+    private fun createMockWorkout(status: String = "completed"): TodayWorkoutEntity {
+        return TodayWorkoutEntity(
+            dateIso = "2024-01-15",
+            content = "Test workout content",
+            status = status,
+            createdAt = System.currentTimeMillis() / 1000,
+            completedAt = if (status == "completed") System.currentTimeMillis() / 1000 else null,
+            planId = null
+        )
     }
-
-    // Simple mock class for workout
-    data class MockWorkout(val status: String)
 }
