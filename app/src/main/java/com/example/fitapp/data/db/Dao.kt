@@ -58,6 +58,9 @@ interface IntakeDao {
         ORDER BY timestamp DESC
     """)
     fun dayEntriesFlow(epochSec: Long): Flow<List<IntakeEntryEntity>>
+
+    @Query("DELETE FROM intake_entries")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -181,6 +184,9 @@ interface TodayWorkoutDao {
 
     @Query("SELECT * FROM today_workouts WHERE dateIso BETWEEN :fromIso AND :toIso ORDER BY dateIso DESC")
     suspend fun getBetween(fromIso: String, toIso: String): List<TodayWorkoutEntity>
+
+    @Query("DELETE FROM today_workouts")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -346,6 +352,9 @@ interface WeightDao {
 
     @Query("SELECT COUNT(*) FROM weight_entries WHERE dateIso = :dateIso")
     suspend fun hasEntryForDate(dateIso: String): Int
+
+    @Query("DELETE FROM weight_entries")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -491,6 +500,9 @@ interface BMIHistoryDao {
 
     @Query("SELECT * FROM bmi_history WHERE date BETWEEN :startDate AND :endDate ORDER BY date")
     suspend fun getByDateRange(startDate: String, endDate: String): List<BMIHistoryEntity>
+
+    @Query("DELETE FROM bmi_history")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -521,6 +533,9 @@ interface WeightLossProgramDao {
 
     @Query("UPDATE weight_loss_programs SET isActive = 0 WHERE isActive = 1")
     suspend fun deactivateAllPrograms()
+
+    @Query("DELETE FROM weight_loss_programs")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -552,6 +567,9 @@ interface BehavioralCheckInDao {
         ORDER BY timestamp
     """)
     suspend fun getByDateRange(startTimestamp: Long, endTimestamp: Long): List<BehavioralCheckInEntity>
+
+    @Query("DELETE FROM behavioral_check_ins")
+    suspend fun deleteAll()
 }
 
 @Dao

@@ -226,7 +226,7 @@ class ApiException(
 class NetworkException(message: String) : Exception(message)
 
 enum class NetworkType {
-    NONE, WIFI, CELLULAR, ETHERNET, OTHER, UNKNOWN
+    NONE, WIFI, CELLULAR, ETHERNET, OTHER, UNKNOWN, NOT_REQUIRED, CONNECTED
 }
 
 /**

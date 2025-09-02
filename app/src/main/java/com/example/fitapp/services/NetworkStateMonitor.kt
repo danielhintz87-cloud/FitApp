@@ -298,6 +298,8 @@ class NetworkStateMonitor(private val context: Context) {
             NetworkType.OTHER -> "Andere"
             NetworkType.NONE -> "Keine"
             NetworkType.UNKNOWN -> "Unbekannt"
+            NetworkType.NOT_REQUIRED -> "Nicht erforderlich"
+            NetworkType.CONNECTED -> "Verbunden"
         }
     }
 }

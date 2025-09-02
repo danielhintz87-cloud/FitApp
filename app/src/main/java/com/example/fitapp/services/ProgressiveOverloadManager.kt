@@ -44,7 +44,7 @@ class ProgressiveOverloadManager(private val context: Context) {
             val readinessScore = calculateProgressionReadiness(formQuality, rpe, historicalData)
             
             when {
-                plateauResult.hasPlateauDetected -> handlePlateauProgression(plateauResult, currentWeight, currentReps, currentSets)
+                plateauResult.isPlateaued -> handlePlateauProgression(plateauResult, currentWeight, currentReps, currentSets)
                 readinessScore > 0.8f -> calculateAggressiveProgression(currentWeight, currentReps, currentSets, historicalData)
                 readinessScore > 0.6f -> calculateModerateProgression(currentWeight, currentReps, currentSets)
                 readinessScore > 0.4f -> calculateConservativeProgression(currentWeight, currentReps, currentSets)
@@ -76,7 +76,7 @@ class ProgressiveOverloadManager(private val context: Context) {
             val plateauResult = aiCoach.detectTrainingPlateau(userId, exerciseId)
             val recentPerformance = getRecentPerformanceMetrics(userId, exerciseId)
             
-            if (plateauResult.hasPlateauDetected && plateauResult.confidence > 0.7f) {
+            if (plateauResult.isPlateaued && plateauResult.confidence > 0.7f) {
                 plateauCount++
             }
             
@@ -111,7 +111,7 @@ class ProgressiveOverloadManager(private val context: Context) {
         currentFatigueLevel: Float,
         recoveryCapacity: Float
     ): BalancedWorkoutPlan {
-        val totalPlannedVolume = plannedExercises.sumOf { it.sets * it.reps * it.weight }.toFloat()
+        val totalPlannedVolume = plannedExercises.sumOf { (it.sets * it.reps * it.weight).toDouble() }.toFloat()
         val maxRecoveryVolume = recoveryCapacity * 100f // Simplified calculation
         
         return if (totalPlannedVolume > maxRecoveryVolume) {

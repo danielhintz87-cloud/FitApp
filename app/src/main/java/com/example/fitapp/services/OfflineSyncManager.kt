@@ -26,7 +26,7 @@ class OfflineSyncManager(private val context: Context) {
         
         fun schedulePeriodicSync(context: Context) {
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .setRequiredNetworkType(NetworkType.UNMETERED)
                 .setRequiresBatteryNotLow(true)
                 .build()
 
@@ -56,7 +56,7 @@ class OfflineSyncManager(private val context: Context) {
         
         fun triggerImmediateSync(context: Context) {
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .setRequiredNetworkType(NetworkType.UNMETERED)
                 .build()
 
             val immediateSyncRequest = OneTimeWorkRequestBuilder<OfflineSyncWorker>()
