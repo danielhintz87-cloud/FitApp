@@ -91,6 +91,9 @@ interface ShoppingDao {
     
     @Query("DELETE FROM shopping_items WHERE checked = 1")
     suspend fun deleteCheckedItems()
+    
+    @Query("DELETE FROM shopping_items")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -124,6 +127,9 @@ interface SavedRecipeDao {
 
     @Query("UPDATE saved_recipes SET lastCookedAt = :timestamp WHERE id = :id")
     suspend fun markAsCooked(id: String, timestamp: Long = System.currentTimeMillis() / 1000)
+    
+    @Query("DELETE FROM saved_recipes")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -136,6 +142,9 @@ interface ShoppingCategoryDao {
 
     @Query("SELECT * FROM shopping_list_categories ORDER BY \"order\"")
     suspend fun getCategories(): List<ShoppingCategoryEntity>
+    
+    @Query("DELETE FROM shopping_list_categories")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -202,6 +211,12 @@ interface PersonalAchievementDao {
 
     @Query("SELECT * FROM personal_achievements WHERE id = :id")
     suspend fun getAchievement(id: Long): PersonalAchievementEntity?
+    
+    @Query("UPDATE personal_achievements SET isCompleted = 0, completedAt = NULL, currentValue = 0.0")
+    suspend fun resetAllAchievements()
+    
+    @Query("DELETE FROM personal_achievements")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -232,6 +247,12 @@ interface PersonalStreakDao {
 
     @Query("SELECT * FROM personal_streaks WHERE id = :id")
     suspend fun getStreak(id: Long): PersonalStreakEntity?
+    
+    @Query("UPDATE personal_streaks SET currentStreak = 0, lastActivityTimestamp = NULL")
+    suspend fun resetAllStreaks()
+    
+    @Query("DELETE FROM personal_streaks")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -257,11 +278,17 @@ interface PersonalRecordDao {
     @Query("SELECT * FROM personal_records WHERE exerciseName = :exerciseName AND recordType = :recordType ORDER BY value DESC LIMIT 1")
     suspend fun getBestRecord(exerciseName: String, recordType: String): PersonalRecordEntity?
 
+    @Query("SELECT * FROM personal_records WHERE exerciseName = :exerciseName AND recordType = :recordType ORDER BY achievedAt DESC LIMIT 1")
+    suspend fun getRecord(exerciseName: String, recordType: String): PersonalRecordEntity?
+
     @Query("SELECT DISTINCT exerciseName FROM personal_records ORDER BY exerciseName")
     suspend fun getExerciseNames(): List<String>
 
     @Query("SELECT * FROM personal_records WHERE id = :id")
     suspend fun getRecord(id: Long): PersonalRecordEntity?
+    
+    @Query("DELETE FROM personal_records")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -706,5 +733,109 @@ interface ExerciseProgressionDao {
         WHERE userId = :userId AND lastProgressDate >= :sinceTimestamp
     """)
     suspend fun getAverageAIConfidence(userId: String, sinceTimestamp: Long): Float?
+}
+
+// Cooking Mode DAOs
+
+@Dao
+interface CookingSessionDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(session: CookingSessionEntity)
+
+    @Update
+    suspend fun update(session: CookingSessionEntity)
+
+    @Query("DELETE FROM cooking_sessions WHERE id = :id")
+    suspend fun delete(id: String)
+
+    @Query("SELECT * FROM cooking_sessions WHERE id = :id")
+    suspend fun getById(id: String): CookingSessionEntity?
+
+    @Query("SELECT * FROM cooking_sessions WHERE recipeId = :recipeId ORDER BY startTime DESC")
+    suspend fun getByRecipeId(recipeId: String): List<CookingSessionEntity>
+
+    @Query("SELECT * FROM cooking_sessions WHERE status = 'active' LIMIT 1")
+    suspend fun getActiveSession(): CookingSessionEntity?
+
+    @Query("SELECT * FROM cooking_sessions ORDER BY startTime DESC")
+    suspend fun getAll(): List<CookingSessionEntity>
+
+    @Query("SELECT * FROM cooking_sessions ORDER BY startTime DESC")
+    fun getAllFlow(): Flow<List<CookingSessionEntity>>
+
+    @Query("UPDATE cooking_sessions SET currentStep = :stepIndex WHERE id = :sessionId")
+    suspend fun updateCurrentStep(sessionId: String, stepIndex: Int)
+
+    @Query("UPDATE cooking_sessions SET status = :status WHERE id = :sessionId")
+    suspend fun updateStatus(sessionId: String, status: String)
+
+    @Query("""
+        UPDATE cooking_sessions 
+        SET endTime = :endTime, status = 'completed', actualDuration = :actualDuration 
+        WHERE id = :sessionId
+    """)
+    suspend fun completeCookingSession(sessionId: String, endTime: Long, actualDuration: Long)
+
+    @Query("""
+        SELECT * FROM cooking_sessions 
+        WHERE startTime BETWEEN :startTimestamp AND :endTimestamp 
+        ORDER BY startTime
+    """)
+    suspend fun getByDateRange(startTimestamp: Long, endTimestamp: Long): List<CookingSessionEntity>
+
+    @Query("SELECT COUNT(*) FROM cooking_sessions WHERE status = 'completed'")
+    suspend fun getCompletedSessionsCount(): Int
+
+    @Query("""
+        SELECT AVG(actualDuration) FROM cooking_sessions 
+        WHERE status = 'completed' AND actualDuration IS NOT NULL
+    """)
+    suspend fun getAverageCookingTime(): Float?
+}
+
+@Dao
+interface CookingTimerDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(timer: CookingTimerEntity)
+
+    @Update
+    suspend fun update(timer: CookingTimerEntity)
+
+    @Query("DELETE FROM cooking_timers WHERE id = :id")
+    suspend fun delete(id: String)
+
+    @Query("SELECT * FROM cooking_timers WHERE id = :id")
+    suspend fun getTimerById(id: String): CookingTimerEntity?
+
+    @Query("SELECT * FROM cooking_timers WHERE sessionId = :sessionId ORDER BY stepIndex")
+    suspend fun getBySessionId(sessionId: String): List<CookingTimerEntity>
+
+    @Query("SELECT * FROM cooking_timers WHERE sessionId = :sessionId ORDER BY stepIndex")
+    fun getBySessionIdFlow(sessionId: String): Flow<List<CookingTimerEntity>>
+
+    @Query("SELECT * FROM cooking_timers WHERE stepIndex = :stepIndex AND sessionId = :sessionId")
+    suspend fun getByStepIndex(sessionId: String, stepIndex: Int): List<CookingTimerEntity>
+
+    @Query("SELECT * FROM cooking_timers WHERE isActive = 1")
+    suspend fun getActiveTimers(): List<CookingTimerEntity>
+
+    @Query("SELECT * FROM cooking_timers WHERE isActive = 1")
+    fun getActiveTimersFlow(): Flow<List<CookingTimerEntity>>
+
+    @Query("UPDATE cooking_timers SET isPaused = :isPaused WHERE stepIndex = :stepIndex")
+    suspend fun updatePauseState(stepIndex: Int, isPaused: Boolean)
+
+    @Query("UPDATE cooking_timers SET remainingSeconds = :remainingSeconds WHERE id = :timerId")
+    suspend fun updateRemainingTime(timerId: String, remainingSeconds: Long)
+
+    @Query("""
+        UPDATE cooking_timers 
+        SET isActive = 0, completedAt = :completedAt 
+        WHERE id = :timerId
+    """)
+    suspend fun completeTimer(timerId: String, completedAt: Long)
+
+    @Query("DELETE FROM cooking_timers WHERE sessionId = :sessionId")
+    suspend fun deleteBySessionId(sessionId: String)
 }
 

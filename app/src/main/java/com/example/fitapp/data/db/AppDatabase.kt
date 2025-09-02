@@ -71,6 +71,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun workoutPerformanceDao(): WorkoutPerformanceDao
     abstract fun workoutSessionDao(): WorkoutSessionDao
     abstract fun exerciseProgressionDao(): ExerciseProgressionDao
+    // Cooking Mode Enhancement - Phase 2 DAOs
+    abstract fun cookingSessionDao(): CookingSessionDao
+    abstract fun cookingTimerDao(): CookingTimerDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
