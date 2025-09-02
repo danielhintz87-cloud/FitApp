@@ -477,3 +477,57 @@ data class ExerciseProgressionEntity(
     val adaptationNotes: String? = null
 )
 
+// Cooking Feature Entities
+
+@Entity(
+    tableName = "cooking_sessions",
+    indices = [
+        Index(value = ["recipeId"]),
+        Index(value = ["startTime"]),
+        Index(value = ["status"])
+    ]
+)
+data class CookingSessionEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val recipeId: String,
+    val startTime: Long,
+    val endTime: Long? = null,
+    val status: String = "active", // "active", "paused", "completed", "cancelled"
+    val currentStep: Int = 0,
+    val totalSteps: Int,
+    val estimatedDuration: Long? = null, // in seconds
+    val actualDuration: Long? = null, // in seconds
+    val notes: String? = null,
+    val createdAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "cooking_timers",
+    foreignKeys = [
+        ForeignKey(
+            entity = CookingSessionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["sessionId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["sessionId"]),
+        Index(value = ["stepIndex"]),
+        Index(value = ["isActive"])
+    ]
+)
+data class CookingTimerEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val sessionId: String,
+    val stepIndex: Int,
+    val name: String,
+    val durationSeconds: Long,
+    val remainingSeconds: Long,
+    val isActive: Boolean = false,
+    val isPaused: Boolean = false,
+    val startTime: Long? = null,
+    val completedAt: Long? = null,
+    val createdAt: Long = System.currentTimeMillis() / 1000
+)
+
