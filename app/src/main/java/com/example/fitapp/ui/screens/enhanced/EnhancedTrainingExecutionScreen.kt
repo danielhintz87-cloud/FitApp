@@ -255,7 +255,7 @@ fun EnhancedTrainingExecutionScreen(
     }
     
     // Generate progression suggestions when exercise is completed
-    fun generateProgressionSuggestion(exerciseIndex: Int) {
+    val generateProgressionSuggestion: (Int) -> Unit = { exerciseIndex ->
         scope.launch {
             try {
                 val exercise = exercises[exerciseIndex]
@@ -661,7 +661,6 @@ fun EnhancedTrainingExecutionScreen(
                                 Icon(Icons.Filled.Timer, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
                                 Text("🧠 Smart Rest Timer starten")
-                            }
                             }
                         }
                     }
