@@ -118,7 +118,6 @@ class FastingManager(context: Context) {
         val currentState = _fastingState.value
         
         if (currentState.isFasting && currentState.fastStartTime != null) {
-            val fastingDuration = ChronoUnit.HOURS.between(currentState.fastStartTime, LocalDateTime.now())
             updateStats()
         }
         

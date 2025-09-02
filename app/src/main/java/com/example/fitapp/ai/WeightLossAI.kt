@@ -128,7 +128,7 @@ suspend fun AppAi.generatePersonalizedTips(
 ): Result<List<PersonalizedTip>> {
     return try {
         val response = planWithOptimalProvider(context, PlanRequest(
-            goal = "Personalisierte Abnehm-Tipps basierend auf Fortschritt",
+            goal = "Personalisierte Abnehm-Tipps für ${request.strugglingAreas.joinToString(", ").ifEmpty { "allgemeine Bereiche" }}",
             weeks = 1,
             sessionsPerWeek = 3,
             minutesPerSession = 30,
@@ -146,9 +146,12 @@ suspend fun AppAi.generateWeightLossInsights(
     progressData: List<WeightLossProgressData>,
     currentProgram: WeightLossProgramEntity?
 ): Result<WeightLossInsights> {
+    val programInfo = currentProgram?.let { "Programm: ${it.startWeight}kg → ${it.targetWeight}kg" } ?: "Kein Programm"
+    val dataPoints = progressData.size
+    
     return try {
         val response = planWithOptimalProvider(context, PlanRequest(
-            goal = "Gewichtsverlust-Insights und Fortschrittsanalyse",
+            goal = "Gewichtsverlust-Insights für $dataPoints Datenpunkte, $programInfo",
             weeks = 1,
             sessionsPerWeek = 1,
             minutesPerSession = 15,

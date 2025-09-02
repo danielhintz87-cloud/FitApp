@@ -1,7 +1,7 @@
 package com.example.fitapp.ui.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Schedule
@@ -21,7 +21,7 @@ enum class BottomNavDestination(
     DIARY(
         route = "diary",
         label = "Tagebuch",
-        icon = Icons.Default.MenuBook
+        icon = Icons.AutoMirrored.Filled.MenuBook
     ),
     FASTING(
         route = "fasting", 

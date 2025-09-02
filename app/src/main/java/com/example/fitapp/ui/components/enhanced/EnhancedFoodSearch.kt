@@ -125,7 +125,7 @@ fun EnhancedFoodSearchInterface(
                 else -> SearchState.EMPTY
             },
             transitionSpec = {
-                fadeIn() with fadeOut()
+                fadeIn() togetherWith fadeOut()
             },
             label = "search_content"
         ) { state ->

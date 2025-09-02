@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -243,7 +244,7 @@ fun WeightLossProgramScreen(
                         onClick = { showActivityLevelDialog = true },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Filled.DirectionsRun, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.DirectionsRun, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(selectedActivityLevel.germanName)
                     }
@@ -502,6 +503,11 @@ private fun WeightLossProgramCard(
                     title = "Gesamt",
                     value = "%.1f".format(currentWeight - targetWeight),
                     unit = "kg"
+                )
+                MetricCard(
+                    title = "Dauer",
+                    value = "$timeframeWeeks",
+                    unit = "Wochen"
                 )
             }
             
