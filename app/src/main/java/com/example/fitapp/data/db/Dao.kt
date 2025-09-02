@@ -91,6 +91,9 @@ interface ShoppingDao {
     
     @Query("DELETE FROM shopping_items WHERE checked = 1")
     suspend fun deleteCheckedItems()
+    
+    @Query("DELETE FROM shopping_items")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -124,6 +127,9 @@ interface SavedRecipeDao {
 
     @Query("UPDATE saved_recipes SET lastCookedAt = :timestamp WHERE id = :id")
     suspend fun markAsCooked(id: String, timestamp: Long = System.currentTimeMillis() / 1000)
+    
+    @Query("DELETE FROM saved_recipes")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -136,6 +142,9 @@ interface ShoppingCategoryDao {
 
     @Query("SELECT * FROM shopping_list_categories ORDER BY \"order\"")
     suspend fun getCategories(): List<ShoppingCategoryEntity>
+    
+    @Query("DELETE FROM shopping_list_categories")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -202,6 +211,12 @@ interface PersonalAchievementDao {
 
     @Query("SELECT * FROM personal_achievements WHERE id = :id")
     suspend fun getAchievement(id: Long): PersonalAchievementEntity?
+    
+    @Query("UPDATE personal_achievements SET isCompleted = 0, completedAt = NULL, currentValue = 0.0")
+    suspend fun resetAllAchievements()
+    
+    @Query("DELETE FROM personal_achievements")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -232,6 +247,12 @@ interface PersonalStreakDao {
 
     @Query("SELECT * FROM personal_streaks WHERE id = :id")
     suspend fun getStreak(id: Long): PersonalStreakEntity?
+    
+    @Query("UPDATE personal_streaks SET currentStreak = 0, lastActivityTimestamp = NULL")
+    suspend fun resetAllStreaks()
+    
+    @Query("DELETE FROM personal_streaks")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -265,6 +286,9 @@ interface PersonalRecordDao {
 
     @Query("SELECT * FROM personal_records WHERE id = :id")
     suspend fun getRecord(id: Long): PersonalRecordEntity?
+    
+    @Query("DELETE FROM personal_records")
+    suspend fun deleteAll()
 }
 
 @Dao
