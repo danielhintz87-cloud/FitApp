@@ -52,7 +52,7 @@ class HealthConnectSyncWorker(
                 StructuredLogger.LogCategory.SYNC,
                 TAG,
                 "Health Connect sync failed: ${e.message}",
-                mapOf("error" to e.message)
+                mapOf("error" to (e.message ?: "Unknown error"))
             )
             Result.retry()
         }
@@ -94,7 +94,7 @@ class HealthConnectSyncWorker(
                 StructuredLogger.LogCategory.SYNC,
                 TAG,
                 "Failed to sync health data",
-                mapOf("error" to e.message)
+                mapOf("error" to (e.message ?: "Unknown error"))
             )
             throw e
         }
