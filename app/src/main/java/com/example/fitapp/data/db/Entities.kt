@@ -371,3 +371,109 @@ data class ProgressPhotoEntity(
     val notes: String? = null
 )
 
+// Advanced Workout Execution Enhancement - Phase 1 Entities
+
+@Entity(
+    tableName = "workout_performance",
+    indices = [
+        Index(value = ["exerciseId"]),
+        Index(value = ["sessionId"]),
+        Index(value = ["planId"]),
+        Index(value = ["timestamp"]),
+        Index(value = ["exerciseIndex"])
+    ]
+)
+data class WorkoutPerformanceEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val exerciseId: String,
+    val sessionId: String,
+    val planId: Long,
+    val exerciseIndex: Int,
+    
+    // Performance Metrics
+    val heartRateAvg: Int? = null,
+    val heartRateMax: Int? = null,
+    val heartRateZone: String? = null, // "zone1", "zone2", "zone3", "zone4"
+    val reps: Int,
+    val weight: Float,
+    val volume: Float, // weight * reps
+    val restTime: Long, // planned rest time in seconds
+    val actualRestTime: Long, // actual rest time in seconds
+    
+    // Quality Metrics
+    val formQuality: Float = 1.0f, // 0.0-1.0 from sensor analysis
+    val perceivedExertion: Int? = null, // 1-10 RPE scale
+    val movementSpeed: Float? = null, // reps per minute
+    val rangeOfMotion: Float? = null, // percentage of full ROM
+    
+    // Session Context
+    val timestamp: Long = System.currentTimeMillis() / 1000,
+    val duration: Long, // exercise duration in seconds
+    val isPersonalRecord: Boolean = false,
+    val notes: String? = null
+)
+
+@Entity(
+    tableName = "workout_sessions",
+    indices = [
+        Index(value = ["planId"]),
+        Index(value = ["userId"]),
+        Index(value = ["startTime"]),
+        Index(value = ["workoutEfficiencyScore"])
+    ]
+)
+data class WorkoutSessionEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val planId: Long,
+    val userId: String,
+    val startTime: Long,
+    val endTime: Long? = null,
+    
+    // Session Metrics
+    val totalVolume: Float = 0f,
+    val averageHeartRate: Int? = null,
+    val caloriesBurned: Int? = null,
+    val workoutEfficiencyScore: Float = 0f, // 0.0-1.0
+    val fatigueLevel: String = "medium", // "low", "medium", "high"
+    
+    // Progress Tracking
+    val personalRecordsAchieved: Int = 0,
+    val completionPercentage: Float = 0f,
+    val sessionRating: Int? = null, // 1-5 stars
+    val sessionNotes: String? = null
+)
+
+@Entity(
+    tableName = "exercise_progressions",
+    indices = [
+        Index(value = ["exerciseId"]),
+        Index(value = ["userId"]),
+        Index(value = ["performanceTrend"]),
+        Index(value = ["plateauDetected"]),
+        Index(value = ["lastProgressDate"])
+    ]
+)
+data class ExerciseProgressionEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val exerciseId: String,
+    val userId: String,
+    
+    // Progression Recommendations
+    val currentWeight: Float,
+    val recommendedWeight: Float,
+    val currentReps: Int,
+    val recommendedReps: Int,
+    val progressionReason: String, // "strength_gain", "plateau_break", "deload"
+    
+    // Performance Analysis
+    val performanceTrend: String = "stable", // "improving", "plateauing", "declining", "stable"
+    val plateauDetected: Boolean = false,
+    val plateauWeeks: Int = 0,
+    val lastProgressDate: Long,
+    
+    // AI Insights
+    val aiConfidence: Float = 0.5f, // 0.0-1.0
+    val nextReviewDate: Long,
+    val adaptationNotes: String? = null
+)
+

@@ -549,3 +549,162 @@ interface ProgressPhotoDao {
     suspend fun getByDateRange(startTimestamp: Long, endTimestamp: Long): List<ProgressPhotoEntity>
 }
 
+// Advanced Workout Execution Enhancement - Phase 1 DAOs
+
+@Dao
+interface WorkoutPerformanceDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(performance: WorkoutPerformanceEntity)
+
+    @Update
+    suspend fun update(performance: WorkoutPerformanceEntity)
+
+    @Query("DELETE FROM workout_performance WHERE id = :id")
+    suspend fun delete(id: String)
+
+    @Query("SELECT * FROM workout_performance WHERE id = :id")
+    suspend fun getById(id: String): WorkoutPerformanceEntity?
+
+    @Query("SELECT * FROM workout_performance WHERE sessionId = :sessionId ORDER BY exerciseIndex")
+    suspend fun getBySessionId(sessionId: String): List<WorkoutPerformanceEntity>
+
+    @Query("SELECT * FROM workout_performance WHERE sessionId = :sessionId ORDER BY exerciseIndex")
+    fun getBySessionIdFlow(sessionId: String): Flow<List<WorkoutPerformanceEntity>>
+
+    @Query("SELECT * FROM workout_performance WHERE exerciseId = :exerciseId ORDER BY timestamp DESC")
+    suspend fun getByExerciseId(exerciseId: String): List<WorkoutPerformanceEntity>
+
+    @Query("SELECT * FROM workout_performance WHERE exerciseId = :exerciseId ORDER BY timestamp DESC LIMIT :limit")
+    suspend fun getRecentByExerciseId(exerciseId: String, limit: Int): List<WorkoutPerformanceEntity>
+
+    @Query("SELECT * FROM workout_performance WHERE planId = :planId ORDER BY timestamp DESC")
+    suspend fun getByPlanId(planId: Long): List<WorkoutPerformanceEntity>
+
+    @Query("SELECT * FROM workout_performance WHERE isPersonalRecord = 1 ORDER BY timestamp DESC")
+    suspend fun getPersonalRecords(): List<WorkoutPerformanceEntity>
+
+    @Query("""
+        SELECT * FROM workout_performance 
+        WHERE timestamp BETWEEN :startTimestamp AND :endTimestamp 
+        ORDER BY timestamp
+    """)
+    suspend fun getByDateRange(startTimestamp: Long, endTimestamp: Long): List<WorkoutPerformanceEntity>
+
+    @Query("""
+        SELECT AVG(volume) FROM workout_performance 
+        WHERE exerciseId = :exerciseId AND timestamp >= :sinceTimestamp
+    """)
+    suspend fun getAverageVolumeForExercise(exerciseId: String, sinceTimestamp: Long): Float?
+
+    @Query("""
+        SELECT MAX(volume) FROM workout_performance 
+        WHERE exerciseId = :exerciseId
+    """)
+    suspend fun getMaxVolumeForExercise(exerciseId: String): Float?
+}
+
+@Dao
+interface WorkoutSessionDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(session: WorkoutSessionEntity)
+
+    @Update
+    suspend fun update(session: WorkoutSessionEntity)
+
+    @Query("DELETE FROM workout_sessions WHERE id = :id")
+    suspend fun delete(id: String)
+
+    @Query("SELECT * FROM workout_sessions WHERE id = :id")
+    suspend fun getById(id: String): WorkoutSessionEntity?
+
+    @Query("SELECT * FROM workout_sessions ORDER BY startTime DESC")
+    suspend fun getAll(): List<WorkoutSessionEntity>
+
+    @Query("SELECT * FROM workout_sessions ORDER BY startTime DESC")
+    fun getAllFlow(): Flow<List<WorkoutSessionEntity>>
+
+    @Query("SELECT * FROM workout_sessions WHERE planId = :planId ORDER BY startTime DESC")
+    suspend fun getByPlanId(planId: Long): List<WorkoutSessionEntity>
+
+    @Query("SELECT * FROM workout_sessions WHERE userId = :userId ORDER BY startTime DESC")
+    suspend fun getByUserId(userId: String): List<WorkoutSessionEntity>
+
+    @Query("SELECT * FROM workout_sessions WHERE endTime IS NULL ORDER BY startTime DESC LIMIT 1")
+    suspend fun getActiveSession(): WorkoutSessionEntity?
+
+    @Query("SELECT * FROM workout_sessions ORDER BY startTime DESC LIMIT :limit")
+    suspend fun getRecent(limit: Int): List<WorkoutSessionEntity>
+
+    @Query("""
+        SELECT * FROM workout_sessions 
+        WHERE startTime BETWEEN :startTimestamp AND :endTimestamp 
+        ORDER BY startTime
+    """)
+    suspend fun getByDateRange(startTimestamp: Long, endTimestamp: Long): List<WorkoutSessionEntity>
+
+    @Query("""
+        SELECT AVG(workoutEfficiencyScore) FROM workout_sessions 
+        WHERE userId = :userId AND startTime >= :sinceTimestamp
+    """)
+    suspend fun getAverageEfficiencyScore(userId: String, sinceTimestamp: Long): Float?
+
+    @Query("""
+        SELECT SUM(personalRecordsAchieved) FROM workout_sessions 
+        WHERE userId = :userId AND startTime >= :sinceTimestamp
+    """)
+    suspend fun getTotalPersonalRecords(userId: String, sinceTimestamp: Long): Int?
+}
+
+@Dao
+interface ExerciseProgressionDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(progression: ExerciseProgressionEntity)
+
+    @Update
+    suspend fun update(progression: ExerciseProgressionEntity)
+
+    @Query("DELETE FROM exercise_progressions WHERE id = :id")
+    suspend fun delete(id: String)
+
+    @Query("SELECT * FROM exercise_progressions WHERE id = :id")
+    suspend fun getById(id: String): ExerciseProgressionEntity?
+
+    @Query("SELECT * FROM exercise_progressions WHERE exerciseId = :exerciseId AND userId = :userId")
+    suspend fun getByExerciseAndUser(exerciseId: String, userId: String): ExerciseProgressionEntity?
+
+    @Query("SELECT * FROM exercise_progressions WHERE userId = :userId ORDER BY lastProgressDate DESC")
+    suspend fun getByUserId(userId: String): List<ExerciseProgressionEntity>
+
+    @Query("SELECT * FROM exercise_progressions WHERE userId = :userId ORDER BY lastProgressDate DESC")
+    fun getByUserIdFlow(userId: String): Flow<List<ExerciseProgressionEntity>>
+
+    @Query("SELECT * FROM exercise_progressions WHERE plateauDetected = 1 AND userId = :userId")
+    suspend fun getPlateauedExercises(userId: String): List<ExerciseProgressionEntity>
+
+    @Query("""
+        SELECT * FROM exercise_progressions 
+        WHERE performanceTrend = :trend AND userId = :userId 
+        ORDER BY lastProgressDate DESC
+    """)
+    suspend fun getByPerformanceTrend(trend: String, userId: String): List<ExerciseProgressionEntity>
+
+    @Query("""
+        SELECT * FROM exercise_progressions 
+        WHERE nextReviewDate <= :currentTimestamp AND userId = :userId
+        ORDER BY nextReviewDate
+    """)
+    suspend fun getExercisesDueForReview(currentTimestamp: Long, userId: String): List<ExerciseProgressionEntity>
+
+    @Query("""
+        SELECT COUNT(*) FROM exercise_progressions 
+        WHERE performanceTrend = 'improving' AND userId = :userId
+    """)
+    suspend fun getImprovingExercisesCount(userId: String): Int
+
+    @Query("""
+        SELECT AVG(aiConfidence) FROM exercise_progressions 
+        WHERE userId = :userId AND lastProgressDate >= :sinceTimestamp
+    """)
+    suspend fun getAverageAIConfidence(userId: String, sinceTimestamp: Long): Float?
+}
+

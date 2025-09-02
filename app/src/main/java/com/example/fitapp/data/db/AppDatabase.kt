@@ -33,9 +33,13 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         BMIHistoryEntity::class,
         WeightLossProgramEntity::class,
         BehavioralCheckInEntity::class,
-        ProgressPhotoEntity::class
+        ProgressPhotoEntity::class,
+        // Advanced Workout Execution Enhancement - Phase 1
+        WorkoutPerformanceEntity::class,
+        WorkoutSessionEntity::class,
+        ExerciseProgressionEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -60,6 +64,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun weightLossProgramDao(): WeightLossProgramDao
     abstract fun behavioralCheckInDao(): BehavioralCheckInDao
     abstract fun progressPhotoDao(): ProgressPhotoDao
+    // Advanced Workout Execution Enhancement - Phase 1 DAOs
+    abstract fun workoutPerformanceDao(): WorkoutPerformanceDao
+    abstract fun workoutSessionDao(): WorkoutSessionDao
+    abstract fun exerciseProgressionDao(): ExerciseProgressionDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -386,6 +394,101 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
         
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create workout_performance table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `workout_performance` (
+                        `id` TEXT NOT NULL,
+                        `exerciseId` TEXT NOT NULL,
+                        `sessionId` TEXT NOT NULL,
+                        `planId` INTEGER NOT NULL,
+                        `exerciseIndex` INTEGER NOT NULL,
+                        `heartRateAvg` INTEGER,
+                        `heartRateMax` INTEGER,
+                        `heartRateZone` TEXT,
+                        `reps` INTEGER NOT NULL,
+                        `weight` REAL NOT NULL,
+                        `volume` REAL NOT NULL,
+                        `restTime` INTEGER NOT NULL,
+                        `actualRestTime` INTEGER NOT NULL,
+                        `formQuality` REAL NOT NULL DEFAULT 1.0,
+                        `perceivedExertion` INTEGER,
+                        `movementSpeed` REAL,
+                        `rangeOfMotion` REAL,
+                        `timestamp` INTEGER NOT NULL,
+                        `duration` INTEGER NOT NULL,
+                        `isPersonalRecord` INTEGER NOT NULL DEFAULT 0,
+                        `notes` TEXT,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Create workout_sessions table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `workout_sessions` (
+                        `id` TEXT NOT NULL,
+                        `planId` INTEGER NOT NULL,
+                        `userId` TEXT NOT NULL,
+                        `startTime` INTEGER NOT NULL,
+                        `endTime` INTEGER,
+                        `totalVolume` REAL NOT NULL DEFAULT 0.0,
+                        `averageHeartRate` INTEGER,
+                        `caloriesBurned` INTEGER,
+                        `workoutEfficiencyScore` REAL NOT NULL DEFAULT 0.0,
+                        `fatigueLevel` TEXT NOT NULL DEFAULT 'medium',
+                        `personalRecordsAchieved` INTEGER NOT NULL DEFAULT 0,
+                        `completionPercentage` REAL NOT NULL DEFAULT 0.0,
+                        `sessionRating` INTEGER,
+                        `sessionNotes` TEXT,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Create exercise_progressions table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `exercise_progressions` (
+                        `id` TEXT NOT NULL,
+                        `exerciseId` TEXT NOT NULL,
+                        `userId` TEXT NOT NULL,
+                        `currentWeight` REAL NOT NULL,
+                        `recommendedWeight` REAL NOT NULL,
+                        `currentReps` INTEGER NOT NULL,
+                        `recommendedReps` INTEGER NOT NULL,
+                        `progressionReason` TEXT NOT NULL,
+                        `performanceTrend` TEXT NOT NULL DEFAULT 'stable',
+                        `plateauDetected` INTEGER NOT NULL DEFAULT 0,
+                        `plateauWeeks` INTEGER NOT NULL DEFAULT 0,
+                        `lastProgressDate` INTEGER NOT NULL,
+                        `aiConfidence` REAL NOT NULL DEFAULT 0.5,
+                        `nextReviewDate` INTEGER NOT NULL,
+                        `adaptationNotes` TEXT,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Add indices for workout_performance table
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_workout_performance_exerciseId` ON `workout_performance` (`exerciseId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_workout_performance_sessionId` ON `workout_performance` (`sessionId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_workout_performance_planId` ON `workout_performance` (`planId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_workout_performance_timestamp` ON `workout_performance` (`timestamp`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_workout_performance_exerciseIndex` ON `workout_performance` (`exerciseIndex`)")
+                
+                // Add indices for workout_sessions table
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_workout_sessions_planId` ON `workout_sessions` (`planId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_workout_sessions_userId` ON `workout_sessions` (`userId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_workout_sessions_startTime` ON `workout_sessions` (`startTime`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_workout_sessions_workoutEfficiencyScore` ON `workout_sessions` (`workoutEfficiencyScore`)")
+                
+                // Add indices for exercise_progressions table
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_progressions_exerciseId` ON `exercise_progressions` (`exerciseId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_progressions_userId` ON `exercise_progressions` (`userId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_progressions_performanceTrend` ON `exercise_progressions` (`performanceTrend`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_progressions_plateauDetected` ON `exercise_progressions` (`plateauDetected`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_progressions_lastProgressDate` ON `exercise_progressions` (`lastProgressDate`)")
+            }
+        }
+        
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: buildDatabase(context)
@@ -394,7 +497,7 @@ abstract class AppDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): AppDatabase {
             return try {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
-                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                     .apply {
                         // Only allow destructive migration in debug builds
                         if (com.example.fitapp.BuildConfig.DEBUG) {
