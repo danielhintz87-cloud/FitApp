@@ -11,6 +11,7 @@ import com.example.fitapp.ai.UiRecipe
 import com.example.fitapp.data.db.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flow
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -415,5 +416,51 @@ class NutritionRepository(private val db: AppDatabase) {
                 // Ignore if already exists
             }
         }
+    }
+    
+    // Analytics methods for Enhanced Analytics Dashboard
+    suspend fun getCalorieHistoryForPeriod(days: Int): List<Pair<String, Float>> {
+        // Simple implementation using existing methods
+        val history = mutableListOf<Pair<String, Float>>()
+        val endDate = LocalDate.now()
+        val startDate = endDate.minusDays(days.toLong())
+        
+        var currentDate = startDate
+        while (!currentDate.isAfter(endDate)) {
+            val dateString = currentDate.toString()
+            val calories = getTotalCaloriesForDate(dateString)
+            history.add(dateString to calories)
+            currentDate = currentDate.plusDays(1)
+        }
+        return history
+    }
+    
+    // For Flow version, we'll use a simple transformation
+    fun calorieHistoryFlow(days: Int): Flow<List<Pair<String, Float>>> = flow {
+        val history = getCalorieHistoryForPeriod(days)
+        emit(history)
+    }
+    
+    suspend fun getMacroHistoryForPeriod(days: Int): List<Triple<String, Float, Float>> {
+        // Returns date, carbs+protein, fat
+        val history = mutableListOf<Triple<String, Float, Float>>()
+        val endDate = LocalDate.now()
+        val startDate = endDate.minusDays(days.toLong())
+        
+        var currentDate = startDate
+        while (!currentDate.isAfter(endDate)) {
+            val dateString = currentDate.toString()
+            val carbs = getTotalCarbsForDate(dateString)
+            val protein = getTotalProteinForDate(dateString)
+            val fat = getTotalFatForDate(dateString)
+            history.add(Triple(dateString, carbs + protein, fat))
+            currentDate = currentDate.plusDays(1)
+        }
+        return history
+    }
+    
+    fun macroHistoryFlow(days: Int): Flow<List<Triple<String, Float, Float>>> = flow {
+        val history = getMacroHistoryForPeriod(days)
+        emit(history)
     }
 }
