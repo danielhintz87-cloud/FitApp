@@ -23,12 +23,20 @@ object SmartNotificationManager {
     private const val CHANNEL_STREAKS = "streaks"
     private const val CHANNEL_MILESTONES = "milestones"
     private const val CHANNEL_DAILY_MOTIVATION = "daily_motivation"
+    private const val CHANNEL_WORKOUT_REMINDERS = "workout_reminders"
+    private const val CHANNEL_NUTRITION_REMINDERS = "nutrition_reminders"
+    private const val CHANNEL_WATER_REMINDERS = "water_reminders"
+    private const val CHANNEL_MACRO_WARNINGS = "macro_warnings"
     
     // Notification IDs
     private const val NOTIFICATION_ID_ACHIEVEMENT = 1000
     private const val NOTIFICATION_ID_STREAK_WARNING = 2000
     private const val NOTIFICATION_ID_STREAK_MILESTONE = 3000
     private const val NOTIFICATION_ID_DAILY_MOTIVATION = 4000
+    private const val NOTIFICATION_ID_WORKOUT_REMINDER = 5000
+    private const val NOTIFICATION_ID_MEAL_REMINDER = 6000
+    private const val NOTIFICATION_ID_WATER_REMINDER = 7000
+    private const val NOTIFICATION_ID_MACRO_WARNING = 8000
     
     fun createNotificationChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -79,11 +87,57 @@ object SmartNotificationManager {
                 setShowBadge(false)
             }
             
+            // Workout reminders channel
+            val workoutChannel = NotificationChannel(
+                CHANNEL_WORKOUT_REMINDERS,
+                "Workout-Erinnerungen",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Erinnerungen für geplante Workouts"
+                setShowBadge(true)
+                enableLights(true)
+            }
+            
+            // Nutrition reminders channel
+            val nutritionChannel = NotificationChannel(
+                CHANNEL_NUTRITION_REMINDERS,
+                "Ernährungs-Erinnerungen",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Erinnerungen für Mahlzeiten und Ernährung"
+                setShowBadge(true)
+            }
+            
+            // Water reminders channel
+            val waterChannel = NotificationChannel(
+                CHANNEL_WATER_REMINDERS,
+                "Wasser-Erinnerungen",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Erinnerungen für Wasserzufuhr"
+                setShowBadge(false)
+            }
+            
+            // Macro warnings channel
+            val macroChannel = NotificationChannel(
+                CHANNEL_MACRO_WARNINGS,
+                "Makro-Warnungen",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Warnungen bei Makro-Zielen"
+                setShowBadge(true)
+                enableLights(true)
+            }
+            
             notificationManager.createNotificationChannels(listOf(
                 achievementChannel,
                 streakChannel,
                 milestoneChannel,
-                motivationChannel
+                motivationChannel,
+                workoutChannel,
+                nutritionChannel,
+                waterChannel,
+                macroChannel
             ))
         }
     }
@@ -307,6 +361,209 @@ object SmartNotificationManager {
             ) == PackageManager.PERMISSION_GRANTED
         } else {
             true
+        }
+    }
+    
+    /**
+     * Show workout reminder notification
+     */
+    fun showWorkoutReminder(context: Context, workoutName: String, scheduledTime: String) {
+        if (!hasNotificationPermission(context)) return
+        
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("navigate_to", "today")
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            NOTIFICATION_ID_WORKOUT_REMINDER,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        val notification = NotificationCompat.Builder(context, CHANNEL_WORKOUT_REMINDERS)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("⏰ Workout-Zeit!")
+            .setContentText("Zeit für dein $workoutName um $scheduledTime")
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText("Dein $workoutName ist für $scheduledTime geplant. Bereit, deine Ziele zu erreichen? 💪"))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .addAction(
+                0,
+                "Jetzt trainieren",
+                pendingIntent
+            )
+            .build()
+        
+        try {
+            NotificationManagerCompat.from(context).notify(
+                NOTIFICATION_ID_WORKOUT_REMINDER,
+                notification
+            )
+        } catch (e: SecurityException) {
+            // Handle missing notification permission
+        }
+    }
+    
+    /**
+     * Show meal reminder notification
+     */
+    fun showMealReminder(context: Context, mealType: String, mealTime: String) {
+        if (!hasNotificationPermission(context)) return
+        
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("navigate_to", "nutrition")
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            NOTIFICATION_ID_MEAL_REMINDER + mealType.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        val mealEmoji = when (mealType.lowercase()) {
+            "frühstück" -> "🌅"
+            "mittagessen" -> "🍽️"
+            "abendessen" -> "🌆"
+            "snack" -> "🍎"
+            else -> "🍽️"
+        }
+        
+        val notification = NotificationCompat.Builder(context, CHANNEL_NUTRITION_REMINDERS)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("$mealEmoji Zeit für $mealType!")
+            .setContentText("Vergiss nicht, dein $mealType zu loggen")
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText("Zeit für dein $mealType um $mealTime. Vergiss nicht, deine Mahlzeit zu tracken! 📱"))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .addAction(
+                0,
+                "Jetzt loggen",
+                pendingIntent
+            )
+            .build()
+        
+        try {
+            NotificationManagerCompat.from(context).notify(
+                NOTIFICATION_ID_MEAL_REMINDER + mealType.hashCode(),
+                notification
+            )
+        } catch (e: SecurityException) {
+            // Handle missing notification permission
+        }
+    }
+    
+    /**
+     * Show water reminder notification
+     */
+    fun showWaterReminder(context: Context, currentIntake: Int, targetIntake: Int) {
+        if (!hasNotificationPermission(context)) return
+        
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("navigate_to", "nutrition")
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            NOTIFICATION_ID_WATER_REMINDER,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        val remaining = targetIntake - currentIntake
+        val progressText = if (remaining > 0) {
+            "Noch ${remaining}ml bis zu deinem Ziel!"
+        } else {
+            "Großartig! Du hast dein Wasserziel erreicht! 🎉"
+        }
+        
+        val notification = NotificationCompat.Builder(context, CHANNEL_WATER_REMINDERS)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("💧 Wasser trinken!")
+            .setContentText("Zeit für ein Glas Wasser")
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText("$progressText\n\nAktuell: ${currentIntake}ml von ${targetIntake}ml"))
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .addAction(
+                0,
+                "Getrunken",
+                pendingIntent
+            )
+            .build()
+        
+        try {
+            NotificationManagerCompat.from(context).notify(
+                NOTIFICATION_ID_WATER_REMINDER,
+                notification
+            )
+        } catch (e: SecurityException) {
+            // Handle missing notification permission
+        }
+    }
+    
+    /**
+     * Show macro warning notification
+     */
+    fun showMacroWarning(context: Context, macroType: String, current: Int, target: Int, isOverTarget: Boolean) {
+        if (!hasNotificationPermission(context)) return
+        
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("navigate_to", "nutrition")
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            NOTIFICATION_ID_MACRO_WARNING + macroType.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        val warningText = if (isOverTarget) {
+            "⚠️ $macroType-Ziel überschritten!"
+        } else {
+            "📊 $macroType-Ziel noch nicht erreicht"
+        }
+        
+        val detailText = if (isOverTarget) {
+            "Du hast bereits ${current}g $macroType von ${target}g erreicht. Achte auf deine nächsten Mahlzeiten!"
+        } else {
+            "Du hast ${current}g von ${target}g $macroType erreicht. Noch ${target - current}g bis zum Ziel!"
+        }
+        
+        val notification = NotificationCompat.Builder(context, CHANNEL_MACRO_WARNINGS)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentTitle(warningText)
+            .setContentText("$macroType: ${current}g / ${target}g")
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText(detailText))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .addAction(
+                0,
+                "Überprüfen",
+                pendingIntent
+            )
+            .build()
+        
+        try {
+            NotificationManagerCompat.from(context).notify(
+                NOTIFICATION_ID_MACRO_WARNING + macroType.hashCode(),
+                notification
+            )
+        } catch (e: SecurityException) {
+            // Handle missing notification permission
         }
     }
     
