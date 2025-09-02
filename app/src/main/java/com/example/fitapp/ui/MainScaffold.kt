@@ -73,6 +73,7 @@ fun MainScaffold() {
                 NavigationDrawerItem(label = { Text("Ernährungstagbuch") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("food_diary") })
                 NavigationDrawerItem(label = { Text("Lebensmittel suchen") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("food_search") })
                 NavigationDrawerItem(label = { Text("Ernährungs-Analytics") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("nutrition_analytics") })
+                NavigationDrawerItem(label = { Text("Enhanced Analytics") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("enhanced_analytics") })
                 NavigationDrawerItem(label = { Text("BMI Rechner") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("bmi_calculator") })
                 NavigationDrawerItem(label = { Text("Abnehm-Programm") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("weight_loss_program") })
                 NavigationDrawerItem(label = { Text("AI Personal Trainer") }, selected = false, onClick = { scope.launch { drawerState.close() }; nav.navigate("ai_personal_trainer") })
@@ -137,6 +138,16 @@ fun MainScaffold() {
                                 },
                                 leadingIcon = {
                                     Icon(Icons.Filled.Fastfood, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Enhanced Analytics") },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    nav.navigate("enhanced_analytics")
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Dashboard, contentDescription = null)
                                 }
                             )
                             DropdownMenuItem(
@@ -332,6 +343,12 @@ fun MainScaffold() {
                     NutritionAnalyticsScreen(
                         contentPadding = padding,
                         onBackPressed = { nav.popBackStack() }
+                    )
+                }
+                composable("enhanced_analytics") {
+                    com.example.fitapp.ui.screens.EnhancedAnalyticsScreen(
+                        contentPadding = padding,
+                        navController = nav
                     )
                 }
                 composable("bmi_calculator") {
