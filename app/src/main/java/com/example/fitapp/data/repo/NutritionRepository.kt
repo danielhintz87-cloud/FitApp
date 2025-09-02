@@ -171,7 +171,6 @@ class NutritionRepository(private val db: AppDatabase) {
         // Track nutrition logging for achievements and streaks
         // Note: This creates a potential circular dependency, but it's acceptable for this feature
         try {
-            PersonalMotivationRepository(db)
             // This is a simplified approach - in a more robust implementation,
             // you'd use dependency injection or event system
         } catch (e: Exception) {
@@ -367,7 +366,6 @@ class NutritionRepository(private val db: AppDatabase) {
         
         // Track nutrition logging for achievements and streaks
         try {
-            val motivationRepo = PersonalMotivationRepository(db)
             // Track nutrition activity for achievements/streaks
         } catch (e: Exception) {
             // Ignore nutrition tracking errors to avoid breaking core functionality

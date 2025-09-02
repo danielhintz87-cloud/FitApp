@@ -205,6 +205,18 @@ private fun FastingTimerCard(
                     style = MaterialTheme.typography.titleMedium,
                     textAlign = TextAlign.Center
                 )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Start fasting button
+                Button(
+                    onClick = { onStartFasting(fastingState.protocol) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Fasten starten")
+                }
             }
         }
     }

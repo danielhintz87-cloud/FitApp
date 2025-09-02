@@ -174,9 +174,7 @@ private fun PeriodSelector(
 @Composable
 private fun NutritionSummaryCards(data: List<DailyNutritionData>) {
     val avgCalories = data.map { it.calories }.average().toInt()
-    val avgCarbs = data.map { it.carbs }.average()
     val avgProtein = data.map { it.protein }.average()
-    val avgFat = data.map { it.fat }.average()
     val avgWater = data.map { it.water }.average().toInt()
     
     val goalAchievementRate = data.count { 

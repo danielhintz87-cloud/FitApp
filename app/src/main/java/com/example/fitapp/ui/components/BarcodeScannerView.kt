@@ -197,7 +197,6 @@ private fun ScanningFrame() {
     ) {
         // Corner indicators for scanning frame
         val cornerSize = 20.dp
-        val strokeWidth = 4.dp
         
         // Top-left corner
         Box(

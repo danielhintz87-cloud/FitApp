@@ -419,6 +419,42 @@ fun BMIScaleVisualizer(
                     .fillMaxWidth(currentPosition.coerceIn(0f, 1f))
                     .wrapContentWidth(Alignment.End)
             )
+            
+            // Target BMI indicator (if provided)
+            targetBMI?.let { target ->
+                val targetPosition = when {
+                    target < 18.5f -> (target / 18.5f) * 0.185f
+                    target < 25f -> 0.185f + ((target - 18.5f) / 6.5f) * 0.265f
+                    target < 30f -> 0.45f + ((target - 25f) / 5f) * 0.25f
+                    else -> 0.7f + minOf((target - 30f) / 20f, 1f) * 0.3f
+                }
+                
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(targetPosition.coerceIn(0f, 1f))
+                        .height(4.dp)
+                        .align(Alignment.CenterStart)
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .align(Alignment.CenterEnd),
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                        color = MaterialTheme.colorScheme.secondary,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    ) {}
+                }
+                
+                Text(
+                    "Ziel: %.1f".format(target),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .fillMaxWidth(targetPosition.coerceIn(0f, 1f))
+                        .wrapContentWidth(Alignment.End)
+                )
+            }
         }
         
         // Scale labels

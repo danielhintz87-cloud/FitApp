@@ -107,8 +107,6 @@ suspend fun AppAi.generateWeightLossPlan(
     context: Context,
     request: WeightLossAiRequest
 ): Result<WeightLossPlan> {
-    val prompt = buildWeightLossPlanPrompt(request)
-    
     return try {
         val response = planWithOptimalProvider(context, PlanRequest(
             goal = "Gesunden Gewichtsverlust erreichen: ${request.currentWeight}kg → ${request.targetWeight}kg",
@@ -128,8 +126,6 @@ suspend fun AppAi.generatePersonalizedTips(
     context: Context,
     request: PersonalizedTipsRequest
 ): Result<List<PersonalizedTip>> {
-    val prompt = buildPersonalizedTipsPrompt(request)
-    
     return try {
         val response = planWithOptimalProvider(context, PlanRequest(
             goal = "Personalisierte Abnehm-Tipps basierend auf Fortschritt",
@@ -150,8 +146,6 @@ suspend fun AppAi.generateWeightLossInsights(
     progressData: List<WeightLossProgressData>,
     currentProgram: WeightLossProgramEntity?
 ): Result<WeightLossInsights> {
-    val prompt = buildInsightsPrompt(progressData, currentProgram)
-    
     return try {
         val response = planWithOptimalProvider(context, PlanRequest(
             goal = "Gewichtsverlust-Insights und Fortschrittsanalyse",
