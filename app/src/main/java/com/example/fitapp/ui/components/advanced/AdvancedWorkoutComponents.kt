@@ -26,10 +26,17 @@ import com.example.fitapp.ai.HeartRateZone
 import com.example.fitapp.ai.Priority
 import com.example.fitapp.ai.ProgressionSuggestion
 import com.example.fitapp.ai.SessionMetrics
+import com.example.fitapp.services.VideoResource
+import com.example.fitapp.services.VideoQuality
+import com.example.fitapp.services.RestTimerState
+import com.example.fitapp.services.RestSuggestion
+import com.example.fitapp.services.NextSetRecommendation
+import android.net.Uri
 
 /**
  * Advanced Workout UI Components for Phase 1 Enhancement
  * Real-time performance monitoring and AI-powered coaching interface
+ * Enhanced with video guidance and smart rest timer integration
  */
 
 @Composable
@@ -772,4 +779,388 @@ private fun ExpandedCoachingTipCard(
             }
         }
     }
+}
+
+/**
+ * Interactive Video Player for exercise guidance
+ * Supports slow-motion, pause, repeat, and multi-angle views
+ */
+@Composable
+fun ExerciseVideoPlayer(
+    videoResource: VideoResource?,
+    exerciseTitle: String,
+    isPlaying: Boolean = false,
+    showOverlays: Boolean = true,
+    currentAngle: Int = 0,
+    availableAngles: List<String> = listOf("Front", "Side", "Back"),
+    onPlayPause: () -> Unit,
+    onSpeedChange: (Float) -> Unit,
+    onAngleChange: (Int) -> Unit,
+    onRepeat: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Video Title and Quality
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "🎥 $exerciseTitle",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                videoResource?.let { resource ->
+                    Chip(
+                        onClick = { },
+                        label = { 
+                            Text(
+                                text = "${resource.quality.name} • ${if (resource.isLocal) "📱" else "🌐"}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    )
+                }
+            }
+            
+            // Video Preview Area (placeholder for actual video player)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                if (videoResource != null) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isPlaying) Icons.Filled.PlayArrow else Icons.Filled.Pause,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = if (isPlaying) "Playing..." else "Video Ready",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        
+                        // Form overlay indicators
+                        if (showOverlays) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                repeat(3) { 
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.VideoLibrary,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.outline
+                        )
+                        Text(
+                            text = "Video wird geladen...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                }
+            }
+            
+            // Video Controls
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Play/Pause
+                IconButton(onClick = onPlayPause) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play"
+                    )
+                }
+                
+                // Speed Control
+                AssistChip(
+                    onClick = { onSpeedChange(0.5f) },
+                    label = { Text("0.5x") }
+                )
+                
+                AssistChip(
+                    onClick = { onSpeedChange(1.0f) },
+                    label = { Text("1x") }
+                )
+                
+                // Repeat
+                IconButton(onClick = onRepeat) {
+                    Icon(
+                        imageVector = Icons.Filled.Replay,
+                        contentDescription = "Repeat"
+                    )
+                }
+            }
+            
+            // Multi-Angle Selection
+            if (availableAngles.size > 1) {
+                Text(
+                    text = "Camera Angles:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    availableAngles.forEachIndexed { index, angle ->
+                        FilterChip(
+                            selected = currentAngle == index,
+                            onClick = { onAngleChange(index) },
+                            label = { Text(angle) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Smart Rest Timer with AI-powered recommendations
+ */
+@Composable
+fun SmartRestTimerDisplay(
+    timerState: RestTimerState,
+    restSuggestion: RestSuggestion?,
+    onPause: () -> Unit,
+    onResume: () -> Unit,
+    onSkip: () -> Unit,
+    onStop: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = when (timerState) {
+                is RestTimerState.RUNNING -> MaterialTheme.colorScheme.secondaryContainer
+                is RestTimerState.PAUSED -> MaterialTheme.colorScheme.errorContainer
+                is RestTimerState.COMPLETED -> MaterialTheme.colorScheme.primaryContainer
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            }
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Timer Status
+            when (timerState) {
+                is RestTimerState.RUNNING -> {
+                    Text(
+                        text = "⏱️ Pause Timer",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Text(
+                        text = formatTime(timerState.remaining),
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    
+                    // Progress indicator
+                    LinearProgressIndicator(
+                        progress = (timerState.total - timerState.remaining).toFloat() / timerState.total,
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                is RestTimerState.PAUSED -> {
+                    Text(
+                        text = "⏸️ Timer Pausiert",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Text(
+                        text = formatTime(timerState.remaining),
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                
+                is RestTimerState.COMPLETED -> {
+                    Text(
+                        text = "✅ Pause beendet!",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    
+                    timerState.nextSetRecommendation?.let { recommendation ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp)
+                            ) {
+                                Text(
+                                    text = "📈 Nächster Satz",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = recommendation.suggestion,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                if (recommendation.weightAdjustment != 0f || recommendation.repAdjustment != 0) {
+                                    Text(
+                                        text = "Anpassung: ${if (recommendation.weightAdjustment > 0) "+" else ""}${recommendation.weightAdjustment}kg, ${if (recommendation.repAdjustment > 0) "+" else ""}${recommendation.repAdjustment} Reps",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                else -> {
+                    Text(
+                        text = "Bereit für das nächste Set",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
+            
+            // Motivational Message
+            restSuggestion?.motivationalMessage?.let { message ->
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            // Form Tips
+            restSuggestion?.formTips?.takeIf { it.isNotEmpty() }?.let { tips ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp)
+                    ) {
+                        Text(
+                            text = "💡 Form-Tipps",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        tips.forEach { tip ->
+                            Text(
+                                text = "• $tip",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // Timer Controls
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                when (timerState) {
+                    is RestTimerState.RUNNING -> {
+                        OutlinedButton(onClick = onPause) {
+                            Icon(Icons.Filled.Pause, contentDescription = null)
+                            Spacer(Modifier.width(4.dp))
+                            Text("Pause")
+                        }
+                        
+                        Button(onClick = onSkip) {
+                            Icon(Icons.Filled.SkipNext, contentDescription = null)
+                            Spacer(Modifier.width(4.dp))
+                            Text("Skip")
+                        }
+                    }
+                    
+                    is RestTimerState.PAUSED -> {
+                        Button(onClick = onResume) {
+                            Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                            Spacer(Modifier.width(4.dp))
+                            Text("Weiter")
+                        }
+                        
+                        OutlinedButton(onClick = onStop) {
+                            Icon(Icons.Filled.Stop, contentDescription = null)
+                            Spacer(Modifier.width(4.dp))
+                            Text("Stop")
+                        }
+                    }
+                    
+                    is RestTimerState.COMPLETED -> {
+                        Button(onClick = onStop) {
+                            Text("Nächster Satz")
+                        }
+                    }
+                    
+                    else -> {
+                        // Timer not active
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Format seconds to MM:SS
+ */
+private fun formatTime(seconds: Int): String {
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+    return String.format("%02d:%02d", minutes, remainingSeconds)
 }
