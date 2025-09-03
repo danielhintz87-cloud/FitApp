@@ -39,6 +39,7 @@ import android.net.Uri
  * Enhanced with video guidance and smart rest timer integration
  */
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LivePerformanceDashboard(
     heartRate: Int?,

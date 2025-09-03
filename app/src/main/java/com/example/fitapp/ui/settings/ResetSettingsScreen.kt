@@ -30,7 +30,7 @@ fun ResetSettingsScreen(
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.get(context) }
-    val userPrefs = remember { UserPreferences(context) }
+    val userPrefs = remember { com.example.fitapp.data.prefs.UserPreferencesImpl(context) }
     val resetManager = remember { ResetManager(context, db, userPrefs) }
     val scope = rememberCoroutineScope()
     
@@ -38,6 +38,8 @@ fun ResetSettingsScreen(
     val resetProgress by resetManager.resetProgress.collectAsState()
     var showResetDialog by remember { mutableStateOf(false) }
     var selectedResetType by remember { mutableStateOf<ResetManager.ResetType?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    var resetResult by remember { mutableStateOf<Map<String, Any>?>(null) }
     
     Scaffold(
         topBar = {

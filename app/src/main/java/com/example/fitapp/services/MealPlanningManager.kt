@@ -437,6 +437,7 @@ class MealPlanningManager(
                 IngredientCategory.BEVERAGES -> it.amount * 0.002f
                 IngredientCategory.SNACKS -> it.amount * 0.015f
                 IngredientCategory.SPICES -> it.amount * 0.05f
+                IngredientCategory.BAKERY -> it.amount * 0.006f // €0.006 per gram for bakery items
                 IngredientCategory.OTHER -> it.amount * 0.01f
                 // Legacy compatibility
                 IngredientCategory.VEGETABLE -> it.amount * 0.005f
@@ -677,6 +678,7 @@ enum class IngredientCategory {
     BEVERAGES,    // Getränke
     SNACKS,       // Snacks
     SPICES,       // Gewürze
+    BAKERY,       // Backwaren
     OTHER,        // Sonstiges
     // Legacy values for compatibility
     VEGETABLE,

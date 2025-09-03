@@ -12,6 +12,10 @@ interface UserPreferences {
     suspend fun clearUserPreferences()
     suspend fun clearAchievementPreferences()
     suspend fun clearAllPreferences()
+    
+    // Equipment functions
+    suspend fun getSelectedEquipment(): Set<String>
+    suspend fun saveSelectedEquipment(equipment: Set<String>)
 }
 
 /**
@@ -46,6 +50,15 @@ class UserPreferencesImpl(private val context: Context) : UserPreferences {
     
     override suspend fun clearAllPreferences() {
         getSharedPrefs().edit().clear().apply()
+    }
+    
+    override suspend fun getSelectedEquipment(): Set<String> {
+        val stored = getSharedPrefs().getString("selected_equipment", "") ?: ""
+        return if (stored.isBlank()) emptySet() else stored.split(",").filter { it.isNotBlank() }.toSet()
+    }
+    
+    override suspend fun saveSelectedEquipment(equipment: Set<String>) {
+        getSharedPrefs().edit().putString("selected_equipment", equipment.joinToString(",")).apply()
     }
 }
 

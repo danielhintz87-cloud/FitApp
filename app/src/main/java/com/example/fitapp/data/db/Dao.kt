@@ -325,6 +325,9 @@ interface ProgressMilestoneDao {
 
     @Query("SELECT * FROM progress_milestones WHERE id = :id")
     suspend fun getMilestone(id: Long): ProgressMilestoneEntity?
+    
+    @Query("DELETE FROM progress_milestones")
+    suspend fun deleteAll()
 }
 
 @Dao
