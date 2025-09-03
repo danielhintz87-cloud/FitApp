@@ -499,4 +499,62 @@ class ShoppingListManager(
     private fun generateId(): String {
         return System.currentTimeMillis().toString()
     }
+    
+    /**
+     * Add ingredient from text string (for recipe integration)
+     */
+    suspend fun addIngredientFromText(
+        ingredientText: String,
+        fromRecipe: String = "Manual",
+        priority: Priority = Priority.NORMAL
+    ) {
+        try {
+            val (name, quantity, unit) = parseIngredientText(ingredientText)
+            val category = categorizeIngredient(name)
+            
+            val ingredient = CookingModeManager.Ingredient(
+                name = name,
+                quantity = "$quantity",
+                unit = unit
+            )
+            
+            addIngredient(ingredient, fromRecipe, priority)
+            
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.NUTRITION,
+                TAG,
+                "Error parsing ingredient text: $ingredientText",
+                exception = e
+            )
+            
+            // Fallback: add as simple text
+            val ingredient = CookingModeManager.Ingredient(
+                name = ingredientText,
+                quantity = "1",
+                unit = "Stück"
+            )
+            
+            addIngredient(ingredient, fromRecipe, priority)
+        }
+    }
+    
+    private fun parseIngredientText(text: String): Triple<String, Double, String> {
+        // Simple parsing - in a real implementation, this would be more sophisticated
+        val trimmed = text.trim()
+        
+        // Try to extract quantity and unit from the beginning
+        val quantityPattern = Regex("^(\\d+(?:[.,]\\d+)?)\\s*(\\w+)?\\s+(.+)")
+        val match = quantityPattern.find(trimmed)
+        
+        return if (match != null) {
+            val quantity = match.groupValues[1].replace(",", ".").toDoubleOrNull() ?: 1.0
+            val unit = match.groupValues[2].ifBlank { "Stück" }
+            val name = match.groupValues[3]
+            Triple(name, quantity, unit)
+        } else {
+            // No quantity found, treat as single item
+            Triple(trimmed, 1.0, "Stück")
+        }
+    }
 }
