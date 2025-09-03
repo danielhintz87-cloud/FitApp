@@ -827,6 +827,9 @@ interface CookingSessionDao {
         WHERE status = 'completed' AND actualDuration IS NOT NULL
     """)
     suspend fun getAverageCookingTime(): Float?
+    
+    @Query("DELETE FROM cooking_sessions")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -873,5 +876,8 @@ interface CookingTimerDao {
 
     @Query("DELETE FROM cooking_timers WHERE sessionId = :sessionId")
     suspend fun deleteBySessionId(sessionId: String)
+    
+    @Query("DELETE FROM cooking_timers")
+    suspend fun deleteAll()
 }
 

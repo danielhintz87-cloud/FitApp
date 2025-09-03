@@ -41,7 +41,7 @@ class WaterReminderWorker(
         
         fun scheduleWaterReminders(context: Context) {
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                // No network requirement for water reminders
                 .build()
             
             val workRequest = PeriodicWorkRequestBuilder<WaterReminderWorker>(

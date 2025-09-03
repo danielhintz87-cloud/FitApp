@@ -214,7 +214,53 @@ data class ProgressionRecommendation(
     val description: String,
     val confidence: Float,
     val nextEvaluationWeeks: Int
-)
+) {
+    companion object {
+        fun weightIncrease(weight: Float, reps: Int, sets: Int, description: String): ProgressionRecommendation {
+            return ProgressionRecommendation(
+                type = ProgressionType.WEIGHT_INCREASE,
+                weightIncrease = weight,
+                repIncrease = null,
+                description = description,
+                confidence = 0.8f,
+                nextEvaluationWeeks = 1
+            )
+        }
+        
+        fun repIncrease(weight: Float, reps: Int, sets: Int, description: String): ProgressionRecommendation {
+            return ProgressionRecommendation(
+                type = ProgressionType.REP_INCREASE,
+                weightIncrease = null,
+                repIncrease = reps,
+                description = description,
+                confidence = 0.8f,
+                nextEvaluationWeeks = 1
+            )
+        }
+        
+        fun maintain(weight: Float, reps: Int, sets: Int, description: String): ProgressionRecommendation {
+            return ProgressionRecommendation(
+                type = ProgressionType.MAINTAIN,
+                weightIncrease = null,
+                repIncrease = null,
+                description = description,
+                confidence = 0.9f,
+                nextEvaluationWeeks = 2
+            )
+        }
+        
+        fun deload(weight: Float, reps: Int, sets: Int, description: String): ProgressionRecommendation {
+            return ProgressionRecommendation(
+                type = ProgressionType.DELOAD,
+                weightIncrease = weight,
+                repIncrease = null,
+                description = description,
+                confidence = 0.7f,
+                nextEvaluationWeeks = 1
+            )
+        }
+    }
+}
 
 enum class ProgressionType {
     WEIGHT_INCREASE,

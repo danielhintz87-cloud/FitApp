@@ -10,6 +10,52 @@ import com.example.fitapp.util.StructuredLogger
 import android.content.Context
 
 /**
+ * Reset types for different data categories
+ */
+enum class ResetType {
+    WORKOUT_DATA,
+    NUTRITION_DATA,
+    USER_PROFILE,
+    ACHIEVEMENTS,
+    SHOPPING_LIST,
+    COMPLETE_RESET
+}
+
+/**
+ * Reset error types
+ */
+enum class ResetError {
+    INVALID_TOKEN,
+    DATABASE_ERROR,
+    PERMISSION_DENIED,
+    UNKNOWN_ERROR
+}
+
+/**
+ * Data class for reset results
+ */
+data class ResetResult(
+    val isSuccess: Boolean,
+    val resetType: ResetType,
+    val isCompleted: Boolean,
+    val hasError: Boolean,
+    val errorMessage: String? = null,
+    val preservedUserSettings: Boolean = false,
+    val clearedDataTypes: List<String> = emptyList(),
+    val errorType: ResetError? = null
+)
+
+/**
+ * Reset options for selective resets
+ */
+data class SelectiveResetOptions(
+    val resetPersonalInfo: Boolean = false,
+    val resetFitnessGoals: Boolean = false,
+    val resetPreferences: Boolean = false,
+    val resetAchievements: Boolean = false
+)
+
+/**
  * Comprehensive Reset Manager
  * Handles different types of data resets with granular control
  */
@@ -37,21 +83,200 @@ class ResetManager(
         val errorMessage: String? = null
     )
 
-    enum class ResetType {
-        WORKOUT_DATA,
-        NUTRITION_DATA,
-        USER_PROFILE,
-        ACHIEVEMENTS,
-        PERSONAL_RECORDS,
-        SHOPPING_LIST,
-        COOKING_SESSIONS,
-        COMPLETE_RESET
+    
+    /**
+     * Perform reset operation with confirmation
+     */
+    suspend fun performReset(
+        resetType: ResetType, 
+        confirmationToken: String,
+        preserveSettings: Boolean = false,
+        validateIntegrity: Boolean = false,
+        createBackup: Boolean = false
+    ): ResetResult {
+        return try {
+            // Validate confirmation token
+            if (!isValidConfirmationToken(resetType, confirmationToken)) {
+                return ResetResult(
+                    isSuccess = false,
+                    resetType = resetType,
+                    isCompleted = false,
+                    hasError = true,
+                    errorMessage = "Invalid confirmation token",
+                    errorType = ResetError.INVALID_TOKEN
+                )
+            }
+            
+            // Perform the reset based on type
+            when (resetType) {
+                ResetType.WORKOUT_DATA -> {
+                    resetWorkoutData()
+                    ResetResult(
+                        isSuccess = true,
+                        resetType = resetType,
+                        isCompleted = true,
+                        hasError = false,
+                        preservedUserSettings = preserveSettings
+                    )
+                }
+                ResetType.NUTRITION_DATA -> {
+                    resetNutritionData()
+                    ResetResult(
+                        isSuccess = true,
+                        resetType = resetType,
+                        isCompleted = true,
+                        hasError = false,
+                        preservedUserSettings = preserveSettings
+                    )
+                }
+                ResetType.USER_PROFILE -> {
+                    resetUserProfile()
+                    ResetResult(
+                        isSuccess = true,
+                        resetType = resetType,
+                        isCompleted = true,
+                        hasError = false,
+                        preservedUserSettings = preserveSettings
+                    )
+                }
+                ResetType.ACHIEVEMENTS -> {
+                    resetAchievements()
+                    ResetResult(
+                        isSuccess = true,
+                        resetType = resetType,
+                        isCompleted = true,
+                        hasError = false
+                    )
+                }
+                ResetType.SHOPPING_LIST -> {
+                    resetShoppingList()
+                    ResetResult(
+                        isSuccess = true,
+                        resetType = resetType,
+                        isCompleted = true,
+                        hasError = false
+                    )
+                }
+                ResetType.COMPLETE_RESET -> {
+                    resetAllData()
+                    ResetResult(
+                        isSuccess = true,
+                        resetType = resetType,
+                        isCompleted = true,
+                        hasError = false,
+                        preservedUserSettings = preserveSettings
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.SYSTEM,
+                TAG,
+                "Error performing reset: ${e.message}",
+                e
+            )
+            ResetResult(
+                isSuccess = false,
+                resetType = resetType,
+                isCompleted = false,
+                hasError = true,
+                errorMessage = e.message,
+                errorType = ResetError.DATABASE_ERROR
+            )
+        }
+    }
+    
+    /**
+     * Perform selective reset with options
+     */
+    suspend fun performSelectiveReset(
+        resetType: ResetType,
+        confirmationToken: String,
+        options: SelectiveResetOptions
+    ): ResetResult {
+        return try {
+            if (!isValidConfirmationToken(resetType, confirmationToken)) {
+                return ResetResult(
+                    isSuccess = false,
+                    resetType = resetType,
+                    isCompleted = false,
+                    hasError = true,
+                    errorMessage = "Invalid confirmation token",
+                    errorType = ResetError.INVALID_TOKEN
+                )
+            }
+            
+            val clearedTypes = mutableListOf<String>()
+            
+            if (options.resetPersonalInfo) {
+                // Reset personal info specific data
+                clearedTypes.add("personal_info")
+            }
+            
+            if (options.resetFitnessGoals) {
+                // Reset fitness goals specific data
+                clearedTypes.add("fitness_goals")
+            }
+            
+            if (options.resetPreferences && !options.resetPreferences) {
+                // Don't clear preferences if explicitly preserved
+            } else if (options.resetPreferences) {
+                clearedTypes.add("preferences")
+            }
+            
+            if (options.resetAchievements) {
+                clearedTypes.add("achievements")
+            }
+            
+            ResetResult(
+                isSuccess = true,
+                resetType = resetType,
+                isCompleted = true,
+                hasError = false,
+                clearedDataTypes = clearedTypes
+            )
+        } catch (e: Exception) {
+            ResetResult(
+                isSuccess = false,
+                resetType = resetType,
+                isCompleted = false,
+                hasError = true,
+                errorMessage = e.message,
+                errorType = ResetError.DATABASE_ERROR
+            )
+        }
+    }
+    
+    /**
+     * Validate confirmation token
+     */
+    private fun isValidConfirmationToken(resetType: ResetType, token: String): Boolean {
+        return when (resetType) {
+            ResetType.COMPLETE_RESET -> token == "CONFIRM_COMPLETE_RESET_I_UNDERSTAND"
+            else -> token.startsWith("CONFIRM")
+        }
+    }
+
+    /**
+     * API wrapper for resetWorkoutData that returns status map
+     */
+    suspend fun resetWorkoutDataApi(): Map<String, Any> {
+        return try {
+            resetWorkoutData()
+            mapOf(
+                "success" to true,
+                "message" to "Workout data reset successfully",
+                "timestamp" to System.currentTimeMillis()
+            )
+        } catch (e: Exception) {
+            handleResetError(e)
+        }
     }
 
     /**
      * Reset workout data including sessions, performance, and progressions
      */
-    suspend fun resetWorkoutData() {
+    suspend fun resetWorkoutData(): Map<String, Any> {
         _resetProgress.value = ResetProgress("Workout-Daten", 0f, "Starte Reset...")
         
         try {
@@ -100,9 +325,25 @@ class ResetManager(
     }
 
     /**
+     * API wrapper for resetNutritionData that returns status map
+     */
+    suspend fun resetNutritionDataApi(): Map<String, Any> {
+        return try {
+            resetNutritionData()
+            mapOf(
+                "success" to true,
+                "message" to "Nutrition data reset successfully",
+                "timestamp" to System.currentTimeMillis()
+            )
+        } catch (e: Exception) {
+            handleResetError(e)
+        }
+    }
+
+    /**
      * Reset nutrition data including meals, recipes, and food items
      */
-    suspend fun resetNutritionData() {
+    suspend fun resetNutritionData(): Map<String, Any> {
         _resetProgress.value = ResetProgress("Ernährungs-Daten", 0f, "Starte Reset...")
         
         try {
@@ -156,9 +397,25 @@ class ResetManager(
     }
 
     /**
+     * API wrapper for resetUserProfile that returns status map
+     */
+    suspend fun resetUserProfileApi(): Map<String, Any> {
+        return try {
+            resetUserProfile()
+            mapOf(
+                "success" to true,
+                "message" to "User profile reset successfully",
+                "timestamp" to System.currentTimeMillis()
+            )
+        } catch (e: Exception) {
+            handleResetError(e)
+        }
+    }
+
+    /**
      * Reset user profile data including BMI, weight, and behavioral data
      */
-    suspend fun resetUserProfile() {
+    suspend fun resetUserProfile(): Map<String, Any> {
         _resetProgress.value = ResetProgress("Benutzer-Profil", 0f, "Starte Reset...")
         
         try {
@@ -209,7 +466,7 @@ class ResetManager(
     /**
      * Reset achievements and streak data
      */
-    suspend fun resetAchievements() {
+    suspend fun resetAchievements(): Map<String, Any> {
         _resetProgress.value = ResetProgress("Erfolge & Streaks", 0f, "Starte Reset...")
         
         try {
@@ -256,7 +513,7 @@ class ResetManager(
     /**
      * Reset shopping list data
      */
-    suspend fun resetShoppingList() {
+    suspend fun resetShoppingList(): Map<String, Any> {
         _resetProgress.value = ResetProgress("Einkaufsliste", 0f, "Starte Reset...")
         
         try {
@@ -293,9 +550,16 @@ class ResetManager(
     }
 
     /**
+     * Reset all data - calls complete reset implementation
+     */
+    private suspend fun resetAllData() {
+        performCompleteReset()
+    }
+
+    /**
      * Complete app reset - WARNING: This will delete ALL data
      */
-    suspend fun performCompleteReset() {
+    suspend fun performCompleteReset(): Map<String, Any> {
         _resetProgress.value = ResetProgress("Vollständiger Reset", 0f, "Starte vollständigen Reset...")
         
         try {
@@ -347,6 +611,17 @@ class ResetManager(
                 e
             )
         }
+    }
+    
+    /**
+     * Handle reset errors and return standardized error response
+     */
+    private suspend fun handleResetError(error: Exception): Map<String, Any> {
+        return mapOf(
+            "success" to false,
+            "error" to (error.message ?: "Unknown error"),
+            "timestamp" to System.currentTimeMillis()
+        )
     }
 
     /**

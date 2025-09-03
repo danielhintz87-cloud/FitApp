@@ -44,7 +44,7 @@ class NutritionReminderWorker(
         
         private fun scheduleMealReminder(context: Context, mealType: String, scheduledTime: LocalTime) {
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                // No network requirement for meal reminders
                 .build()
             
             val inputData = Data.Builder()

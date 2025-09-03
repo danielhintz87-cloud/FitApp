@@ -139,7 +139,7 @@ class HealthConnectSyncWorker(
         
         fun schedulePeriodicSync(context: Context) {
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                // Remove network constraint - health sync can work with any connection
                 .setRequiresBatteryNotLow(true)
                 .build()
             
@@ -169,7 +169,7 @@ class HealthConnectSyncWorker(
         
         fun triggerImmediateSync(context: Context) {
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                // Remove network constraint - health sync can work with any connection
                 .build()
             
             val immediateSyncRequest = OneTimeWorkRequestBuilder<HealthConnectSyncWorker>()

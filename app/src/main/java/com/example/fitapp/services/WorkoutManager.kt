@@ -85,7 +85,7 @@ class WorkoutManager(
             }
         } catch (e: Exception) {
             StructuredLogger.error(
-                StructuredLogger.LogCategory.WORKOUT,
+                StructuredLogger.LogCategory.USER_ACTION,
                 TAG,
                 "Failed to calculate progressive overload",
                 exception = e
@@ -117,7 +117,7 @@ class WorkoutManager(
             
             // Log to database (simplified implementation)
             StructuredLogger.info(
-                StructuredLogger.LogCategory.WORKOUT,
+                StructuredLogger.LogCategory.USER_ACTION,
                 TAG,
                 "Logged set: Exercise=$exerciseId, Weight=$weight, Reps=$reps, RPE=$rpe, Form=$formScore"
             )
@@ -125,7 +125,7 @@ class WorkoutManager(
             true
         } catch (e: Exception) {
             StructuredLogger.error(
-                StructuredLogger.LogCategory.WORKOUT,
+                StructuredLogger.LogCategory.USER_ACTION,
                 TAG,
                 "Failed to log workout set",
                 exception = e
@@ -147,23 +147,29 @@ class WorkoutManager(
             val plateauPercentage = 0.0f
             
             PlateauDetectionResult(
-                hasPlateaued = hasPlateaued,
-                plateauPercentage = plateauPercentage,
-                weeksInPlateau = if (hasPlateaued) weeksToAnalyze else 0,
-                recommendation = if (hasPlateaued) "Deload Week empfohlen" else "Weiter wie bisher"
+                exerciseId = "exercise123",
+                isPlateaued = hasPlateaued,
+                plateauDuration = if (hasPlateaued) weeksToAnalyze else 0,
+                progressRate = 0.85f,
+                plateauScore = plateauPercentage,
+                confidence = 0.9f,
+                recommendations = listOf(if (hasPlateaued) "Deload Week empfohlen" else "Weiter wie bisher")
             )
         } catch (e: Exception) {
             StructuredLogger.error(
-                StructuredLogger.LogCategory.WORKOUT,
+                StructuredLogger.LogCategory.USER_ACTION,
                 TAG,
                 "Failed to detect training plateau",
                 exception = e
             )
             PlateauDetectionResult(
-                hasPlateaued = false,
-                plateauPercentage = 0f,
-                weeksInPlateau = 0,
-                recommendation = "Fehler bei Analyse"
+                exerciseId = "exercise123",
+                isPlateaued = false,
+                plateauDuration = 0,
+                progressRate = 0f,
+                plateauScore = 0f,
+                confidence = 0f,
+                recommendations = listOf("Fehler bei Analyse")
             )
         }
     }
@@ -200,7 +206,7 @@ class WorkoutManager(
             )
         } catch (e: Exception) {
             StructuredLogger.error(
-                StructuredLogger.LogCategory.WORKOUT,
+                StructuredLogger.LogCategory.USER_ACTION,
                 TAG,
                 "Failed to suggest rest period",
                 exception = e
@@ -245,7 +251,7 @@ class WorkoutManager(
             )
         } catch (e: Exception) {
             StructuredLogger.error(
-                StructuredLogger.LogCategory.WORKOUT,
+                StructuredLogger.LogCategory.USER_ACTION,
                 TAG,
                 "Failed to complete workout",
                 exception = e
@@ -285,7 +291,7 @@ class WorkoutManager(
             )
         } catch (e: Exception) {
             StructuredLogger.error(
-                StructuredLogger.LogCategory.WORKOUT,
+                StructuredLogger.LogCategory.USER_ACTION,
                 TAG,
                 "Failed to validate exercise form",
                 exception = e

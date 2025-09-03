@@ -583,3 +583,9 @@ enum class NotificationCategory {
     GENERAL,
     NOT_REQUIRED
 }
+
+enum class NetworkRequirement {
+    CONNECTED,
+    UNMETERED,
+    ANY
+}
