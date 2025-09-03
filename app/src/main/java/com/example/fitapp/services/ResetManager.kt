@@ -276,7 +276,7 @@ class ResetManager(
     /**
      * Reset workout data including sessions, performance, and progressions
      */
-    suspend fun resetWorkoutData() {
+    suspend fun resetWorkoutData(): Map<String, Any> {
         _resetProgress.value = ResetProgress("Workout-Daten", 0f, "Starte Reset...")
         
         try {
@@ -343,7 +343,7 @@ class ResetManager(
     /**
      * Reset nutrition data including meals, recipes, and food items
      */
-    suspend fun resetNutritionData() {
+    suspend fun resetNutritionData(): Map<String, Any> {
         _resetProgress.value = ResetProgress("Ernährungs-Daten", 0f, "Starte Reset...")
         
         try {
@@ -415,7 +415,7 @@ class ResetManager(
     /**
      * Reset user profile data including BMI, weight, and behavioral data
      */
-    suspend fun resetUserProfile() {
+    suspend fun resetUserProfile(): Map<String, Any> {
         _resetProgress.value = ResetProgress("Benutzer-Profil", 0f, "Starte Reset...")
         
         try {
@@ -466,7 +466,7 @@ class ResetManager(
     /**
      * Reset achievements and streak data
      */
-    suspend fun resetAchievements() {
+    suspend fun resetAchievements(): Map<String, Any> {
         _resetProgress.value = ResetProgress("Erfolge & Streaks", 0f, "Starte Reset...")
         
         try {
@@ -513,7 +513,7 @@ class ResetManager(
     /**
      * Reset shopping list data
      */
-    suspend fun resetShoppingList() {
+    suspend fun resetShoppingList(): Map<String, Any> {
         _resetProgress.value = ResetProgress("Einkaufsliste", 0f, "Starte Reset...")
         
         try {
@@ -559,7 +559,7 @@ class ResetManager(
     /**
      * Complete app reset - WARNING: This will delete ALL data
      */
-    suspend fun performCompleteReset() {
+    suspend fun performCompleteReset(): Map<String, Any> {
         _resetProgress.value = ResetProgress("Vollständiger Reset", 0f, "Starte vollständigen Reset...")
         
         try {

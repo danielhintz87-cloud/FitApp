@@ -132,7 +132,7 @@ class WorkoutExecutionManager(
     /**
      * Navigate to the next step in the workout
      */
-    suspend fun navigateToNextStep(): WorkoutStep? = withContext(Dispatchers.IO) {
+    suspend fun navigateToNextStep(): WorkoutStep? {
         val currentFlow = _workoutFlow.value ?: return null
         val currentStepValue = _currentStep.value ?: return null
         
@@ -154,7 +154,9 @@ class WorkoutExecutionManager(
             val nextExerciseIndex = currentFlow.currentExerciseIndex + 1
             if (nextExerciseIndex < currentFlow.exercises.size) {
                 val nextExercise = currentFlow.exercises[nextExerciseIndex]
-                createWorkoutStep(nextExercise, nextExerciseIndex, currentFlow.sessionId)
+                withContext(Dispatchers.IO) {
+                    createWorkoutStep(nextExercise, nextExerciseIndex, currentFlow.sessionId)
+                }
             } else {
                 null // Workout completed
             }
