@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.prefs.UserPreferences
 import com.example.fitapp.services.ResetManager
+import com.example.fitapp.services.ResetType
 import kotlinx.coroutines.launch
 
 /**

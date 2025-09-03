@@ -16,6 +16,7 @@ import com.example.fitapp.ai.PlanRequest
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.data.prefs.UserPreferences
+import com.example.fitapp.data.prefs.UserPreferencesLegacy
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -54,7 +55,7 @@ fun TodayTrainingScreen(
             customGoal = "Angepasst: ${plan.goal}"
             customMinutes = plan.minutesPerSession.toString()
             // Load equipment from persistent storage instead of plan
-            val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
+            val savedEquipment = UserPreferencesLegacy.getSelectedEquipment(ctx)
             customEquipment = if (savedEquipment.isNotEmpty()) {
                 savedEquipment.joinToString(", ")
             } else {

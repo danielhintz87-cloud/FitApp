@@ -1,5 +1,5 @@
 [versions]
-kotlin = "1.9.24"
+kotlin = "2.0.20"
 agp = "8.12.1"
 serialization = "1.7.3"
 compose-bom = "2024.10.01"
@@ -14,7 +14,7 @@ coil = "2.7.0"
 work = "2.9.1"
 appcompat = "1.7.0"
 desugar = "2.0.4"
-ksp = "1.9.24-1.0.20"
+ksp = "2.0.20-1.0.25"
 
 # New Infrastructure Dependencies
 retrofit = "2.9.0"
@@ -100,4 +100,5 @@ android-test-core = { module = "androidx.test:core", version.ref = "android-test
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

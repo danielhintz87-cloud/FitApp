@@ -534,7 +534,7 @@ private fun getCategoryIcon(category: String): androidx.compose.ui.graphics.vect
         "Obst & Gemüse" -> Icons.Filled.Agriculture
         "Fleisch & Fisch" -> Icons.Filled.SetMeal
         "Milchprodukte" -> Icons.Filled.LocalDrink
-        "Getreide & Backwaren" -> Icons.Filled.Bakery
+        "Getreide & Backwaren" -> Icons.Filled.Grain
         "Tiefkühl" -> Icons.Filled.AcUnit
         "Getränke" -> Icons.Filled.LocalBar
         "Gewürze & Kräuter" -> Icons.Filled.Spa
