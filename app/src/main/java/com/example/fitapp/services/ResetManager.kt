@@ -135,7 +135,7 @@ class ResetManager(
             
             // Perform the reset based on type
             when (resetType) {
-                ResetType.WORKOUT_DATA -> {
+                ResetManager.ResetType.WORKOUT_DATA -> {
                     resetWorkoutData()
                     ResetResult(
                         isSuccess = true,
@@ -145,7 +145,7 @@ class ResetManager(
                         preservedUserSettings = preserveSettings
                     )
                 }
-                ResetType.NUTRITION_DATA -> {
+                ResetManager.ResetType.NUTRITION_DATA -> {
                     resetNutritionData()
                     ResetResult(
                         isSuccess = true,
@@ -155,7 +155,7 @@ class ResetManager(
                         preservedUserSettings = preserveSettings
                     )
                 }
-                ResetType.USER_PROFILE -> {
+                ResetManager.ResetType.USER_PROFILE -> {
                     resetUserProfile()
                     ResetResult(
                         isSuccess = true,
@@ -165,7 +165,7 @@ class ResetManager(
                         preservedUserSettings = preserveSettings
                     )
                 }
-                ResetType.ACHIEVEMENTS -> {
+                ResetManager.ResetType.ACHIEVEMENTS -> {
                     resetAchievements()
                     ResetResult(
                         isSuccess = true,
@@ -174,7 +174,7 @@ class ResetManager(
                         hasError = false
                     )
                 }
-                ResetType.SHOPPING_LIST -> {
+                ResetManager.ResetType.SHOPPING_LIST -> {
                     resetShoppingList()
                     ResetResult(
                         isSuccess = true,
@@ -183,8 +183,8 @@ class ResetManager(
                         hasError = false
                     )
                 }
-                ResetType.COMPLETE_RESET -> {
-                    resetAllData()
+                ResetManager.ResetType.COMPLETE_RESET -> {
+                    performCompleteReset()
                     ResetResult(
                         isSuccess = true,
                         resetType = resetType,
