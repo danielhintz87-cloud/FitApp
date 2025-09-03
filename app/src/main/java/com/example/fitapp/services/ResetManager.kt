@@ -12,15 +12,6 @@ import android.content.Context
 /**
  * Reset types for different data categories
  */
-enum class ResetType {
-    WORKOUT_DATA,
-    NUTRITION_DATA,
-    USER_PROFILE,
-    ACHIEVEMENTS,
-    SHOPPING_LIST,
-    COMPLETE_RESET
-}
-
 /**
  * Reset error types
  */
