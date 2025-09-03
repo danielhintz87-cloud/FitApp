@@ -20,6 +20,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.SavedRecipeEntity
 import com.example.fitapp.services.CookingModeManager
+import com.example.fitapp.services.ShoppingListManager
 import com.example.fitapp.ui.components.*
 import kotlinx.coroutines.launch
 
@@ -41,6 +42,7 @@ fun EnhancedCookingModeScreen(
     
     // Cooking mode state
     val cookingManager = remember { CookingModeManager(db) }
+    val shoppingManager = remember { ShoppingListManager(db) }
     
     val cookingFlow by cookingManager.cookingFlow.collectAsState()
     val currentStep by cookingManager.currentStep.collectAsState()
@@ -118,7 +120,13 @@ fun EnhancedCookingModeScreen(
                             }
                         },
                         onAddToShoppingList = { ingredients ->
-                            // TODO: Implement add to shopping list
+                            scope.launch {
+                                shoppingManager.addAllRecipeIngredients(
+                                    recipeTitle = recipe.title ?: "Kochmodus",
+                                    ingredients = ingredients,
+                                    servings = servings
+                                )
+                            }
                         }
                     )
                 }

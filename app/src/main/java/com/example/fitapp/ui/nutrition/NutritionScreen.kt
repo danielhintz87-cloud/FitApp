@@ -21,6 +21,7 @@ import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.RecipeEntity
 import com.example.fitapp.data.db.SavedRecipeEntity
 import com.example.fitapp.data.repo.NutritionRepository
+import com.example.fitapp.ui.components.AiKeyGate
 import kotlinx.coroutines.launch
 
 @Composable
@@ -88,39 +89,56 @@ private fun GenerateTab(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     
-    Column(Modifier.fillMaxSize()) {
-        OutlinedTextField(
-            value = prompt,
-            onValueChange = onPromptChange,
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            label = { Text("Worauf hast du Lust? (Prompt)") }
-        )
-        Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = onGenerate, enabled = !generating) {
-                Text(if (generating) "Generiere…" else "Rezepte generieren")
+    AiKeyGate(
+        modifier = Modifier.fillMaxSize(),
+        onNavigateToApiKeys = {
+            navController?.navigate("apikeys")
+        },
+        requireBothProviders = true
+    ) { isEnabled ->
+        Column(Modifier.fillMaxSize()) {
+            OutlinedTextField(
+                value = prompt,
+                onValueChange = onPromptChange,
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                label = { Text("Worauf hast du Lust? (Prompt)") },
+                enabled = isEnabled
+            )
+            Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = onGenerate, 
+                    enabled = isEnabled && !generating
+                ) {
+                    Text(if (generating) "Generiere…" else "Rezepte generieren")
+                }
             }
-        }
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
-        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp,16.dp,16.dp,96.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(results) { r ->
-                IndividualRecipeCard(
-                    recipe = r,
-                    onFavoriteClick = { fav -> onFav(r.id, fav) },
-                    onAddToShopping = { onToShopping(r.id) },
-                    onLogCalories = { onLog(r) },
-                    onSaveRecipe = { 
-                        scope.launch {
-                            saveToSavedRecipes(ctx, r)
+            
+            // Only show error if it's not an API key related error and keys are available
+            if (isEnabled) {
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
+            }
+            
+            LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp,16.dp,16.dp,96.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(results) { r ->
+                    IndividualRecipeCard(
+                        recipe = r,
+                        onFavoriteClick = { fav -> onFav(r.id, fav) },
+                        onAddToShopping = { onToShopping(r.id) },
+                        onLogCalories = { onLog(r) },
+                        onSaveRecipe = { 
+                            scope.launch {
+                                saveToSavedRecipes(ctx, r)
+                            }
+                        },
+                        onPrepareRecipe = {
+                            scope.launch {
+                                // Save recipe first, then navigate to cooking mode
+                                saveToSavedRecipes(ctx, r)
+                                navController?.navigate("cooking_mode/${r.id}")
+                            }
                         }
-                    },
-                    onPrepareRecipe = {
-                        scope.launch {
-                            // Save recipe first, then navigate to cooking mode
-                            saveToSavedRecipes(ctx, r)
-                            navController?.navigate("cooking_mode/${r.id}")
-                        }
-                    }
-                )
+                    )
+                }
             }
         }
     }

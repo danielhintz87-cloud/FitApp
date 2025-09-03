@@ -170,6 +170,26 @@ class ShoppingListManager(
     }
 
     /**
+     * Update quantity and unit for an existing shopping list item
+     */
+    suspend fun updateItemQuantity(itemId: String, newQuantity: String, newUnit: String) {
+        val longId = itemId.toLongOrNull() ?: return
+        val quantityDouble = newQuantity.toDoubleOrNull() ?: return
+        
+        // Update in database
+        database.shoppingDao().updateQuantityAndUnit(longId, quantityDouble, newUnit)
+        
+        // Refresh the items to reflect changes
+        refreshShoppingItems()
+        
+        StructuredLogger.info(
+            StructuredLogger.LogCategory.NUTRITION,
+            TAG,
+            "Updated item $itemId quantity to $newQuantity $newUnit"
+        )
+    }
+
+    /**
      * Group ingredients by category with smart ordering
      */
     fun groupIngredientsByCategory(): Map<String, List<ShoppingListItem>> {
