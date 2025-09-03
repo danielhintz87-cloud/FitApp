@@ -196,8 +196,7 @@ fun SmartShoppingListScreen(
                 item = selectedItem,
                 onUpdate = { newQuantity, newUnit ->
                     scope.launch {
-                        // Update the item
-                        // Note: This would require additional implementation in ShoppingListManager
+                        shoppingManager.updateItemQuantity(selectedItemId!!, newQuantity, newUnit)
                         showEditQuantityDialog = false
                         selectedItemId = null
                     }

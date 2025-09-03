@@ -71,25 +71,25 @@ fun MainScaffold() {
                 
                 // AI Features Section
                 Text(
-                    text = "AI Features", 
+                    text = "KI-Funktionen", 
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
                 NavigationDrawerItem(
-                    label = { Text("AI Personal Trainer") }, 
+                    label = { Text("KI Personal Trainer") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("ai_personal_trainer") },
                     icon = { Icon(Icons.Filled.Psychology, contentDescription = null) }
                 )
                 NavigationDrawerItem(
-                    label = { Text("AI Recipe Generator") }, 
+                    label = { Text("KI Rezept Generator") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("nutrition") },
                     icon = { Icon(Icons.Filled.Fastfood, contentDescription = null) }
                 )
                 NavigationDrawerItem(
-                    label = { Text("AI Workout Plans") }, 
+                    label = { Text("KI Trainingspläne") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("plan") },
                     icon = { Icon(Icons.Filled.Timeline, contentDescription = null) }
@@ -99,31 +99,31 @@ fun MainScaffold() {
                 
                 // Health & Fitness Section
                 Text(
-                    text = "Health & Fitness", 
+                    text = "Gesundheit & Fitness", 
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
                 NavigationDrawerItem(
-                    label = { Text("BMI Calculator") }, 
+                    label = { Text("BMI Rechner") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("bmi_calculator") },
                     icon = { Icon(Icons.Filled.Calculate, contentDescription = null) }
                 )
                 NavigationDrawerItem(
-                    label = { Text("Weight Loss Program") }, 
+                    label = { Text("Abnehmprogramm") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("weight_loss_program") },
                     icon = { Icon(Icons.Filled.Flag, contentDescription = null) }
                 )
                 NavigationDrawerItem(
-                    label = { Text("Progress Analytics") }, 
+                    label = { Text("Fortschritts-Analyse") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("enhanced_analytics") },
                     icon = { Icon(Icons.Filled.Insights, contentDescription = null) }
                 )
                 NavigationDrawerItem(
-                    label = { Text("Weight Tracking") }, 
+                    label = { Text("Gewichtsverfolgung") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("weight_tracking") },
                     icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null) }
@@ -133,31 +133,31 @@ fun MainScaffold() {
                 
                 // Tools Section
                 Text(
-                    text = "Tools", 
+                    text = "Werkzeuge", 
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
                 NavigationDrawerItem(
-                    label = { Text("Shopping List") }, 
+                    label = { Text("Einkaufsliste") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("shopping_list") },
                     icon = { Icon(Icons.Filled.ShoppingCart, contentDescription = null) }
                 )
                 NavigationDrawerItem(
-                    label = { Text("Food Scanner") }, 
+                    label = { Text("Lebensmittel Scanner") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("foodscan") },
                     icon = { Icon(Icons.Filled.PhotoCamera, contentDescription = null) }
                 )
                 NavigationDrawerItem(
-                    label = { Text("Food Diary") }, 
+                    label = { Text("Ernährungstagebuch") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("food_diary") },
                     icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null) }
                 )
                 NavigationDrawerItem(
-                    label = { Text("Saved Recipes") }, 
+                    label = { Text("Gespeicherte Rezepte") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("saved_recipes") },
                     icon = { Icon(Icons.Filled.Bookmark, contentDescription = null) }
@@ -167,13 +167,13 @@ fun MainScaffold() {
                 
                 // Settings Section
                 Text(
-                    text = "Settings", 
+                    text = "Einstellungen", 
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
                 NavigationDrawerItem(
-                    label = { Text("API Key Configuration") }, 
+                    label = { Text("API-Schlüssel Konfiguration") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("apikeys") },
                     icon = { Icon(Icons.Filled.Key, contentDescription = null) }
@@ -191,7 +191,7 @@ fun MainScaffold() {
                     icon = { Icon(Icons.Filled.HealthAndSafety, contentDescription = null) }
                 )
                 NavigationDrawerItem(
-                    label = { Text("AI Logs") }, 
+                    label = { Text("KI Protokolle") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("logs") },
                     icon = { Icon(Icons.Filled.History, contentDescription = null) }
@@ -262,21 +262,27 @@ fun MainScaffold() {
                 )
             },
             bottomBar = {
-                NavigationBar(modifier = Modifier.navigationBarsPadding()) {
-                    val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
-                    destinations.forEach { dest ->
-                        NavigationBarItem(
-                            selected = currentRoute == dest.route,
-                            onClick = {
-                                nav.navigate(dest.route) {
-                                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = { Icon(dest.icon, dest.label) },
-                            label = { Text(dest.label) }
-                        )
+                val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
+                val isFullscreenMode = currentRoute?.let { route ->
+                    route.startsWith("cooking_mode") || route.startsWith("training_execution")
+                } ?: false
+                
+                if (!isFullscreenMode) {
+                    NavigationBar(modifier = Modifier.navigationBarsPadding()) {
+                        destinations.forEach { dest ->
+                            NavigationBarItem(
+                                selected = currentRoute == dest.route,
+                                onClick = {
+                                    nav.navigate(dest.route) {
+                                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                                icon = { Icon(dest.icon, dest.label) },
+                                label = { Text(dest.label) }
+                            )
+                        }
                     }
                 }
             }

@@ -95,6 +95,9 @@ interface ShoppingDao {
     @Query("DELETE FROM shopping_items WHERE checked = 1")
     suspend fun deleteCheckedItems()
     
+    @Query("UPDATE shopping_items SET quantity = :quantity, unit = :unit WHERE id = :id")
+    suspend fun updateQuantityAndUnit(id: Long, quantity: Double, unit: String)
+    
     @Query("DELETE FROM shopping_items")
     suspend fun deleteAll()
 }
