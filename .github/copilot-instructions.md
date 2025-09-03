@@ -13,6 +13,24 @@ FitApp is an Android fitness tracking application built with:
 - **Target**: Android SDK 34, minimum SDK 24, Java 17
 - **Build System**: Gradle 8.14.3 with Kotlin DSL and version catalogs
 
+### Core Focus Areas
+- **Personal achievement tracking** (no social features)
+- **Progress visualization** with charts and analytics
+- **Streak tracking** for habits and consistency
+- **Smart notifications** for motivation and reminders
+- **Personal records (PR) tracking** for fitness milestones
+
+### Existing Database Entities
+Key entities already implemented in the Room database:
+- `AiLog` - AI interaction history and logging
+- `SavedRecipeEntity` - User's saved recipes with nutritional info
+- `PlanEntity` - Training plans and workout programs
+- `PersonalAchievementEntity` - Achievement tracking system
+- `PersonalStreakEntity` - Habit and consistency tracking
+- `PersonalRecordEntity` - Personal fitness records
+- `WeightEntity` - Weight tracking and history
+- `BMIHistoryEntity` - BMI calculations and trends
+
 ## Environment Setup Requirements
 
 ### Prerequisites
@@ -109,6 +127,21 @@ app/src/main/java/com/example/fitapp/
 ├── ui/               # Compose screens and components
 └── utils/            # Utility classes
 ```
+
+### Code Style Preferences
+Follow these established patterns when contributing:
+- **Modern Kotlin idioms** - Use extension functions, data classes, sealed classes
+- **Coroutines for async operations** - Prefer coroutines over callbacks
+- **Compose for UI components** - Use Jetpack Compose with Material 3
+- **Room for database operations** - Follow existing DAO patterns
+- **Material 3 components** - Consistent with existing design system
+
+### Existing Code Patterns
+When adding new features, follow patterns from these existing classes:
+- **Database structure**: `AppDatabase.kt` - entity configuration and migrations
+- **Repository pattern**: Existing repository implementations in `data/` directory  
+- **Compose screens**: Screen implementations in `ui/` directory
+- **Material 3 theming**: Consistent theming across all UI components
 
 ### Configuration Files
 - `gradle.properties`: Build cache enabled, parallel execution, 2GB heap
