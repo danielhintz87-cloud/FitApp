@@ -16,6 +16,7 @@ import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.PlanRequest
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.prefs.UserPreferences
+import com.example.fitapp.data.prefs.UserPreferencesLegacy
 import com.example.fitapp.data.repo.NutritionRepository
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
@@ -58,7 +59,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
     
     // Load saved equipment initially
     LaunchedEffect(Unit) {
-        val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
+        val savedEquipment = UserPreferencesLegacy.getSelectedEquipment(ctx)
         if (savedEquipment.isNotEmpty()) {
             equipment = savedEquipment.joinToString(", ")
         }
@@ -69,7 +70,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                val savedEquipment = UserPreferences.getSelectedEquipment(ctx)
+                val savedEquipment = UserPreferencesLegacy.getSelectedEquipment(ctx)
                 if (savedEquipment.isNotEmpty()) {
                     equipment = savedEquipment.joinToString(", ")
                 }
@@ -383,7 +384,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                                 
                                 // Get the most current equipment selection from UserPreferences
                                 val savedEquipment = try {
-                                    UserPreferences.getSelectedEquipment(ctx)
+                                    UserPreferencesLegacy.getSelectedEquipment(ctx)
                                 } catch (e: Exception) {
                                     android.util.Log.w("PlanScreen", "Failed to load equipment preferences", e)
                                     emptyList()
@@ -488,7 +489,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                 equipment = ""
                 result = ""
                 saveStatus = ""
-                UserPreferences.saveSelectedEquipment(ctx, emptyList())
+                UserPreferencesLegacy.saveSelectedEquipment(ctx, emptyList())
             },
             modifier = Modifier
                 .fillMaxWidth()

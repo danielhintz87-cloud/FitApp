@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.data.prefs.UserPreferences
+import com.example.fitapp.data.prefs.UserPreferencesLegacy
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,7 +27,7 @@ fun EquipmentSelectionScreen(
     
     // Load current equipment selection
     var currentSelection by remember { 
-        mutableStateOf(UserPreferences.getSelectedEquipment(context).toSet()) 
+        mutableStateOf(UserPreferencesLegacy.getSelectedEquipment(context).toSet()) 
     }
     
     val equipmentOptions = listOf(
@@ -56,7 +57,7 @@ fun EquipmentSelectionScreen(
     // Save selection when it changes
     LaunchedEffect(currentSelection) {
         val selectionList = currentSelection.toList()
-        UserPreferences.saveSelectedEquipment(context, selectionList)
+        UserPreferencesLegacy.saveSelectedEquipment(context, selectionList)
         onEquipmentChanged(selectionList)
     }
 

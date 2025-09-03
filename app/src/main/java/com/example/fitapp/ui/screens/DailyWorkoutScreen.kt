@@ -20,6 +20,7 @@ import com.example.fitapp.ai.AppAi
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.TodayWorkoutEntity
 import com.example.fitapp.data.prefs.UserPreferences
+import com.example.fitapp.data.prefs.UserPreferencesLegacy
 import com.example.fitapp.data.repo.PersonalMotivationRepository
 import com.example.fitapp.services.PersonalAchievementManager
 import com.example.fitapp.services.PersonalStreakManager
@@ -74,7 +75,7 @@ fun DailyWorkoutScreen(
     // Generate workout on first load
     LaunchedEffect(Unit) {
         try {
-            val equipment = UserPreferences.getSelectedEquipment(ctx)
+            val equipment = UserPreferencesLegacy.getSelectedEquipment(ctx)
             val result = AppAi.generateDailyWorkoutSteps(ctx, goal, minutes, equipment)
 
             result.fold(

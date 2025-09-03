@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/weekly_workouts"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0/7"
+        android:textSize="16sp"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:id="@+id/weekly_streak"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0 days"
+        android:textSize="14sp"
+        android:layout_marginTop="4dp"/>
+
+    <TextView
+        android:id="@+id/weekly_achievements"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="12sp"
+        android:layout_marginTop="4dp"/>
+
+    <TextView
+        android:id="@+id/weekly_quote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Motivation"
+        android:textSize="12sp"
+        android:layout_marginTop="8dp"
+        android:textStyle="italic"/>
+
+    <ProgressBar
+        android:id="@+id/weekly_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:max="100"
+        android:progress="0"/>
+</LinearLayout>

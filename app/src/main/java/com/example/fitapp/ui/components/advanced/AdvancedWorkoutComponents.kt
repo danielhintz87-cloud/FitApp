@@ -824,7 +824,7 @@ fun ExerciseVideoPlayer(
                 )
                 
                 videoResource?.let { resource ->
-                    Chip(
+                    AssistChip(
                         onClick = { },
                         label = { 
                             Text(

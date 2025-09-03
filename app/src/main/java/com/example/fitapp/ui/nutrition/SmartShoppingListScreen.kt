@@ -367,6 +367,7 @@ private fun AddFromRecipeDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EditQuantityDialog(
     item: ShoppingListManager.ShoppingListItem,
