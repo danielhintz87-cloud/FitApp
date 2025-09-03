@@ -86,6 +86,9 @@ class AiProviderRepositoryImpl(
             taskType == TaskType.RECIPE_GENERATION && perplexityAvailable ->
                 com.example.fitapp.domain.entities.AiProvider.Perplexity
 
+            // Other text-only tasks prefer Perplexity for web-informed responses when available
+            !hasImage && perplexityAvailable -> com.example.fitapp.domain.entities.AiProvider.Perplexity
+
             // Fallback to Gemini in all other cases or when Perplexity is unavailable
             else -> com.example.fitapp.domain.entities.AiProvider.Gemini
         }

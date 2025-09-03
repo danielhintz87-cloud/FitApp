@@ -79,6 +79,9 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             task == TaskType.SHOPPING_LIST_PARSING && perplexityAvailable -> AiProvider.Perplexity
             task == TaskType.RECIPE_GENERATION && perplexityAvailable -> AiProvider.Perplexity
 
+            // Other text-only tasks prefer Perplexity for web-informed responses when available
+            !hasImage && perplexityAvailable -> AiProvider.Perplexity
+
             // Fallback to Gemini in all other cases or when Perplexity is unavailable
             else -> AiProvider.Gemini
         }
