@@ -37,7 +37,7 @@ class WorkoutReminderWorker(
             daysOfWeek: List<Int> = listOf(1, 2, 3, 4, 5) // Mon-Fri by default
         ) {
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                // No network requirement for workout reminders
                 .build()
             
             val inputData = Data.Builder()

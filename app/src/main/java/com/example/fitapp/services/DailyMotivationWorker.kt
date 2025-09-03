@@ -64,7 +64,7 @@ class DailyMotivationWorker(
         
         fun scheduleWork(context: Context) {
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                // No network requirement needed for daily motivation
                 .setRequiresBatteryNotLow(true)
                 .build()
             
