@@ -38,7 +38,7 @@ fun ResetSettingsScreen(
     // State for reset operations
     val resetProgress by resetManager.resetProgress.collectAsState()
     var showResetDialog by remember { mutableStateOf(false) }
-    var selectedResetType by remember { mutableStateOf<ResetManager.ResetType?>(null) }
+    var selectedResetType by remember { mutableStateOf<ResetType?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var resetResult by remember { mutableStateOf<Map<String, Any>?>(null) }
     
@@ -81,7 +81,7 @@ fun ResetSettingsScreen(
                     icon = Icons.Filled.FitnessCenter,
                     warningLevel = WarningLevel.MEDIUM,
                     onClick = {
-                        selectedResetType = ResetManager.ResetType.WORKOUT_DATA
+                        selectedResetType = ResetType.WORKOUT_DATA
                         showResetDialog = true
                     }
                 )
@@ -94,7 +94,7 @@ fun ResetSettingsScreen(
                     icon = Icons.Filled.Restaurant,
                     warningLevel = WarningLevel.MEDIUM,
                     onClick = {
-                        selectedResetType = ResetManager.ResetType.NUTRITION_DATA
+                        selectedResetType = ResetType.NUTRITION_DATA
                         showResetDialog = true
                     }
                 )
@@ -107,7 +107,7 @@ fun ResetSettingsScreen(
                     icon = Icons.Filled.Person,
                     warningLevel = WarningLevel.MEDIUM,
                     onClick = {
-                        selectedResetType = ResetManager.ResetType.USER_PROFILE
+                        selectedResetType = ResetType.USER_PROFILE
                         showResetDialog = true
                     }
                 )
@@ -120,7 +120,7 @@ fun ResetSettingsScreen(
                     icon = Icons.Filled.EmojiEvents,
                     warningLevel = WarningLevel.MEDIUM,
                     onClick = {
-                        selectedResetType = ResetManager.ResetType.ACHIEVEMENTS
+                        selectedResetType = ResetType.ACHIEVEMENTS
                         showResetDialog = true
                     }
                 )
@@ -133,7 +133,7 @@ fun ResetSettingsScreen(
                     icon = Icons.Filled.ShoppingCart,
                     warningLevel = WarningLevel.LOW,
                     onClick = {
-                        selectedResetType = ResetManager.ResetType.SHOPPING_LIST
+                        selectedResetType = ResetType.SHOPPING_LIST
                         showResetDialog = true
                     }
                 )
@@ -157,7 +157,7 @@ fun ResetSettingsScreen(
                     icon = Icons.Filled.RestartAlt,
                     warningLevel = WarningLevel.CRITICAL,
                     onClick = {
-                        selectedResetType = ResetManager.ResetType.COMPLETE_RESET
+                        selectedResetType = ResetType.COMPLETE_RESET
                         showResetDialog = true
                     }
                 )
@@ -185,12 +185,12 @@ fun ResetSettingsScreen(
             onConfirm = {
                 scope.launch {
                     when (selectedResetType!!) {
-                        ResetManager.ResetType.WORKOUT_DATA -> resetManager.resetWorkoutData()
-                        ResetManager.ResetType.NUTRITION_DATA -> resetManager.resetNutritionData()
-                        ResetManager.ResetType.USER_PROFILE -> resetManager.resetUserProfile()
-                        ResetManager.ResetType.ACHIEVEMENTS -> resetManager.resetAchievements()
-                        ResetManager.ResetType.SHOPPING_LIST -> resetManager.resetShoppingList()
-                        ResetManager.ResetType.COMPLETE_RESET -> resetManager.performCompleteReset()
+                        ResetType.WORKOUT_DATA -> resetManager.resetWorkoutData()
+                        ResetType.NUTRITION_DATA -> resetManager.resetNutritionData()
+                        ResetType.USER_PROFILE -> resetManager.resetUserProfile()
+                        ResetType.ACHIEVEMENTS -> resetManager.resetAchievements()
+                        ResetType.SHOPPING_LIST -> resetManager.resetShoppingList()
+                        ResetType.COMPLETE_RESET -> resetManager.performCompleteReset()
                         else -> { /* Handle other types */ }
                     }
                 }
@@ -298,7 +298,7 @@ private fun ResetOptionCard(
 
 @Composable
 private fun ResetConfirmationDialog(
-    resetType: ResetManager.ResetType,
+    resetType: ResetType,
     confirmationMessage: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
@@ -307,13 +307,13 @@ private fun ResetConfirmationDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(
-                if (resetType == ResetManager.ResetType.COMPLETE_RESET) {
+                if (resetType == ResetType.COMPLETE_RESET) {
                     Icons.Filled.Warning
                 } else {
                     Icons.Filled.Delete
                 },
                 contentDescription = null,
-                tint = if (resetType == ResetManager.ResetType.COMPLETE_RESET) {
+                tint = if (resetType == ResetType.COMPLETE_RESET) {
                     MaterialTheme.colorScheme.error
                 } else {
                     MaterialTheme.colorScheme.primary
@@ -322,7 +322,7 @@ private fun ResetConfirmationDialog(
         },
         title = {
             Text(
-                if (resetType == ResetManager.ResetType.COMPLETE_RESET) {
+                if (resetType == ResetType.COMPLETE_RESET) {
                     "⚠️ VOLLSTÄNDIGER RESET ⚠️"
                 } else {
                     "Daten löschen?"
@@ -339,7 +339,7 @@ private fun ResetConfirmationDialog(
             Button(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (resetType == ResetManager.ResetType.COMPLETE_RESET) {
+                    containerColor = if (resetType == ResetType.COMPLETE_RESET) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.primary
@@ -347,7 +347,7 @@ private fun ResetConfirmationDialog(
                 )
             ) {
                 Text(
-                    if (resetType == ResetManager.ResetType.COMPLETE_RESET) {
+                    if (resetType == ResetType.COMPLETE_RESET) {
                         "ALLES LÖSCHEN"
                     } else {
                         "Löschen"

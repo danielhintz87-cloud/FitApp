@@ -218,6 +218,7 @@ class ResetManager(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error performing reset: ${e.message}",
+                emptyMap(),
                 e
             )
             ResetResult(
@@ -365,10 +366,11 @@ class ResetManager(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error resetting workout data: ${e.message}",
+                emptyMap(),
                 e
             )
             
-            createErrorResult(e)
+            return createErrorResult(e)
         }
     }
 
@@ -440,10 +442,11 @@ class ResetManager(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error resetting nutrition data: ${e.message}",
+                emptyMap(),
                 e
             )
             
-            createErrorResult(e)
+            return createErrorResult(e)
         }
     }
 
@@ -514,10 +517,11 @@ class ResetManager(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error resetting user profile: ${e.message}",
+                emptyMap(),
                 e
             )
             
-            createErrorResult(e)
+            return createErrorResult(e)
         }
     }
 
@@ -568,10 +572,11 @@ class ResetManager(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error resetting achievements: ${e.message}",
+                emptyMap(),
                 e
             )
             
-            createErrorResult(e)
+            return createErrorResult(e)
         }
     }
 
@@ -610,10 +615,11 @@ class ResetManager(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error resetting shopping list: ${e.message}",
+                emptyMap(),
                 e
             )
             
-            createErrorResult(e)
+            return createErrorResult(e)
         }
     }
 
@@ -652,10 +658,11 @@ class ResetManager(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error resetting personal records: ${e.message}",
+                emptyMap(),
                 e
             )
             
-            createErrorResult(e)
+            return createErrorResult(e)
         }
     }
 
@@ -719,10 +726,11 @@ class ResetManager(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error performing complete reset: ${e.message}",
+                emptyMap(),
                 e
             )
             
-            createErrorResult(e)
+            return createErrorResult(e)
         }
     }
     
