@@ -574,3 +574,12 @@ object SmartNotificationManager {
         val totalWorkouts: Int
     )
 }
+
+// Missing enums referenced in build errors
+enum class NotificationCategory {
+    WORKOUT,
+    NUTRITION, 
+    MEDIA,
+    GENERAL,
+    NOT_REQUIRED
+}

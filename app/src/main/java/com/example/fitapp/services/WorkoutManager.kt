@@ -3,6 +3,9 @@ package com.example.fitapp.services
 import android.content.Context
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.util.StructuredLogger
+import com.example.fitapp.domain.entities.PlateauDetectionResult
+import com.example.fitapp.domain.entities.ProgressionRecommendation
+import com.example.fitapp.domain.entities.ProgressionType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.Dispatchers
@@ -327,42 +330,6 @@ class WorkoutManager(
 }
 
 // Data classes for workout management
-data class ProgressionRecommendation(
-    val type: ProgressionType,
-    val newWeight: Float,
-    val newReps: Int,
-    val newSets: Int,
-    val reason: String
-) {
-    companion object {
-        fun weightIncrease(weight: Float, reps: Int, sets: Int, reason: String) =
-            ProgressionRecommendation(ProgressionType.WEIGHT_INCREASE, weight, reps, sets, reason)
-        
-        fun repIncrease(weight: Float, reps: Int, sets: Int, reason: String) =
-            ProgressionRecommendation(ProgressionType.REP_INCREASE, weight, reps, sets, reason)
-        
-        fun maintain(weight: Float, reps: Int, sets: Int, reason: String) =
-            ProgressionRecommendation(ProgressionType.MAINTAIN, weight, reps, sets, reason)
-        
-        fun deload(weight: Float, reps: Int, sets: Int, reason: String) =
-            ProgressionRecommendation(ProgressionType.DELOAD, weight, reps, sets, reason)
-    }
-}
-
-enum class ProgressionType {
-    WEIGHT_INCREASE,
-    REP_INCREASE,
-    SET_INCREASE,
-    MAINTAIN,
-    DELOAD
-}
-
-data class PlateauDetectionResult(
-    val hasPlateaued: Boolean,
-    val plateauPercentage: Float,
-    val weeksInPlateau: Int,
-    val recommendation: String
-)
 
 data class RestPeriodRecommendation(
     val recommendedSeconds: Int,

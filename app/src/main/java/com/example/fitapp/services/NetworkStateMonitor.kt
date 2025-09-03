@@ -298,6 +298,8 @@ class NetworkStateMonitor(private val context: Context) {
             NetworkType.OTHER -> "Andere"
             NetworkType.NONE -> "Keine"
             NetworkType.UNKNOWN -> "Unbekannt"
+            NetworkType.NOT_REQUIRED -> "Nicht erforderlich"
+            NetworkType.CONNECTED -> "Verbunden"
         }
     }
 }
@@ -317,6 +319,13 @@ enum class ConnectionQuality(val displayName: String) {
     FAIR("Ausreichend"),
     POOR("Schlecht"),
     UNKNOWN("Unbekannt")
+}
+
+// Missing enum referenced in build errors
+enum class NetworkStatus {
+    CONNECTED,
+    DISCONNECTED,
+    CONNECTING
 }
 
 /**

@@ -280,6 +280,14 @@ sealed class RestTimerState {
     data class COMPLETED(val nextSetRecommendation: NextSetRecommendation?) : RestTimerState()
 }
 
+// Simple enum version for compatibility with build requirements
+enum class RestTimerStateEnum {
+    IDLE,
+    RUNNING, 
+    PAUSED,
+    COMPLETED
+}
+
 /**
  * Rest suggestion with AI-powered recommendations
  */

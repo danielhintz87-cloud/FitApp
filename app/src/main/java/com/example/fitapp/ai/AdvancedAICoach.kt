@@ -7,6 +7,7 @@ import kotlinx.coroutines.delay
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.services.SetData
 import com.example.fitapp.util.StructuredLogger
+import com.example.fitapp.domain.entities.PlateauDetectionResult
 import kotlin.math.*
 
 /**
@@ -37,10 +38,13 @@ class AdvancedAICoach(private val context: Context) {
             
             if (recentData.size < 6) {
                 return PlateauDetectionResult(
-                    hasPlateauDetected = false,
+                    exerciseId = exerciseId,
+                    isPlateaued = false,
+                    plateauDuration = 0,
+                    progressRate = 0f,
+                    plateauScore = 0f,
                     confidence = 0f,
-                    message = "Mehr Daten benötigt für Plateau-Analyse",
-                    recommendation = "Führe weitere Trainingseinheiten durch"
+                    recommendations = listOf("Mehr Daten benötigt für Plateau-Analyse")
                 )
             }
             
@@ -49,19 +53,16 @@ class AdvancedAICoach(private val context: Context) {
             val formTrend = calculateFormTrend(recentData)
             
             val plateauScore = calculatePlateauScore(progressTrend, volumeTrend, formTrend)
-            val hasPlateauDetected = plateauScore > 0.6f
+            val isPlateaued = plateauScore > 0.6f
             
             PlateauDetectionResult(
-                hasPlateauDetected = hasPlateauDetected,
+                exerciseId = exerciseId,
+                isPlateaued = isPlateaued,
+                plateauDuration = if (isPlateaued) PLATEAU_DETECTION_WEEKS else 0,
+                progressRate = progressTrend,
+                plateauScore = plateauScore,
                 confidence = plateauScore,
-                message = if (hasPlateauDetected) {
-                    "Trainingsplateau erkannt bei $exerciseId"
-                } else {
-                    "Gute Fortschritte bei $exerciseId"
-                },
-                recommendation = generatePlateauRecommendation(plateauScore, progressTrend, volumeTrend),
-                detectedWeeksAgo = PLATEAU_DETECTION_WEEKS,
-                suggestedActions = generatePlateauActions(plateauScore)
+                recommendations = generatePlateauActions(plateauScore)
             )
         } catch (e: Exception) {
             StructuredLogger.error(
@@ -71,10 +72,13 @@ class AdvancedAICoach(private val context: Context) {
                 exception = e
             )
             PlateauDetectionResult(
-                hasPlateauDetected = false,
+                exerciseId = exerciseId,
+                isPlateaued = false,
+                plateauDuration = 0,
+                progressRate = 0f,
+                plateauScore = 0f,
                 confidence = 0f,
-                message = "Fehler bei der Plateau-Analyse",
-                recommendation = "Bitte versuche es später erneut"
+                recommendations = listOf("Fehler bei der Plateau-Analyse")
             )
         }
     }
@@ -92,7 +96,7 @@ class AdvancedAICoach(private val context: Context) {
         val reasons = mutableListOf<String>()
         
         // Adjust based on plateau detection
-        if (plateauResult.hasPlateauDetected) {
+        if (plateauResult.isPlateaued) {
             adjustmentFactor *= when (plateauResult.confidence) {
                 in 0.8f..1.0f -> 1.15f // Significant increase needed
                 in 0.6f..0.8f -> 1.08f // Moderate increase
@@ -396,9 +400,9 @@ class AdvancedAICoach(private val context: Context) {
         return 30f + (intensity * duration * 0.15f) // Base 30g + intensity factor
     }
     
-    private fun generatePreWorkoutMeal(workoutTime: Int, intensity: Float): MealPlan {
+    private fun generatePreWorkoutMeal(workoutTime: Int, intensity: Float): WorkoutMealPlan {
         val timing = if (workoutTime < 12) -60 else -90 // Minutes before workout
-        return MealPlan(
+        return WorkoutMealPlan(
             timing = timing,
             calories = (150 + intensity * 100).toInt(),
             description = if (workoutTime < 10) {
@@ -414,8 +418,8 @@ class AdvancedAICoach(private val context: Context) {
         )
     }
     
-    private fun generateDuringWorkoutNutrition(duration: Int, intensity: Float): MealPlan {
-        return MealPlan(
+    private fun generateDuringWorkoutNutrition(duration: Int, intensity: Float): WorkoutMealPlan {
+        return WorkoutMealPlan(
             timing = 0,
             calories = if (duration > 90) (intensity * 50).toInt() else 0,
             description = if (duration > 90) {
@@ -430,8 +434,8 @@ class AdvancedAICoach(private val context: Context) {
         )
     }
     
-    private fun generatePostWorkoutMeal(proteinNeeds: Float, carbNeeds: Float): MealPlan {
-        return MealPlan(
+    private fun generatePostWorkoutMeal(proteinNeeds: Float, carbNeeds: Float): WorkoutMealPlan {
+        return WorkoutMealPlan(
             timing = 30, // Minutes after workout
             calories = ((proteinNeeds * 4) + (carbNeeds * 4) + 50).toInt(),
             description = "Recovery-Mahlzeit: Protein + schnelle Kohlenhydrate",
@@ -637,14 +641,6 @@ class AdvancedAICoach(private val context: Context) {
 }
 
 // Data classes for AI coach results
-data class PlateauDetectionResult(
-    val hasPlateauDetected: Boolean,
-    val confidence: Float,
-    val message: String,
-    val recommendation: String,
-    val detectedWeeksAgo: Int = 0,
-    val suggestedActions: List<String> = emptyList()
-)
 
 data class IntensityAdjustment(
     val originalIntensity: Float,
@@ -663,9 +659,9 @@ data class RestDayPrediction(
 )
 
 data class NutritionTimingPlan(
-    val preWorkoutMeal: MealPlan,
-    val duringWorkoutNutrition: MealPlan,
-    val postWorkoutMeal: MealPlan,
+    val preWorkoutMeal: WorkoutMealPlan,
+    val duringWorkoutNutrition: WorkoutMealPlan,
+    val postWorkoutMeal: WorkoutMealPlan,
     val optimalEatingWindow: Pair<Int, Int>,
     val hydrationPlan: HydrationPlan
 )
@@ -704,7 +700,7 @@ data class PerformanceDataPoint(
     val timestamp: Long
 )
 
-data class MealPlan(
+data class WorkoutMealPlan(
     val timing: Int, // Minutes relative to workout (negative = before, positive = after)
     val calories: Int,
     val description: String,

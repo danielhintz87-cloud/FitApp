@@ -428,12 +428,20 @@ class MealPlanningManager(
         // Simplified cost estimation
         return items.sumOf { 
             when (it.category) {
+                IngredientCategory.PRODUCE -> it.amount * 0.005f // €0.005 per gram for fruits/vegetables
                 IngredientCategory.PROTEIN -> it.amount * 0.02f // €0.02 per gram
+                IngredientCategory.DAIRY -> it.amount * 0.008f
+                IngredientCategory.GRAINS -> it.amount * 0.003f
+                IngredientCategory.PANTRY -> it.amount * 0.01f
+                IngredientCategory.FROZEN -> it.amount * 0.007f
+                IngredientCategory.BEVERAGES -> it.amount * 0.002f
+                IngredientCategory.SNACKS -> it.amount * 0.015f
+                IngredientCategory.SPICES -> it.amount * 0.05f
+                IngredientCategory.OTHER -> it.amount * 0.01f
+                // Legacy compatibility
                 IngredientCategory.VEGETABLE -> it.amount * 0.005f
                 IngredientCategory.GRAIN -> it.amount * 0.003f
-                IngredientCategory.DAIRY -> it.amount * 0.008f
                 IngredientCategory.SPICE -> it.amount * 0.05f
-                IngredientCategory.OTHER -> it.amount * 0.01f
             }.toDouble()
         }.toFloat()
     }
@@ -660,12 +668,20 @@ enum class CookingSkillLevel {
 }
 
 enum class IngredientCategory {
-    PROTEIN,
+    PRODUCE,      // Obst & Gemüse
+    PROTEIN,      // Fleisch & Fisch
+    DAIRY,        // Milchprodukte
+    GRAINS,       // Getreide & Brot
+    PANTRY,       // Vorräte
+    FROZEN,       // Tiefkühlprodukte
+    BEVERAGES,    // Getränke
+    SNACKS,       // Snacks
+    SPICES,       // Gewürze
+    OTHER,        // Sonstiges
+    // Legacy values for compatibility
     VEGETABLE,
     GRAIN,
-    DAIRY,
-    SPICE,
-    OTHER
+    SPICE
 }
 
 enum class SpiceLevel {
