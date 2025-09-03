@@ -13,3 +13,10 @@
 # Room schemas should be committed for version control
 # But exclude any temporary KSP-generated files
 app/build/tmp/
+
+# Configuration cache reports and build cache
+**/configuration-cache-report.html
+.gradle/configuration-cache/
+.gradle/build-cache/
+**/build/reports/configuration-cache/
+**/build/reports/problems/
