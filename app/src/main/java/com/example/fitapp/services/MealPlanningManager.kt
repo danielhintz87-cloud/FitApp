@@ -677,6 +677,7 @@ enum class IngredientCategory {
     BEVERAGES,    // Getränke
     SNACKS,       // Snacks
     SPICES,       // Gewürze
+    BAKERY,       // Backwaren
     OTHER,        // Sonstiges
     // Legacy values for compatibility
     VEGETABLE,

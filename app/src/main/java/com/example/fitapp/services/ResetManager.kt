@@ -70,6 +70,29 @@ class ResetManager(
 
     private val scope = CoroutineScope(Dispatchers.IO)
     
+    /**
+     * Helper function for creating error results
+     */
+    private fun createErrorResult(error: Exception): Map<String, Any> {
+        return mapOf(
+            "success" to false,
+            "error" to (error.message ?: "Unknown error"),
+            "timestamp" to System.currentTimeMillis(),
+            "errorType" to error.javaClass.simpleName
+        )
+    }
+    
+    /**
+     * Helper function for creating success results
+     */
+    private fun createSuccessResult(message: String): Map<String, Any> {
+        return mapOf(
+            "success" to true,
+            "message" to message,
+            "timestamp" to System.currentTimeMillis()
+        )
+    }
+    
     // Flow states for reset progress
     private val _resetProgress = MutableStateFlow<ResetProgress?>(null)
     val resetProgress: StateFlow<ResetProgress?> = _resetProgress.asStateFlow()
@@ -82,6 +105,18 @@ class ResetManager(
         val hasError: Boolean = false,
         val errorMessage: String? = null
     )
+
+    /**
+     * Reset types for different data categories
+     */
+    enum class ResetType {
+        WORKOUT_DATA,
+        NUTRITION_DATA,
+        USER_PROFILE,
+        ACHIEVEMENTS,
+        SHOPPING_LIST,
+        COMPLETE_RESET
+    }
 
     
     /**
@@ -277,9 +312,9 @@ class ResetManager(
      * Reset workout data including sessions, performance, and progressions
      */
     suspend fun resetWorkoutData(): Map<String, Any> {
-        _resetProgress.value = ResetProgress("Workout-Daten", 0f, "Starte Reset...")
-        
-        try {
+        return try {
+            _resetProgress.value = ResetProgress("Workout-Daten", 0f, "Starte Reset...")
+            
             // Delete workout sessions
             _resetProgress.value = ResetProgress("Workout-Daten", 0.2f, "Lösche Trainingseinheiten...")
             database.workoutSessionDao().deleteAll()
@@ -308,6 +343,7 @@ class ResetManager(
                 "Successfully reset workout data"
             )
             
+            createSuccessResult("Workout data reset successfully")
         } catch (e: Exception) {
             _resetProgress.value = ResetProgress(
                 "Workout-Daten", 0f, "Fehler", 
@@ -321,6 +357,8 @@ class ResetManager(
                 "Error resetting workout data: ${e.message}",
                 e
             )
+            
+            createErrorResult(e)
         }
     }
 
@@ -344,9 +382,9 @@ class ResetManager(
      * Reset nutrition data including meals, recipes, and food items
      */
     suspend fun resetNutritionData(): Map<String, Any> {
-        _resetProgress.value = ResetProgress("Ernährungs-Daten", 0f, "Starte Reset...")
-        
-        try {
+        return try {
+            _resetProgress.value = ResetProgress("Ernährungs-Daten", 0f, "Starte Reset...")
+            
             // Delete meal entries
             _resetProgress.value = ResetProgress("Ernährungs-Daten", 0.15f, "Lösche Mahlzeiten...")
             database.mealEntryDao().deleteAll()
@@ -380,6 +418,7 @@ class ResetManager(
                 "Successfully reset nutrition data"
             )
             
+            createSuccessResult("Nutrition data reset successfully")
         } catch (e: Exception) {
             _resetProgress.value = ResetProgress(
                 "Ernährungs-Daten", 0f, "Fehler", 
@@ -393,6 +432,8 @@ class ResetManager(
                 "Error resetting nutrition data: ${e.message}",
                 e
             )
+            
+            createErrorResult(e)
         }
     }
 
@@ -416,9 +457,9 @@ class ResetManager(
      * Reset user profile data including BMI, weight, and behavioral data
      */
     suspend fun resetUserProfile(): Map<String, Any> {
-        _resetProgress.value = ResetProgress("Benutzer-Profil", 0f, "Starte Reset...")
-        
-        try {
+        return try {
+            _resetProgress.value = ResetProgress("Benutzer-Profil", 0f, "Starte Reset...")
+            
             // Delete weight entries
             _resetProgress.value = ResetProgress("Benutzer-Profil", 0.2f, "Lösche Gewichts-Daten...")
             database.weightDao().deleteAll()
@@ -426,6 +467,10 @@ class ResetManager(
             // Delete BMI history
             _resetProgress.value = ResetProgress("Benutzer-Profil", 0.4f, "Lösche BMI-Verlauf...")
             database.bmiHistoryDao().deleteAll()
+            
+            // Delete progress photos
+            _resetProgress.value = ResetProgress("Benutzer-Profil", 0.5f, "Lösche Fortschritts-Fotos...")
+            database.progressPhotoDao().deleteAll()
             
             // Delete weight loss programs
             _resetProgress.value = ResetProgress("Benutzer-Profil", 0.6f, "Lösche Abnehm-Programme...")
@@ -447,6 +492,7 @@ class ResetManager(
                 "Successfully reset user profile data"
             )
             
+            createSuccessResult("User profile reset successfully")
         } catch (e: Exception) {
             _resetProgress.value = ResetProgress(
                 "Benutzer-Profil", 0f, "Fehler", 
@@ -460,6 +506,8 @@ class ResetManager(
                 "Error resetting user profile: ${e.message}",
                 e
             )
+            
+            createErrorResult(e)
         }
     }
 
@@ -467,20 +515,24 @@ class ResetManager(
      * Reset achievements and streak data
      */
     suspend fun resetAchievements(): Map<String, Any> {
-        _resetProgress.value = ResetProgress("Erfolge & Streaks", 0f, "Starte Reset...")
-        
-        try {
+        return try {
+            _resetProgress.value = ResetProgress("Erfolge & Streaks", 0f, "Starte Reset...")
+            
             // Reset personal achievements
             _resetProgress.value = ResetProgress("Erfolge & Streaks", 0.25f, "Setze Erfolge zurück...")
-            database.personalAchievementDao().resetAllAchievements()
+            database.personalAchievementDao().deleteAll()
             
             // Reset personal streaks
             _resetProgress.value = ResetProgress("Erfolge & Streaks", 0.5f, "Setze Streaks zurück...")
-            database.personalStreakDao().resetAllStreaks()
+            database.personalStreakDao().deleteAll()
             
             // Reset personal records
-            _resetProgress.value = ResetProgress("Erfolge & Streaks", 0.75f, "Lösche persönliche Rekorde...")
+            _resetProgress.value = ResetProgress("Erfolge & Streaks", 0.65f, "Lösche persönliche Rekorde...")
             database.personalRecordDao().deleteAll()
+            
+            // Reset progress milestones
+            _resetProgress.value = ResetProgress("Erfolge & Streaks", 0.8f, "Lösche Meilensteine...")
+            database.progressMilestoneDao().deleteAll()
             
             // Clear achievement preferences
             _resetProgress.value = ResetProgress("Erfolge & Streaks", 0.9f, "Lösche Einstellungen...")
@@ -494,6 +546,7 @@ class ResetManager(
                 "Successfully reset achievements and streaks"
             )
             
+            createSuccessResult("Achievements reset successfully")
         } catch (e: Exception) {
             _resetProgress.value = ResetProgress(
                 "Erfolge & Streaks", 0f, "Fehler", 
@@ -507,6 +560,8 @@ class ResetManager(
                 "Error resetting achievements: ${e.message}",
                 e
             )
+            
+            createErrorResult(e)
         }
     }
 
@@ -514,9 +569,9 @@ class ResetManager(
      * Reset shopping list data
      */
     suspend fun resetShoppingList(): Map<String, Any> {
-        _resetProgress.value = ResetProgress("Einkaufsliste", 0f, "Starte Reset...")
-        
-        try {
+        return try {
+            _resetProgress.value = ResetProgress("Einkaufsliste", 0f, "Starte Reset...")
+            
             // Delete shopping items
             _resetProgress.value = ResetProgress("Einkaufsliste", 0.5f, "Lösche Einkaufsartikel...")
             database.shoppingDao().deleteAll()
@@ -533,6 +588,7 @@ class ResetManager(
                 "Successfully reset shopping list"
             )
             
+            createSuccessResult("Shopping list reset successfully")
         } catch (e: Exception) {
             _resetProgress.value = ResetProgress(
                 "Einkaufsliste", 0f, "Fehler", 
@@ -546,23 +602,25 @@ class ResetManager(
                 "Error resetting shopping list: ${e.message}",
                 e
             )
+            
+            createErrorResult(e)
         }
     }
 
     /**
      * Reset all data - calls complete reset implementation
      */
-    private suspend fun resetAllData() {
-        performCompleteReset()
+    private suspend fun resetAllData(): Map<String, Any> {
+        return performCompleteReset()
     }
 
     /**
      * Complete app reset - WARNING: This will delete ALL data
      */
     suspend fun performCompleteReset(): Map<String, Any> {
-        _resetProgress.value = ResetProgress("Vollständiger Reset", 0f, "Starte vollständigen Reset...")
-        
-        try {
+        return try {
+            _resetProgress.value = ResetProgress("Vollständiger Reset", 0f, "Starte vollständigen Reset...")
+            
             // Reset in specific order to handle dependencies
             
             // 1. Reset workout data
@@ -597,6 +655,7 @@ class ResetManager(
                 "Successfully performed complete app reset"
             )
             
+            createSuccessResult("Complete app reset successfully")
         } catch (e: Exception) {
             _resetProgress.value = ResetProgress(
                 "Vollständiger Reset", 0f, "Fehler", 
@@ -610,6 +669,8 @@ class ResetManager(
                 "Error performing complete reset: ${e.message}",
                 e
             )
+            
+            createErrorResult(e)
         }
     }
     
@@ -715,15 +776,17 @@ class ResetManager(
     private suspend fun resetUserProfileSilent() {
         database.weightDao().deleteAll()
         database.bmiHistoryDao().deleteAll()
+        database.progressPhotoDao().deleteAll()
         database.weightLossProgramDao().deleteAll()
         database.behavioralCheckInDao().deleteAll()
         userPreferences.clearUserPreferences()
     }
     
     private suspend fun resetAchievementsSilent() {
-        database.personalAchievementDao().resetAllAchievements()
-        database.personalStreakDao().resetAllStreaks()
+        database.personalAchievementDao().deleteAll()
+        database.personalStreakDao().deleteAll()
         database.personalRecordDao().deleteAll()
+        database.progressMilestoneDao().deleteAll()
         userPreferences.clearAchievementPreferences()
     }
     
