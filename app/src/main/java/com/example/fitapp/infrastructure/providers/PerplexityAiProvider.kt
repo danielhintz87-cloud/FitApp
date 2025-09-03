@@ -22,9 +22,7 @@ class PerplexityAiProvider(
     override val providerType = com.example.fitapp.domain.entities.AiProvider.Perplexity
     
     override suspend fun isAvailable(): Boolean {
-        // Perplexity is temporarily disabled by default
-        // To re-enable, change this to: return ApiKeys.getPerplexityKey(context).isNotBlank()
-        return false
+        return ApiKeys.getPerplexityKey(context).isNotBlank()
     }
     
     override fun supportsVision(): Boolean = false
