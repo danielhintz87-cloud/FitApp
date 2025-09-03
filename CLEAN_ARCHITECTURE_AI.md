@@ -91,8 +91,9 @@ External API and backward compatibility.
 when {
     hasImage -> AiProvider.Gemini
     taskType == TRAINING_PLAN -> AiProvider.Gemini
-    taskType == SHOPPING_LIST_PARSING -> AiProvider.Perplexity
-    taskType == RECIPE_GENERATION -> AiProvider.Perplexity
+    taskType == SHOPPING_LIST_PARSING && perplexityAvailable -> AiProvider.Perplexity
+    taskType == RECIPE_GENERATION && perplexityAvailable -> AiProvider.Perplexity
+    !hasImage && perplexityAvailable -> AiProvider.Perplexity
     else -> AiProvider.Gemini
 }
 ```
@@ -180,6 +181,18 @@ val provider = repository.selectOptimalProvider(TaskType.TRAINING_PLAN)
 ## Configuration
 
 ### Provider Setup
+
+Perplexity is now preferred for text-only tasks when available, providing web-informed responses for general Q&A, nutrition facts lookups, substitutions, supplement checks, and pantry/leftover meal ideas. Gemini remains the default for vision tasks and structured training plans.
+
+**Provider routing precedence:**
+1. **Vision tasks** → Gemini (multimodal capabilities required)
+2. **Training plans** → Gemini (structured fitness plans favor consistency)  
+3. **Shopping/Recipe tasks** → Perplexity if available (lightweight tasks)
+4. **Other text-only tasks** → Perplexity if available (web-informed responses)
+5. **Fallback** → Gemini (when Perplexity unavailable)
+
+**Fallback behavior:** On Perplexity errors (401/402/429/5xx), requests fail fast at provider level. Follow-up enhancements can add automatic fallback-to-Gemini.
+
 ```kotlin
 // In ApiKeysScreen or programmatically
 ApiKeys.saveGeminiKey(context, "your-gemini-api-key")

@@ -35,23 +35,53 @@ class CleanArchitectureTest {
         }
         
         private fun testProviderRouting(): Boolean {
-            val mockRepository = MockAiProviderRepository()
+            // Test with Perplexity disabled (original behavior)
+            val mockRepositoryNoPerplexity = MockAiProviderRepository(perplexityAvailable = false)
             
             // Test training plan routing -> Gemini
-            val trainingProvider = mockRepository.selectOptimalProvider(TaskType.TRAINING_PLAN)
+            val trainingProvider = mockRepositoryNoPerplexity.selectOptimalProvider(TaskType.TRAINING_PLAN)
             if (trainingProvider != AiProvider.Gemini) return false
             
             // Test recipe generation routing -> Gemini (Perplexity disabled)
-            val recipeProvider = mockRepository.selectOptimalProvider(TaskType.RECIPE_GENERATION)
+            val recipeProvider = mockRepositoryNoPerplexity.selectOptimalProvider(TaskType.RECIPE_GENERATION)
             if (recipeProvider != AiProvider.Gemini) return false
 
             // Test shopping list parsing routing -> Gemini (Perplexity disabled)
-            val shoppingProvider = mockRepository.selectOptimalProvider(TaskType.SHOPPING_LIST_PARSING)
+            val shoppingProvider = mockRepositoryNoPerplexity.selectOptimalProvider(TaskType.SHOPPING_LIST_PARSING)
             if (shoppingProvider != AiProvider.Gemini) return false
             
             // Test image task routing -> Gemini
-            val imageProvider = mockRepository.selectOptimalProvider(TaskType.CALORIE_ESTIMATION, hasImage = true)
-            return imageProvider == AiProvider.Gemini
+            val imageProvider = mockRepositoryNoPerplexity.selectOptimalProvider(TaskType.CALORIE_ESTIMATION, hasImage = true)
+            if (imageProvider != AiProvider.Gemini) return false
+
+            // Test calorie estimation (text-only) -> Gemini (Perplexity disabled)
+            val calorieTextProvider = mockRepositoryNoPerplexity.selectOptimalProvider(TaskType.CALORIE_ESTIMATION, hasImage = false)
+            if (calorieTextProvider != AiProvider.Gemini) return false
+
+            // Test with Perplexity enabled (new behavior)
+            val mockRepositoryWithPerplexity = MockAiProviderRepository(perplexityAvailable = true)
+            
+            // Test training plan routing -> still Gemini (even with Perplexity available)
+            val trainingProviderWithPerplexity = mockRepositoryWithPerplexity.selectOptimalProvider(TaskType.TRAINING_PLAN)
+            if (trainingProviderWithPerplexity != AiProvider.Gemini) return false
+            
+            // Test recipe generation routing -> Perplexity (when available)
+            val recipeProviderWithPerplexity = mockRepositoryWithPerplexity.selectOptimalProvider(TaskType.RECIPE_GENERATION)
+            if (recipeProviderWithPerplexity != AiProvider.Perplexity) return false
+
+            // Test shopping list parsing routing -> Perplexity (when available)
+            val shoppingProviderWithPerplexity = mockRepositoryWithPerplexity.selectOptimalProvider(TaskType.SHOPPING_LIST_PARSING)
+            if (shoppingProviderWithPerplexity != AiProvider.Perplexity) return false
+            
+            // Test image task routing -> still Gemini (even with Perplexity available)
+            val imageProviderWithPerplexity = mockRepositoryWithPerplexity.selectOptimalProvider(TaskType.CALORIE_ESTIMATION, hasImage = true)
+            if (imageProviderWithPerplexity != AiProvider.Gemini) return false
+
+            // Test calorie estimation (text-only) -> Perplexity (when available and no image)
+            val calorieTextProviderWithPerplexity = mockRepositoryWithPerplexity.selectOptimalProvider(TaskType.CALORIE_ESTIMATION, hasImage = false)
+            if (calorieTextProviderWithPerplexity != AiProvider.Perplexity) return false
+
+            return true
         }
         
         private fun testFallbackProvider(): Boolean {
@@ -109,20 +139,19 @@ class CleanArchitectureTest {
 /**
  * Mock implementation for testing routing logic
  */
-private class MockAiProviderRepository {
+private class MockAiProviderRepository(private val perplexityAvailable: Boolean = false) {
 
     fun selectOptimalProvider(
         taskType: TaskType,
         hasImage: Boolean = false
     ): AiProvider {
-        // Perplexity is disabled by default, so all tasks go to Gemini
-        val perplexityAvailable = false
-
         return when {
             hasImage -> AiProvider.Gemini
             taskType == TaskType.TRAINING_PLAN -> AiProvider.Gemini
             taskType == TaskType.SHOPPING_LIST_PARSING && perplexityAvailable -> AiProvider.Perplexity
             taskType == TaskType.RECIPE_GENERATION && perplexityAvailable -> AiProvider.Perplexity
+            // Other text-only tasks prefer Perplexity when available
+            !hasImage && perplexityAvailable -> AiProvider.Perplexity
             else -> AiProvider.Gemini
         }
     }
