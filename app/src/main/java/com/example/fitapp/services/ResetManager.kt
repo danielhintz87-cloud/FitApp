@@ -258,6 +258,22 @@ class ResetManager(
     }
 
     /**
+     * API wrapper for resetWorkoutData that returns status map
+     */
+    suspend fun resetWorkoutDataApi(): Map<String, Any> {
+        return try {
+            resetWorkoutData()
+            mapOf(
+                "success" to true,
+                "message" to "Workout data reset successfully",
+                "timestamp" to System.currentTimeMillis()
+            )
+        } catch (e: Exception) {
+            handleResetError(e)
+        }
+    }
+
+    /**
      * Reset workout data including sessions, performance, and progressions
      */
     suspend fun resetWorkoutData() {
@@ -305,6 +321,22 @@ class ResetManager(
                 "Error resetting workout data: ${e.message}",
                 e
             )
+        }
+    }
+
+    /**
+     * API wrapper for resetNutritionData that returns status map
+     */
+    suspend fun resetNutritionDataApi(): Map<String, Any> {
+        return try {
+            resetNutritionData()
+            mapOf(
+                "success" to true,
+                "message" to "Nutrition data reset successfully",
+                "timestamp" to System.currentTimeMillis()
+            )
+        } catch (e: Exception) {
+            handleResetError(e)
         }
     }
 
@@ -361,6 +393,22 @@ class ResetManager(
                 "Error resetting nutrition data: ${e.message}",
                 e
             )
+        }
+    }
+
+    /**
+     * API wrapper for resetUserProfile that returns status map
+     */
+    suspend fun resetUserProfileApi(): Map<String, Any> {
+        return try {
+            resetUserProfile()
+            mapOf(
+                "success" to true,
+                "message" to "User profile reset successfully",
+                "timestamp" to System.currentTimeMillis()
+            )
+        } catch (e: Exception) {
+            handleResetError(e)
         }
     }
 
@@ -571,7 +619,7 @@ class ResetManager(
     private suspend fun handleResetError(error: Exception): Map<String, Any> {
         return mapOf(
             "success" to false,
-            "error" to error.message,
+            "error" to (error.message ?: "Unknown error"),
             "timestamp" to System.currentTimeMillis()
         )
     }

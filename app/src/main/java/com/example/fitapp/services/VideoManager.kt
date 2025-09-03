@@ -33,13 +33,13 @@ class VideoManager(private val context: Context) {
             try {
                 preloadExerciseVideo(exerciseId)
                 StructuredLogger.info(
-                    StructuredLogger.LogCategory.MEDIA,
+                    StructuredLogger.LogCategory.SYSTEM,
                     TAG,
                     "Preloaded video for exercise: $exerciseId"
                 )
             } catch (e: Exception) {
                 StructuredLogger.error(
-                    StructuredLogger.LogCategory.MEDIA,
+                    StructuredLogger.LogCategory.SYSTEM,
                     TAG,
                     "Failed to preload video for exercise: $exerciseId",
                     exception = e
@@ -71,7 +71,7 @@ class VideoManager(private val context: Context) {
             }
         } catch (e: Exception) {
             StructuredLogger.error(
-                StructuredLogger.LogCategory.MEDIA,
+                StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Failed to get video for exercise: $exerciseId",
                 exception = e
@@ -100,7 +100,7 @@ class VideoManager(private val context: Context) {
         } catch (e: Exception) {
             emit(DownloadProgress(exerciseId, 0f, DownloadStatus.ERROR))
             StructuredLogger.error(
-                StructuredLogger.LogCategory.MEDIA,
+                StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Failed to download video for exercise: $exerciseId",
                 exception = e
@@ -143,14 +143,14 @@ class VideoManager(private val context: Context) {
                     .forEach { it.delete() }
                 
                 StructuredLogger.info(
-                    StructuredLogger.LogCategory.MEDIA,
+                    StructuredLogger.LogCategory.SYSTEM,
                     TAG,
                     "Cleaned up video cache, removed old files"
                 )
             }
         } catch (e: Exception) {
             StructuredLogger.error(
-                StructuredLogger.LogCategory.MEDIA,
+                StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Failed to manage cache size",
                 exception = e

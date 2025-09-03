@@ -72,7 +72,7 @@ class VoiceCommandManager(private val context: Context) {
         _isListening.value = true
         
         StructuredLogger.info(
-            StructuredLogger.LogCategory.WORKOUT,
+            StructuredLogger.LogCategory.USER_ACTION,
             TAG,
             "Started voice command listening"
         )
@@ -87,7 +87,7 @@ class VoiceCommandManager(private val context: Context) {
         commandCallback = null
         
         StructuredLogger.info(
-            StructuredLogger.LogCategory.WORKOUT,
+            StructuredLogger.LogCategory.USER_ACTION,
             TAG,
             "Stopped voice command listening"
         )
@@ -174,7 +174,7 @@ class VoiceCommandManager(private val context: Context) {
     private val voiceRecognitionListener = object : RecognitionListener {
         override fun onReadyForSpeech(params: Bundle?) {
             StructuredLogger.debug(
-                StructuredLogger.LogCategory.WORKOUT,
+                StructuredLogger.LogCategory.USER_ACTION,
                 TAG,
                 "Ready for speech input"
             )
@@ -182,7 +182,7 @@ class VoiceCommandManager(private val context: Context) {
         
         override fun onBeginningOfSpeech() {
             StructuredLogger.debug(
-                StructuredLogger.LogCategory.WORKOUT,
+                StructuredLogger.LogCategory.USER_ACTION,
                 TAG,
                 "Speech input started"
             )
@@ -199,7 +199,7 @@ class VoiceCommandManager(private val context: Context) {
         override fun onEndOfSpeech() {
             _isListening.value = false
             StructuredLogger.debug(
-                StructuredLogger.LogCategory.WORKOUT,
+                StructuredLogger.LogCategory.USER_ACTION,
                 TAG,
                 "Speech input ended"
             )
@@ -221,7 +221,7 @@ class VoiceCommandManager(private val context: Context) {
             }
             
             StructuredLogger.warning(
-                StructuredLogger.LogCategory.WORKOUT,
+                StructuredLogger.LogCategory.USER_ACTION,
                 TAG,
                 "Voice recognition error: $errorMessage"
             )
@@ -233,7 +233,7 @@ class VoiceCommandManager(private val context: Context) {
             
             matches?.firstOrNull()?.let { spokenText ->
                 StructuredLogger.info(
-                    StructuredLogger.LogCategory.WORKOUT,
+                    StructuredLogger.LogCategory.USER_ACTION,
                     TAG,
                     "Voice command recognized: $spokenText"
                 )
@@ -251,7 +251,7 @@ class VoiceCommandManager(private val context: Context) {
             val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             matches?.firstOrNull()?.let { partialText ->
                 StructuredLogger.debug(
-                    StructuredLogger.LogCategory.WORKOUT,
+                    StructuredLogger.LogCategory.USER_ACTION,
                     TAG,
                     "Partial voice input: $partialText"
                 )

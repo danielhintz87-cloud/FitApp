@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.example.fitapp.data.db.*
 import com.example.fitapp.ui.screens.ExerciseStep
 import com.example.fitapp.util.StructuredLogger
@@ -120,7 +121,7 @@ class WorkoutExecutionManager(
         _currentStep.value = workoutSteps.firstOrNull()
         
         StructuredLogger.info(
-            StructuredLogger.LogCategory.WORKOUT,
+            StructuredLogger.LogCategory.USER_ACTION,
             TAG,
             "Started workout flow for plan $planId with ${exercises.size} exercises"
         )
@@ -131,7 +132,7 @@ class WorkoutExecutionManager(
     /**
      * Navigate to the next step in the workout
      */
-    fun navigateToNextStep(): WorkoutStep? {
+    suspend fun navigateToNextStep(): WorkoutStep? = withContext(Dispatchers.IO) {
         val currentFlow = _workoutFlow.value ?: return null
         val currentStepValue = _currentStep.value ?: return null
         
@@ -225,7 +226,7 @@ class WorkoutExecutionManager(
         checkPersonalRecord(currentStepValue.exercise.name, weight.toFloat(), reps)
         
         StructuredLogger.info(
-            StructuredLogger.LogCategory.WORKOUT,
+            StructuredLogger.LogCategory.USER_ACTION,
             TAG,
             "Logged set: ${currentStepValue.exercise.name} - ${weight}kg x $reps reps, RPE: $rpe"
         )
@@ -295,7 +296,7 @@ class WorkoutExecutionManager(
         _isInWorkout.value = false
         
         StructuredLogger.info(
-            StructuredLogger.LogCategory.WORKOUT,
+            StructuredLogger.LogCategory.USER_ACTION,
             TAG,
             "Finished workout ${currentFlow.sessionId}: ${summary.exercisesCompleted} exercises, ${summary.totalVolume}kg volume"
         )

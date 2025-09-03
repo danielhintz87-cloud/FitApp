@@ -21,7 +21,7 @@ class SmartRestTimer(private val context: Context) {
     }
     
     private var timerJob: Job? = null
-    private val _timerState = MutableStateFlow(RestTimerState.IDLE)
+    private val _timerState = MutableStateFlow<RestTimerState>(RestTimerState.IDLE)
     val timerState: StateFlow<RestTimerState> = _timerState.asStateFlow()
     
     private val _restSuggestions = MutableStateFlow<RestSuggestion?>(null)
@@ -50,7 +50,7 @@ class SmartRestTimer(private val context: Context) {
         startTimer(restSeconds, suggestion)
         
         StructuredLogger.info(
-            StructuredLogger.LogCategory.WORKOUT,
+            StructuredLogger.LogCategory.USER_ACTION,
             TAG,
             "Started adaptive rest timer: ${restSeconds}s for $exerciseId"
         )
@@ -216,14 +216,14 @@ class SmartRestTimer(private val context: Context) {
         try {
             // Integration point for TTS or audio system
             StructuredLogger.debug(
-                StructuredLogger.LogCategory.WORKOUT,
+                StructuredLogger.LogCategory.USER_ACTION,
                 TAG,
                 "Audio cue: $cueType"
             )
             // TODO: Implement actual audio playback
         } catch (e: Exception) {
             StructuredLogger.error(
-                StructuredLogger.LogCategory.WORKOUT,
+                StructuredLogger.LogCategory.USER_ACTION,
                 TAG,
                 "Failed to play audio cue: $cueType",
                 exception = e

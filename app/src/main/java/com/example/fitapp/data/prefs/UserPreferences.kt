@@ -2,10 +2,6 @@ package com.example.fitapp.data.prefs
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import javax.inject.Inject
 
 /**
  * Interface for user preferences operations
