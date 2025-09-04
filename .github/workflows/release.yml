@@ -1,0 +1,274 @@
+name: Release Build & Deploy
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+      create_release:
+        description: 'Create GitHub release'
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-release:
+    name: Build Release APK & AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept SDK licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Gradle cache
+        uses: gradle/gradle-build-action@v2
+
+      - name: Verify Gradle wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Extract version information
+        id: version_info
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION_NAME="${{ github.event.inputs.version_name }}"
+            echo "version_name=${VERSION_NAME}" >> $GITHUB_OUTPUT
+            echo "version_tag=v${VERSION_NAME}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION_TAG=${GITHUB_REF#refs/tags/}
+            VERSION_NAME=${VERSION_TAG#v}
+            echo "version_name=${VERSION_NAME}" >> $GITHUB_OUTPUT
+            echo "version_tag=${VERSION_TAG}" >> $GITHUB_OUTPUT
+          else
+            echo "version_name=dev-$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+            echo "version_tag=dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create local.properties
+        run: |
+          echo "# Generated for release build" > local.properties
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> local.properties
+          echo "PERPLEXITY_API_KEY=${{ secrets.PERPLEXITY_API_KEY }}" >> local.properties
+
+      - name: Build release APK
+        run: |
+          ./gradlew --stacktrace --no-daemon \
+            clean \
+            assembleRelease \
+            -PVERSION_NAME="${{ steps.version_info.outputs.version_name }}"
+
+      - name: Build release AAB
+        run: |
+          ./gradlew --stacktrace --no-daemon \
+            bundleRelease \
+            -PVERSION_NAME="${{ steps.version_info.outputs.version_name }}"
+
+      - name: Sign APK
+        uses: r0adkll/sign-android-release@v1
+        id: sign_apk
+        with:
+          releaseDirectory: app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+          alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
+
+      - name: Sign AAB
+        uses: r0adkll/sign-android-release@v1
+        id: sign_aab
+        with:
+          releaseDirectory: app/build/outputs/bundle/release
+          signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+          alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          CHANGELOG=$(git log --oneline --no-merges $(git describe --tags --abbrev=0 HEAD~1)..HEAD || echo "Initial release")
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version_info.outputs.version_tag }}
+          name: FitApp ${{ steps.version_info.outputs.version_name }}
+          body: |
+            ## FitApp Release ${{ steps.version_info.outputs.version_name }}
+            
+            ### 📱 Downloads
+            - **APK**: Universal Android Package
+            - **AAB**: Android App Bundle (für Play Store)
+            
+            ### 🔄 Changes
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ### ⚙️ Build Information
+            - **Build Date**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+            - **Commit**: ${{ github.sha }}
+            - **Kotlin**: 2.0.20
+            - **Target SDK**: 34
+            - **Min SDK**: 24
+          files: |
+            ${{ steps.sign_apk.outputs.signedReleaseFile }}
+            ${{ steps.sign_aab.outputs.signedReleaseFile }}
+          draft: false
+          prerelease: false
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: fitapp-release-apk-${{ steps.version_info.outputs.version_name }}
+          path: ${{ steps.sign_apk.outputs.signedReleaseFile }}
+          retention-days: 90
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: fitapp-release-aab-${{ steps.version_info.outputs.version_name }}
+          path: ${{ steps.sign_aab.outputs.signedReleaseFile }}
+          retention-days: 90
+
+      - name: Upload to Google Play (Optional)
+        if: github.event_name == 'release' && contains(github.event.release.tag_name, 'prod')
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
+          packageName: com.example.fitapp
+          releaseFiles: ${{ steps.sign_aab.outputs.signedReleaseFile }}
+          track: internal
+          status: completed
+
+  quality-checks:
+    name: Release Quality Checks
+    runs-on: ubuntu-latest
+    needs: build-release
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Gradle cache
+        uses: gradle/gradle-build-action@v2
+
+      - name: Run lint analysis
+        run: ./gradlew lintRelease
+
+      - name: Run unit tests
+        run: ./gradlew testReleaseUnitTest --continue
+
+      - name: Generate test reports
+        run: ./gradlew jacocoTestReport
+
+      - name: Upload lint reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: lint-reports-release
+          path: app/build/reports/lint-results-release.html
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-reports-release
+          path: app/build/reports/tests/
+
+  security-scan:
+    name: Security & Dependency Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Gradle dependency check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'FitApp'
+          path: '.'
+          format: 'HTML'
+          
+      - name: Upload dependency check results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: dependency-check-report
+          path: reports/
+
+  notify-release:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: [build-release, quality-checks, security-scan]
+    if: always()
+    
+    steps:
+      - name: Release notification
+        run: |
+          if [[ "${{ needs.build-release.result }}" == "success" ]]; then
+            echo "✅ Release build completed successfully!"
+            echo "📱 APK and AAB files have been generated and uploaded."
+          else
+            echo "❌ Release build failed!"
+          fi
+          
+          if [[ "${{ needs.quality-checks.result }}" != "success" ]]; then
+            echo "⚠️ Quality checks have issues - please review reports."
+          fi
+          
+          if [[ "${{ needs.security-scan.result }}" != "success" ]]; then
+            echo "⚠️ Security scan detected issues - please review reports."
+          fi
