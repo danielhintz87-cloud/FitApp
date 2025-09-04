@@ -23,6 +23,10 @@ camerax = "1.3.1"
 mlkit-barcode = "17.2.0"
 health-connect = "1.1.0-alpha07"
 
+# TensorFlow Lite for Advanced ML
+tensorflow-lite = "2.14.0"
+tensorflow-lite-support = "0.4.4"
+
 # Testing
 junit = "4.13.2"
 android-test-junit = "1.2.1"
@@ -75,6 +79,10 @@ camerax-view = { module = "androidx.camera:camera-view", version.ref = "camerax"
 
 # ML Kit
 mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkit-barcode" }
+
+# TensorFlow Lite
+tensorflow-lite = { module = "org.tensorflow:tensorflow-lite", version.ref = "tensorflow-lite" }
+tensorflow-lite-support = { module = "org.tensorflow:tensorflow-lite-support", version.ref = "tensorflow-lite-support" }
 
 # Health Connect
 health-connect-client = { module = "androidx.health.connect:connect-client", version.ref = "health-connect" }

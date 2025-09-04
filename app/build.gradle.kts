@@ -150,6 +150,10 @@ dependencies {
     // ML Kit Barcode Scanning
     implementation(libs.mlkit.barcode.scanning)
     
+    // TensorFlow Lite for Advanced ML Models
+    implementation(libs.tensorflow.lite)
+    implementation(libs.tensorflow.lite.support)
+    
     // Health Connect for Activity/Calorie Sync (temporarily disabled for build compatibility)
     // implementation(libs.health.connect.client)
     

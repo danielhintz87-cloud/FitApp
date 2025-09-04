@@ -6,11 +6,15 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.util.Log
+import com.example.fitapp.ai.AdvancedMLModels
 import com.example.fitapp.ai.HeartRateReading
 import com.example.fitapp.ai.HeartRateZone
 import com.example.fitapp.ai.MovementData
 import com.example.fitapp.ai.RepetitionAnalysis
 import com.example.fitapp.ai.FormQualityAssessment
+import com.example.fitapp.ai.PoseAnalysisResult
+import com.example.fitapp.ai.MovementPatternAnalysis
+import com.example.fitapp.ai.FormFeedback
 import com.example.fitapp.network.healthconnect.HealthConnectManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +32,7 @@ import kotlin.math.sqrt
 /**
  * Advanced Workout Sensor Service for Phase 1 Enhancement
  * Handles real-time sensor data collection and analysis for workout tracking
+ * Integrates with advanced ML models for improved form analysis and injury prevention
  */
 class WorkoutSensorService(
     private val context: Context,
@@ -38,6 +43,7 @@ class WorkoutSensorService(
         private const val TAG = "WorkoutSensorService"
         private const val REP_DETECTION_THRESHOLD = 2.5f // m/s² threshold for rep detection
         private const val FORM_ANALYSIS_WINDOW = 5000L // 5 seconds window for form analysis
+        private const val ML_ANALYSIS_INTERVAL = 2000L // 2 seconds interval for ML analysis
     }
     
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -47,9 +53,22 @@ class WorkoutSensorService(
     
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     
+    // Advanced ML integration
+    private val advancedMLModels = AdvancedMLModels.getInstance(context)
+    private var isMLInitialized = false
+    
     // State flows for real-time data
     private val _heartRateFlow = MutableStateFlow<HeartRateReading?>(null)
     val heartRateFlow = _heartRateFlow.asStateFlow()
+    
+    private val _movementAnalysisFlow = MutableStateFlow<MovementPatternAnalysis?>(null)
+    val movementAnalysisFlow = _movementAnalysisFlow.asStateFlow()
+    
+    private val _formFeedbackFlow = MutableStateFlow<FormFeedback?>(null)
+    val formFeedbackFlow = _formFeedbackFlow.asStateFlow()
+    
+    private val _repAnalysisFlow = MutableStateFlow<RepetitionAnalysis?>(null)
+    val repAnalysisFlow = _repAnalysisFlow.asStateFlow()
     
     private val _movementDataFlow = MutableStateFlow<MovementData?>(null)
     val movementDataFlow = _movementDataFlow.asStateFlow()
@@ -152,6 +171,142 @@ class WorkoutSensorService(
         )
     }
     
+    /**
+     * Initialize advanced ML models for enhanced analysis
+     */
+    fun initializeAdvancedAnalysis() {
+        scope.launch {
+            isMLInitialized = advancedMLModels.initialize()
+            if (isMLInitialized) {
+                Log.i(TAG, "Advanced ML models initialized successfully")
+                startAdvancedAnalysisLoop()
+            } else {
+                Log.w(TAG, "Failed to initialize advanced ML models")
+            }
+        }
+    }
+    
+    /**
+     * Enhanced movement analysis using advanced ML models
+     */
+    suspend fun analyzeMovementWithML(exerciseType: String): MovementPatternAnalysis? {
+        if (!isMLInitialized || movementDataBuffer.isEmpty()) {
+            return null
+        }
+        
+        return try {
+            val recentData = movementDataBuffer.takeLast(25) // Last 5 seconds of data
+            advancedMLModels.analyzeMovementPattern(recentData, exerciseType)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in ML movement analysis", e)
+            null
+        }
+    }
+    
+    /**
+     * Get real-time form feedback using advanced ML
+     */
+    suspend fun getRealTimeFormFeedback(exerciseType: String, repPhase: String = "mid"): FormFeedback? {
+        if (!isMLInitialized) {
+            return null
+        }
+        
+        return try {
+            // For now, we create a simulated pose analysis since we don't have camera integration yet
+            val simulatedPose = createSimulatedPoseFromSensorData()
+            advancedMLModels.getRealtimeFormFeedback(simulatedPose, exerciseType, repPhase)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in real-time form feedback", e)
+            null
+        }
+    }
+    
+    /**
+     * Advanced repetition detection with ML-enhanced quality assessment
+     */
+    fun analyzeRepetitionAdvanced(movementData: MovementData): RepetitionAnalysis {
+        val basicAnalysis = analyzeRepetition(movementData)
+        
+        // Enhance with ML insights if available
+        scope.launch {
+            if (isMLInitialized && movementDataBuffer.size >= 10) {
+                try {
+                    val mlAnalysis = analyzeMovementWithML(currentExerciseType)
+                    mlAnalysis?.let { analysis ->
+                        _movementAnalysisFlow.value = analysis
+                        
+                        // Generate real-time feedback
+                        val feedback = getRealTimeFormFeedback(currentExerciseType)
+                        feedback?.let { _formFeedbackFlow.value = it }
+                        
+                        // Update form quality based on ML analysis
+                        val enhancedFormQuality = (basicAnalysis.repQuality + analysis.confidence) / 2f
+                        _formQualityFlow.value = enhancedFormQuality
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in advanced repetition analysis", e)
+                }
+            }
+        }
+        
+        return basicAnalysis
+    }
+    
+    /**
+     * Start continuous advanced analysis loop
+     */
+    private fun startAdvancedAnalysisLoop() {
+        scope.launch {
+            while (isTracking && isMLInitialized) {
+                try {
+                    if (movementDataBuffer.size >= 10) {
+                        // Perform ML analysis every 2 seconds
+                        val analysis = analyzeMovementWithML(currentExerciseType)
+                        analysis?.let { _movementAnalysisFlow.value = it }
+                        
+                        // Generate form feedback
+                        val feedback = getRealTimeFormFeedback(currentExerciseType)
+                        feedback?.let { _formFeedbackFlow.value = it }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in advanced analysis loop", e)
+                }
+                
+                delay(ML_ANALYSIS_INTERVAL)
+            }
+        }
+    }
+    
+    /**
+     * Create simulated pose analysis from sensor data for ML feedback
+     * In a full implementation, this would be replaced with actual camera-based pose estimation
+     */
+    private fun createSimulatedPoseFromSensorData(): PoseAnalysisResult {
+        val recentMovement = movementDataBuffer.takeLast(5)
+        val avgAcceleration = if (recentMovement.isNotEmpty()) {
+            recentMovement.map { data ->
+                sqrt(data.accelerometer.first.pow(2) + data.accelerometer.second.pow(2) + data.accelerometer.third.pow(2))
+            }.average().toFloat()
+        } else 0f
+        
+        // Simulate form quality based on movement stability
+        val formQuality = when {
+            avgAcceleration < 2f -> 0.9f // Very stable
+            avgAcceleration < 5f -> 0.7f // Moderate movement
+            avgAcceleration < 10f -> 0.5f // High movement
+            else -> 0.3f // Very unstable
+        }
+        
+        return PoseAnalysisResult(
+            keypoints = emptyList(), // Would be populated with actual pose detection
+            overallFormQuality = formQuality,
+            confidence = 0.8f,
+            riskFactors = if (formQuality < 0.6f) listOf("Instabile Bewegung erkannt") else emptyList(),
+            improvements = if (formQuality < 0.8f) listOf("Bewegung verlangsamen", "Stabilität verbessern") else emptyList(),
+            timestamp = System.currentTimeMillis()
+        )
+    }
+
     /**
      * Assess form quality based on movement patterns
      */
