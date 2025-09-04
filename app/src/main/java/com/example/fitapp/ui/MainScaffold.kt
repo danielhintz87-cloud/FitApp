@@ -26,6 +26,9 @@ import com.example.fitapp.ui.nutrition.FoodSearchScreen
 import com.example.fitapp.ui.nutrition.NutritionAnalyticsScreen
 import com.example.fitapp.ui.nutrition.NutritionScreen
 import com.example.fitapp.ui.nutrition.SavedRecipesScreen
+import com.example.fitapp.ui.nutrition.EnhancedRecipeListScreen
+import com.example.fitapp.ui.nutrition.RecipeDetailScreen
+import com.example.fitapp.ui.nutrition.RecipeEditScreen
 import com.example.fitapp.ui.screens.PlanScreen
 import com.example.fitapp.ui.screens.ProgressScreen
 import com.example.fitapp.ui.screens.TodayScreen
@@ -155,6 +158,12 @@ fun MainScaffold() {
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("food_diary") },
                     icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Rezepte (Neu)") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("enhanced_recipes") },
+                    icon = { Icon(Icons.Filled.Restaurant, contentDescription = null) }
                 )
                 NavigationDrawerItem(
                     label = { Text("Gespeicherte Rezepte") }, 
@@ -332,6 +341,37 @@ fun MainScaffold() {
                         }
                     )
                 }
+                composable("enhanced_recipes") {
+                    EnhancedRecipeListScreen(
+                        onBackPressed = { nav.popBackStack() },
+                        onRecipeClick = { recipe ->
+                            nav.navigate("recipe_detail/${recipe.id}")
+                        },
+                        onCookRecipe = { recipe ->
+                            nav.navigate("cooking_mode/${recipe.id}")
+                        },
+                        onCreateRecipe = {
+                            nav.navigate("recipe_edit")
+                        }
+                    )
+                }
+                composable("recipe_detail/{recipeId}") { backStackEntry ->
+                    val recipeId = backStackEntry.arguments?.getString("recipeId") ?: ""
+                    RecipeDetailFromId(
+                        recipeId = recipeId,
+                        onBackPressed = { nav.popBackStack() },
+                        onCookRecipe = { nav.navigate("cooking_mode/$recipeId") },
+                        onEditRecipe = { nav.navigate("recipe_edit/$recipeId") }
+                    )
+                }
+                composable("recipe_edit/{recipeId?}") { backStackEntry ->
+                    val recipeId = backStackEntry.arguments?.getString("recipeId")
+                    RecipeEditFromId(
+                        recipeId = recipeId,
+                        onBackPressed = { nav.popBackStack() },
+                        onSaveRecipe = { nav.popBackStack() }
+                    )
+                }
                 composable("cooking_mode/{recipeId}") { backStackEntry ->
                     val recipeId = backStackEntry.arguments?.getString("recipeId") ?: ""
                     // We need to get the recipe from the database
@@ -471,6 +511,84 @@ private fun CookingModeFromId(
         )
     } ?: run {
         // Loading or error state
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = androidx.compose.ui.Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    }
+}
+
+@Composable
+private fun RecipeDetailFromId(
+    recipeId: String,
+    onBackPressed: () -> Unit,
+    onCookRecipe: () -> Unit,
+    onEditRecipe: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val db = remember { AppDatabase.get(ctx) }
+    var recipe by remember { mutableStateOf<com.example.fitapp.data.db.SavedRecipeEntity?>(null) }
+    
+    LaunchedEffect(recipeId) {
+        recipe = db.savedRecipeDao().getRecipe(recipeId)
+    }
+    
+    recipe?.let {
+        RecipeDetailScreen(
+            recipe = it,
+            onBackPressed = onBackPressed,
+            onCookRecipe = onCookRecipe,
+            onEditRecipe = onEditRecipe
+        )
+    } ?: run {
+        // Loading or error state
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = androidx.compose.ui.Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    }
+}
+
+@Composable
+private fun RecipeEditFromId(
+    recipeId: String?,
+    onBackPressed: () -> Unit,
+    onSaveRecipe: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val db = remember { AppDatabase.get(ctx) }
+    val scope = rememberCoroutineScope()
+    var recipe by remember { mutableStateOf<com.example.fitapp.data.db.SavedRecipeEntity?>(null) }
+    var isLoaded by remember { mutableStateOf(recipeId == null) }
+    
+    LaunchedEffect(recipeId) {
+        if (recipeId != null) {
+            recipe = db.savedRecipeDao().getRecipe(recipeId)
+            isLoaded = true
+        }
+    }
+    
+    if (isLoaded) {
+        RecipeEditScreen(
+            recipe = recipe,
+            onBackPressed = onBackPressed,
+            onSaveRecipe = { savedRecipe ->
+                scope.launch {
+                    if (recipe != null) {
+                        db.savedRecipeDao().update(savedRecipe)
+                    } else {
+                        db.savedRecipeDao().insert(savedRecipe)
+                    }
+                    onSaveRecipe()
+                }
+            }
+        )
+    } else {
+        // Loading state
         androidx.compose.foundation.layout.Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = androidx.compose.ui.Alignment.Center
