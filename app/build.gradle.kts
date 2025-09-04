@@ -153,6 +153,9 @@ dependencies {
     // Health Connect for Activity/Calorie Sync (temporarily disabled for build compatibility)
     // implementation(libs.health.connect.client)
     
+    // Wearable Data Layer API for communication with Wear OS
+    implementation(libs.play.services.wearable)
+    
     // WorkManager for background tasks
     implementation(libs.work.runtime.ktx)
     coreLibraryDesugaring(libs.desugar.jdk.libs)

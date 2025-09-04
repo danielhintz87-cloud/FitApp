@@ -1,0 +1,9 @@
+/home/runner/work/FitApp/FitApp/wear/src/main/java/com/example/fitapp/wear/services/WearDataSyncService.kt
+/home/runner/work/FitApp/FitApp/wear/src/main/java/com/example/fitapp/wear/presentation/viewmodel/WearWorkoutViewModel.kt
+/home/runner/work/FitApp/FitApp/wear/src/main/java/com/example/fitapp/wear/presentation/theme/Typography.kt
+/home/runner/work/FitApp/FitApp/wear/src/main/java/com/example/fitapp/wear/presentation/theme/Theme.kt
+/home/runner/work/FitApp/FitApp/wear/src/main/java/com/example/fitapp/wear/presentation/MainActivity.kt
+/home/runner/work/FitApp/FitApp/wear/src/main/java/com/example/fitapp/wear/services/WearWorkoutTrackingService.kt
+/home/runner/work/FitApp/FitApp/wear/src/main/java/com/example/fitapp/wear/presentation/WorkoutScreen.kt
+/home/runner/work/FitApp/FitApp/wear/src/main/java/com/example/fitapp/shared/WearDataModels.kt
+/home/runner/work/FitApp/FitApp/wear/src/main/java/com/example/fitapp/wear/presentation/ProgressScreen.kt
