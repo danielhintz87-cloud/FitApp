@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.fitapp"
-        minSdk = 24
+        minSdk = 26  // Updated for Health Connect compatibility
         targetSdk = 34
         versionCode = 8
         versionName = "1.8"
@@ -119,6 +119,7 @@ dependencies {
     // Lifecycle/Coroutines
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.9.0")
 
     // Room (AI-Logs)
     implementation(libs.room.runtime)
@@ -150,8 +151,8 @@ dependencies {
     // ML Kit Barcode Scanning
     implementation(libs.mlkit.barcode.scanning)
     
-    // Health Connect for Activity/Calorie Sync (temporarily disabled for build compatibility)
-    // implementation(libs.health.connect.client)
+    // Health Connect for Activity/Calorie Sync
+    implementation(libs.health.connect.client)
     
     // WorkManager for background tasks
     implementation(libs.work.runtime.ktx)

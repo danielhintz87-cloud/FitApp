@@ -2,9 +2,18 @@ package com.example.fitapp.network.healthconnect
 
 import android.content.Context
 import android.util.Log
+import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.PermissionController
+import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.*
+import androidx.health.connect.client.request.ReadRecordsRequest
+import androidx.health.connect.client.time.TimeRangeFilter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
+import kotlin.reflect.KClass
 
 /**
  * Health Connect integration manager
@@ -16,6 +25,26 @@ class HealthConnectManager(private val context: Context) {
     
     companion object {
         private const val TAG = "HealthConnectManager"
+        
+        // Health Connect permissions
+        val REQUIRED_PERMISSIONS = setOf(
+            HealthPermission.getReadPermission(StepsRecord::class),
+            HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class),
+            HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
+            HealthPermission.getReadPermission(ExerciseSessionRecord::class),
+            HealthPermission.getReadPermission(HeartRateRecord::class),
+            HealthPermission.getReadPermission(SleepSessionRecord::class),
+            HealthPermission.getWritePermission(ExerciseSessionRecord::class),
+            HealthPermission.getWritePermission(StepsRecord::class)
+        )
+    }
+    
+    private val healthConnectClient: HealthConnectClient? by lazy {
+        if (HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE) {
+            HealthConnectClient.getOrCreate(context)
+        } else {
+            null
+        }
     }
     
     /**
@@ -23,8 +52,7 @@ class HealthConnectManager(private val context: Context) {
      */
     fun isAvailable(): Boolean {
         return try {
-            // Basic availability check - would need actual Health Connect SDK
-            true // Enabled for enhanced functionality
+            HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
         } catch (e: Exception) {
             Log.w(TAG, "Health Connect not available: ${e.message}")
             false
@@ -35,8 +63,21 @@ class HealthConnectManager(private val context: Context) {
      * Check if all required permissions are granted
      */
     suspend fun hasPermissions(): Boolean = withContext(Dispatchers.IO) {
-        // Simplified permission check - would need actual Health Connect SDK
-        return@withContext true // Assume granted for demo
+        return@withContext try {
+            val client = healthConnectClient ?: return@withContext false
+            val grantedPermissions = client.permissionController.getGrantedPermissions()
+            REQUIRED_PERMISSIONS.all { it in grantedPermissions }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking permissions", e)
+            false
+        }
+    }
+    
+    /**
+     * Get the permission controller for requesting permissions
+     */
+    fun getPermissionController(): PermissionController? {
+        return healthConnectClient?.permissionController
     }
     
     /**
@@ -49,31 +90,151 @@ class HealthConnectManager(private val context: Context) {
         Log.i(TAG, "Syncing health data for date: $date")
         
         try {
-            // Simulate health data sync - in real implementation this would
-            // call the actual Health Connect API
-            val simulatedData = HealthSyncData(
+            val client = healthConnectClient ?: return@withContext null
+            
+            // Create time range for the specific date
+            val startTime = date.atStartOfDay(ZoneId.systemDefault()).toInstant()
+            val endTime = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
+            val timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+            
+            // Sync steps data
+            val steps = syncStepsData(client, timeRangeFilter)
+            
+            // Sync active calories
+            val activeCalories = syncActiveCaloriesData(client, timeRangeFilter)
+            
+            // Sync exercise sessions
+            val exerciseSessions = syncExerciseSessionData(client, timeRangeFilter)
+            
+            val healthData = HealthSyncData(
                 date = date,
-                steps = kotlin.random.Random.nextInt(5000, 12000),
-                activeCalories = kotlin.random.Random.nextDouble(200.0, 800.0),
-                exerciseSessions = if (kotlin.random.Random.nextBoolean()) {
-                    listOf(
-                        ExerciseInfo(
-                            title = "Morgendlicher Spaziergang",
-                            exerciseType = "walking",
-                            durationMinutes = kotlin.random.Random.nextInt(20, 60)
-                        )
-                    )
-                } else {
-                    emptyList()
-                }
+                steps = steps,
+                activeCalories = activeCalories,
+                exerciseSessions = exerciseSessions
             )
             
-            Log.i(TAG, "Successfully synced data: ${simulatedData.getSummary()}")
-            return@withContext simulatedData
+            Log.i(TAG, "Successfully synced data: ${healthData.getSummary()}")
+            return@withContext healthData
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to sync health data for $date", e)
             return@withContext null
+        }
+    }
+    
+    private suspend fun syncStepsData(
+        client: HealthConnectClient,
+        timeRangeFilter: TimeRangeFilter
+    ): Int {
+        return try {
+            val request = ReadRecordsRequest(
+                recordType = StepsRecord::class,
+                timeRangeFilter = timeRangeFilter
+            )
+            val response = client.readRecords(request)
+            response.records.sumOf { it.count.toInt() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading steps data", e)
+            0
+        }
+    }
+    
+    private suspend fun syncActiveCaloriesData(
+        client: HealthConnectClient,
+        timeRangeFilter: TimeRangeFilter
+    ): Double {
+        return try {
+            val request = ReadRecordsRequest(
+                recordType = ActiveCaloriesBurnedRecord::class,
+                timeRangeFilter = timeRangeFilter
+            )
+            val response = client.readRecords(request)
+            response.records.sumOf { it.energy.inKilocalories }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading active calories data", e)
+            0.0
+        }
+    }
+    
+    private suspend fun syncExerciseSessionData(
+        client: HealthConnectClient,
+        timeRangeFilter: TimeRangeFilter
+    ): List<ExerciseInfo> {
+        return try {
+            val request = ReadRecordsRequest(
+                recordType = ExerciseSessionRecord::class,
+                timeRangeFilter = timeRangeFilter
+            )
+            val response = client.readRecords(request)
+            
+            response.records.map { session ->
+                ExerciseInfo(
+                    title = session.title ?: "Exercise Session",
+                    exerciseType = session.exerciseType.toString(),
+                    durationMinutes = ((session.endTime.epochSecond - session.startTime.epochSecond) / 60).toInt()
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading exercise session data", e)
+            emptyList()
+        }
+    }
+    
+    /**
+     * Sync heart rate data for a specific time range
+     */
+    suspend fun syncHeartRateData(startTime: Instant, endTime: Instant): List<HeartRateData> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val client = healthConnectClient ?: return@withContext emptyList()
+            val timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+            
+            val request = ReadRecordsRequest(
+                recordType = HeartRateRecord::class,
+                timeRangeFilter = timeRangeFilter
+            )
+            val response = client.readRecords(request)
+            
+            response.records.flatMap { record ->
+                record.samples.map { sample ->
+                    HeartRateData(
+                        timestamp = sample.time.epochSecond,
+                        heartRate = sample.beatsPerMinute.toInt()
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading heart rate data", e)
+            emptyList()
+        }
+    }
+    
+    /**
+     * Sync sleep data for a specific time range
+     */
+    suspend fun syncSleepData(startTime: Instant, endTime: Instant): List<SleepData> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val client = healthConnectClient ?: return@withContext emptyList()
+            val timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+            
+            val request = ReadRecordsRequest(
+                recordType = SleepSessionRecord::class,
+                timeRangeFilter = timeRangeFilter
+            )
+            val response = client.readRecords(request)
+            
+            response.records.flatMap { session ->
+                session.stages.map { stage ->
+                    SleepData(
+                        startTime = stage.startTime.epochSecond,
+                        endTime = stage.endTime.epochSecond,
+                        stage = stage.stage.toString(),
+                        durationMinutes = ((stage.endTime.epochSecond - stage.startTime.epochSecond) / 60).toInt()
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading sleep data", e)
+            emptyList()
         }
     }
     
@@ -137,7 +298,7 @@ data class HealthSyncData(
  */
 data class ExerciseInfo(
     val title: String,
-    val exerciseType: String,
+    val exerciseType: String = "unknown",
     val durationMinutes: Int
 ) {
     /**
@@ -158,3 +319,21 @@ data class ExerciseInfo(
         }
     }
 }
+
+/**
+ * Data class representing heart rate data point
+ */
+data class HeartRateData(
+    val timestamp: Long, // Epoch timestamp in seconds
+    val heartRate: Int // BPM
+)
+
+/**
+ * Data class representing sleep data
+ */
+data class SleepData(
+    val startTime: Long, // Epoch timestamp in seconds
+    val endTime: Long, // Epoch timestamp in seconds
+    val stage: String, // "light", "deep", "rem", "awake", "unknown"
+    val durationMinutes: Int
+)
