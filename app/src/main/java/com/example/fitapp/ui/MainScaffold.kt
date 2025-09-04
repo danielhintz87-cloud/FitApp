@@ -77,6 +77,7 @@ fun MainScaffold() {
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
+                        .padding(bottom = 16.dp) // Add bottom padding for better scrolling
                 ) {
                     Text(
                         "Navigation", 
