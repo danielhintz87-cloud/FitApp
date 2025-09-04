@@ -590,3 +590,16 @@ data class ExerciseSpecificAnalysis(
     val formScore: Float,
     val safetyWarnings: List<String>
 )
+
+// Movement analysis data classes for ML models
+data class MovementAsymmetry(
+    val type: String,
+    val severity: Float,
+    val description: String
+)
+
+data class CompensationPattern(
+    val type: String,
+    val severity: Float,
+    val description: String
+)

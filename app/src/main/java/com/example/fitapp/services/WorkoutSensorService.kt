@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.sqrt
+import kotlin.math.pow
 
 /**
  * Advanced Workout Sensor Service for Phase 1 Enhancement

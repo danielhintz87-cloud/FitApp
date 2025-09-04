@@ -103,7 +103,7 @@ data class ProgressionAlternative(
 )
 
 // Performance Predictions
-data class PerformancePrediction(
+data class WorkoutPerformancePrediction(
     val expectedVolume: Float,
     val expectedDuration: Int, // in minutes
     val fatigueForecast: String, // "low", "medium", "high"
@@ -139,7 +139,7 @@ data class AdvancedTrainingUiState(
     // AI State
     val isLoadingAIInsights: Boolean = false,
     val aiCoachingTips: List<CoachingTip> = emptyList(),
-    val performancePrediction: PerformancePrediction? = null,
+    val performancePrediction: WorkoutPerformancePrediction? = null,
     
     // Sensor State
     val sensorDataAvailable: Boolean = false,

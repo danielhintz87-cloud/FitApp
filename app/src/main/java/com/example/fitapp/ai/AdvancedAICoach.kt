@@ -276,7 +276,7 @@ class AdvancedAICoach(private val context: Context) {
         return try {
             if (!advancedMLModels.initialize()) {
                 return analyzeMovementPatterns(userId, exerciseId, 
-                    movementData.map { MovementPoint(it.timestamp, 0.8f, 0.8f) })
+                    movementData.map { MovementPoint(0f, 0f, 0f, it.timestamp, 0.8f, 0.8f) })
             }
             
             val mlAnalysis = advancedMLModels.analyzeMovementPattern(movementData, exerciseId)
@@ -309,7 +309,7 @@ class AdvancedAICoach(private val context: Context) {
                 exception = e
             )
             analyzeMovementPatterns(userId, exerciseId, 
-                movementData.map { MovementPoint(it.timestamp, 0.8f, 0.8f) })
+                movementData.map { MovementPoint(0f, 0f, 0f, it.timestamp, 0.8f, 0.8f) })
         }
     }
     
