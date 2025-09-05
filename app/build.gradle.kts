@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -18,9 +20,18 @@ android {
         versionCode = 8
         versionName = "1.8"
 
-        // API key placeholders - remove in production
-        buildConfigField("String", "GEMINI_API_KEY", "\"\"")
-        buildConfigField("String", "PERPLEXITY_API_KEY", "\"\"")
+        // Read API keys from local.properties with fallback to empty strings
+        val localProperties = Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localProperties.load(localPropertiesFile.inputStream())
+        }
+        
+        val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
+        val perplexityApiKey = localProperties.getProperty("PERPLEXITY_API_KEY") ?: ""
+        
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+        buildConfigField("String", "PERPLEXITY_API_KEY", "\"$perplexityApiKey\"")
     }
 
     buildTypes {

@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
@@ -70,7 +73,19 @@ fun MainScaffold() {
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                Text("Navigation", style = MaterialTheme.typography.titleMedium, modifier = Modifier.statusBarsPadding())
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 16.dp) // Add bottom padding for better scrolling
+                ) {
+                    Text(
+                        "Navigation", 
+                        style = MaterialTheme.typography.titleMedium, 
+                        modifier = Modifier
+                            .statusBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
                 
                 // AI Features Section
                 Text(
@@ -205,6 +220,7 @@ fun MainScaffold() {
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("logs") },
                     icon = { Icon(Icons.Filled.History, contentDescription = null) }
                 )
+                }
             }
         }
     ) {

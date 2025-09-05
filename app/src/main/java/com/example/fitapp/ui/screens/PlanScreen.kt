@@ -18,6 +18,7 @@ import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.prefs.UserPreferences
 import com.example.fitapp.data.prefs.UserPreferencesLegacy
 import com.example.fitapp.data.repo.NutritionRepository
+import com.example.fitapp.ui.components.AiKeyGate
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import androidx.lifecycle.Lifecycle
@@ -118,13 +119,21 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         "Crossfit Equipment"
     )
 
-    Column(
+    AiKeyGate(
         modifier = Modifier
             .padding(contentPadding)
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-    ) {
+            .fillMaxSize(),
+        onNavigateToApiKeys = {
+            navController?.navigate("apikeys")
+        },
+        requireBothProviders = false // Allow with at least one provider
+    ) { isEnabled ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        ) {
         Text("12-Wochen-Trainingsplan", style = MaterialTheme.typography.titleLarge)
         Text(
             "Erstellen Sie Ihren personalisierten Trainingsplan",
@@ -221,70 +230,56 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         )
         Spacer(Modifier.height(12.dp))
         
-        // Use FlowRow-like layout for better responsiveness
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // First row: Monday to Thursday
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                weekdays.take(4).forEach { (dayKey, dayLabel) ->
-                    FilterChip(
-                        onClick = { onDayToggle(dayKey) },
-                        label = { 
-                            Text(
-                                dayLabel,
-                                style = MaterialTheme.typography.labelMedium
-                            ) 
-                        },
-                        selected = selectedDays.contains(dayKey),
-                        leadingIcon = if (selectedDays.contains(dayKey)) {
-                            { 
-                                Icon(
-                                    Icons.Default.Check, 
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                ) 
-                            }
-                        } else null,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
+        // Responsive weekday selection using adaptive layout
+        @Composable
+        fun WeekdaySelection() {
+            // Use a more adaptive layout that works better on different screen sizes
+            val chunkedWeekdays = weekdays.chunked(4) // Split into chunks of 4 max
             
-            Spacer(Modifier.height(8.dp))
-            
-            // Second row: Friday to Sunday
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                weekdays.takeLast(3).forEach { (dayKey, dayLabel) ->
-                    FilterChip(
-                        onClick = { onDayToggle(dayKey) },
-                        label = { 
-                            Text(
-                                dayLabel,
-                                style = MaterialTheme.typography.labelMedium
-                            ) 
-                        },
-                        selected = selectedDays.contains(dayKey),
-                        leadingIcon = if (selectedDays.contains(dayKey)) {
-                            { 
-                                Icon(
-                                    Icons.Default.Check, 
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                ) 
-                            }
-                        } else null,
-                        modifier = Modifier.weight(1f)
-                    )
+            Column(modifier = Modifier.fillMaxWidth()) {
+                chunkedWeekdays.forEach { chunk ->
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        chunk.forEach { (dayKey, dayLabel) ->
+                            FilterChip(
+                                onClick = { onDayToggle(dayKey) },
+                                label = { 
+                                    Text(
+                                        dayLabel,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        maxLines = 1
+                                    ) 
+                                },
+                                selected = selectedDays.contains(dayKey),
+                                leadingIcon = if (selectedDays.contains(dayKey)) {
+                                    { 
+                                        Icon(
+                                            Icons.Default.Check, 
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp)
+                                        ) 
+                                    }
+                                } else null,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 32.dp) // Ensure minimum touch target
+                            )
+                        }
+                        // Fill remaining space if chunk is smaller than 4
+                        repeat(4 - chunk.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                    if (chunk != chunkedWeekdays.last()) {
+                        Spacer(Modifier.height(6.dp))
+                    }
                 }
-                // Add spacer to balance the row
-                Spacer(Modifier.weight(1f))
             }
         }
+        
+        WeekdaySelection()
         
         Text(
             text = if (selectedDays.isEmpty()) {
@@ -352,7 +347,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         Spacer(Modifier.height(16.dp))
         
         Button(
-            enabled = !busy && selectedDays.isNotEmpty() && minutes.toIntOrNull() != null && minutes.toInt() > 0,
+            enabled = isEnabled && !busy && selectedDays.isNotEmpty() && minutes.toIntOrNull() != null && minutes.toInt() > 0,
             onClick = {
                 scope.launch {
                     busy = true
@@ -376,12 +371,6 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                                 "❌ Bitte wählen Sie ein Trainingsziel aus."
                             }
                             else -> {
-                                    val providerStatus = AppAi.getProviderStatus(ctx)
-                                    if (!providerStatus.contains("✓")) {
-                                        result = "❌ Keine verfügbaren AI-Provider. Bitte prüfen Sie Ihre API-Schlüssel in den Einstellungen."
-                                        return@launch
-                                    }
-                                
                                 // Get the most current equipment selection from UserPreferences
                                 val savedEquipment = try {
                                     UserPreferencesLegacy.getSelectedEquipment(ctx)
@@ -531,6 +520,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
             Card {
                 Text(result, Modifier.padding(16.dp))
             }
+        }
         }
     }
 }
