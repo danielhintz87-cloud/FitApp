@@ -1,4 +1,5 @@
 import java.util.Properties
+import org.gradle.api.tasks.Copy
 
 plugins {
     alias(libs.plugins.android.application)
@@ -273,4 +274,21 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(debugTree.exclude(fileFilter)))
     executionData.setFrom(fileTree(layout.buildDirectory.get()).include("jacoco/testDebugUnitTest.exec"))
+}
+
+// ==== Models Copy Task ====
+val modelsRoot = rootProject.layout.projectDirectory.dir("models")
+val appAssets = layout.projectDirectory.dir("src/main/assets/models")
+
+tasks.register<Copy>("copyModels") {
+    from(modelsRoot.dir("tflite")) { into("tflite") }
+    from(modelsRoot.dir("onnx")) { into("onnx") }
+    into(appAssets)
+    doFirst {
+        println("Kopiere Modelle in: ${appAssets.asFile.absolutePath}")
+    }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn("copyModels")
 }
