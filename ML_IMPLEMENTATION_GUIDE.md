@@ -2,7 +2,43 @@
 
 ## Overview
 
-The FitApp has been enhanced with advanced machine learning models for real-time workout form analysis, injury prevention, and performance optimization. This implementation provides on-device ML capabilities using TensorFlow Lite for efficient mobile performance.
+The FitApp has been enhanced with advanced machine learning models for real-time workout form analysis, injury prevention, and performance optimization. This implementation provides on-device ML capabilities using TensorFlow Lite and ONNX models for efficient mobile performance.
+
+## ✨ Latest Updates - Advanced ML Models Integration
+
+### 🎯 **New Model Support**
+- **MoveNet Thunder TensorFlow Lite**: High-precision pose estimation (17 keypoints)
+- **BlazePose TensorFlow Lite**: Lightweight pose detection (33 landmarks)
+- **ONNX Model Support**: Optional ONNX runtime integration for advanced models
+- **Custom Movement Analysis**: Specialized model for movement pattern recognition
+
+### 🚀 **Adaptive Model Selection**
+- **Device Performance Detection**: Automatically classifies device capabilities
+- **Smart Model Loading**: Selects optimal model based on available memory and CPU cores
+- **High-End Devices**: Uses MoveNet Thunder for maximum precision
+- **Mid-Range Devices**: Uses BlazePose for balanced performance
+- **Lower-End Devices**: Uses optimized BlazePose configuration
+
+### 📊 **Enhanced Performance Features**
+- **Batch Processing**: Process multiple frames simultaneously for efficiency
+- **GPU Acceleration**: TensorFlow Lite GPU delegate support for faster inference
+- **Memory Optimization**: XNNPACK integration and intelligent memory management
+- **Performance Monitoring**: Real-time metrics tracking and reporting
+
+### 🎮 **New API Methods**
+```kotlin
+// Adaptive initialization based on device performance
+mlModels.initializeAdaptive()
+
+// Specific model type initialization
+mlModels.initialize(PoseModelType.TFLITE_MOVENET)
+
+// Batch processing for multiple frames
+mlModels.analyzeBatch(listOf(frame1, frame2, frame3))
+
+// Get current model information
+val currentModel = mlModels.getCurrentModelType()
+```
 
 ## Features Implemented
 
@@ -105,6 +141,71 @@ Data Sources (Room + Sensors)
 - Separation of concerns between UI, business logic, and data
 - Dependency injection for testability
 - Domain-driven design with clear boundaries
+
+## 🔥 Enhanced Usage Examples (New Features)
+
+### 🎯 **Adaptive Model Initialization**
+```kotlin
+// Initialize with automatic model selection
+val mlModels = AdvancedMLModels.getInstance(context)
+lifecycleScope.launch {
+    val success = mlModels.initializeAdaptive()
+    if (success) {
+        Log.i("ML", "Model initialized: ${mlModels.getCurrentModelType()}")
+    }
+}
+```
+
+### 🏗️ **Manual Model Selection**
+```kotlin
+// Initialize with specific model type
+lifecycleScope.launch {
+    val success = mlModels.initialize(AdvancedMLModels.PoseModelType.TFLITE_MOVENET)
+    if (success) {
+        Log.i("ML", "MoveNet Thunder initialized successfully")
+    }
+}
+```
+
+### 📸 **Real-time Pose Analysis**
+```kotlin
+// Camera frame analysis
+lifecycleScope.launch {
+    val bitmap = /* Your camera frame as Bitmap */
+    val poseResult = mlModels.analyzePoseFromFrameOptimized(bitmap)
+    
+    // Get real-time feedback
+    val feedback = mlModels.getRealtimeFormFeedback(
+        currentPose = poseResult,
+        exerciseType = "squat",
+        repPhase = "descent"
+    )
+    
+    // Update UI with feedback
+    updateUI(feedback)
+}
+```
+
+### 🔄 **Batch Processing**
+```kotlin
+// Process multiple frames efficiently
+lifecycleScope.launch {
+    val frames = listOf(frame1, frame2, frame3)
+    val results = mlModels.analyzeBatch(frames)
+    
+    results.forEach { result ->
+        Log.d("ML", "Form quality: ${result.overallFormQuality}")
+    }
+}
+```
+
+### ⚡ **Performance Monitoring**
+```kotlin
+// Monitor ML performance
+val metrics = mlModels.getPerformanceMetrics()
+Log.d("ML", "Average analysis time: ${metrics.avgPoseAnalysisTime}ms")
+Log.d("ML", "Memory usage: ${metrics.memoryUsageMB}MB")
+```
 
 ## Usage Examples
 
