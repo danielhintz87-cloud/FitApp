@@ -14,6 +14,8 @@ jobs:
   build-and-schema-guard:
     name: Build & Unit Tests & Schema Guard
     runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.gradle-cache.outputs.cache-hit }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,10 +33,14 @@ jobs:
         run: yes | sdkmanager --licenses
 
       - name: Gradle cache
+        id: gradle-cache
         uses: gradle/gradle-build-action@v2
 
       - name: Verify Gradle wrapper
         uses: gradle/wrapper-validation-action@v2
+
+      - name: Create local.properties
+        run: cp local.properties.sample local.properties
 
       - name: Build (assembleDebug) + Unit Tests
         run: ./gradlew --stacktrace --no-daemon clean assembleDebug testDebugUnitTest
