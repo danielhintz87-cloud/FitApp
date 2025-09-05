@@ -16,7 +16,7 @@ jobs:
     
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -248,7 +248,7 @@ jobs:
           echo "- Timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> badge-summary.md
 
       - name: Upload badge summary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: badge-update-summary
           path: badge-summary.md
