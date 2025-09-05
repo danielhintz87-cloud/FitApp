@@ -11,37 +11,49 @@ permissions:
 
 jobs:
   unit-and-lint:
-    runs-on: ubuntu-22.04         # <-- stabiler als ubuntu-latest (24.04)
+    # 22.04 ist aktuell stabiler als ubuntu-latest (24.04) bzgl. IPv6/CDN
+    runs-on: ubuntu-22.04
     timeout-minutes: 45
 
     env:
-      # Bevorzuge IPv4 in Gradle / JVM (wirkt beim Dependency-Download)
+      # erzwinge IPv4 für alle Gradle/HTTP Calls
       GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false -Dfile.encoding=UTF-8"
 
     steps:
-      - name: Network warm-up (mit Retries)
+      # IPv6 komplett abschalten + IPv4 Präferenz erzwingen
+      - name: Force IPv4 (disable IPv6)
         run: |
-          for i in 1 2 3; do
-            echo "Ping GitHub try $i..."
-            curl -fsSL https://api.github.com/rate_limit > /dev/null && break || sleep 3
+          echo 'precedence ::ffff:0:0/96  100' | sudo tee -a /etc/gai.conf
+          sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
+          sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+          sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=1
+
+      # kleines Netz-Warmup mit IPv4
+      - name: Network warm-up (IPv4)
+        run: |
+          for i in {1..5}; do
+            echo "Warmup try $i ..."
+            if curl -4fsSL https://api.github.com/rate_limit > /dev/null; then
+              echo "Network OK"; break
+            fi
+            sleep 3
           done
 
-      - name: Checkout (mit Retry)
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      # checkout mit Retries (Workaround gegen seltene CDN-Hänger)
+      - name: Checkout (retry)
         uses: nick-invision/retry@v3
         with:
           max_attempts: 3
           timeout_minutes: 2
           command: |
-            echo "Running checkout..."
-            bash -lc 'git --version'
-            gh --version || true
-        # eigentlicher Checkout:
+            echo "-> checkout"
+            git --version
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Validate Gradle Wrapper
-        uses: gradle/wrapper-validation-action@v2
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -49,11 +61,11 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Setup Gradle
+      - name: Setup Gradle (with cache)
         uses: gradle/gradle-build-action@v3
 
-      # Gradle-Befehle mit Retry kapseln (flaky Netz -> wiederholen)
-      - name: Build + Unit Tests + Lint (Retry)
+      # Build + Tests + Lint mit Retries
+      - name: Build + Unit tests + Lint (retry)
         uses: nick-invision/retry@v3
         with:
           max_attempts: 3
@@ -74,7 +86,7 @@ jobs:
             **/build/test-results/**
             **/build/reports/tests/**
           retention-days: 7
-          if-no-files-found: warn        # <-- keine harten Fehler, falls früh abgebrochen
+          if-no-files-found: warn
 
       - name: Upload lint reports
         if: always()
