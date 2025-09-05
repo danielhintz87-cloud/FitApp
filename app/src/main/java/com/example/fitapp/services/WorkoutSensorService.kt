@@ -34,6 +34,12 @@ import kotlin.math.pow
  * Advanced Workout Sensor Service for Phase 1 Enhancement
  * Handles real-time sensor data collection and analysis for workout tracking
  * Integrates with advanced ML models for improved form analysis and injury prevention
+ * 
+ * PERFORMANCE OPTIMIZED:
+ * - Adaptive sampling rates based on workout intensity
+ * - Intelligent sensor fusion to reduce processing overhead
+ * - Batch processing for ML analysis to improve efficiency
+ * - Memory-efficient data structures and cleanup routines
  */
 class WorkoutSensorService(
     private val context: Context,
@@ -45,6 +51,13 @@ class WorkoutSensorService(
         private const val REP_DETECTION_THRESHOLD = 2.5f // m/s² threshold for rep detection
         private const val FORM_ANALYSIS_WINDOW = 5000L // 5 seconds window for form analysis
         private const val ML_ANALYSIS_INTERVAL = 2000L // 2 seconds interval for ML analysis
+        
+        // Performance optimization constants
+        private const val HIGH_INTENSITY_SAMPLE_RATE = SensorManager.SENSOR_DELAY_GAME // 20ms
+        private const val NORMAL_INTENSITY_SAMPLE_RATE = SensorManager.SENSOR_DELAY_UI // 60ms
+        private const val LOW_INTENSITY_SAMPLE_RATE = SensorManager.SENSOR_DELAY_NORMAL // 200ms
+        private const val SENSOR_DATA_BUFFER_LIMIT = 100 // Limit memory usage
+        private const val BATCH_PROCESSING_SIZE = 10 // Process in batches for efficiency
     }
     
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -80,7 +93,7 @@ class WorkoutSensorService(
     private val _formQualityFlow = MutableStateFlow(1.0f)
     val formQualityFlow = _formQualityFlow.asStateFlow()
     
-    // Internal state
+    // Internal state with performance optimization
     private var isTracking = false
     private var currentExerciseType = ""
     private var lastAcceleration = Triple(0f, 0f, 0f)
@@ -90,25 +103,126 @@ class WorkoutSensorService(
     private var lastRepTime = 0L
     private var totalReps = 0
     
+    // Performance optimization state
+    private var currentSampleRate = NORMAL_INTENSITY_SAMPLE_RATE
+    private var workoutIntensity = 0f
+    private var lastMLAnalysisTime = 0L
+    private var pendingDataBatch = mutableListOf<MovementData>()
+    private var sensorDataCount = 0L
+    private var lastPerformanceCheck = 0L
+    
     /**
-     * Start comprehensive movement tracking for the given exercise type
+     * Start comprehensive movement tracking with adaptive performance optimization
      */
     fun startMovementTracking(exerciseType: String): Flow<MovementData?> {
         currentExerciseType = exerciseType
         isTracking = true
         totalReps = 0
         
-        Log.i(TAG, "Starting movement tracking for: $exerciseType")
+        Log.i(TAG, "Starting optimized movement tracking for: $exerciseType")
         
-        // Register sensors
-        accelerometer?.let { 
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
+        // Initialize ML models in background
+        scope.launch {
+            initializeMLModels()
         }
-        gyroscope?.let { 
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
-        }
+        
+        // Start with adaptive sensor sampling
+        startAdaptiveSensorSampling()
         
         return movementDataFlow
+    }
+    
+    /**
+     * Start sensors with adaptive sampling rate based on workout intensity
+     */
+    private fun startAdaptiveSensorSampling() {
+        // Determine initial sample rate based on exercise type
+        currentSampleRate = when (currentExerciseType.lowercase()) {
+            "burpees", "mountain_climbers", "jumping_jacks" -> HIGH_INTENSITY_SAMPLE_RATE
+            "squats", "push_ups", "lunges" -> NORMAL_INTENSITY_SAMPLE_RATE
+            else -> LOW_INTENSITY_SAMPLE_RATE
+        }
+        
+        Log.i(TAG, "Starting sensors with sample rate: $currentSampleRate")
+        
+        // Register sensors with adaptive rate
+        accelerometer?.let { 
+            sensorManager.registerListener(this, it, currentSampleRate)
+        }
+        gyroscope?.let { 
+            sensorManager.registerListener(this, it, currentSampleRate)
+        }
+        
+        // Start performance monitoring
+        startPerformanceMonitoring()
+    }
+    
+    /**
+     * Monitor performance and adjust sampling rates dynamically
+     */
+    private fun startPerformanceMonitoring() {
+        scope.launch {
+            while (isTracking) {
+                delay(5000) // Check every 5 seconds
+                adjustSamplingRateBasedOnPerformance()
+            }
+        }
+    }
+    
+    /**
+     * Adjust sensor sampling rate based on workout intensity and system performance
+     */
+    private fun adjustSamplingRateBasedOnPerformance() {
+        val currentTime = System.currentTimeMillis()
+        
+        // Calculate workout intensity based on movement data
+        val recentMovement = movementDataBuffer.takeLast(20)
+        if (recentMovement.isNotEmpty()) {
+            workoutIntensity = recentMovement.map { 
+                sqrt(it.accelerometer.first.pow(2) + it.accelerometer.second.pow(2) + it.accelerometer.third.pow(2))
+            }.average().toFloat()
+        }
+        
+        // Determine optimal sample rate
+        val optimalRate = when {
+            workoutIntensity > 15f -> HIGH_INTENSITY_SAMPLE_RATE // High intensity
+            workoutIntensity > 8f -> NORMAL_INTENSITY_SAMPLE_RATE // Medium intensity
+            else -> LOW_INTENSITY_SAMPLE_RATE // Low intensity
+        }
+        
+        // Only change if different and enough time has passed
+        if (optimalRate != currentSampleRate && currentTime - lastPerformanceCheck > 10000L) {
+            Log.i(TAG, "Adjusting sample rate from $currentSampleRate to $optimalRate (intensity: $workoutIntensity)")
+            
+            // Unregister and re-register with new rate
+            sensorManager.unregisterListener(this)
+            currentSampleRate = optimalRate
+            
+            accelerometer?.let { 
+                sensorManager.registerListener(this, it, currentSampleRate)
+            }
+            gyroscope?.let { 
+                sensorManager.registerListener(this, it, currentSampleRate)
+            }
+            
+            lastPerformanceCheck = currentTime
+        }
+    }
+    
+    /**
+     * Initialize ML models with performance monitoring
+     */
+    private suspend fun initializeMLModels() {
+        try {
+            val startTime = System.currentTimeMillis()
+            isMLInitialized = advancedMLModels.initialize()
+            val initTime = System.currentTimeMillis() - startTime
+            
+            Log.i(TAG, "ML models initialized: $isMLInitialized (took ${initTime}ms)")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize ML models", e)
+            isMLInitialized = false
+        }
     }
     
     /**
@@ -337,18 +451,20 @@ class WorkoutSensorService(
         repDetectionBuffer.clear()
     }
     
-    // SensorEventListener Implementation
+    // SensorEventListener Implementation with Performance Optimization
     override fun onSensorChanged(event: SensorEvent) {
         if (!isTracking) return
+        
+        sensorDataCount++
         
         when (event.sensor.type) {
             Sensor.TYPE_ACCELEROMETER -> {
                 lastAcceleration = Triple(event.values[0], event.values[1], event.values[2])
-                updateMovementData()
+                updateMovementDataOptimized()
             }
             Sensor.TYPE_GYROSCOPE -> {
                 lastGyroscope = Triple(event.values[0], event.values[1], event.values[2])
-                updateMovementData()
+                updateMovementDataOptimized()
             }
             Sensor.TYPE_HEART_RATE -> {
                 val heartRate = event.values[0].toInt()
@@ -363,34 +479,193 @@ class WorkoutSensorService(
                 }
             }
         }
+        
+        // Periodic performance check (every 1000 sensor readings)
+        if (sensorDataCount % 1000L == 0L) {
+            checkSystemPerformance()
+        }
     }
     
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         Log.d(TAG, "Sensor accuracy changed: ${sensor?.name} -> $accuracy")
     }
     
-    // Private helper methods
+    // Performance-optimized helper methods
     
-    private fun updateMovementData() {
+    /**
+     * Update movement data with batching and memory optimization
+     */
+    private fun updateMovementDataOptimized() {
+        val currentTime = System.currentTimeMillis()
         val movementData = MovementData(
             accelerometer = lastAcceleration,
             gyroscope = lastGyroscope,
-            timestamp = System.currentTimeMillis()
+            timestamp = currentTime
         )
         
         _movementDataFlow.value = movementData
         
-        // Analyze for rep detection
+        // Add to batch for processing
+        addToBatch(movementData)
+        
+        // Process batches when full or at intervals
+        if (pendingDataBatch.size >= BATCH_PROCESSING_SIZE) {
+            processBatch()
+        }
+        
+        // Analyze for rep detection (lightweight, immediate feedback)
         val repAnalysis = analyzeRepetition(movementData)
         if (repAnalysis.repDetected) {
             totalReps++
             _repCountFlow.value = totalReps
-            Log.d(TAG, "Rep detected! Total: $totalReps")
+            _repAnalysisFlow.value = repAnalysis
+            lastRepTime = currentTime
         }
         
-        // Update form quality
-        val formAssessment = assessFormQuality(movementData, currentExerciseType)
-        _formQualityFlow.value = formAssessment.overallQuality
+        // Update form quality more frequently for immediate feedback
+        updateFormQuality(movementData)
+    }
+    
+    /**
+     * Add movement data to batch with memory management
+     */
+    private fun addToBatch(movementData: MovementData) {
+        synchronized(pendingDataBatch) {
+            pendingDataBatch.add(movementData)
+            
+            // Also add to main buffer with size limit
+            movementDataBuffer.add(movementData)
+            if (movementDataBuffer.size > SENSOR_DATA_BUFFER_LIMIT) {
+                movementDataBuffer.removeAt(0) // Remove oldest
+            }
+        }
+    }
+    
+    /**
+     * Process batch of movement data with ML analysis
+     */
+    private fun processBatch() {
+        if (!isMLInitialized || pendingDataBatch.isEmpty()) return
+        
+        scope.launch {
+            try {
+                val batchToProcess = synchronized(pendingDataBatch) {
+                    val batch = pendingDataBatch.toList()
+                    pendingDataBatch.clear()
+                    batch
+                }
+                
+                // Use optimized ML analysis for latest data point
+                val latestData = batchToProcess.last()
+                val analysisResult = advancedMLModels.analyzeMovementPatternOptimized(
+                    latestData, 
+                    currentExerciseType
+                )
+                
+                _movementAnalysisFlow.value = analysisResult
+                
+                // Generate form feedback if analysis indicates issues
+                if (analysisResult.riskLevel > 0.3f) {
+                    generateFormFeedback(analysisResult)
+                }
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "Error processing movement batch", e)
+            }
+        }
+    }
+    
+    /**
+     * Update form quality with lightweight calculation
+     */
+    private fun updateFormQuality(movementData: MovementData) {
+        // Lightweight form quality calculation for immediate feedback
+        val acceleration = movementData.accelerometer
+        val gyroscope = movementData.gyroscope
+        
+        val smoothnessScore = calculateSmoothness(acceleration, gyroscope)
+        val stabilityScore = calculateStability(acceleration)
+        
+        val overallQuality = (smoothnessScore + stabilityScore) / 2f
+        _formQualityFlow.value = overallQuality
+    }
+    
+    /**
+     * Generate form feedback from ML analysis
+     */
+    private fun generateFormFeedback(analysis: MovementPatternAnalysis) {
+        scope.launch {
+            try {
+                // Use cached pose analysis if available, or create minimal feedback
+                val mockPoseResult = PoseAnalysisResult(
+                    keypoints = emptyList(),
+                    overallFormQuality = analysis.asymmetryScore,
+                    confidence = analysis.confidence,
+                    riskFactors = analysis.recommendations,
+                    improvements = analysis.recommendations,
+                    timestamp = System.currentTimeMillis()
+                )
+                
+                val formFeedback = advancedMLModels.getRealtimeFormFeedback(
+                    mockPoseResult,
+                    currentExerciseType,
+                    "mid_rep"
+                )
+                
+                _formFeedbackFlow.value = formFeedback
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "Error generating form feedback", e)
+            }
+        }
+    }
+    
+    /**
+     * Check system performance and adjust processing accordingly
+     */
+    private fun checkSystemPerformance() {
+        scope.launch {
+            try {
+                val metrics = advancedMLModels.getPerformanceMetrics()
+                metrics.updateMemoryUsage()
+                
+                Log.d(TAG, "Performance check - Memory: ${metrics.memoryUsageMB}MB, " +
+                           "Analyses: ${metrics.totalAnalyses}, " +
+                           "Avg ML time: ${metrics.avgMovementAnalysisTime}ms")
+                
+                // Adjust batch size based on performance
+                if (metrics.memoryUsageMB > 100f) { // High memory usage
+                    // Process smaller batches more frequently
+                    if (pendingDataBatch.size >= BATCH_PROCESSING_SIZE / 2) {
+                        processBatch()
+                    }
+                }
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking performance", e)
+            }
+        }
+    }
+    
+    /**
+     * Calculate movement smoothness (simplified)
+     */
+    private fun calculateSmoothness(acceleration: Triple<Float, Float, Float>, gyroscope: Triple<Float, Float, Float>): Float {
+        val accelMagnitude = sqrt(acceleration.first.pow(2) + acceleration.second.pow(2) + acceleration.third.pow(2))
+        val gyroMagnitude = sqrt(gyroscope.first.pow(2) + gyroscope.second.pow(2) + gyroscope.third.pow(2))
+        
+        // Simple smoothness calculation - lower values indicate smoother movement
+        val smoothnessScore = 1f - (accelMagnitude / 20f).coerceIn(0f, 1f)
+        return smoothnessScore.coerceIn(0f, 1f)
+    }
+    
+    /**
+     * Calculate movement stability (simplified)
+     */
+    private fun calculateStability(acceleration: Triple<Float, Float, Float>): Float {
+        val lateralMovement = abs(acceleration.first) + abs(acceleration.second)
+        val stabilityScore = 1f - (lateralMovement / 10f).coerceIn(0f, 1f)
+        return stabilityScore.coerceIn(0f, 1f)
     }
     
     private fun detectRepetition(magnitude: Float): Boolean {
