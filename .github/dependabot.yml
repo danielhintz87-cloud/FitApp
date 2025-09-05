@@ -1,12 +1,12 @@
 version: 2
 updates:
-  # Enable version updates for Gradle dependencies
+  # Gradle (inkl. Version Catalog / TOML)
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "09:00"
+      time: "07:00" # UTC (~09:00 Berlin)
     open-pull-requests-limit: 10
     reviewers:
       - "danielhintz87-cloud"
@@ -19,30 +19,50 @@ updates:
     labels:
       - "dependencies"
       - "automated"
-    
-    # Group related updates
+    rebase-strategy: "disabled"
+
     groups:
       android-gradle:
         patterns:
           - "com.android.tools.build:gradle"
           - "org.jetbrains.kotlin:kotlin-gradle-plugin"
-        
-      compose-bom:
+
+      compose:
         patterns:
           - "androidx.compose:compose-bom"
-          - "androidx.compose.*"
-        
+          - "androidx.compose*:*"   # match ui/material/material3 etc.
+
       androidx-core:
         patterns:
           - "androidx.core:*"
           - "androidx.lifecycle:*"
           - "androidx.activity:*"
           - "androidx.fragment:*"
-        
+          - "androidx.work:*"
+
       room-database:
         patterns:
           - "androidx.room:*"
-        
+
+      networking:
+        patterns:
+          - "com.squareup.retrofit2:*"
+          - "com.squareup.okhttp3:*"
+          - "com.squareup.moshi:*"
+          - "com.google.code.gson:gson"
+
+      ai-ml:
+        patterns:
+          - "com.google.mlkit:*"
+          - "org.tensorflow:*"
+          - "androidx.health*:*"   # z.B. androidx.health.connect:connect-client
+
+      wear:
+        patterns:
+          - "com.google.android.gms:play-services-wearable"
+          - "androidx.wear*:*"
+          - "com.google.android.horologist:*"
+
       testing:
         patterns:
           - "junit:junit"
@@ -51,37 +71,20 @@ updates:
           - "androidx.test.espresso:*"
           - "org.mockito:*"
           - "org.robolectric:*"
-        
-      networking:
-        patterns:
-          - "com.squareup.retrofit2:*"
-          - "com.squareup.okhttp3:*"
-          - "com.google.code.gson:gson"
-        
-      ai-ml:
-        patterns:
-          - "com.google.ai.client.generativeai:*"
-          - "com.google.mlkit:*"
 
-    # Auto-merge minor and patch updates for low-risk dependencies
-    auto-merge:
-      - dependency-name: "androidx.*"
-        dependency-type: "direct:production"
-        update-type: "version-update:semver-patch"
-      - dependency-name: "androidx.*"
-        dependency-type: "direct:production" 
-        update-type: "version-update:semver-minor"
-      - dependency-name: "junit:junit"
-        dependency-type: "direct:development"
-        update-type: "version-update:semver-patch"
+    ignore:
+      - dependency-name: "com.android.tools.build:gradle"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.jetbrains.kotlin:kotlin-gradle-plugin"
+        update-types: ["version-update:semver-major"]
 
-  # Enable version updates for GitHub Actions
+  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "10:00"
+      time: "08:00" # UTC (~10:00 Berlin)
     open-pull-requests-limit: 5
     reviewers:
       - "danielhintz87-cloud"
@@ -94,8 +97,7 @@ updates:
       - "ci/cd"
       - "github-actions"
       - "automated"
-    
-    # Group GitHub Actions updates
+
     groups:
       setup-actions:
         patterns:
@@ -104,13 +106,13 @@ updates:
           - "actions/setup-node"
           - "actions/cache"
           - "actions/upload-artifact"
-      
+
       android-actions:
         patterns:
           - "android-actions/*"
           - "gradle/*"
           - "r0adkll/*"
-      
+
       security-actions:
         patterns:
           - "github/codeql-action/*"
