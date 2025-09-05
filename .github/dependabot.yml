@@ -1,6 +1,5 @@
 version: 2
 updates:
-  # Gradle (inkl. Version Catalog / TOML)
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
@@ -26,12 +25,10 @@ updates:
         patterns:
           - "com.android.tools.build:gradle"
           - "org.jetbrains.kotlin:kotlin-gradle-plugin"
-
       compose:
         patterns:
           - "androidx.compose:compose-bom"
-          - "androidx.compose*:*"   # match ui/material/material3 etc.
-
+          - "androidx.compose*:*"
       androidx-core:
         patterns:
           - "androidx.core:*"
@@ -39,30 +36,25 @@ updates:
           - "androidx.activity:*"
           - "androidx.fragment:*"
           - "androidx.work:*"
-
       room-database:
         patterns:
           - "androidx.room:*"
-
       networking:
         patterns:
           - "com.squareup.retrofit2:*"
           - "com.squareup.okhttp3:*"
           - "com.squareup.moshi:*"
           - "com.google.code.gson:gson"
-
       ai-ml:
         patterns:
           - "com.google.mlkit:*"
           - "org.tensorflow:*"
-          - "androidx.health*:*"   # z.B. androidx.health.connect:connect-client
-
+          - "androidx.health*:*"
       wear:
         patterns:
           - "com.google.android.gms:play-services-wearable"
           - "androidx.wear*:*"
           - "com.google.android.horologist:*"
-
       testing:
         patterns:
           - "junit:junit"
@@ -78,7 +70,6 @@ updates:
       - dependency-name: "org.jetbrains.kotlin:kotlin-gradle-plugin"
         update-types: ["version-update:semver-major"]
 
-  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -97,7 +88,6 @@ updates:
       - "ci/cd"
       - "github-actions"
       - "automated"
-
     groups:
       setup-actions:
         patterns:
@@ -106,15 +96,5 @@ updates:
           - "actions/setup-node"
           - "actions/cache"
           - "actions/upload-artifact"
-
       android-actions:
-        patterns:
-          - "android-actions/*"
-          - "gradle/*"
-          - "r0adkll/*"
-
-      security-actions:
-        patterns:
-          - "github/codeql-action/*"
-          - "aquasecurity/*"
-          - "dependency-check/*"
+        pat
