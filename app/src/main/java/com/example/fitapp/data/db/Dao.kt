@@ -887,7 +887,6 @@ interface CookingTimerDao {
     suspend fun deleteAll()
 }
 
-<<<<<<< HEAD
 // Health Connect DAOs
 
 @Dao

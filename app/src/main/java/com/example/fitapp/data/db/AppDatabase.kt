@@ -568,6 +568,8 @@ abstract class AppDatabase : RoomDatabase() {
 
         val MIGRATION_12_13 = object : Migration(12, 13) {
             override fun migrate(db: SupportSQLiteDatabase) {
+                // Create Cloud Sync tables
+                
                 // Create cloud_sync_metadata table
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `cloud_sync_metadata` (
@@ -625,26 +627,6 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                 """.trimIndent())
                 
-                // Add indices for cloud_sync_metadata table
-                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_cloud_sync_metadata_entityType_entityId` ON `cloud_sync_metadata` (`entityType`, `entityId`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cloud_sync_metadata_lastSyncTime` ON `cloud_sync_metadata` (`lastSyncTime`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cloud_sync_metadata_syncStatus` ON `cloud_sync_metadata` (`syncStatus`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cloud_sync_metadata_deviceId` ON `cloud_sync_metadata` (`deviceId`)")
-                
-                // Add indices for user_profiles table
-                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_user_profiles_userId` ON `user_profiles` (`userId`)")
-                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_user_profiles_email` ON `user_profiles` (`email`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_user_profiles_lastSyncTime` ON `user_profiles` (`lastSyncTime`)")
-                
-                // Add indices for sync_conflicts table
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_conflicts_entityType_entityId` ON `sync_conflicts` (`entityType`, `entityId`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_conflicts_createdAt` ON `sync_conflicts` (`createdAt`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_conflicts_status` ON `sync_conflicts` (`status`)")
-            }
-        }
-        
-        val MIGRATION_12_13 = object : Migration(12, 13) {
-            override fun migrate(db: SupportSQLiteDatabase) {
                 // Create Health Connect tables
                 
                 // Health Connect Steps table
@@ -718,6 +700,22 @@ abstract class AppDatabase : RoomDatabase() {
                         `lastModified` INTEGER NOT NULL
                     )
                 """.trimIndent())
+                
+                // Add indices for cloud_sync_metadata table
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_cloud_sync_metadata_entityType_entityId` ON `cloud_sync_metadata` (`entityType`, `entityId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cloud_sync_metadata_lastSyncTime` ON `cloud_sync_metadata` (`lastSyncTime`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cloud_sync_metadata_syncStatus` ON `cloud_sync_metadata` (`syncStatus`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cloud_sync_metadata_deviceId` ON `cloud_sync_metadata` (`deviceId`)")
+                
+                // Add indices for user_profiles table
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_user_profiles_userId` ON `user_profiles` (`userId`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_user_profiles_email` ON `user_profiles` (`email`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_user_profiles_lastSyncTime` ON `user_profiles` (`lastSyncTime`)")
+                
+                // Add indices for sync_conflicts table
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_conflicts_entityType_entityId` ON `sync_conflicts` (`entityType`, `entityId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_conflicts_createdAt` ON `sync_conflicts` (`createdAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_conflicts_status` ON `sync_conflicts` (`status`)")
                 
                 // Add indices for Health Connect tables
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_steps_date` ON `health_connect_steps` (`date`)")
