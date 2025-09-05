@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.compose) // Compose plugin alias aus deiner libs.versions.toml
     alias(libs.plugins.ksp)
     jacoco
 }
@@ -15,21 +15,21 @@ android {
 
     defaultConfig {
         applicationId = "com.example.fitapp"
-        minSdk = 26  // Updated for Health Connect compatibility
+        minSdk = 26  // Health Connect kompatibel
         targetSdk = 34
         versionCode = 8
         versionName = "1.8"
 
-        // Read API keys from local.properties with fallback to empty strings
+        // API-Keys aus local.properties lesen (Fallback: leer)
         val localProperties = Properties()
         val localPropertiesFile = rootProject.file("local.properties")
         if (localPropertiesFile.exists()) {
             localProperties.load(localPropertiesFile.inputStream())
         }
-        
+
         val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
         val perplexityApiKey = localProperties.getProperty("PERPLEXITY_API_KEY") ?: ""
-        
+
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
         buildConfigField("String", "PERPLEXITY_API_KEY", "\"$perplexityApiKey\"")
     }
@@ -41,7 +41,7 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
         }
-        
+
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -51,13 +51,13 @@ android {
                 "proguard-rules.pro"
             )
         }
-        
+
         create("debugMinified") {
             initWith(getByName("debug"))
             isMinifyEnabled = true
             isShrinkResources = true
-            isDebuggable = false  // Enable optimization by disabling debug
-            applicationIdSuffix = ".debug.minified" 
+            isDebuggable = false
+            applicationIdSuffix = ".debug.minified"
             versionNameSuffix = "-debug-minified"
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -67,13 +67,13 @@ android {
         }
     }
 
-    buildFeatures { 
+    buildFeatures {
         compose = true
         buildConfig = true
     }
-    
-    composeOptions { 
-        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get() 
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
     }
 
     compileOptions {
@@ -81,7 +81,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
     }
-    
+
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
@@ -99,8 +99,8 @@ android {
         }
         execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
-    
-    // Room schema export for migration testing
+
+    // Room Schema-Export für Migrationstests
     applicationVariants.all {
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
@@ -137,10 +137,10 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
 
-    // AppCompat (for theme compatibility)
+    // AppCompat (Theming-Kompatibilität)
     implementation(libs.appcompat)
 
-    // Material Icons (stabil & hübsch)
+    // Material Icons
     implementation(libs.compose.material.icons)
 
     // Navigation
@@ -164,8 +164,8 @@ dependencies {
     // Networking & JSON
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
-    
-    // Retrofit Stack for OpenFoodFacts API
+
+    // Retrofit Stack (OpenFoodFacts)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.moshi)
     implementation(libs.retrofit.logging.interceptor)
@@ -173,37 +173,43 @@ dependencies {
     implementation(libs.moshi.kotlin)
     ksp(libs.moshi.codegen)
 
-    // Coil (Vorschau des gewählten Bildes)
+    // Coil (Bildvorschau)
     implementation(libs.coil.compose)
-    
-    // CameraX Stack for Professional Barcode Scanning
+
+    // CameraX (Barcode)
     implementation(libs.camerax.core)
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
-    
+
     // ML Kit Barcode Scanning
     implementation(libs.mlkit.barcode.scanning)
-    
-    // Health Connect for Activity/Calorie Sync
+
+    // TensorFlow Lite (Advanced ML)
+    implementation(libs.tensorflow.lite)
+    implementation(libs.tensorflow.lite.support)
+
+    // Health Connect (Aktivitäts-/Kaloriensync)
     implementation(libs.health.connect.client)
-    
-    // Wearable Data Layer API for communication with Wear OS
+
+    // Wearable Data Layer (Wear OS Kommunikation)
     implementation(libs.play.services.wearable)
-    
-    // WorkManager for background tasks
+
+    // WorkManager (Hintergrundjobs)
     implementation(libs.work.runtime.ktx)
+
+    // Desugaring
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
-    // Unit Testing Dependencies
+    // Unit Tests
     testImplementation(libs.junit)
     testImplementation("org.mockito:mockito-core:5.1.1")
     testImplementation("org.mockito.kotlin:mockito-kotlin:4.1.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     testImplementation("androidx.room:room-testing:2.5.0")
-    
-    // Instrumented Testing Dependencies
+
+    // Instrumented Tests
     androidTestImplementation(libs.android.test.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.room.testing)
@@ -211,25 +217,25 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.5.4")
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
-    
-    // Debug Dependencies for Compose Testing
+
+    // Debug Test Manifest
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.5.4")
 }
 
-// Jacoco Test Coverage Configuration
+// Jacoco
 jacoco {
     toolVersion = "0.8.8"
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {
     dependsOn("testDebugUnitTest")
-    
+
     reports {
         xml.required.set(true)
         html.required.set(true)
         csv.required.set(false)
     }
-    
+
     val fileFilter = listOf(
         "**/R.class",
         "**/R$*.class",
@@ -249,10 +255,10 @@ tasks.register<JacocoReport>("jacocoTestReport") {
         "**/*Dagger*.*",
         "**/*Hilt*.*"
     )
-    
+
     val debugTree = fileTree("${layout.buildDirectory.get()}/tmp/kotlin-classes/debug")
     val mainSrc = "${project.projectDir}/src/main/java"
-    
+
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(debugTree.exclude(fileFilter)))
     executionData.setFrom(fileTree(layout.buildDirectory.get()).include("jacoco/testDebugUnitTest.exec"))

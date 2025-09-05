@@ -2,6 +2,7 @@ package com.example.fitapp.ui.components
 
 import android.util.Log
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
@@ -28,6 +29,7 @@ import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+@ExperimentalGetImage
 @Composable
 fun BarcodeScannerView(
     onBarcodeDetected: (String) -> Unit,
@@ -235,6 +237,7 @@ private fun ScanningFrame() {
     }
 }
 
+@androidx.camera.core.ExperimentalGetImage
 private fun processImageProxy(
     scanner: com.google.mlkit.vision.barcode.BarcodeScanner,
     imageProxy: ImageProxy,

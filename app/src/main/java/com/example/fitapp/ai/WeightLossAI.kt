@@ -1141,11 +1141,16 @@ private fun parsePerformancePredictionResponse(response: String): com.example.fi
     }
     
     return com.example.fitapp.ai.PerformancePrediction(
-        expectedVolume = expectedVolume,
-        expectedDuration = expectedDuration,
-        fatigueForecast = fatigueForecast,
-        recommendedRestAdjustment = restAdjustment,
-        confidence = confidence
+        expectedPerformanceChange = expectedVolume / 100f, // Convert volume to performance change percentage
+        plateauRisk = if (fatigueForecast == "high") 0.8f else if (fatigueForecast == "medium") 0.5f else 0.2f,
+        injuryRisk = if (restAdjustment > 120) 0.7f else if (restAdjustment > 60) 0.4f else 0.1f,
+        recommendedActions = listOf(
+            "Adjust training volume to ${expectedVolume}%",
+            "Target duration: ${expectedDuration} minutes",
+            if (restAdjustment > 0) "Increase rest by ${restAdjustment} seconds" else "Maintain current rest intervals"
+        ).filter { it.isNotEmpty() },
+        confidence = confidence,
+        timeframe = "1-2 weeks"
     )
 }
 

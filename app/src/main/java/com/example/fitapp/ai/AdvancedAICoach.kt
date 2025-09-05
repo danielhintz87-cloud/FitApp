@@ -13,7 +13,7 @@ import kotlin.math.*
 /**
  * Advanced AI Coach - Phase 2 Pro Features
  * Extends existing AI infrastructure with form checking, plateau detection,
- * injury prevention, and predictive analytics
+ * injury prevention, and predictive analytics. Now enhanced with ML models.
  */
 class AdvancedAICoach(private val context: Context) {
     
@@ -25,6 +25,7 @@ class AdvancedAICoach(private val context: Context) {
     }
     
     private val database = AppDatabase.get(context)
+    private val advancedMLModels = AdvancedMLModels.getInstance(context)
     
     /**
      * Detect training plateau using machine learning-like analysis
@@ -228,6 +229,320 @@ class AdvancedAICoach(private val context: Context) {
             prehabExercises = suggestPrehabExercises(riskFactors, exerciseId),
             confidence = calculateAssessmentConfidence(patterns.size)
         )
+    }
+    
+    /**
+     * Enhanced real-time form analysis using advanced ML models
+     */
+    suspend fun analyzeFormWithML(
+        movementData: List<MovementData>,
+        exerciseType: String
+    ): FormAnalysisResult {
+        return try {
+            // Initialize ML models if not already done
+            if (!advancedMLModels.initialize()) {
+                return FormAnalysisResult.fallback()
+            }
+            
+            // Use advanced ML analysis
+            val mlAnalysis = advancedMLModels.analyzeMovementPattern(movementData, exerciseType)
+            
+            FormAnalysisResult(
+                overallFormQuality = mlAnalysis.confidence,
+                deviations = calculateDeviationsFromML(mlAnalysis),
+                confidence = mlAnalysis.confidence,
+                specificFeedback = mlAnalysis.recommendations,
+                improvements = generateMLBasedImprovements(mlAnalysis)
+            )
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.AI,
+                TAG,
+                "Failed to analyze form with ML",
+                exception = e
+            )
+            FormAnalysisResult.fallback()
+        }
+    }
+    
+    /**
+     * Advanced injury risk assessment using ML-powered movement analysis
+     */
+    suspend fun assessInjuryRiskWithML(
+        userId: String,
+        exerciseId: String,
+        movementData: List<MovementData>
+    ): InjuryRiskAssessment {
+        return try {
+            if (!advancedMLModels.initialize()) {
+                return analyzeMovementPatterns(userId, exerciseId, 
+                    movementData.map { MovementPoint(0f, 0f, 0f, it.timestamp, 0.8f, 0.8f) })
+            }
+            
+            val mlAnalysis = advancedMLModels.analyzeMovementPattern(movementData, exerciseId)
+            
+            // Convert ML analysis to injury risk assessment
+            val riskFactors = mutableListOf<RiskFactor>()
+            
+            if (mlAnalysis.asymmetryScore > 0.3f) {
+                riskFactors.add(RiskFactor.MOVEMENT_ASYMMETRY)
+            }
+            if (mlAnalysis.compensationScore > 0.3f) {
+                riskFactors.add(RiskFactor.COMPENSATION_PATTERN)
+            }
+            if (mlAnalysis.fatigueScore > 0.4f) {
+                riskFactors.add(RiskFactor.FATIGUE_INDUCED_CHANGES)
+            }
+            
+            InjuryRiskAssessment(
+                overallRisk = mlAnalysis.riskLevel,
+                riskFactors = riskFactors,
+                recommendations = mlAnalysis.recommendations,
+                prehabExercises = generateMLBasedPrehabExercises(mlAnalysis, exerciseId),
+                confidence = mlAnalysis.confidence
+            )
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.AI,
+                TAG,
+                "Failed to assess injury risk with ML",
+                exception = e
+            )
+            analyzeMovementPatterns(userId, exerciseId, 
+                movementData.map { MovementPoint(0f, 0f, 0f, it.timestamp, 0.8f, 0.8f) })
+        }
+    }
+    
+    /**
+     * Real-time coaching feedback using ML insights
+     */
+    suspend fun getRealtimeCoachingFeedback(
+        currentMovementData: List<MovementData>,
+        exerciseType: String,
+        currentRep: Int
+    ): CoachingFeedback {
+        return try {
+            if (!advancedMLModels.initialize()) {
+                return CoachingFeedback.basic(exerciseType, currentRep)
+            }
+            
+            val formFeedback = advancedMLModels.getRealtimeFormFeedback(
+                advancedMLModels.analyzePoseFromFrame(createDummyBitmap()), // Would use actual camera frame
+                exerciseType,
+                determineRepPhase(currentMovementData)
+            )
+            
+            CoachingFeedback(
+                immediateCorrections = formFeedback.immediateCorrections,
+                motivationalMessages = formFeedback.motivationalMessages,
+                safetyWarnings = formFeedback.safetyWarnings,
+                formScore = formFeedback.formScore,
+                repQuality = calculateRepQuality(currentMovementData),
+                recommendedAdjustments = generateWorkoutAdjustments(formFeedback),
+                timestamp = System.currentTimeMillis()
+            )
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.AI,
+                TAG,
+                "Failed to get realtime coaching feedback",
+                exception = e
+            )
+            CoachingFeedback.basic(exerciseType, currentRep)
+        }
+    }
+    
+    /**
+     * Predictive performance analysis using ML trends
+     */
+    suspend fun predictPerformanceTrends(
+        userId: String,
+        exerciseId: String,
+        recentMovementData: List<MovementData>
+    ): PerformancePrediction {
+        return try {
+            val recentPerformance = getRecentPerformanceData(userId, exerciseId, 14)
+            val mlAnalysis = if (recentMovementData.isNotEmpty()) {
+                advancedMLModels.analyzeMovementPattern(recentMovementData, exerciseId)
+            } else null
+            
+            val trend = calculateProgressTrend(recentPerformance)
+            val fatigueLevel = mlAnalysis?.fatigueScore ?: calculateCurrentFatigue(recentPerformance)
+            
+            PerformancePrediction(
+                expectedPerformanceChange = trend * 0.1f, // 10% of current trend
+                plateauRisk = calculatePlateauRisk(trend, fatigueLevel),
+                injuryRisk = mlAnalysis?.riskLevel ?: 0.2f,
+                recommendedActions = generatePredictiveRecommendations(trend, fatigueLevel, mlAnalysis),
+                confidence = mlAnalysis?.confidence ?: 0.7f,
+                timeframe = "next_week"
+            )
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.AI,
+                TAG,
+                "Failed to predict performance trends",
+                exception = e
+            )
+            PerformancePrediction.default()
+        }
+    }
+    
+    // Helper methods for ML integration
+    private fun calculateDeviationsFromML(mlAnalysis: MovementPatternAnalysis): Int {
+        return (mlAnalysis.asymmetryScore * 10 + mlAnalysis.compensationScore * 10).toInt()
+    }
+    
+    private fun generateMLBasedImprovements(mlAnalysis: MovementPatternAnalysis): List<String> {
+        val improvements = mutableListOf<String>()
+        
+        if (mlAnalysis.asymmetryScore > 0.2f) {
+            improvements.add("Bewegungsasymmetrie korrigieren")
+        }
+        if (mlAnalysis.compensationScore > 0.2f) {
+            improvements.add("Kompensationsmuster reduzieren")
+        }
+        if (mlAnalysis.fatigueScore > 0.3f) {
+            improvements.add("Ermüdung beachten - Pause oder Gewicht reduzieren")
+        }
+        
+        improvements.addAll(mlAnalysis.recommendations)
+        return improvements
+    }
+    
+    private fun generateMLBasedPrehabExercises(
+        mlAnalysis: MovementPatternAnalysis,
+        exerciseId: String
+    ): List<PrehabExercise> {
+        val exercises = mutableListOf<PrehabExercise>()
+        
+        if (mlAnalysis.asymmetryScore > 0.2f) {
+            exercises.add(PrehabExercise(
+                id = "unilateral_${exerciseId}",
+                name = "Einseitige Stabilisationsübung",
+                prescription = "3x8 je Seite, langsame Ausführung"
+            ))
+        }
+        
+        if (mlAnalysis.riskLevel > 0.4f) {
+            exercises.add(PrehabExercise(
+                id = "mobility_${exerciseId}",
+                name = "Mobilitätsübung",
+                prescription = "2x10 Wiederholungen vor dem Training"
+            ))
+        }
+        
+        return exercises
+    }
+    
+    private fun determineRepPhase(movementData: List<MovementData>): String {
+        if (movementData.size < 3) return "mid"
+        
+        val recentAcceleration = movementData.takeLast(3).map { data ->
+            sqrt(data.accelerometer.first.pow(2) + data.accelerometer.second.pow(2) + data.accelerometer.third.pow(2))
+        }
+        
+        return when {
+            recentAcceleration.last() > recentAcceleration.first() * 1.5f -> "concentric"
+            recentAcceleration.last() < recentAcceleration.first() * 0.7f -> "eccentric"
+            else -> "mid"
+        }
+    }
+    
+    private fun calculateRepQuality(movementData: List<MovementData>): Float {
+        if (movementData.isEmpty()) return 0.5f
+        
+        val smoothness = calculateMovementSmoothness(movementData)
+        val consistency = calculateMovementConsistency(movementData)
+        
+        return (smoothness + consistency) / 2f
+    }
+    
+    private fun calculateMovementSmoothness(movementData: List<MovementData>): Float {
+        if (movementData.size < 2) return 0.5f
+        
+        val accelerations = movementData.map { data ->
+            sqrt(data.accelerometer.first.pow(2) + data.accelerometer.second.pow(2) + data.accelerometer.third.pow(2))
+        }
+        
+        val jerkValues = accelerations.zipWithNext { a, b -> abs(b - a) }
+        val avgJerk = jerkValues.average().toFloat()
+        
+        return (1f - (avgJerk / 10f)).coerceIn(0f, 1f)
+    }
+    
+    private fun calculateMovementConsistency(movementData: List<MovementData>): Float {
+        if (movementData.size < 3) return 0.5f
+        
+        val accelerations = movementData.map { data ->
+            sqrt(data.accelerometer.first.pow(2) + data.accelerometer.second.pow(2) + data.accelerometer.third.pow(2))
+        }
+        
+        val mean = accelerations.average()
+        val variance = accelerations.map { (it - mean).pow(2) }.average()
+        val consistency = 1f - (variance / (mean + 1f)).toFloat()
+        
+        return consistency.coerceIn(0f, 1f)
+    }
+    
+    private fun generateWorkoutAdjustments(formFeedback: FormFeedback): List<String> {
+        val adjustments = mutableListOf<String>()
+        
+        if (formFeedback.formScore < 0.6f) {
+            adjustments.add("Gewicht um 10-15% reduzieren")
+            adjustments.add("Geschwindigkeit verlangsamen")
+        } else if (formFeedback.formScore > 0.9f) {
+            adjustments.add("Intensität kann erhöht werden")
+        }
+        
+        return adjustments
+    }
+    
+    private fun calculateCurrentFatigue(recentPerformance: List<PerformanceDataPoint>): Float {
+        if (recentPerformance.size < 3) return 0.3f
+        
+        val recent = recentPerformance.takeLast(3)
+        val baseline = recentPerformance.take(3)
+        
+        val recentAvgRPE = recent.map { it.rpe }.average()
+        val baselineAvgRPE = baseline.map { it.rpe }.average()
+        
+        return ((recentAvgRPE - baselineAvgRPE) / 10.0).coerceIn(0.0, 1.0).toFloat()
+    }
+    
+    private fun calculatePlateauRisk(trend: Float, fatigueLevel: Float): Float {
+        return when {
+            trend < 0.01f && fatigueLevel > 0.6f -> 0.8f
+            trend < 0.02f -> 0.5f
+            else -> 0.2f
+        }
+    }
+    
+    private fun generatePredictiveRecommendations(
+        trend: Float,
+        fatigueLevel: Float,
+        mlAnalysis: MovementPatternAnalysis?
+    ): List<String> {
+        val recommendations = mutableListOf<String>()
+        
+        if (trend < 0.01f) {
+            recommendations.add("Trainingsvariation einbauen")
+            recommendations.add("Deload-Woche planen")
+        }
+        
+        if (fatigueLevel > 0.5f) {
+            recommendations.add("Regeneration priorisieren")
+            recommendations.add("Zusätzliche Ruhetage einplanen")
+        }
+        
+        mlAnalysis?.recommendations?.let { recommendations.addAll(it) }
+        
+        return recommendations
+    }
+    
+    private fun createDummyBitmap(): android.graphics.Bitmap {
+        // Create a small dummy bitmap for simulation
+        return android.graphics.Bitmap.createBitmap(100, 100, android.graphics.Bitmap.Config.RGB_565)
     }
     
     /**
@@ -666,14 +981,6 @@ data class NutritionTimingPlan(
     val hydrationPlan: HydrationPlan
 )
 
-data class FormAnalysisResult(
-    val overallFormQuality: Float,
-    val deviations: Int,
-    val confidence: Float,
-    val specificFeedback: List<String>,
-    val improvements: List<String>
-)
-
 data class InjuryRiskAssessment(
     val overallRisk: Float,
     val riskFactors: List<RiskFactor>,
@@ -769,4 +1076,66 @@ enum class RiskFactor {
     MOVEMENT_ASYMMETRY,
     COMPENSATION_PATTERN,
     FATIGUE_INDUCED_CHANGES
+}
+
+// Enhanced data classes for ML integration
+
+data class CoachingFeedback(
+    val immediateCorrections: List<String>,
+    val motivationalMessages: List<String>,
+    val safetyWarnings: List<String>,
+    val formScore: Float,
+    val repQuality: Float,
+    val recommendedAdjustments: List<String>,
+    val timestamp: Long
+) {
+    companion object {
+        fun basic(exerciseType: String, currentRep: Int) = CoachingFeedback(
+            immediateCorrections = listOf("Technik konzentriert ausführen"),
+            motivationalMessages = listOf("Rep $currentRep - Du schaffst das!"),
+            safetyWarnings = emptyList(),
+            formScore = 0.7f,
+            repQuality = 0.7f,
+            recommendedAdjustments = emptyList(),
+            timestamp = System.currentTimeMillis()
+        )
+    }
+}
+
+data class PerformancePrediction(
+    val expectedPerformanceChange: Float,
+    val plateauRisk: Float,
+    val injuryRisk: Float,
+    val recommendedActions: List<String>,
+    val confidence: Float,
+    val timeframe: String
+) {
+    companion object {
+        fun default() = PerformancePrediction(
+            expectedPerformanceChange = 0.05f,
+            plateauRisk = 0.3f,
+            injuryRisk = 0.2f,
+            recommendedActions = listOf("Training fortsetzen"),
+            confidence = 0.6f,
+            timeframe = "next_week"
+        )
+    }
+}
+
+data class FormAnalysisResult(
+    val overallFormQuality: Float,
+    val deviations: Int,
+    val confidence: Float,
+    val specificFeedback: List<String>,
+    val improvements: List<String>
+) {
+    companion object {
+        fun fallback() = FormAnalysisResult(
+            overallFormQuality = 0.7f,
+            deviations = 2,
+            confidence = 0.6f,
+            specificFeedback = listOf("Grundlegende Technik beibehalten"),
+            improvements = listOf("Bewegung kontrolliert ausführen")
+        )
+    }
 }

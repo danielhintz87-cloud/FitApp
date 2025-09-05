@@ -6,6 +6,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     
+    <!-- Hardware features for ChromeOS compatibility -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    
     <!-- Advanced Workout Execution Enhancement - Phase 1 Permissions -->
     <uses-permission android:name="android.permission.BODY_SENSORS" />
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />

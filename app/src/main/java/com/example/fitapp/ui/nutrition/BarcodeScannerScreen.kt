@@ -1,5 +1,6 @@
 package com.example.fitapp.ui.nutrition
 
+import androidx.camera.core.ExperimentalGetImage
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,6 +14,7 @@ import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.ui.components.BarcodeScannerView
 import kotlinx.coroutines.launch
 
+@ExperimentalGetImage
 @Composable
 fun BarcodeScannerScreen(
     contentPadding: PaddingValues,
