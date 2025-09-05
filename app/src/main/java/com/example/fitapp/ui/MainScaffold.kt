@@ -1,5 +1,6 @@
 package com.example.fitapp.ui
 
+import androidx.camera.core.ExperimentalGetImage
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -51,6 +52,7 @@ import java.time.LocalDate
 data class Destination(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
 @OptIn(ExperimentalMaterial3Api::class)
+@ExperimentalGetImage
 @Composable
 fun MainScaffold() {
     val nav = rememberNavController()

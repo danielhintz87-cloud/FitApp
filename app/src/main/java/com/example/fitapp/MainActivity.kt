@@ -3,6 +3,7 @@ package com.example.fitapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.camera.core.ExperimentalGetImage
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +27,7 @@ class MainActivity : ComponentActivity() {
     private var isInitialized = false
     private var networkMonitor: NetworkStateMonitor? = null
     
+    @ExperimentalGetImage
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
