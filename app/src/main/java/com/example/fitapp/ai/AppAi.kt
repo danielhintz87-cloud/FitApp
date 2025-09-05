@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.prefs.ApiKeys
+import com.example.fitapp.domain.entities.*
 
 object AppAi {
     // Keep original core() method for legacy compatibility if needed
@@ -66,6 +67,41 @@ object AppAi {
      */
     suspend fun generateDailyWorkoutSteps(context: Context, goal: String, minutes: Int, equipment: List<String>): Result<String> {
         return AppAiClean.generateDailyWorkoutSteps(context, goal, minutes, equipment)
+    }
+    
+    /**
+     * Get personalized recommendations using optimal provider routing
+     */
+    suspend fun getPersonalizedRecommendations(context: Context, userContext: UserContext): Result<AIPersonalTrainerResponse> {
+        return AppAiClean.getPersonalizedRecommendations(context, userContext)
+    }
+    
+    /**
+     * Generate personalized workout using optimal provider routing
+     */
+    suspend fun generatePersonalizedWorkout(context: Context, request: AIPersonalTrainerRequest): Result<WorkoutPlan> {
+        return AppAiClean.generatePersonalizedWorkout(context, request)
+    }
+    
+    /**
+     * Generate nutrition advice using optimal provider routing
+     */
+    suspend fun generateNutritionAdvice(context: Context, userProfile: UserProfile, goals: List<String>): Result<PersonalizedMealPlan> {
+        return AppAiClean.generateNutritionAdvice(context, userProfile, goals)
+    }
+    
+    /**
+     * Analyze progress using optimal provider routing
+     */
+    suspend fun analyzeProgress(context: Context, progressData: List<WeightEntry>, userProfile: UserProfile): Result<ProgressAnalysis> {
+        return AppAiClean.analyzeProgress(context, progressData, userProfile)
+    }
+    
+    /**
+     * Generate motivation using optimal provider routing
+     */
+    suspend fun generateMotivation(context: Context, userProfile: UserProfile, progressData: List<WeightEntry>): Result<MotivationalMessage> {
+        return AppAiClean.generateMotivation(context, userProfile, progressData)
     }
 
     /**
