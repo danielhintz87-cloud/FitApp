@@ -531,6 +531,105 @@ data class CookingTimerEntity(
     val createdAt: Long = System.currentTimeMillis() / 1000
 )
 
+// Health Connect Integration Entities
+
+@Entity(
+    tableName = "health_connect_steps",
+    indices = [
+        Index(value = ["date"]),
+        Index(value = ["source"]),
+        Index(value = ["syncedAt"])
+    ]
+)
+data class HealthStepsEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val date: String, // ISO date (yyyy-MM-dd)
+    val steps: Int,
+    val source: String, // "health_connect", "manual", "google_fit", etc.
+    val syncedAt: Long = System.currentTimeMillis() / 1000,
+    val lastModified: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "health_connect_heart_rate",
+    indices = [
+        Index(value = ["date"]),
+        Index(value = ["timestamp"]),
+        Index(value = ["source"])
+    ]
+)
+data class HealthHeartRateEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val timestamp: Long, // Epoch timestamp in seconds
+    val date: String, // ISO date (yyyy-MM-dd)
+    val heartRate: Int, // BPM
+    val source: String,
+    val syncedAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "health_connect_calories",
+    indices = [
+        Index(value = ["date"]),
+        Index(value = ["calorieType"]),
+        Index(value = ["source"])
+    ]
+)
+data class HealthCalorieEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val date: String, // ISO date (yyyy-MM-dd)
+    val calories: Double, // kcal
+    val calorieType: String, // "active", "total", "basal"
+    val source: String,
+    val syncedAt: Long = System.currentTimeMillis() / 1000,
+    val lastModified: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "health_connect_sleep",
+    indices = [
+        Index(value = ["date"]),
+        Index(value = ["source"]),
+        Index(value = ["sleepStage"])
+    ]
+)
+data class HealthSleepEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val date: String, // ISO date (yyyy-MM-dd)
+    val startTime: Long, // Epoch timestamp in seconds
+    val endTime: Long, // Epoch timestamp in seconds
+    val durationMinutes: Int,
+    val sleepStage: String, // "light", "deep", "rem", "awake", "unknown"
+    val source: String,
+    val syncedAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "health_connect_exercise_sessions",
+    indices = [
+        Index(value = ["date"]),
+        Index(value = ["exerciseType"]),
+        Index(value = ["source"])
+    ]
+)
+data class HealthExerciseSessionEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val sessionId: String, // Unique identifier from Health Connect
+    val date: String, // ISO date (yyyy-MM-dd)
+    val startTime: Long, // Epoch timestamp in seconds
+    val endTime: Long, // Epoch timestamp in seconds
+    val durationMinutes: Int,
+    val exerciseType: String, // "running", "cycling", "weightlifting", etc.
+    val title: String,
+    val calories: Double? = null,
+    val avgHeartRate: Int? = null,
+    val maxHeartRate: Int? = null,
+    val distance: Double? = null, // in meters
+    val source: String,
+    val syncedAt: Long = System.currentTimeMillis() / 1000,
+    val lastModified: Long = System.currentTimeMillis() / 1000
+)
+
 // Cloud Sync Entities for Multi-Device Support
 @Entity(
     tableName = "cloud_sync_metadata",
@@ -601,4 +700,3 @@ data class SyncConflictEntity(
     val createdAt: Long = System.currentTimeMillis() / 1000,
     val resolvedAt: Long? = null
 )
-

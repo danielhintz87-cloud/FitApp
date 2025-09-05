@@ -6,9 +6,13 @@
 .DS_Store
 /build/
 /app/build/
+/wear/build/
 /captures/
 .externalNativeBuild/
 .cxx/
+
+# Kotlin compiler generated files
+.kotlin/
 
 # Room schemas should be committed for version control
 # But exclude any temporary KSP-generated files

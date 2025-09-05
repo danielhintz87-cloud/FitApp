@@ -18,6 +18,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.google.common.util.concurrent.ListenableFuture
+import kotlinx.coroutines.guava.await
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
@@ -56,8 +58,13 @@ fun BarcodeScannerView(
     }
     
     LaunchedEffect(Unit) {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-        cameraProvider = cameraProviderFuture.get()
+        val cameraProviderFuture: ListenableFuture<ProcessCameraProvider> = ProcessCameraProvider.getInstance(context)
+        cameraProvider = try {
+            cameraProviderFuture.await()
+        } catch (e: Exception) {
+            Log.e("BarcodeScannerView", "Error getting camera provider", e)
+            null
+        }
     }
     
     DisposableEffect(Unit) {
