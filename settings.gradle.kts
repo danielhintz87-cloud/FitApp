@@ -15,7 +15,7 @@ pluginManagement {
 
 plugins {
     // Falls schon vorhanden, lass die Version so stehen, wichtig ist der develocity-Block unten
-    id("com.gradle.develocity") version "3.19.2"
+    id("com.gradle.develocity") version "4.1.1"
 }
 
 develocity {
