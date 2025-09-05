@@ -1,4 +1,4 @@
-name: Code Quality & Security
+name: Code Quality
 
 on:
   pull_request:
@@ -20,10 +20,10 @@ jobs:
           java-version: '21'
       - uses: gradle/gradle-build-action@v3
 
-      - name: Run ktlint (falls konfiguriert)
+      - name: ktlint
         run: ./gradlew ktlintCheck --stacktrace || true
 
-      - name: Run Detekt (falls konfiguriert)
+      - name: detekt
         run: ./gradlew detekt --stacktrace || true
 
       - name: Upload Quality Reports
