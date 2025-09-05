@@ -887,3 +887,88 @@ interface CookingTimerDao {
     suspend fun deleteAll()
 }
 
+// Cloud Sync DAOs for Multi-Device Support
+@Dao
+interface CloudSyncDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertSyncMetadata(metadata: CloudSyncEntity)
+    
+    @Query("SELECT * FROM cloud_sync_metadata WHERE entityType = :entityType AND entityId = :entityId")
+    suspend fun getSyncMetadata(entityType: String, entityId: String): CloudSyncEntity?
+    
+    @Query("SELECT * FROM cloud_sync_metadata WHERE syncStatus = :status")
+    suspend fun getByStatus(status: String): List<CloudSyncEntity>
+    
+    @Query("SELECT * FROM cloud_sync_metadata WHERE syncStatus = 'pending' OR syncStatus = 'error'")
+    suspend fun getPendingSync(): List<CloudSyncEntity>
+    
+    @Query("SELECT * FROM cloud_sync_metadata WHERE deviceId = :deviceId")
+    suspend fun getByDeviceId(deviceId: String): List<CloudSyncEntity>
+    
+    @Query("UPDATE cloud_sync_metadata SET syncStatus = :status, lastSyncTime = :timestamp WHERE id = :id")
+    suspend fun updateSyncStatus(id: String, status: String, timestamp: Long)
+    
+    @Query("UPDATE cloud_sync_metadata SET retryCount = retryCount + 1, errorMessage = :error WHERE id = :id")
+    suspend fun incrementRetryCount(id: String, error: String?)
+    
+    @Query("DELETE FROM cloud_sync_metadata WHERE entityType = :entityType AND entityId = :entityId")
+    suspend fun deleteSyncMetadata(entityType: String, entityId: String)
+    
+    @Query("DELETE FROM cloud_sync_metadata WHERE lastSyncTime < :cutoffTime")
+    suspend fun cleanupOldMetadata(cutoffTime: Long)
+}
+
+@Dao
+interface UserProfileDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertUserProfile(profile: UserProfileEntity)
+    
+    @Query("SELECT * FROM user_profiles WHERE userId = :userId")
+    suspend fun getUserProfile(userId: String): UserProfileEntity?
+    
+    @Query("SELECT * FROM user_profiles WHERE isActive = 1 LIMIT 1")
+    suspend fun getActiveUserProfile(): UserProfileEntity?
+    
+    @Query("SELECT * FROM user_profiles WHERE deviceId = :deviceId")
+    suspend fun getByDeviceId(deviceId: String): UserProfileEntity?
+    
+    @Query("UPDATE user_profiles SET lastSyncTime = :timestamp WHERE userId = :userId")
+    suspend fun updateLastSyncTime(userId: String, timestamp: Long)
+    
+    @Query("UPDATE user_profiles SET syncPreferences = :preferences WHERE userId = :userId")
+    suspend fun updateSyncPreferences(userId: String, preferences: String)
+    
+    @Query("UPDATE user_profiles SET isActive = 0")
+    suspend fun deactivateAllProfiles()
+    
+    @Query("UPDATE user_profiles SET isActive = 1 WHERE userId = :userId")
+    suspend fun activateProfile(userId: String)
+    
+    @Query("DELETE FROM user_profiles WHERE userId = :userId")
+    suspend fun deleteUserProfile(userId: String)
+}
+
+@Dao
+interface SyncConflictDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertConflict(conflict: SyncConflictEntity)
+    
+    @Query("SELECT * FROM sync_conflicts WHERE status = 'pending'")
+    suspend fun getPendingConflicts(): List<SyncConflictEntity>
+    
+    @Query("SELECT * FROM sync_conflicts WHERE entityType = :entityType AND entityId = :entityId AND status = 'pending'")
+    suspend fun getConflictForEntity(entityType: String, entityId: String): SyncConflictEntity?
+    
+    @Query("UPDATE sync_conflicts SET status = :status, resolution = :resolution, resolvedData = :resolvedData, resolvedBy = :resolvedBy, resolvedAt = :resolvedAt WHERE id = :id")
+    suspend fun resolveConflict(id: String, status: String, resolution: String, resolvedData: String?, resolvedBy: String, resolvedAt: Long)
+    
+    @Query("DELETE FROM sync_conflicts WHERE id = :id")
+    suspend fun deleteConflict(id: String)
+    
+    @Query("DELETE FROM sync_conflicts WHERE createdAt < :cutoffTime AND status != 'pending'")
+    suspend fun cleanupResolvedConflicts(cutoffTime: Long)
+    
+    @Query("SELECT COUNT(*) FROM sync_conflicts WHERE status = 'pending'")
+    fun getPendingConflictCount(): Flow<Int>
+}
+
