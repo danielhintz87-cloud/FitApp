@@ -147,7 +147,18 @@ data class AdvancedTrainingUiState(
     val movementTrackingActive: Boolean = false,
     
     // Error State
-    val error: String? = null
+    val error: String? = null,
+    
+    // Freeletics-style Adaptive Training State
+    val currentWorkoutAdaptation: WorkoutAdaptation? = null,
+    val adaptiveCoachingFeedback: AdaptiveCoachingFeedback? = null,
+    val realTimePerformance: RealTimePerformance? = null,
+    val difficultyAdjustment: DifficultyAdjustment? = null,
+    val exerciseSubstitution: ExerciseSubstitution? = null,
+    val adaptiveRestCalculation: AdaptiveRestCalculation? = null,
+    val sessionLearning: SessionLearningApplication? = null,
+    val isAdaptiveTrainingEnabled: Boolean = true,
+    val adaptationHistory: List<WorkoutAdaptation> = emptyList()
 )
 
 // Workout Context for AI Analysis

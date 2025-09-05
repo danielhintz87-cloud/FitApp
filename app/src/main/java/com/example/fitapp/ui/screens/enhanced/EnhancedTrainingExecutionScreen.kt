@@ -28,6 +28,7 @@ import com.example.fitapp.services.VideoResource
 import com.example.fitapp.services.RestTimerState
 import com.example.fitapp.services.SetData
 import com.example.fitapp.ui.components.advanced.*
+import com.example.fitapp.ui.components.adaptive.*
 import com.example.fitapp.ui.screens.ExerciseStep
 // Remove parseTrainingContent import as it's private
 import kotlinx.coroutines.delay
@@ -70,6 +71,9 @@ fun EnhancedTrainingExecutionScreen(
     val videoManager = remember { VideoManager(context) }
     val smartRestTimer = remember { SmartRestTimer(context) }
     val voiceCommandManager = remember { VoiceCommandManager(context) }
+    
+    // Freeletics-style Adaptive Training Engine
+    val adaptiveTrainer = remember { FreeleticsStyleAdaptiveTrainer(context) }
     
     // Pro-feature states
     var currentVideo by remember { mutableStateOf<VideoResource?>(null) }
@@ -288,6 +292,151 @@ fun EnhancedTrainingExecutionScreen(
         }
     }
     
+    // Freeletics-style Real-time Adaptive Training
+    LaunchedEffect(isInTraining, currentExerciseIndex, advancedState.currentHeartRate, advancedState.formQuality) {
+        if (isInTraining && exercises.isNotEmpty() && currentExerciseIndex < exercises.size && advancedState.isAdaptiveTrainingEnabled) {
+            
+            // Create real-time performance snapshot
+            val realTimePerformance = RealTimePerformance(
+                formQuality = advancedState.formQuality,
+                rpe = advancedState.currentRPE ?: 6,
+                heartRate = advancedState.currentHeartRate,
+                currentRep = advancedState.repCount,
+                movementSpeed = 1.0f // Default speed, would be calculated from sensor data
+            )
+            
+            // Update state with current performance
+            advancedState = advancedState.copy(realTimePerformance = realTimePerformance)
+            
+            try {
+                val currentExercise = exercises[currentExerciseIndex]
+                val sessionContext = WorkoutSessionContext(
+                    sessionId = advancedState.sessionId ?: "unknown",
+                    sessionDuration = 30L, // Would calculate actual duration
+                    totalExercises = exercises.size,
+                    completedExercises = completedExercises.size,
+                    overallIntensity = 0.7f,
+                    userEnergyLevel = 1.0f - (advancedState.currentRPE ?: 5) / 10f
+                )
+                
+                // Real-time workout adaptation
+                val adaptation = adaptiveTrainer.adaptWorkoutRealTime(
+                    currentExercise = currentExercise,
+                    currentPerformance = realTimePerformance,
+                    sessionContext = sessionContext
+                )
+                
+                // Apply adaptation if significant
+                if (adaptation.type != AdaptationType.NO_CHANGE) {
+                    advancedState = advancedState.copy(
+                        currentWorkoutAdaptation = adaptation,
+                        adaptationHistory = advancedState.adaptationHistory + adaptation
+                    )
+                }
+                
+                // Real-time difficulty adjustment
+                val performanceIndicators = PerformanceIndicators(
+                    formQuality = advancedState.formQuality,
+                    fatigueLevel = (advancedState.currentRPE ?: 5) / 10f,
+                    heartRateZone = advancedState.heartRateZone,
+                    movementConsistency = 0.8f // Would calculate from sensor data
+                )
+                
+                val difficultyAdjustment = adaptiveTrainer.adjustDifficultyRealTime(
+                    currentExercise = currentExercise,
+                    performanceIndicators = performanceIndicators
+                )
+                
+                // Apply difficulty adjustment if significant
+                if (kotlin.math.abs(difficultyAdjustment.adjustmentFactor - 1.0f) > 0.05f) {
+                    advancedState = advancedState.copy(difficultyAdjustment = difficultyAdjustment)
+                }
+                
+                // Check for exercise substitution needs
+                val performanceIssues = mutableListOf<PerformanceIssue>()
+                
+                if (advancedState.formQuality < 0.5f) {
+                    performanceIssues.add(PerformanceIssue(
+                        type = IssueType.FORM_DEGRADATION,
+                        severity = IssueSeverity.HIGH,
+                        description = "Signifikante Verschlechterung der Bewegungsqualität",
+                        detectionConfidence = 0.9f
+                    ))
+                }
+                
+                if ((advancedState.currentRPE ?: 5) > 8) {
+                    performanceIssues.add(PerformanceIssue(
+                        type = IssueType.EXCESSIVE_FATIGUE,
+                        severity = IssueSeverity.MEDIUM,
+                        description = "Hohe wahrgenommene Anstrengung",
+                        detectionConfidence = 0.8f
+                    ))
+                }
+                
+                if (performanceIssues.isNotEmpty()) {
+                    val substitution = adaptiveTrainer.suggestExerciseSubstitution(
+                        currentExercise = currentExercise,
+                        performanceIssues = performanceIssues,
+                        availableEquipment = listOf("Körpergewicht", "Hanteln") // Would get from user profile
+                    )
+                    
+                    substitution?.let {
+                        advancedState = advancedState.copy(exerciseSubstitution = it)
+                    }
+                }
+                
+                // Calculate adaptive rest time for next exercise
+                if (currentExerciseIndex > 0) {
+                    val lastSetPerformance = SetPerformance(
+                        formQuality = advancedState.formQuality,
+                        perceivedExertion = advancedState.currentRPE ?: 6,
+                        actualReps = advancedState.repCount,
+                        targetReps = 10, // Would extract from exercise
+                        weight = 10f // Would get from last set
+                    )
+                    
+                    val adaptiveRest = adaptiveTrainer.calculateAdaptiveRestTime(
+                        lastSetPerformance = lastSetPerformance,
+                        currentFatigueLevel = (advancedState.currentRPE ?: 5) / 10f,
+                        targetIntensity = 0.7f,
+                        exerciseType = currentExercise.type
+                    )
+                    
+                    advancedState = advancedState.copy(adaptiveRestCalculation = adaptiveRest)
+                }
+                
+            } catch (e: Exception) {
+                // Handle adaptive training errors gracefully
+                advancedState = advancedState.copy(
+                    error = "Adaptive Training Fehler: ${e.message}"
+                )
+            }
+            
+            // Update frequency for real-time adaptation
+            delay(2000) // Check every 2 seconds during training
+        }
+    }
+    
+    // Adaptive coaching feedback flow
+    LaunchedEffect(isInTraining) {
+        if (isInTraining && exercises.isNotEmpty() && advancedState.isAdaptiveTrainingEnabled) {
+            val exerciseId = exercises.getOrNull(currentExerciseIndex)?.name ?: return@LaunchedEffect
+            
+            // Create a flow of real-time performance updates
+            val realTimeFlow = kotlinx.coroutines.flow.flow {
+                while (isInTraining) {
+                    advancedState.realTimePerformance?.let { emit(it) }
+                    delay(1000) // Emit every second
+                }
+            }
+            
+            // Collect adaptive coaching feedback
+            adaptiveTrainer.adaptiveCoachingFlow(exerciseId, realTimeFlow).collect { feedback ->
+                advancedState = advancedState.copy(adaptiveCoachingFeedback = feedback)
+            }
+        }
+    }
+    
     // UI
     Column(Modifier.fillMaxSize()) {
         // Enhanced Top App Bar
@@ -501,10 +650,90 @@ fun EnhancedTrainingExecutionScreen(
                         SmartRestTimerDisplay(
                             timerState = restTimerState,
                             restSuggestion = restSuggestions,
-                            onPause = { smartRestTimer.pauseTimer() },
-                            onResume = { scope.launch { smartRestTimer.resumeTimer() } },
                             onSkip = { smartRestTimer.skipRest() },
+                            onPause = { smartRestTimer.pauseTimer() },
+                            onResume = { 
+                                scope.launch { 
+                                    smartRestTimer.resumeTimer() 
+                                }
+                            },
                             onStop = { smartRestTimer.stopTimer() }
+                        )
+                    }
+                }
+                
+                // Freeletics-style Adaptive Training Panel - NEW FEATURE
+                if (advancedState.isAdaptiveTrainingEnabled) {
+                    item {
+                        FreeleticsAdaptiveTrainingPanel(
+                            realTimePerformance = advancedState.realTimePerformance,
+                            workoutAdaptation = advancedState.currentWorkoutAdaptation,
+                            difficultyAdjustment = advancedState.difficultyAdjustment,
+                            exerciseSubstitution = advancedState.exerciseSubstitution,
+                            adaptiveCoachingFeedback = advancedState.adaptiveCoachingFeedback,
+                            adaptiveRestCalculation = advancedState.adaptiveRestCalculation,
+                            onAcceptAdaptation = { adaptation ->
+                                // Apply the workout adaptation
+                                scope.launch {
+                                    // Here we would apply the actual changes to the workout
+                                    advancedState = advancedState.copy(
+                                        currentWorkoutAdaptation = null // Clear after applying
+                                    )
+                                }
+                            },
+                            onDeclineAdaptation = {
+                                advancedState = advancedState.copy(
+                                    currentWorkoutAdaptation = null
+                                )
+                            },
+                            onAcceptSubstitution = { substitution ->
+                                // Replace current exercise with substitution
+                                scope.launch {
+                                    // In a real implementation, this would modify the exercise list
+                                    advancedState = advancedState.copy(
+                                        exerciseSubstitution = null
+                                    )
+                                }
+                            },
+                            onDeclineSubstitution = {
+                                advancedState = advancedState.copy(
+                                    exerciseSubstitution = null
+                                )
+                            }
+                        )
+                    }
+                }
+                
+                // Adaptive Coaching Feedback Card - NEW FEATURE
+                advancedState.adaptiveCoachingFeedback?.let { feedback ->
+                    item {
+                        AdaptiveCoachingFeedbackCard(
+                            feedback = feedback,
+                            onActionTaken = { action ->
+                                // Handle coaching feedback actions
+                                scope.launch {
+                                    // Apply the suggested action
+                                    advancedState = advancedState.copy(
+                                        adaptiveCoachingFeedback = null
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+                
+                // Real-time Performance Insights - NEW FEATURE
+                advancedState.realTimePerformance?.let { performance ->
+                    item {
+                        RealTimePerformanceInsights(
+                            performance = performance,
+                            adaptationHistory = advancedState.adaptationHistory.takeLast(5),
+                            sessionProgress = (completedExercises.size.toFloat() / exercises.size) * 100f,
+                            onToggleAdaptiveTraining = {
+                                advancedState = advancedState.copy(
+                                    isAdaptiveTrainingEnabled = !advancedState.isAdaptiveTrainingEnabled
+                                )
+                            }
                         )
                     }
                 }
