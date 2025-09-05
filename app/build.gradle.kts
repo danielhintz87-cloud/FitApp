@@ -45,8 +45,8 @@ android {
             initWith(getByName("debug"))
             isMinifyEnabled = true
             isShrinkResources = true
-            isDebuggable = true
-            applicationIdSuffix = ".debug.minified"
+            isDebuggable = false  // Enable optimization by disabling debug
+            applicationIdSuffix = ".debug.minified" 
             versionNameSuffix = "-debug-minified"
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

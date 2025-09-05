@@ -7,7 +7,7 @@ FitApp now includes comprehensive ProGuard/R8 optimization for APK size reductio
 
 ### Build Variant Comparison
 - **Debug (Unoptimized)**: 48MB
-- **DebugMinified (R8 with debugging)**: 32MB (33% reduction)
+- **DebugMinified (R8 optimized, no debugging)**: 28MB (42% reduction)  
 - **Release (Full R8 optimization)**: 25MB (48% reduction)
 
 **Total Size Reduction**: 48% smaller release APK compared to debug
@@ -21,8 +21,8 @@ FitApp now includes comprehensive ProGuard/R8 optimization for APK size reductio
 
 ### DebugMinified
 - R8 optimization enabled for testing
-- Debugging still available
-- Tests optimization without losing debug info
+- Debugging disabled to enable optimization
+- Tests optimization impact in development
 
 ### Release
 - Full R8 optimization and obfuscation
