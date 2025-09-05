@@ -629,3 +629,74 @@ data class HealthExerciseSessionEntity(
     val syncedAt: Long = System.currentTimeMillis() / 1000,
     val lastModified: Long = System.currentTimeMillis() / 1000
 )
+
+// Cloud Sync Entities for Multi-Device Support
+@Entity(
+    tableName = "cloud_sync_metadata",
+    indices = [
+        Index(value = ["entityType", "entityId"], unique = true),
+        Index(value = ["lastSyncTime"]),
+        Index(value = ["syncStatus"]),
+        Index(value = ["deviceId"])
+    ]
+)
+data class CloudSyncEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val entityType: String,  // e.g., "PersonalAchievement", "WeightEntry", "WorkoutSession"
+    val entityId: String,    // The ID of the actual entity being synced
+    val lastSyncTime: Long,  // Timestamp of last successful sync
+    val lastModifiedTime: Long, // Timestamp when entity was last modified locally
+    val syncStatus: String,  // "synced", "pending", "conflict", "error"
+    val deviceId: String,    // Unique identifier for this device
+    val cloudVersion: String?, // Version/etag from cloud storage
+    val conflictData: String? = null, // JSON data for conflict resolution
+    val retryCount: Int = 0,
+    val errorMessage: String? = null,
+    val createdAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "user_profiles",
+    indices = [
+        Index(value = ["userId"], unique = true),
+        Index(value = ["email"], unique = true),
+        Index(value = ["lastSyncTime"])
+    ]
+)
+data class UserProfileEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val userId: String,      // Cloud user ID (Firebase/Auth0/etc)
+    val email: String,       // User email for identification
+    val displayName: String? = null,
+    val deviceName: String,  // Name of this device
+    val deviceId: String,    // Unique device identifier
+    val lastSyncTime: Long,  // Last time this user synced
+    val syncPreferences: String, // JSON with sync settings (what to sync)
+    val encryptionKey: String? = null, // For end-to-end encryption
+    val isActive: Boolean = true,
+    val createdAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "sync_conflicts",
+    indices = [
+        Index(value = ["entityType", "entityId"]),
+        Index(value = ["createdAt"]),
+        Index(value = ["status"])
+    ]
+)
+data class SyncConflictEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val entityType: String,
+    val entityId: String,
+    val localData: String,   // JSON of local version
+    val remoteData: String,  // JSON of remote version
+    val localTimestamp: Long,
+    val remoteTimestamp: Long,
+    val status: String,      // "pending", "resolved", "auto_resolved"
+    val resolution: String?, // "local_wins", "remote_wins", "merged", "manual"
+    val resolvedData: String? = null, // JSON of resolved version
+    val resolvedBy: String? = null,   // "auto", "user", "ai"
+    val createdAt: Long = System.currentTimeMillis() / 1000,
+    val resolvedAt: Long? = null
+)

@@ -7,6 +7,7 @@ import com.example.fitapp.data.prefs.ApiKeys
 import com.example.fitapp.domain.entities.PlanRequest as DomainPlanRequest
 import com.example.fitapp.domain.entities.RecipeRequest as DomainRecipeRequest
 import com.example.fitapp.domain.entities.CaloriesEstimate as DomainCaloriesEstimate
+import com.example.fitapp.domain.entities.*
 import java.util.Locale
 
 /**
@@ -108,6 +109,71 @@ object AppAiClean {
         
         val container = AiDiContainer.getInstance(context)
         return container.generateDailyWorkoutStepsUseCase.execute(goal, minutes, equipment)
+    }
+    
+    /**
+     * Get personalized recommendations using Clean Architecture
+     */
+    suspend fun getPersonalizedRecommendations(context: Context, userContext: UserContext): Result<AIPersonalTrainerResponse> {
+        if (!ApiKeys.isPrimaryProviderAvailable(context)) {
+            val statusInfo = ApiKeys.getConfigurationStatus(context)
+            return Result.failure(IllegalStateException("$statusInfo\n\nBitte beide API-Schlüssel unter Einstellungen → API-Schlüssel eingeben."))
+        }
+        
+        val container = AiDiContainer.getInstance(context)
+        return container.getPersonalizedRecommendationsUseCase.execute(userContext)
+    }
+    
+    /**
+     * Generate personalized workout using Clean Architecture
+     */
+    suspend fun generatePersonalizedWorkout(context: Context, request: AIPersonalTrainerRequest): Result<WorkoutPlan> {
+        if (!ApiKeys.isPrimaryProviderAvailable(context)) {
+            val statusInfo = ApiKeys.getConfigurationStatus(context)
+            return Result.failure(IllegalStateException("$statusInfo"))
+        }
+        
+        val container = AiDiContainer.getInstance(context)
+        return container.generatePersonalizedWorkoutUseCase.execute(request)
+    }
+    
+    /**
+     * Generate nutrition advice using Clean Architecture
+     */
+    suspend fun generateNutritionAdvice(context: Context, userProfile: UserProfile, goals: List<String>): Result<PersonalizedMealPlan> {
+        if (!ApiKeys.isPrimaryProviderAvailable(context)) {
+            val statusInfo = ApiKeys.getConfigurationStatus(context)
+            return Result.failure(IllegalStateException("$statusInfo"))
+        }
+        
+        val container = AiDiContainer.getInstance(context)
+        return container.generateNutritionAdviceUseCase.execute(userProfile, goals)
+    }
+    
+    /**
+     * Analyze progress using Clean Architecture
+     */
+    suspend fun analyzeProgress(context: Context, progressData: List<WeightEntry>, userProfile: UserProfile): Result<ProgressAnalysis> {
+        if (!ApiKeys.isPrimaryProviderAvailable(context)) {
+            val statusInfo = ApiKeys.getConfigurationStatus(context)
+            return Result.failure(IllegalStateException("$statusInfo"))
+        }
+        
+        val container = AiDiContainer.getInstance(context)
+        return container.analyzeProgressUseCase.execute(progressData, userProfile)
+    }
+    
+    /**
+     * Generate motivation using Clean Architecture
+     */
+    suspend fun generateMotivation(context: Context, userProfile: UserProfile, progressData: List<WeightEntry>): Result<MotivationalMessage> {
+        if (!ApiKeys.isPrimaryProviderAvailable(context)) {
+            val statusInfo = ApiKeys.getConfigurationStatus(context)
+            return Result.failure(IllegalStateException("$statusInfo"))
+        }
+        
+        val container = AiDiContainer.getInstance(context)
+        return container.generateMotivationUseCase.execute(userProfile, progressData)
     }
     
     /**

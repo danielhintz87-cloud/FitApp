@@ -46,7 +46,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         HealthHeartRateEntity::class,
         HealthCalorieEntity::class,
         HealthSleepEntity::class,
-        HealthExerciseSessionEntity::class
+        HealthExerciseSessionEntity::class,
+        // Cloud Sync Entities
+        CloudSyncEntity::class,
+        UserProfileEntity::class,
+        SyncConflictEntity::class
     ],
     version = 13,
     exportSchema = true
@@ -86,6 +90,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun healthCalorieDao(): HealthCalorieDao
     abstract fun healthSleepDao(): HealthSleepDao
     abstract fun healthExerciseSessionDao(): HealthExerciseSessionDao
+    // Cloud Sync DAOs
+    abstract fun cloudSyncDao(): CloudSyncDao
+    abstract fun userProfileDao(): UserProfileDao
+    abstract fun syncConflictDao(): SyncConflictDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -555,6 +563,83 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_cooking_timers_sessionId` ON `cooking_timers` (`sessionId`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_cooking_timers_stepIndex` ON `cooking_timers` (`stepIndex`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_cooking_timers_isActive` ON `cooking_timers` (`isActive`)")
+            }
+        }
+
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create cloud_sync_metadata table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `cloud_sync_metadata` (
+                        `id` TEXT NOT NULL,
+                        `entityType` TEXT NOT NULL,
+                        `entityId` TEXT NOT NULL,
+                        `lastSyncTime` INTEGER NOT NULL,
+                        `lastModifiedTime` INTEGER NOT NULL,
+                        `syncStatus` TEXT NOT NULL,
+                        `deviceId` TEXT NOT NULL,
+                        `cloudVersion` TEXT,
+                        `conflictData` TEXT,
+                        `retryCount` INTEGER NOT NULL DEFAULT 0,
+                        `errorMessage` TEXT,
+                        `createdAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Create user_profiles table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `user_profiles` (
+                        `id` TEXT NOT NULL,
+                        `userId` TEXT NOT NULL,
+                        `email` TEXT NOT NULL,
+                        `displayName` TEXT,
+                        `deviceName` TEXT NOT NULL,
+                        `deviceId` TEXT NOT NULL,
+                        `lastSyncTime` INTEGER NOT NULL,
+                        `syncPreferences` TEXT NOT NULL,
+                        `encryptionKey` TEXT,
+                        `isActive` INTEGER NOT NULL DEFAULT 1,
+                        `createdAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Create sync_conflicts table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `sync_conflicts` (
+                        `id` TEXT NOT NULL,
+                        `entityType` TEXT NOT NULL,
+                        `entityId` TEXT NOT NULL,
+                        `localData` TEXT NOT NULL,
+                        `remoteData` TEXT NOT NULL,
+                        `localTimestamp` INTEGER NOT NULL,
+                        `remoteTimestamp` INTEGER NOT NULL,
+                        `status` TEXT NOT NULL,
+                        `resolution` TEXT,
+                        `resolvedData` TEXT,
+                        `resolvedBy` TEXT,
+                        `createdAt` INTEGER NOT NULL,
+                        `resolvedAt` INTEGER,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Add indices for cloud_sync_metadata table
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_cloud_sync_metadata_entityType_entityId` ON `cloud_sync_metadata` (`entityType`, `entityId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cloud_sync_metadata_lastSyncTime` ON `cloud_sync_metadata` (`lastSyncTime`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cloud_sync_metadata_syncStatus` ON `cloud_sync_metadata` (`syncStatus`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cloud_sync_metadata_deviceId` ON `cloud_sync_metadata` (`deviceId`)")
+                
+                // Add indices for user_profiles table
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_user_profiles_userId` ON `user_profiles` (`userId`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_user_profiles_email` ON `user_profiles` (`email`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_user_profiles_lastSyncTime` ON `user_profiles` (`lastSyncTime`)")
+                
+                // Add indices for sync_conflicts table
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_conflicts_entityType_entityId` ON `sync_conflicts` (`entityType`, `entityId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_conflicts_createdAt` ON `sync_conflicts` (`createdAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_conflicts_status` ON `sync_conflicts` (`status`)")
             }
         }
         

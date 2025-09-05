@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
+import com.example.fitapp.services.CloudConflictResolution
 
 /**
  * Offline sync manager that handles data synchronization when network is available
@@ -18,6 +19,7 @@ class OfflineSyncManager(private val context: Context) {
     
     private val database = AppDatabase.get(context)
     private val syncQueue = SyncQueue(context)
+    private val cloudSyncManager by lazy { CloudSyncManager(context) }
     
     companion object {
         private const val SYNC_WORK_NAME = "offline_sync_work"
@@ -138,6 +140,18 @@ class OfflineSyncManager(private val context: Context) {
                             processVideoDownload(operation)
                             successCount++
                         }
+                        SyncOperationType.CLOUD_SYNC_UP -> {
+                            processCloudSyncUp(operation)
+                            successCount++
+                        }
+                        SyncOperationType.CLOUD_SYNC_DOWN -> {
+                            processCloudSyncDown(operation)
+                            successCount++
+                        }
+                        SyncOperationType.CLOUD_CONFLICT_RESOLUTION -> {
+                            processCloudConflictResolution(operation)
+                            successCount++
+                        }
                     }
                     
                     // Remove successful operation from queue
@@ -192,6 +206,11 @@ class OfflineSyncManager(private val context: Context) {
         if (conflictResolution.hasConflict) {
             // Apply conflict resolution strategy
             applyConflictResolution(conflictResolution)
+        }
+        
+        // Also sync to cloud if enabled
+        if (shouldTriggerCloudSync(operation)) {
+            queueCloudSync(operation)
         }
     }
     
@@ -325,6 +344,94 @@ class OfflineSyncManager(private val context: Context) {
             ConflictStrategy.MANUAL_REVIEW -> {
                 // Flag for manual review
             }
+        }
+    }
+    
+    private suspend fun processCloudSyncUp(operation: SyncOperation) {
+        StructuredLogger.info(
+            StructuredLogger.LogCategory.SYNC,
+            TAG,
+            "Processing cloud sync up for operation ${operation.id}"
+        )
+        
+        val entityType = operation.data["entityType"] ?: return
+        val entityId = operation.data["entityId"] ?: return
+        val entityData = operation.data["entityData"] ?: return
+        
+        cloudSyncManager.syncEntityToCloud(entityType, entityId, entityData)
+    }
+    
+    private suspend fun processCloudSyncDown(operation: SyncOperation) {
+        StructuredLogger.info(
+            StructuredLogger.LogCategory.SYNC,
+            TAG,
+            "Processing cloud sync down for operation ${operation.id}"
+        )
+        
+        cloudSyncManager.syncFromCloud()
+    }
+    
+    private suspend fun processCloudConflictResolution(operation: SyncOperation) {
+        StructuredLogger.info(
+            StructuredLogger.LogCategory.SYNC,
+            TAG,
+            "Processing cloud conflict resolution for operation ${operation.id}"
+        )
+        
+        val conflictId = operation.data["conflictId"] ?: return
+        val resolutionType = operation.data["resolution"] ?: "LOCAL_WINS"
+        
+        val resolution = try {
+            CloudConflictResolution.valueOf(resolutionType)
+        } catch (e: Exception) {
+            CloudConflictResolution.LOCAL_WINS
+        }
+        
+        cloudSyncManager.resolveConflict(conflictId, resolution)
+    }
+    
+    private fun shouldTriggerCloudSync(operation: SyncOperation): Boolean {
+        return when (operation.type) {
+            SyncOperationType.NUTRITION_ENTRY,
+            SyncOperationType.WORKOUT_COMPLETION,
+            SyncOperationType.ACHIEVEMENT_UPDATE,
+            SyncOperationType.WEIGHT_ENTRY -> true
+            else -> false
+        }
+    }
+    
+    private suspend fun queueCloudSync(operation: SyncOperation) {
+        try {
+            val cloudSyncOperation = SyncOperation(
+                id = "cloud_sync_${operation.id}",
+                type = SyncOperationType.CLOUD_SYNC_UP,
+                data = operation.data + mapOf(
+                    "entityType" to mapEntityTypeFromOperation(operation.type),
+                    "entityId" to (operation.data["id"] ?: operation.id),
+                    "entityData" to operation.data.toString()
+                ),
+                timestamp = System.currentTimeMillis(),
+                retryCount = 0
+            )
+            
+            queueOperation(cloudSyncOperation)
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.SYNC,
+                TAG,
+                "Failed to queue cloud sync operation",
+                exception = e
+            )
+        }
+    }
+    
+    private fun mapEntityTypeFromOperation(operationType: SyncOperationType): String {
+        return when (operationType) {
+            SyncOperationType.NUTRITION_ENTRY -> "MealEntry"
+            SyncOperationType.WORKOUT_COMPLETION -> "WorkoutSession"
+            SyncOperationType.ACHIEVEMENT_UPDATE -> "PersonalAchievement"
+            SyncOperationType.WEIGHT_ENTRY -> "WeightEntry"
+            else -> "Unknown"
         }
     }
 }
@@ -468,7 +575,11 @@ enum class SyncOperationType {
     ACHIEVEMENT_UPDATE,
     WEIGHT_ENTRY,
     VIDEO_CACHE,
-    VIDEO_DOWNLOAD
+    VIDEO_DOWNLOAD,
+    // Cloud sync operations
+    CLOUD_SYNC_UP,
+    CLOUD_SYNC_DOWN,
+    CLOUD_CONFLICT_RESOLUTION
 }
 
 data class SyncResult(

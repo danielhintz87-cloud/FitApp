@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FitApp</string>
+    <string name="workout_start">Start</string>
+    <string name="workout_pause">Pause</string>
+    <string name="workout_stop">Stop</string>
+    <string name="workout_complete">Complete</string>
+    <string name="heart_rate">Heart Rate</string>
+    <string name="calories">Calories</string>
+    <string name="duration">Duration</string>
+    <string name="sets_completed">Sets Done</string>
+    <string name="current_exercise">Current Exercise</string>
+    <string name="next_exercise">Next Exercise</string>
+    <string name="rest_time">Rest</string>
+    <string name="workout_summary">Workout Summary</string>
+    <string name="sync_with_phone">Sync with Phone</string>
+    <string name="no_workouts">No active workout</string>
+    <string name="start_workout_on_phone">Start workout on phone</string>
+</resources>

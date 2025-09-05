@@ -20,3 +20,8 @@ app/build/tmp/
 .gradle/build-cache/
 **/build/reports/configuration-cache/
 **/build/reports/problems/
+
+# ProGuard/R8 mapping and usage files (keep for debugging release builds)
+app/build/outputs/mapping/
+app/build/outputs/proguard-seeds/
+app/build/outputs/proguard-usage/

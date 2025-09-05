@@ -85,6 +85,31 @@ class AiDiContainer private constructor(context: Context) {
         GenerateDailyWorkoutStepsUseCaseImpl(aiProviderRepository)
     }
     
+    val generatePersonalizedWorkoutUseCase: GeneratePersonalizedWorkoutUseCase by lazy {
+        GeneratePersonalizedWorkoutUseCaseImpl(aiProviderRepository)
+    }
+    
+    val generateNutritionAdviceUseCase: GenerateNutritionAdviceUseCase by lazy {
+        GenerateNutritionAdviceUseCaseImpl(aiProviderRepository)
+    }
+    
+    val analyzeProgressUseCase: AnalyzeProgressUseCase by lazy {
+        AnalyzeProgressUseCaseImpl(aiProviderRepository)
+    }
+    
+    val generateMotivationUseCase: GenerateMotivationUseCase by lazy {
+        GenerateMotivationUseCaseImpl(aiProviderRepository)
+    }
+    
+    val getPersonalizedRecommendationsUseCase: GetPersonalizedRecommendationsUseCase by lazy {
+        GetPersonalizedRecommendationsUseCaseImpl(
+            generatePersonalizedWorkoutUseCase,
+            generateNutritionAdviceUseCase,
+            analyzeProgressUseCase,
+            generateMotivationUseCase
+        )
+    }
+    
     companion object {
         @Volatile
         private var INSTANCE: AiDiContainer? = null

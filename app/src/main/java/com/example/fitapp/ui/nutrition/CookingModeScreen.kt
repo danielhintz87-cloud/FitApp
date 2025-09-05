@@ -46,6 +46,10 @@ fun CookingModeScreen(
         parseRecipeSteps(recipe.markdown)
     }
     
+    // Track ingredient completion state
+    val ingredients = remember(recipe.markdown) { parseIngredients(recipe.markdown) }
+    var checkedIngredients by remember { mutableStateOf(setOf<Int>()) }
+    
     // Keep screen on in cooking mode
     DisposableEffect(keepScreenOn) {
         val activity = ctx as? Activity
@@ -74,14 +78,35 @@ fun CookingModeScreen(
                 }
             },
             actions = {
-                IconButton(onClick = { showIngredients = true }) {
-                    Icon(Icons.AutoMirrored.Filled.ListAlt, contentDescription = "Zutaten")
-                }
-                IconButton(onClick = { keepScreenOn = !keepScreenOn }) {
-                    Icon(
-                        if (keepScreenOn) Icons.Filled.ScreenLockPortrait else Icons.Filled.ScreenLockRotation,
-                        contentDescription = "Display an/aus"
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Ingredients progress indicator
+                    if (ingredients.isNotEmpty()) {
+                        Text(
+                            "${checkedIngredients.size}/${ingredients.size}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (checkedIngredients.size == ingredients.size) 
+                                MaterialTheme.colorScheme.primary 
+                            else 
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.width(4.dp))
+                    }
+                    IconButton(onClick = { showIngredients = true }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ListAlt, 
+                            contentDescription = "Zutaten",
+                            tint = if (checkedIngredients.size == ingredients.size && ingredients.isNotEmpty()) 
+                                MaterialTheme.colorScheme.primary 
+                            else 
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(onClick = { keepScreenOn = !keepScreenOn }) {
+                        Icon(
+                            if (keepScreenOn) Icons.Filled.ScreenLockPortrait else Icons.Filled.ScreenLockRotation,
+                            contentDescription = "Display an/aus"
+                        )
+                    }
                 }
             }
         )
@@ -214,13 +239,13 @@ fun CookingModeScreen(
                         }
                     )
                     
-                    val ingredients = parseIngredients(recipe.markdown)
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(ingredients.size) { index ->
+                            val isChecked = checkedIngredients.contains(index)
                             Card(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -230,17 +255,23 @@ fun CookingModeScreen(
                                         .padding(12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        Icons.Filled.Circle,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(8.dp),
-                                        tint = MaterialTheme.colorScheme.primary
+                                    Checkbox(
+                                        checked = isChecked,
+                                        onCheckedChange = { checked ->
+                                            checkedIngredients = if (checked) {
+                                                checkedIngredients + index
+                                            } else {
+                                                checkedIngredients - index
+                                            }
+                                        }
                                     )
-                                    Spacer(Modifier.width(12.dp))
+                                    Spacer(Modifier.width(8.dp))
                                     Text(
                                         ingredients[index],
                                         style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
+                                        textDecoration = if (isChecked) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
+                                        color = if (isChecked) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.onSurface
                                     )
                                     IconButton(
                                         onClick = {

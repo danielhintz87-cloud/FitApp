@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
@@ -43,6 +46,7 @@ import com.example.fitapp.ui.screens.AIPersonalTrainerScreen
 import com.example.fitapp.ui.settings.ApiKeysScreen
 import com.example.fitapp.ui.settings.NotificationSettingsScreen
 import com.example.fitapp.ui.settings.HealthConnectSettingsScreen
+import com.example.fitapp.ui.settings.CloudSyncSettingsScreen
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.launch
@@ -70,7 +74,19 @@ fun MainScaffold() {
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                Text("Navigation", style = MaterialTheme.typography.titleMedium, modifier = Modifier.statusBarsPadding())
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 16.dp) // Add bottom padding for better scrolling
+                ) {
+                    Text(
+                        "Navigation", 
+                        style = MaterialTheme.typography.titleMedium, 
+                        modifier = Modifier
+                            .statusBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
                 
                 // AI Features Section
                 Text(
@@ -200,11 +216,18 @@ fun MainScaffold() {
                     icon = { Icon(Icons.Filled.HealthAndSafety, contentDescription = null) }
                 )
                 NavigationDrawerItem(
+                    label = { Text("Cloud-Synchronisation") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("cloud_sync_settings") },
+                    icon = { Icon(Icons.Filled.Cloud, contentDescription = null) }
+                )
+                NavigationDrawerItem(
                     label = { Text("KI Protokolle") }, 
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("logs") },
                     icon = { Icon(Icons.Filled.History, contentDescription = null) }
                 )
+                }
             }
         }
     ) {
@@ -315,6 +338,11 @@ fun MainScaffold() {
                 }
                 composable("health_connect_settings") {
                     HealthConnectSettingsScreen(navController = nav)
+                }
+                composable("cloud_sync_settings") {
+                    CloudSyncSettingsScreen(
+                        onNavigateBack = { nav.popBackStack() }
+                    )
                 }
                 composable("equipment") { 
                     EquipmentSelectionScreen(
