@@ -95,10 +95,11 @@ class ResetManagerTest {
             resetPreferences = true,
             resetAchievements = false
         )
+        val resetType = ResetType.USER_PROFILE
         val validToken = "CONFIRM_SELECTIVE_RESET"
 
         // When: Performing selective reset
-        val result = resetManager.performSelectiveReset(options, validToken)
+        val result = resetManager.performSelectiveReset(resetType, validToken, options)
 
         // Then: Should complete successfully
         assertTrue("Reset should be successful", result.isSuccess)
@@ -205,10 +206,11 @@ class ResetManagerTest {
     fun `should handle empty selective reset options`() = runTest {
         // Given: Empty selective reset options
         val emptyOptions = SelectiveResetOptions()
+        val resetType = ResetType.USER_PROFILE
         val validToken = "CONFIRM_SELECTIVE_RESET"
 
         // When: Performing reset with no options selected
-        val result = resetManager.performSelectiveReset(emptyOptions, validToken)
+        val result = resetManager.performSelectiveReset(resetType, validToken, emptyOptions)
 
         // Then: Should handle gracefully
         assertNotNull("Result should not be null", result)
