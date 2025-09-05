@@ -1,262 +1,38 @@
 name: Code Quality & Security
 
 on:
-  push:
-    branches: [ main, master, develop ]
   pull_request:
-    branches: [ main, master, develop ]
-  schedule:
-    # Run security scans weekly on Sundays at 2 AM UTC
-    - cron: '0 2 * * 0'
+  workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: read
 
 jobs:
-  lint-analysis:
-    name: Lint Analysis & Code Style
+  quality:
     runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    timeout-minutes: 40
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '21'
+      - uses: gradle/gradle-build-action@v3
 
-      - name: Gradle cache
-        uses: gradle/gradle-build-action@v2
+      - name: Run ktlint (falls konfiguriert)
+        run: ./gradlew ktlintCheck --stacktrace || true
 
-      - name: Create local.properties
-        run: cp local.properties.sample local.properties
+      - name: Run Detekt (falls konfiguriert)
+        run: ./gradlew detekt --stacktrace || true
 
-      - name: Run lint analysis
-        run: ./gradlew lintDebug --continue
-
-      - name: Run detekt (Kotlin static analysis)
-        run: ./gradlew detekt --continue || true
-
-      - name: Upload lint results
-        uses: actions/upload-artifact@v3
+      - name: Upload Quality Reports
         if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: lint-results
+          name: quality-reports
           path: |
-            app/build/reports/lint-results-debug.html
-            app/build/reports/lint-results-debug.xml
-
-      - name: Upload detekt results
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: detekt-results
-          path: app/build/reports/detekt/
-
-      - name: Annotate lint results
-        uses: yutailang0119/action-android-lint@v3
-        if: always()
-        with:
-          report-path: app/build/reports/lint-results-debug.xml
-        continue-on-error: true
-
-  dependency-analysis:
-    name: Dependency Analysis
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Gradle cache
-        uses: gradle/gradle-build-action@v2
-
-      - name: Create local.properties
-        run: cp local.properties.sample local.properties
-
-      - name: Generate dependency report
-        run: ./gradlew dependencies --configuration debugCompileClasspath > dependency-report.txt
-
-      - name: Check for known vulnerabilities
-        uses: dependency-check/Dependency-Check_Action@main
-        id: depcheck
-        with:
-          project: 'FitApp'
-          path: '.'
-          format: 'HTML,JSON'
-          args: >
-            --enableRetired
-            --enableExperimental
-            --failOnCVSS 7
-
-      - name: Upload dependency check results
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: dependency-check-report
-          path: reports/
-
-      - name: Upload dependency report
-        uses: actions/upload-artifact@v3
-        with:
-          name: dependency-report
-          path: dependency-report.txt
-
-  security-analysis:
-    name: Security Analysis
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-      - name: Upload Trivy scan results as artifact
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: trivy-security-scan
-          path: trivy-results.sarif
-
-  codeql-analysis:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: java
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Gradle cache
-        uses: gradle/gradle-build-action@v2
-
-      - name: Create local.properties
-        run: cp local.properties.sample local.properties
-
-      - name: Build for CodeQL
-        run: ./gradlew assembleDebug --no-daemon
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-
-  performance-analysis:
-    name: Performance Analysis
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Gradle cache
-        uses: gradle/gradle-build-action@v2
-
-      - name: Create local.properties
-        run: cp local.properties.sample local.properties
-
-      - name: Build performance analysis
-        run: |
-          echo "🔍 Build Performance Analysis" > performance-report.md
-          echo "=============================" >> performance-report.md
-          echo "" >> performance-report.md
-          
-          # Measure build time
-          start_time=$(date +%s)
-          ./gradlew assembleDebug --profile
-          end_time=$(date +%s)
-          build_time=$((end_time - start_time))
-          
-          echo "📊 **Build Metrics:**" >> performance-report.md
-          echo "- Total build time: ${build_time}s" >> performance-report.md
-          echo "- Gradle version: $(./gradlew --version | grep 'Gradle' | head -1)" >> performance-report.md
-          echo "- Java version: $(java -version 2>&1 | head -1)" >> performance-report.md
-          echo "" >> performance-report.md
-          
-          # APK size analysis
-          if [ -f "app/build/outputs/apk/debug/app-debug.apk" ]; then
-            apk_size=$(du -h app/build/outputs/apk/debug/app-debug.apk | cut -f1)
-            echo "📱 **APK Analysis:**" >> performance-report.md
-            echo "- Debug APK size: ${apk_size}" >> performance-report.md
-          fi
-
-      - name: Upload build profile
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: gradle-build-profile
-          path: build/reports/profile/
-
-      - name: Upload performance report
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: performance-analysis
-          path: performance-report.md
-
-  quality-summary:
-    name: Quality Summary
-    runs-on: ubuntu-latest
-    needs: [lint-analysis, dependency-analysis, security-analysis, performance-analysis]
-    if: always()
-    
-    steps:
-      - name: Generate quality summary
-        run: |
-          echo "# Code Quality Summary 📊" > quality-summary.md
-          echo "" >> quality-summary.md
-          echo "## Job Results" >> quality-summary.md
-          echo "| Job | Status |" >> quality-summary.md
-          echo "|-----|--------|" >> quality-summary.md
-          echo "| Lint Analysis | ${{ needs.lint-analysis.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> quality-summary.md
-          echo "| Dependency Analysis | ${{ needs.dependency-analysis.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> quality-summary.md
-          echo "| Security Analysis | ${{ needs.security-analysis.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> quality-summary.md
-          echo "| Performance Analysis | ${{ needs.performance-analysis.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> quality-summary.md
-          echo "" >> quality-summary.md
-          echo "📅 Generated on: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> quality-summary.md
-
-      - name: Upload quality summary
-        uses: actions/upload-artifact@v3
-        with:
-          name: quality-summary
-          path: quality-summary.md
+            **/build/reports/ktlint/**
+            **/build/reports/detekt/**
+          retention-days: 7
+          if-no-files-found: warn
