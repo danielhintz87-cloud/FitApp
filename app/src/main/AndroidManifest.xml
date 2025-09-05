@@ -40,5 +40,16 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        
+        <!-- ML Demo Activities -->
+        <activity
+            android:name="com.fitapp.ml.demo.MoveNetDemoActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FitApp" />
+            
+        <activity
+            android:name="com.fitapp.ml.demo.BlazePoseDemoActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FitApp" />
     </application>
 </manifest>

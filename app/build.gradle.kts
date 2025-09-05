@@ -1,4 +1,5 @@
 import java.util.Properties
+import org.gradle.api.tasks.Copy
 
 plugins {
     alias(libs.plugins.android.application)
@@ -154,6 +155,7 @@ dependencies {
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     // Room (AI-Logs)
     implementation(libs.room.runtime)
@@ -181,10 +183,13 @@ dependencies {
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
-    implementation("androidx.camera:camera-core:1.3.0")
-    implementation("androidx.camera:camera-camera2:1.3.0")
-    implementation("androidx.camera:camera-lifecycle:1.3.0")
-    implementation("androidx.camera:camera-view:1.3.0")
+    implementation("androidx.camera:camera-core:1.3.4")
+    implementation("androidx.camera:camera-camera2:1.3.4")
+    implementation("androidx.camera:camera-lifecycle:1.3.4")
+    implementation("androidx.camera:camera-view:1.3.4")
+
+    // MediaPipe Tasks - Pose Landmarker
+    implementation("com.google.mediapipe:tasks-vision:0.10.14")
 
     // ML Kit Barcode Scanning
     implementation(libs.mlkit.barcode.scanning)
@@ -273,4 +278,21 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(debugTree.exclude(fileFilter)))
     executionData.setFrom(fileTree(layout.buildDirectory.get()).include("jacoco/testDebugUnitTest.exec"))
+}
+
+// ==== Models Copy Task ====
+val modelsRoot = rootProject.layout.projectDirectory.dir("models")
+val appAssets = layout.projectDirectory.dir("src/main/assets/models")
+
+tasks.register<Copy>("copyModels") {
+    from(modelsRoot.dir("tflite")) { into("tflite") }
+    from(modelsRoot.dir("onnx")) { into("onnx") }
+    into(appAssets)
+    doFirst {
+        println("Kopiere Modelle in: ${appAssets.asFile.absolutePath}")
+    }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn("copyModels")
 }
