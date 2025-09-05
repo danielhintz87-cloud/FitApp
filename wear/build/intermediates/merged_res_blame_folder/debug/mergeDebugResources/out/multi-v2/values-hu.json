@@ -1,8 +1,25 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.fitapp.wear-mergeDebugResources-66:/values-hu/values-hu.xml",
+            "outputFile": "com.example.fitapp.wear-mergeDebugResources-67:/values-hu/values-hu.xml",
             "map": [
+                {
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/8f30077c40131c43fa44a403bfacd599/transformed/ui-release/res/values-hu/values-hu.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,200,288,385,484,571,653,749,838,925,1008,1096,1170,1245,1316,1386,1465,1531",
+                        "endColumns": "94,87,96,98,86,81,95,88,86,82,87,73,74,70,69,78,65,120",
+                        "endOffsets": "195,283,380,479,566,648,744,833,920,1003,1091,1165,1240,1311,1381,1460,1526,1647"
+                    },
+                    "to": {
+                        "startLines": "9,10,32,33,34,43,44,45,46,47,48,49,50,51,52,54,55,56",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "827,922,3782,3879,3978,4705,4787,4883,4972,5059,5142,5230,5304,5379,5450,5621,5700,5766",
+                        "endColumns": "94,87,96,98,86,81,95,88,86,82,87,73,74,70,69,78,65,120",
+                        "endOffsets": "917,1005,3874,3973,4060,4782,4878,4967,5054,5137,5225,5299,5374,5445,5515,5695,5761,5882"
+                    }
+                },
                 {
                     "source": "/home/runner/.gradle/caches/8.14.3/transforms/1df42171ada8753a9f549695c6adedd9/transformed/core-1.13.1/res/values-hu/values-hu.xml",
                     "from": {
@@ -38,7 +55,7 @@
                     }
                 },
                 {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/d9cebee04b37732bf6bca1a826e36f41/transformed/foundation-release/res/values-hu/values-hu.xml",
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/d722471c8b6b747f42d6ee6084a47a53/transformed/foundation-release/res/values-hu/values-hu.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
@@ -69,23 +86,6 @@
                         "startOffsets": "2090",
                         "endColumns": "176",
                         "endOffsets": "2262"
-                    }
-                },
-                {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/35800406b50fbbb71f69ee9f7524465a/transformed/ui-release/res/values-hu/values-hu.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "105,200,288,385,484,571,653,749,838,925,1008,1096,1170,1245,1316,1386,1465,1531",
-                        "endColumns": "94,87,96,98,86,81,95,88,86,82,87,73,74,70,69,78,65,120",
-                        "endOffsets": "195,283,380,479,566,648,744,833,920,1003,1091,1165,1240,1311,1381,1460,1526,1647"
-                    },
-                    "to": {
-                        "startLines": "9,10,32,33,34,43,44,45,46,47,48,49,50,51,52,54,55,56",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "827,922,3782,3879,3978,4705,4787,4883,4972,5059,5142,5230,5304,5379,5450,5621,5700,5766",
-                        "endColumns": "94,87,96,98,86,81,95,88,86,82,87,73,74,70,69,78,65,120",
-                        "endOffsets": "917,1005,3874,3973,4060,4782,4878,4967,5054,5137,5225,5299,5374,5445,5515,5695,5761,5882"
                     }
                 },
                 {

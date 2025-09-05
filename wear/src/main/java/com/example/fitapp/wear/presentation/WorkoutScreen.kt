@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -24,6 +25,13 @@ fun WorkoutWearScreen(
     onNavigateBack: () -> Unit,
     viewModel: WearWorkoutViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    
+    // Initialize ViewModel with context
+    LaunchedEffect(Unit) {
+        viewModel.initialize(context)
+    }
+    
     val workoutState by viewModel.workoutState.collectAsState()
     
     Column(
@@ -72,6 +80,7 @@ fun ActiveWorkoutContent(
             // Exercise name and progress
             item {
                 Card(
+                    onClick = {},
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -176,8 +185,8 @@ fun RestTimerCard(
     onSkipRest: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.1f)
+        onClick = {},
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -222,6 +231,7 @@ fun WorkoutStatsCard(
     elapsedTime: Long
 ) {
     Card(
+        onClick = {},
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -241,7 +251,7 @@ fun WorkoutStatsCard(
                 icon = Icons.Default.LocalFireDepartment,
                 value = "$caloriesBurned",
                 label = "Cal",
-                color = Color.Orange
+                color = Color.Red
             )
             
             WorkoutStatItem(

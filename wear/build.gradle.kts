@@ -58,6 +58,10 @@ android {
 }
 
 dependencies {
+    // Compose BOM for version management
+    val composeBom = platform(libs.compose.bom)
+    implementation(composeBom)
+    
     // Wear OS Compose
     implementation(libs.wear.compose.material)
     implementation(libs.wear.compose.foundation)

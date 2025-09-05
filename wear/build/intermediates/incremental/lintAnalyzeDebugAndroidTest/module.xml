@@ -1,0 +1,18 @@
+<lint-module
+    format="1"
+    dir="/home/runner/work/FitApp/FitApp/wear"
+    name=":wear"
+    type="APP"
+    maven="FitApp:wear:unspecified"
+    agpVersion="8.12.1"
+    buildFolder="build"
+    bootClassPath="/usr/local/lib/android/sdk/platforms/android-34/android.jar:/usr/local/lib/android/sdk/build-tools/35.0.0/core-lambda-stubs.jar"
+    javaSourceLevel="17"
+    compileTarget="android-34">
+  <lintOptions
+      abortOnError="true"
+      absolutePaths="true"
+      checkReleaseBuilds="true"
+      explainIssues="true"/>
+  <variant name="debug"/>
+</lint-module>

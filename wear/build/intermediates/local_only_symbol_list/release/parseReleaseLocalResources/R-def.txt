@@ -1,0 +1,31 @@
+R_DEF: Internal format may change without notice
+local
+color background_wear
+color error_wear
+color on_background_wear
+color on_error_wear
+color on_primary_wear
+color on_secondary_wear
+color on_surface_wear
+color primary_variant_wear
+color primary_wear
+color secondary_variant_wear
+color secondary_wear
+color surface_wear
+string app_name
+string calories
+string current_exercise
+string duration
+string heart_rate
+string next_exercise
+string no_workouts
+string rest_time
+string sets_completed
+string start_workout_on_phone
+string sync_with_phone
+string workout_complete
+string workout_pause
+string workout_start
+string workout_stop
+string workout_summary
+style Theme.FitApp.Wear

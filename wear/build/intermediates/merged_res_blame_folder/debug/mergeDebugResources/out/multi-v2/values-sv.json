@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.fitapp.wear-mergeDebugResources-66:/values-sv/values-sv.xml",
+            "outputFile": "com.example.fitapp.wear-mergeDebugResources-67:/values-sv/values-sv.xml",
             "map": [
                 {
                     "source": "/home/runner/.gradle/caches/8.14.3/transforms/e18cc3fe8f40d933634408eec03c287f/transformed/play-services-base-18.0.1/res/values-sv/values.xml",
@@ -55,7 +55,7 @@
                     }
                 },
                 {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/d9cebee04b37732bf6bca1a826e36f41/transformed/foundation-release/res/values-sv/values-sv.xml",
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/d722471c8b6b747f42d6ee6084a47a53/transformed/foundation-release/res/values-sv/values-sv.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
@@ -89,6 +89,23 @@
                     }
                 },
                 {
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/8f30077c40131c43fa44a403bfacd599/transformed/ui-release/res/values-sv/values-sv.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,198,286,382,481,569,645,733,822,903,989,1079,1148,1222,1293,1363,1441,1508",
+                        "endColumns": "92,87,95,98,87,75,87,88,80,85,89,68,73,70,69,77,66,119",
+                        "endOffsets": "193,281,377,476,564,640,728,817,898,984,1074,1143,1217,1288,1358,1436,1503,1623"
+                    },
+                    "to": {
+                        "startLines": "9,10,32,33,34,43,44,45,46,47,48,49,50,51,52,54,55,56",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "833,926,3559,3655,3754,4474,4550,4638,4727,4808,4894,4984,5053,5127,5198,5369,5447,5514",
+                        "endColumns": "92,87,95,98,87,75,87,88,80,85,89,68,73,70,69,77,66,119",
+                        "endOffsets": "921,1009,3650,3749,3837,4545,4633,4722,4803,4889,4979,5048,5122,5193,5263,5442,5509,5629"
+                    }
+                },
+                {
                     "source": "/home/runner/.gradle/caches/8.14.3/transforms/912238b326a08d4aa056ce9eb7989033/transformed/horologist-compose-material-0.6.12/res/values-sv/values-sv.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
@@ -103,23 +120,6 @@
                         "startOffsets": "3842,3924,4005,4088,4168,4246,4323,4399",
                         "endColumns": "81,80,82,79,77,76,75,74",
                         "endOffsets": "3919,4000,4083,4163,4241,4318,4394,4469"
-                    }
-                },
-                {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/35800406b50fbbb71f69ee9f7524465a/transformed/ui-release/res/values-sv/values-sv.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "105,198,286,382,481,569,645,733,822,903,989,1079,1148,1222,1293,1363,1441,1508",
-                        "endColumns": "92,87,95,98,87,75,87,88,80,85,89,68,73,70,69,77,66,119",
-                        "endOffsets": "193,281,377,476,564,640,728,817,898,984,1074,1143,1217,1288,1358,1436,1503,1623"
-                    },
-                    "to": {
-                        "startLines": "9,10,32,33,34,43,44,45,46,47,48,49,50,51,52,54,55,56",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "833,926,3559,3655,3754,4474,4550,4638,4727,4808,4894,4984,5053,5127,5198,5369,5447,5514",
-                        "endColumns": "92,87,95,98,87,75,87,88,80,85,89,68,73,70,69,77,66,119",
-                        "endOffsets": "921,1009,3650,3749,3837,4545,4633,4722,4803,4889,4979,5048,5122,5193,5263,5442,5509,5629"
                     }
                 }
             ]

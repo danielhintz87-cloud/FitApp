@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.fitapp.wear-mergeDebugResources-66:/values-th/values-th.xml",
+            "outputFile": "com.example.fitapp.wear-mergeDebugResources-67:/values-th/values-th.xml",
             "map": [
                 {
                     "source": "/home/runner/.gradle/caches/8.14.3/transforms/e18cc3fe8f40d933634408eec03c287f/transformed/play-services-base-18.0.1/res/values-th/values.xml",
@@ -35,6 +35,23 @@
                         "startOffsets": "1953",
                         "endColumns": "128",
                         "endOffsets": "2077"
+                    }
+                },
+                {
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/8f30077c40131c43fa44a403bfacd599/transformed/ui-release/res/values-th/values-th.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,191,268,365,466,554,639,724,810,893,979,1068,1141,1216,1292,1368,1446,1513",
+                        "endColumns": "85,76,96,100,87,84,84,85,82,85,88,72,74,75,75,77,66,122",
+                        "endOffsets": "186,263,360,461,549,634,719,805,888,974,1063,1136,1211,1287,1363,1441,1508,1631"
+                    },
+                    "to": {
+                        "startLines": "9,10,32,33,34,43,44,45,46,47,48,49,50,51,52,54,55,56",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "820,906,3456,3553,3654,4381,4466,4551,4637,4720,4806,4895,4968,5043,5119,5296,5374,5441",
+                        "endColumns": "85,76,96,100,87,84,84,85,82,85,88,72,74,75,75,77,66,122",
+                        "endOffsets": "901,978,3548,3649,3737,4461,4546,4632,4715,4801,4890,4963,5038,5114,5190,5369,5436,5559"
                     }
                 },
                 {
@@ -89,7 +106,7 @@
                     }
                 },
                 {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/d9cebee04b37732bf6bca1a826e36f41/transformed/foundation-release/res/values-th/values-th.xml",
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/d722471c8b6b747f42d6ee6084a47a53/transformed/foundation-release/res/values-th/values-th.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
@@ -103,23 +120,6 @@
                         "startOffsets": "5564,5661",
                         "endColumns": "96,94",
                         "endOffsets": "5656,5751"
-                    }
-                },
-                {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/35800406b50fbbb71f69ee9f7524465a/transformed/ui-release/res/values-th/values-th.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "105,191,268,365,466,554,639,724,810,893,979,1068,1141,1216,1292,1368,1446,1513",
-                        "endColumns": "85,76,96,100,87,84,84,85,82,85,88,72,74,75,75,77,66,122",
-                        "endOffsets": "186,263,360,461,549,634,719,805,888,974,1063,1136,1211,1287,1363,1441,1508,1631"
-                    },
-                    "to": {
-                        "startLines": "9,10,32,33,34,43,44,45,46,47,48,49,50,51,52,54,55,56",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "820,906,3456,3553,3654,4381,4466,4551,4637,4720,4806,4895,4968,5043,5119,5296,5374,5441",
-                        "endColumns": "85,76,96,100,87,84,84,85,82,85,88,72,74,75,75,77,66,122",
-                        "endOffsets": "901,978,3548,3649,3737,4461,4546,4632,4715,4801,4890,4963,5038,5114,5190,5369,5436,5559"
                     }
                 }
             ]

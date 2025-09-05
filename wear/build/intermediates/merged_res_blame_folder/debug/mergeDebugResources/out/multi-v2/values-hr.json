@@ -1,25 +1,8 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.fitapp.wear-mergeDebugResources-66:/values-hr/values-hr.xml",
+            "outputFile": "com.example.fitapp.wear-mergeDebugResources-67:/values-hr/values-hr.xml",
             "map": [
-                {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/35800406b50fbbb71f69ee9f7524465a/transformed/ui-release/res/values-hr/values-hr.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "105,210,297,391,490,580,659,752,847,932,1013,1099,1172,1249,1328,1405,1484,1554",
-                        "endColumns": "104,86,93,98,89,78,92,94,84,80,85,72,76,78,76,78,69,117",
-                        "endOffsets": "205,292,386,485,575,654,747,842,927,1008,1094,1167,1244,1323,1400,1479,1549,1667"
-                    },
-                    "to": {
-                        "startLines": "9,10,32,33,34,43,44,45,46,47,48,49,50,51,52,54,55,56",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "831,936,3562,3656,3755,4526,4605,4698,4793,4878,4959,5045,5118,5195,5274,5452,5531,5601",
-                        "endColumns": "104,86,93,98,89,78,92,94,84,80,85,72,76,78,76,78,69,117",
-                        "endOffsets": "931,1018,3651,3750,3840,4600,4693,4788,4873,4954,5040,5113,5190,5269,5346,5526,5596,5714"
-                    }
-                },
                 {
                     "source": "/home/runner/.gradle/caches/8.14.3/transforms/1df42171ada8753a9f549695c6adedd9/transformed/core-1.13.1/res/values-hr/values-hr.xml",
                     "from": {
@@ -38,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/d9cebee04b37732bf6bca1a826e36f41/transformed/foundation-release/res/values-hr/values-hr.xml",
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/d722471c8b6b747f42d6ee6084a47a53/transformed/foundation-release/res/values-hr/values-hr.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
@@ -103,6 +86,23 @@
                         "startOffsets": "1023,1129,1286,1416,1526,1683,1813,1928,2167,2317,2424,2581,2709,2856,2999,3067,3129",
                         "endColumns": "105,156,129,109,156,129,114,106,149,106,156,127,146,142,67,61,80",
                         "endOffsets": "1124,1281,1411,1521,1678,1808,1923,2030,2312,2419,2576,2704,2851,2994,3062,3124,3205"
+                    }
+                },
+                {
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/8f30077c40131c43fa44a403bfacd599/transformed/ui-release/res/values-hr/values-hr.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,210,297,391,490,580,659,752,847,932,1013,1099,1172,1249,1328,1405,1484,1554",
+                        "endColumns": "104,86,93,98,89,78,92,94,84,80,85,72,76,78,76,78,69,117",
+                        "endOffsets": "205,292,386,485,575,654,747,842,927,1008,1094,1167,1244,1323,1400,1479,1549,1667"
+                    },
+                    "to": {
+                        "startLines": "9,10,32,33,34,43,44,45,46,47,48,49,50,51,52,54,55,56",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "831,936,3562,3656,3755,4526,4605,4698,4793,4878,4959,5045,5118,5195,5274,5452,5531,5601",
+                        "endColumns": "104,86,93,98,89,78,92,94,84,80,85,72,76,78,76,78,69,117",
+                        "endOffsets": "931,1018,3651,3750,3840,4600,4693,4788,4873,4954,5040,5113,5190,5269,5346,5526,5596,5714"
                     }
                 },
                 {

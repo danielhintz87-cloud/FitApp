@@ -9,6 +9,8 @@
     <uses-permission android:name="android.permission.BODY_SENSORS" />
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
     <uses-permission android:name="com.google.android.permission.PROVIDE_BACKGROUND" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
     
     <!-- Data synchronization with phone -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -35,18 +37,8 @@
         <service
             android:name=".services.WearWorkoutTrackingService"
             android:enabled="true"
-            android:exported="false" />
-
-        <!-- Data sync service with phone -->
-        <service
-            android:name=".services.WearDataSyncService"
-            android:enabled="true"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
-                <data android:scheme="wear" android:host="*" />
-            </intent-filter>
-        </service>
+            android:exported="false"
+            android:foregroundServiceType="health" />
 
         <!-- Capability declaration for phone companion app discovery -->
         <meta-data

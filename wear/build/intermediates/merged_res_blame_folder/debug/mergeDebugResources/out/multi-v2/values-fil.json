@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.fitapp.wear-mergeDebugResources-66:/values-fil/values-fil.xml",
+            "outputFile": "com.example.fitapp.wear-mergeDebugResources-67:/values-fil/values-fil.xml",
             "map": [
                 {
                     "source": "/home/runner/.gradle/caches/8.14.3/transforms/912238b326a08d4aa056ce9eb7989033/transformed/horologist-compose-material-0.6.12/res/values-fil/values-fil.xml",

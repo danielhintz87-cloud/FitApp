@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.fitapp.wear-mergeDebugResources-66:/values-zh-rTW/values-zh-rTW.xml",
+            "outputFile": "com.example.fitapp.wear-mergeDebugResources-67:/values-zh-rTW/values-zh-rTW.xml",
             "map": [
                 {
                     "source": "/home/runner/.gradle/caches/8.14.3/transforms/912238b326a08d4aa056ce9eb7989033/transformed/horologist-compose-material-0.6.12/res/values-zh-rTW/values-zh-rTW.xml",
@@ -89,24 +89,7 @@
                     }
                 },
                 {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/35800406b50fbbb71f69ee9f7524465a/transformed/ui-release/res/values-zh-rTW/values-zh-rTW.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "105,182,258,345,436,514,588,665,743,818,891,966,1034,1107,1179,1250,1324,1392",
-                        "endColumns": "76,75,86,90,77,73,76,77,74,72,74,67,72,71,70,73,67,115",
-                        "endOffsets": "177,253,340,431,509,583,660,738,813,886,961,1029,1102,1174,1245,1319,1387,1503"
-                    },
-                    "to": {
-                        "startLines": "9,10,32,33,34,43,44,45,46,47,48,49,50,51,52,54,55,56",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "766,843,3059,3146,3237,3942,4016,4093,4171,4246,4319,4394,4462,4535,4607,4779,4853,4921",
-                        "endColumns": "76,75,86,90,77,73,76,77,74,72,74,67,72,71,70,73,67,115",
-                        "endOffsets": "838,914,3141,3232,3310,4011,4088,4166,4241,4314,4389,4457,4530,4602,4673,4848,4916,5032"
-                    }
-                },
-                {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/d9cebee04b37732bf6bca1a826e36f41/transformed/foundation-release/res/values-zh-rTW/values-zh-rTW.xml",
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/d722471c8b6b747f42d6ee6084a47a53/transformed/foundation-release/res/values-zh-rTW/values-zh-rTW.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
@@ -120,6 +103,23 @@
                         "startOffsets": "5037,5120",
                         "endColumns": "82,78",
                         "endOffsets": "5115,5194"
+                    }
+                },
+                {
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/8f30077c40131c43fa44a403bfacd599/transformed/ui-release/res/values-zh-rTW/values-zh-rTW.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,182,258,345,436,514,588,665,743,818,891,966,1034,1107,1179,1250,1324,1392",
+                        "endColumns": "76,75,86,90,77,73,76,77,74,72,74,67,72,71,70,73,67,115",
+                        "endOffsets": "177,253,340,431,509,583,660,738,813,886,961,1029,1102,1174,1245,1319,1387,1503"
+                    },
+                    "to": {
+                        "startLines": "9,10,32,33,34,43,44,45,46,47,48,49,50,51,52,54,55,56",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "766,843,3059,3146,3237,3942,4016,4093,4171,4246,4319,4394,4462,4535,4607,4779,4853,4921",
+                        "endColumns": "76,75,86,90,77,73,76,77,74,72,74,67,72,71,70,73,67,115",
+                        "endOffsets": "838,914,3141,3232,3310,4011,4088,4166,4241,4314,4389,4457,4530,4602,4673,4848,4916,5032"
                     }
                 }
             ]

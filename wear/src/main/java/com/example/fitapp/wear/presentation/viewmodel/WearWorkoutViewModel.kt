@@ -6,10 +6,12 @@ import com.example.fitapp.shared.*
 import com.example.fitapp.wear.services.WearDataSyncService
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import android.content.Context
 
 class WearWorkoutViewModel : ViewModel() {
     
-    private lateinit var dataSyncService: WearDataSyncService
+    private var dataSyncService: WearDataSyncService? = null
+    private var isInitialized = false
     
     private val _workoutState = MutableStateFlow(WearWorkoutState())
     val workoutState: StateFlow<WearWorkoutState> = _workoutState.asStateFlow()
@@ -20,34 +22,40 @@ class WearWorkoutViewModel : ViewModel() {
     private val _notifications = MutableStateFlow<List<WearNotification>>(emptyList())
     val notifications: StateFlow<List<WearNotification>> = _notifications.asStateFlow()
     
-    init {
-        dataSyncService = WearDataSyncService()
-        // Listen for data updates from phone
-        viewModelScope.launch {
-            dataSyncService.workoutStateFlow.collect { state ->
-                _workoutState.value = state ?: WearWorkoutState()
+    fun initialize(context: Context) {
+        if (!isInitialized) {
+            dataSyncService = WearDataSyncService().apply {
+                initialize(context)
             }
-        }
-        
-        viewModelScope.launch {
-            dataSyncService.progressDataFlow.collect { progress ->
-                _progressData.value = progress ?: WearProgressData()
+            isInitialized = true
+            
+            // Listen for data updates from phone
+            viewModelScope.launch {
+                dataSyncService?.workoutStateFlow?.collect { state ->
+                    _workoutState.value = state ?: WearWorkoutState()
+                }
             }
-        }
-        
-        viewModelScope.launch {
-            dataSyncService.notificationsFlow.collect { notifications ->
-                _notifications.value = notifications
+            
+            viewModelScope.launch {
+                dataSyncService?.progressDataFlow?.collect { progress ->
+                    _progressData.value = progress ?: WearProgressData()
+                }
             }
+            
+            viewModelScope.launch {
+                dataSyncService?.notificationsFlow?.collect { notifications ->
+                    _notifications.value = notifications
+                }
+            }
+            
+            // Request initial sync
+            syncWithPhone()
         }
-        
-        // Request initial sync
-        syncWithPhone()
     }
     
     fun pauseWorkout() {
         viewModelScope.launch {
-            dataSyncService.sendAction(
+            dataSyncService?.sendAction(
                 WearWorkoutAction(
                     action = WearActionType.PAUSE_WORKOUT,
                     workoutId = _workoutState.value.workoutId
@@ -58,7 +66,7 @@ class WearWorkoutViewModel : ViewModel() {
     
     fun resumeWorkout() {
         viewModelScope.launch {
-            dataSyncService.sendAction(
+            dataSyncService?.sendAction(
                 WearWorkoutAction(
                     action = WearActionType.RESUME_WORKOUT,
                     workoutId = _workoutState.value.workoutId
@@ -70,7 +78,7 @@ class WearWorkoutViewModel : ViewModel() {
     fun completeCurrentSet() {
         val currentState = _workoutState.value
         viewModelScope.launch {
-            dataSyncService.sendAction(
+            dataSyncService?.sendAction(
                 WearWorkoutAction(
                     action = WearActionType.COMPLETE_SET,
                     workoutId = currentState.workoutId,
@@ -83,7 +91,7 @@ class WearWorkoutViewModel : ViewModel() {
     
     fun skipRest() {
         viewModelScope.launch {
-            dataSyncService.sendAction(
+            dataSyncService?.sendAction(
                 WearWorkoutAction(
                     action = WearActionType.SKIP_REST,
                     workoutId = _workoutState.value.workoutId
@@ -94,7 +102,7 @@ class WearWorkoutViewModel : ViewModel() {
     
     fun completeWorkout() {
         viewModelScope.launch {
-            dataSyncService.sendAction(
+            dataSyncService?.sendAction(
                 WearWorkoutAction(
                     action = WearActionType.COMPLETE_WORKOUT,
                     workoutId = _workoutState.value.workoutId
@@ -105,7 +113,7 @@ class WearWorkoutViewModel : ViewModel() {
     
     fun requestWorkoutStart() {
         viewModelScope.launch {
-            dataSyncService.sendAction(
+            dataSyncService?.sendAction(
                 WearWorkoutAction(
                     action = WearActionType.START_WORKOUT
                 )
@@ -115,7 +123,7 @@ class WearWorkoutViewModel : ViewModel() {
     
     fun updateHeartRate(heartRate: Int) {
         viewModelScope.launch {
-            dataSyncService.sendAction(
+            dataSyncService?.sendAction(
                 WearWorkoutAction(
                     action = WearActionType.UPDATE_HEART_RATE,
                     workoutId = _workoutState.value.workoutId,
@@ -127,7 +135,7 @@ class WearWorkoutViewModel : ViewModel() {
     
     fun syncWithPhone() {
         viewModelScope.launch {
-            dataSyncService.requestSync()
+            dataSyncService?.requestSync()
         }
     }
     
@@ -137,6 +145,6 @@ class WearWorkoutViewModel : ViewModel() {
     
     override fun onCleared() {
         super.onCleared()
-        dataSyncService.cleanup()
+        dataSyncService?.cleanup()
     }
 }

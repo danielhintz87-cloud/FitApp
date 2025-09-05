@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -24,6 +25,13 @@ fun ProgressWearScreen(
     onNavigateBack: () -> Unit,
     viewModel: WearWorkoutViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    
+    // Initialize ViewModel with context
+    LaunchedEffect(Unit) {
+        viewModel.initialize(context)
+    }
+    
     val progressData by viewModel.progressData.collectAsState()
     
     Column(
@@ -43,6 +51,7 @@ fun ProgressWearScreen(
             // Progress summary card
             item {
                 Card(
+                    onClick = {},
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -68,6 +77,7 @@ fun ProgressWearScreen(
             // Weekly stats
             item {
                 Card(
+                    onClick = {},
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -97,7 +107,7 @@ fun ProgressWearScreen(
                                 icon = Icons.Default.LocalFireDepartment,
                                 value = "${progressData.weeklyCaloriesBurned}",
                                 label = "Calories",
-                                color = Color.Orange
+                                color = Color.Red
                             )
                         }
                     }
@@ -107,10 +117,8 @@ fun ProgressWearScreen(
             // Streak information
             item {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = if (progressData.currentStreak > 0) 
-                        MaterialTheme.colors.primary.copy(alpha = 0.1f) 
-                    else MaterialTheme.colors.surface
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp),
@@ -119,7 +127,7 @@ fun ProgressWearScreen(
                         Icon(
                             imageVector = Icons.Default.Whatshot,
                             contentDescription = "Streak",
-                            tint = if (progressData.currentStreak > 0) Color.Orange else MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
+                            tint = if (progressData.currentStreak > 0) Color.Red else MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
                             modifier = Modifier.size(20.dp)
                         )
                         
@@ -127,7 +135,7 @@ fun ProgressWearScreen(
                             text = "${progressData.currentStreak}",
                             style = MaterialTheme.typography.title1,
                             fontWeight = FontWeight.Bold,
-                            color = if (progressData.currentStreak > 0) Color.Orange else MaterialTheme.colors.onSurface
+                            color = if (progressData.currentStreak > 0) Color.Red else MaterialTheme.colors.onSurface
                         )
                         
                         Text(
@@ -159,6 +167,7 @@ fun ProgressWearScreen(
             // Total workouts
             item {
                 Card(
+                    onClick = {},
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -195,6 +204,7 @@ fun ProgressWearScreen(
             if (progressData.lastWorkoutDate.isNotEmpty()) {
                 item {
                     Card(
+                        onClick = {},
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
@@ -261,6 +271,7 @@ fun ProgressStatItem(
 @Composable
 fun PersonalRecordCard(record: WearPersonalRecord) {
     Card(
+        onClick = {},
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(

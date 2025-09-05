@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -68,6 +69,13 @@ fun MainWearScreen(
     onNavigateToProgress: () -> Unit,
     viewModel: WearWorkoutViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    
+    // Initialize ViewModel with context
+    LaunchedEffect(Unit) {
+        viewModel.initialize(context)
+    }
+    
     val workoutState by viewModel.workoutState.collectAsState()
     val progressData by viewModel.progressData.collectAsState()
     

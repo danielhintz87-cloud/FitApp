@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.fitapp.wear-mergeDebugResources-66:/values-nb/values-nb.xml",
+            "outputFile": "com.example.fitapp.wear-mergeDebugResources-67:/values-nb/values-nb.xml",
             "map": [
                 {
                     "source": "/home/runner/.gradle/caches/8.14.3/transforms/912238b326a08d4aa056ce9eb7989033/transformed/horologist-compose-material-0.6.12/res/values-nb/values-nb.xml",
@@ -38,7 +38,7 @@
                     }
                 },
                 {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/d9cebee04b37732bf6bca1a826e36f41/transformed/foundation-release/res/values-nb/values-nb.xml",
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/d722471c8b6b747f42d6ee6084a47a53/transformed/foundation-release/res/values-nb/values-nb.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
@@ -52,23 +52,6 @@
                         "startOffsets": "5628,5718",
                         "endColumns": "89,87",
                         "endOffsets": "5713,5801"
-                    }
-                },
-                {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/35800406b50fbbb71f69ee9f7524465a/transformed/ui-release/res/values-nb/values-nb.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "105,198,279,376,476,564,640,728,817,899,979,1061,1131,1205,1276,1346,1423,1490",
-                        "endColumns": "92,80,96,99,87,75,87,88,81,79,81,69,73,70,69,76,66,119",
-                        "endOffsets": "193,274,371,471,559,635,723,812,894,974,1056,1126,1200,1271,1341,1418,1485,1605"
-                    },
-                    "to": {
-                        "startLines": "9,10,32,33,34,43,44,45,46,47,48,49,50,51,52,54,55,56",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "831,924,3564,3661,3761,4481,4557,4645,4734,4816,4896,4978,5048,5122,5193,5364,5441,5508",
-                        "endColumns": "92,80,96,99,87,75,87,88,81,79,81,69,73,70,69,76,66,119",
-                        "endOffsets": "919,1000,3656,3756,3844,4552,4640,4729,4811,4891,4973,5043,5117,5188,5258,5436,5503,5623"
                     }
                 },
                 {
@@ -120,6 +103,23 @@
                         "startOffsets": "3219,3330,3451,5806,5929",
                         "endColumns": "110,120,112,122,110",
                         "endOffsets": "3325,3446,3559,5924,6035"
+                    }
+                },
+                {
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/8f30077c40131c43fa44a403bfacd599/transformed/ui-release/res/values-nb/values-nb.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,198,279,376,476,564,640,728,817,899,979,1061,1131,1205,1276,1346,1423,1490",
+                        "endColumns": "92,80,96,99,87,75,87,88,81,79,81,69,73,70,69,76,66,119",
+                        "endOffsets": "193,274,371,471,559,635,723,812,894,974,1056,1126,1200,1271,1341,1418,1485,1605"
+                    },
+                    "to": {
+                        "startLines": "9,10,32,33,34,43,44,45,46,47,48,49,50,51,52,54,55,56",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "831,924,3564,3661,3761,4481,4557,4645,4734,4816,4896,4978,5048,5122,5193,5364,5441,5508",
+                        "endColumns": "92,80,96,99,87,75,87,88,81,79,81,69,73,70,69,76,66,119",
+                        "endOffsets": "919,1000,3656,3756,3844,4552,4640,4729,4811,4891,4973,5043,5117,5188,5258,5436,5503,5623"
                     }
                 }
             ]

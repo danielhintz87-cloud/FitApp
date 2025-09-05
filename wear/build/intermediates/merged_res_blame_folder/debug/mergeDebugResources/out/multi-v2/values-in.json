@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.fitapp.wear-mergeDebugResources-66:/values-in/values-in.xml",
+            "outputFile": "com.example.fitapp.wear-mergeDebugResources-67:/values-in/values-in.xml",
             "map": [
                 {
                     "source": "/home/runner/.gradle/caches/8.14.3/transforms/1df42171ada8753a9f549695c6adedd9/transformed/core-1.13.1/res/values-in/values-in.xml",
@@ -21,7 +21,24 @@
                     }
                 },
                 {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/d9cebee04b37732bf6bca1a826e36f41/transformed/foundation-release/res/values-in/values-in.xml",
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/8f30077c40131c43fa44a403bfacd599/transformed/ui-release/res/values-in/values-in.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,195,277,375,475,561,644,735,822,907,989,1072,1144,1221,1298,1371,1449,1515",
+                        "endColumns": "89,81,97,99,85,82,90,86,84,81,82,71,76,76,72,77,65,118",
+                        "endOffsets": "190,272,370,470,556,639,730,817,902,984,1067,1139,1216,1293,1366,1444,1510,1629"
+                    },
+                    "to": {
+                        "startLines": "9,10,32,33,34,43,44,45,46,47,48,49,50,51,52,54,55,56",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "835,925,3547,3645,3745,4496,4579,4670,4757,4842,4924,5007,5079,5156,5233,5407,5485,5551",
+                        "endColumns": "89,81,97,99,85,82,90,86,84,81,82,71,76,76,72,77,65,118",
+                        "endOffsets": "920,1002,3640,3740,3826,4574,4665,4752,4837,4919,5002,5074,5151,5228,5301,5480,5546,5665"
+                    }
+                },
+                {
+                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/d722471c8b6b747f42d6ee6084a47a53/transformed/foundation-release/res/values-in/values-in.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
@@ -86,23 +103,6 @@
                         "startOffsets": "1007,1114,1278,1404,1510,1665,1792,1907,2145,2311,2416,2580,2706,2861,3005,3069,3129",
                         "endColumns": "106,163,125,105,154,126,114,105,165,104,163,125,154,143,63,59,78",
                         "endOffsets": "1109,1273,1399,1505,1660,1787,1902,2008,2306,2411,2575,2701,2856,3000,3064,3124,3203"
-                    }
-                },
-                {
-                    "source": "/home/runner/.gradle/caches/8.14.3/transforms/35800406b50fbbb71f69ee9f7524465a/transformed/ui-release/res/values-in/values-in.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "105,195,277,375,475,561,644,735,822,907,989,1072,1144,1221,1298,1371,1449,1515",
-                        "endColumns": "89,81,97,99,85,82,90,86,84,81,82,71,76,76,72,77,65,118",
-                        "endOffsets": "190,272,370,470,556,639,730,817,902,984,1067,1139,1216,1293,1366,1444,1510,1629"
-                    },
-                    "to": {
-                        "startLines": "9,10,32,33,34,43,44,45,46,47,48,49,50,51,52,54,55,56",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "835,925,3547,3645,3745,4496,4579,4670,4757,4842,4924,5007,5079,5156,5233,5407,5485,5551",
-                        "endColumns": "89,81,97,99,85,82,90,86,84,81,82,71,76,76,72,77,65,118",
-                        "endOffsets": "920,1002,3640,3740,3826,4574,4665,4752,4837,4919,5002,5074,5151,5228,5301,5480,5546,5665"
                     }
                 },
                 {
