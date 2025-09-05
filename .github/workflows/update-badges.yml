@@ -1,254 +1,37 @@
-name: Update Build Badges
+name: Update Badges
 
 on:
-  workflow_run:
-    workflows: ["Android CI (Build + Room Schema Guard + Instrumented Tests)", "Android Tests", "Code Quality & Security"]
-    types: [completed]
-  schedule:
-    # Update badges daily at 6 AM UTC
-    - cron: '0 6 * * *'
   workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1' # montags 06:00 UTC
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  update-badges:
-    name: Update README Badges
+  badges:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      # dein Script / Tool zum Badge-Update hier einfügen
+      - name: Update README badges
+        run: |
+          echo "Update badges..."
+          # ./scripts/update_badges.sh
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "docs: update badges" || echo "nix zu committen"
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get workflow statuses
-        id: workflow_status
-        run: |
-          # Get latest workflow runs
-          ANDROID_CI_STATUS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/android-room-ci.yml/runs?per_page=1" | \
-            jq -r '.workflow_runs[0].conclusion // "unknown"')
-          
-          ANDROID_TESTS_STATUS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/android_tests.yml/runs?per_page=1" | \
-            jq -r '.workflow_runs[0].conclusion // "unknown"')
-          
-          CODE_QUALITY_STATUS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/code-quality.yml/runs?per_page=1" | \
-            jq -r '.workflow_runs[0].conclusion // "unknown"')
-          
-          echo "android_ci_status=${ANDROID_CI_STATUS}" >> $GITHUB_OUTPUT
-          echo "android_tests_status=${ANDROID_TESTS_STATUS}" >> $GITHUB_OUTPUT
-          echo "code_quality_status=${CODE_QUALITY_STATUS}" >> $GITHUB_OUTPUT
-
-      - name: Generate dynamic README
-        run: |
-          # Read current README
-          cp README.md README_backup.md
-          
-          # Generate timestamp
-          TIMESTAMP=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
-          
-          # Create updated README with dynamic content
-          cat > README.md << 'EOF'
-          # FitApp 🏋️‍♀️
-
-          [![Android CI](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android-room-ci.yml/badge.svg)](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android-room-ci.yml)
-          [![Android Tests](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android_tests.yml/badge.svg)](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android_tests.yml)
-          [![Code Quality](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/code-quality.yml/badge.svg)](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/code-quality.yml)
-          [![Release](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/release.yml/badge.svg)](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/release.yml)
-          [![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=24)
-          [![Kotlin](https://img.shields.io/badge/kotlin-2.0.20-blue.svg?logo=kotlin)](http://kotlinlang.org)
-          [![Gradle](https://img.shields.io/badge/gradle-8.14.3-blue.svg)](https://gradle.org)
-
-          Eine umfassende Android-Fitness-App mit KI-Integration, entwickelt mit Jetpack Compose und Material 3 Design.
-
-          ## 🚀 Features
-
-          ### Kernfunktionen
-          - **🏃‍♀️ Trainings-Tracking** - Vollständige Workout-Planung und -Verfolgung
-          - **🥗 Ernährungs-Management** - Kalorienzählung mit AI-Rezept-Vorschlägen
-          - **📊 Fortschritts-Analyse** - Detaillierte Charts und Statistiken
-          - **🎯 Achievement-System** - Persönliche Erfolge und Streak-Tracking
-          - **⚖️ Gewichts-Tracking** - BMI-Berechnung und Gewichtsverlauf
-          - **🤖 AI Personal Trainer** - Gemini & Perplexity AI Integration
-
-          ### Technische Highlights
-          - **🎨 Material 3 Design** - Moderne und intuitive Benutzeroberfläche
-          - **🏗️ Clean Architecture** - MVVM mit Repository Pattern
-          - **💾 Room Database** - Lokale Datenspeicherung mit Migrationen
-          - **🔄 Reactive Programming** - Kotlin Coroutines und Flow
-          - **🧪 Automatisierte Tests** - Unit Tests und Instrumented Tests
-
-          ## 🛠️ Entwicklung
-
-          ### Anforderungen
-          - **Java 17** (erforderlich für Kompilierung)
-          - **Android SDK 34** (Minimum SDK 24)
-          - **Gradle 8.14.3** (via Wrapper)
-          - **2GB+ RAM** für Gradle Daemon
-
-          ### Setup
-          ```bash
-          # Repository klonen
-          git clone https://github.com/danielhintz87-cloud/FitApp.git
-          cd FitApp
-
-          # Abhängigkeiten installieren und bauen
-          cp local.properties.sample local.properties
-          # API-Schlüssel in local.properties hinzufügen (optional)
-
-          ./gradlew clean assembleDebug
-          ```
-
-          ### Build-Befehle
-          ```bash
-          # Debug Build (4-5 Minuten)
-          ./gradlew assembleDebug
-
-          # Release Build (5-7 Minuten)  
-          ./gradlew assembleRelease
-
-          # Tests ausführen
-          ./gradlew testDebugUnitTest
-
-          # Lint-Prüfung
-          ./gradlew lintDebug
-
-          # Vollständige Validierung
-          ./gradlew check
-          ```
-
-          ## 🏗️ CI/CD Pipeline
-
-          ### Automatisierte Workflows
-          - **✅ Build & Test**: Automatische Builds bei jedem Push/PR
-          - **✅ Room Schema Guard**: Datenbankschema-Validierung
-          - **✅ Instrumented Tests**: UI-Tests auf Android Emulatoren
-          - **✅ Code Quality**: Lint-Prüfung und Stilvalidierung
-          - **✅ Security Scanning**: Vulnerability und Dependency Checks
-          - **✅ Automated Deployment**: Release builds with signed APK/AAB
-          - **✅ Artifact Upload**: Test-Reports und Build-Ergebnisse
-
-          ### Workflow-Status
-          | Workflow | Status | Beschreibung |
-          |----------|--------|--------------|
-          | Android CI | [![Android CI](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android-room-ci.yml/badge.svg)](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android-room-ci.yml) | Build + Schema Guard + Tests |
-          | Android Tests | [![Android Tests](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android_tests.yml/badge.svg)](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android_tests.yml) | Umfassende Test-Suite |
-          | Code Quality | [![Code Quality](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/code-quality.yml/badge.svg)](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/code-quality.yml) | Lint, Security & Performance |
-          | Release | [![Release](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/release.yml/badge.svg)](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/release.yml) | Automated Deployment |
-
-          ### Pipeline Features
-          - **🔄 Automated Testing**: Unit, Integration, and UI tests
-          - **🛡️ Security Scanning**: CodeQL, Trivy, and Dependency checks
-          - **📊 Quality Gates**: Lint analysis, code coverage, and performance metrics
-          - **🚀 Automated Releases**: Signed APK/AAB generation and GitHub releases
-          - **📱 Play Store Ready**: Optional automated Google Play Console uploads
-          - **🔔 Smart Notifications**: Build status and failure alerts
-
-          ## 📁 Projektstruktur
-
-          ```
-          app/src/main/java/com/example/fitapp/
-          ├── ai/                 # AI-Integration (Gemini, Perplexity)
-          ├── data/              # Repository Pattern, Room Database
-          │   ├── db/           # Datenbank-Entitäten, DAOs, Migrationen
-          │   └── prefs/        # SharedPreferences Wrapper
-          ├── services/          # Business Logic Manager
-          ├── ui/               # Compose Screens und Komponenten
-          └── utils/            # Hilfsfunktionen
-          ```
-
-          ## 🔧 Konfiguration
-
-          ### API-Schlüssel
-          Erstelle `local.properties` mit:
-          ```properties
-          GEMINI_API_KEY=dein_gemini_schlüssel
-          PERPLEXITY_API_KEY=dein_perplexity_schlüssel
-          ```
-
-          ### Gradle-Optimierung
-          - **Configuration Cache**: Aktiviert für schnellere Builds
-          - **Build Cache**: Wiederverwendung von Build-Outputs
-          - **Parallel Execution**: Parallele Abhängigkeitsauflösung
-
-          ## 📊 Test-Coverage
-
-          - **Unit Tests**: Business Logic und Repository Tests
-          - **Instrumented Tests**: UI und Datenbank-Integrationstests
-          - **Schema Tests**: Room-Datenbankmigrationen
-          - **Performance Tests**: Build metrics und APK size tracking
-
-          ## 🤝 Beitragen
-
-          1. Fork das Repository
-          2. Erstelle einen Feature-Branch (`git checkout -b feature/amazing-feature`)
-          3. Commit deine Änderungen (`git commit -m 'Add amazing feature'`)
-          4. Push zum Branch (`git push origin feature/amazing-feature`)
-          5. Erstelle einen Pull Request
-
-          ### Entwicklungsrichtlinien
-          - Folge bestehenden Kotlin-Code-Stil
-          - Verwende Material 3 Komponenten
-          - Schreibe Tests für neue Features
-          - Aktualisiere Documentation bei API-Änderungen
-          - Alle CI/CD Checks müssen bestehen
-
-          ## 📄 Lizenz
-
-          Dieses Projekt ist unter der MIT-Lizenz lizenziert.
-
-          ## 🚀 Deployment
-
-          Die App wird automatisch durch GitHub Actions gebaut und getestet. Release-Builds werden bei Git-Tags automatisch erstellt.
-
-          ### Release Process
-          1. **Create Tag**: `git tag v1.0.0 && git push origin v1.0.0`
-          2. **Automatic Build**: CI pipeline creates signed APK and AAB
-          3. **GitHub Release**: Automated release with changelog
-          4. **Quality Checks**: Security and performance validation
-          5. **Distribution**: Ready for Google Play or direct distribution
-
-          ---
-
-          **Entwickelt mit ❤️ für Fitness-Enthusiasten**
-
-          *Last updated: $TIMESTAMP*
-          EOF
-
-      - name: Check if README changed
-        id: readme_changed
-        run: |
-          if ! diff -q README.md README_backup.md > /dev/null; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Commit updated README
-        if: steps.readme_changed.outputs.changed == 'true'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add README.md
-          git commit -m "docs: Update README with latest CI/CD status [skip ci]"
-          git push
-
-      - name: Generate badge summary
-        run: |
-          echo "## Badge Update Summary 📊" > badge-summary.md
-          echo "" >> badge-summary.md
-          echo "### Workflow Status" >> badge-summary.md
-          echo "- Android CI: ${{ steps.workflow_status.outputs.android_ci_status }}" >> badge-summary.md
-          echo "- Android Tests: ${{ steps.workflow_status.outputs.android_tests_status }}" >> badge-summary.md
-          echo "- Code Quality: ${{ steps.workflow_status.outputs.code_quality_status }}" >> badge-summary.md
-          echo "" >> badge-summary.md
-          echo "### Changes" >> badge-summary.md
-          echo "- README Updated: ${{ steps.readme_changed.outputs.changed }}" >> badge-summary.md
-          echo "- Timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> badge-summary.md
-
-      - name: Upload badge summary
-        uses: actions/upload-artifact@v3
-        with:
-          name: badge-update-summary
-          path: badge-summary.md
+          title: "docs: update badges"
+          branch: chore/update-badges
+          commit-message: "docs: update badges"
+          labels: docs, automated
