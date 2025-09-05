@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -13,23 +15,55 @@ android {
 
     defaultConfig {
         applicationId = "com.example.fitapp"
-        minSdk = 24
+        minSdk = 26  // Updated for Health Connect compatibility
         targetSdk = 34
         versionCode = 8
         versionName = "1.8"
 
-        // API key placeholders - remove in production
-        buildConfigField("String", "GEMINI_API_KEY", "\"\"")
-        buildConfigField("String", "PERPLEXITY_API_KEY", "\"\"")
+        // Read API keys from local.properties with fallback to empty strings
+        val localProperties = Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localProperties.load(localPropertiesFile.inputStream())
+        }
+        
+        val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
+        val perplexityApiKey = localProperties.getProperty("PERPLEXITY_API_KEY") ?: ""
+        
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+        buildConfigField("String", "PERPLEXITY_API_KEY", "\"$perplexityApiKey\"")
     }
 
     buildTypes {
+        debug {
+            isMinifyEnabled = false
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
+        
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        
+        create("debugMinified") {
+            initWith(getByName("debug"))
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false  // Enable optimization by disabling debug
+            applicationIdSuffix = ".debug.minified" 
+            versionNameSuffix = "-debug-minified"
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            matchingFallbacks += listOf("debug")
         }
     }
 
@@ -119,6 +153,7 @@ dependencies {
     // Lifecycle/Coroutines
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.9.0")
 
     // Room (AI-Logs)
     implementation(libs.room.runtime)
@@ -154,8 +189,11 @@ dependencies {
     implementation(libs.tensorflow.lite)
     implementation(libs.tensorflow.lite.support)
     
-    // Health Connect for Activity/Calorie Sync (temporarily disabled for build compatibility)
-    // implementation(libs.health.connect.client)
+    // Health Connect for Activity/Calorie Sync
+    implementation(libs.health.connect.client)
+    
+    // Wearable Data Layer API for communication with Wear OS
+    implementation(libs.play.services.wearable)
     
     // WorkManager for background tasks
     implementation(libs.work.runtime.ktx)
