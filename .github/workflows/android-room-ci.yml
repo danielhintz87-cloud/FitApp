@@ -34,10 +34,10 @@ jobs:
 
       - name: Gradle cache
         id: gradle-cache
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
 
       - name: Verify Gradle wrapper
-        uses: gradle/wrapper-validation-action@v2
+        uses: gradle/wrapper-validation-action@v3
 
       - name: Create local.properties
         run: cp local.properties.sample local.properties
@@ -76,7 +76,7 @@ jobs:
           java-version: "17"
 
       - name: Gradle cache
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
 
       # Startet einen Emulator und fährt die Instrumented Tests
       - name: Run connectedAndroidTest on API 34

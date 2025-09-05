@@ -29,7 +29,7 @@ jobs:
           java-version: "17"
 
       - name: Gradle cache
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
 
       - name: Create local.properties
         run: cp local.properties.sample local.properties
@@ -78,7 +78,7 @@ jobs:
           java-version: "17"
 
       - name: Gradle cache
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
 
       - name: Create local.properties
         run: cp local.properties.sample local.properties
@@ -164,7 +164,7 @@ jobs:
           java-version: "17"
 
       - name: Gradle cache
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
 
       - name: Create local.properties
         run: cp local.properties.sample local.properties
@@ -190,7 +190,7 @@ jobs:
           java-version: "17"
 
       - name: Gradle cache
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
 
       - name: Create local.properties
         run: cp local.properties.sample local.properties
