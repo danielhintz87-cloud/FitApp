@@ -11,12 +11,34 @@ permissions:
 
 jobs:
   unit-and-lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04         # <-- stabiler als ubuntu-latest (24.04)
     timeout-minutes: 45
 
+    env:
+      # Bevorzuge IPv4 in Gradle / JVM (wirkt beim Dependency-Download)
+      GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false -Dfile.encoding=UTF-8"
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Network warm-up (mit Retries)
+        run: |
+          for i in 1 2 3; do
+            echo "Ping GitHub try $i..."
+            curl -fsSL https://api.github.com/rate_limit > /dev/null && break || sleep 3
+          done
+
+      - name: Checkout (mit Retry)
+        uses: nick-invision/retry@v3
+        with:
+          max_attempts: 3
+          timeout_minutes: 2
+          command: |
+            echo "Running checkout..."
+            bash -lc 'git --version'
+            gh --version || true
+        # eigentlicher Checkout:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2
@@ -30,13 +52,18 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v3
 
-      - name: Build, Unit tests & Lint
-        run: |
-          ./gradlew --stacktrace \
-            clean \
-            assembleDebug \
-            testDebugUnitTest \
-            lintDebug
+      # Gradle-Befehle mit Retry kapseln (flaky Netz -> wiederholen)
+      - name: Build + Unit Tests + Lint (Retry)
+        uses: nick-invision/retry@v3
+        with:
+          max_attempts: 3
+          timeout_minutes: 25
+          command: |
+            ./gradlew --stacktrace \
+              clean \
+              assembleDebug \
+              testDebugUnitTest \
+              lintDebug
 
       - name: Upload unit test reports
         if: always()
@@ -47,7 +74,7 @@ jobs:
             **/build/test-results/**
             **/build/reports/tests/**
           retention-days: 7
-          if-no-files-found: warn
+          if-no-files-found: warn        # <-- keine harten Fehler, falls früh abgebrochen
 
       - name: Upload lint reports
         if: always()
