@@ -12,24 +12,40 @@ permissions:
 
 jobs:
   room-ci:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    env:
+      GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false -Dfile.encoding=UTF-8"
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+    steps:
+      - name: Force IPv4 (disable IPv6)
+        run: |
+          echo 'precedence ::ffff:0:0/96  100' | sudo tee -a /etc/gai.conf
+          sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
+          sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+          sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=1
+
+      - name: Network warm-up (IPv4)
+        run: |
+          for i in {1..5}; do
+            echo "Warmup try $i ..."
+            if curl -4fsSL https://api.github.com/rate_limit > /dev/null; then
+              echo "Network OK"; break
+            fi
+            sleep 3
+          done
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: gradle/wrapper-validation-action@v2
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
-
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v3
-
-      - name: Cache Android build tools (optional)
-        run: echo "Gradle action handled cache."
+      - uses: gradle/gradle-build-action@v3
 
       - name: Run Unit Tests (incl. Room)
         run: ./gradlew testDebugUnitTest --stacktrace
