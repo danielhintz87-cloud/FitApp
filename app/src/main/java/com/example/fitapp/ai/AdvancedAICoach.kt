@@ -507,7 +507,7 @@ class AdvancedAICoach(private val context: Context) {
         val recentAvgRPE = recent.map { it.rpe }.average()
         val baselineAvgRPE = baseline.map { it.rpe }.average()
         
-        return ((recentAvgRPE - baselineAvgRPE) / 10f).coerceIn(0f, 1f).toFloat()
+        return ((recentAvgRPE - baselineAvgRPE) / 10.0).coerceIn(0.0, 1.0).toFloat()
     }
     
     private fun calculatePlateauRisk(trend: Float, fatigueLevel: Float): Float {

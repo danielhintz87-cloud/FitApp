@@ -3,6 +3,8 @@ package com.example.fitapp.ai
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import com.example.fitapp.services.MovementAsymmetry
+import com.example.fitapp.services.CompensationPattern
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.tensorflow.lite.Interpreter
@@ -126,8 +128,8 @@ class AdvancedMLModels private constructor(private val context: Context) {
             
             MovementPatternAnalysis(
                 patterns = patterns,
-                asymmetryScore = asymmetries.maxOfOrNull { it.severity } ?: 0f,
-                compensationScore = compensations.maxOfOrNull { it.severity } ?: 0f,
+                asymmetryScore = asymmetries.maxOfOrNull { it.severity.toDouble() }?.toFloat() ?: 0f,
+                compensationScore = compensations.maxOfOrNull { it.severity.toDouble() }?.toFloat() ?: 0f,
                 fatigueScore = fatigue,
                 riskLevel = calculateOverallRisk(asymmetries, compensations, fatigue),
                 recommendations = generateMovementRecommendations(patterns, asymmetries, compensations),
@@ -403,16 +405,16 @@ class AdvancedMLModels private constructor(private val context: Context) {
             when {
                 pattern.type.contains("stability") && pattern.magnitude > 0.5f -> {
                     compensations.add(CompensationPattern(
-                        type = "stability_compensation",
+                        pattern = "stability_compensation",
                         severity = pattern.magnitude,
-                        description = "Kompensation durch übermäßige Stabilisierungsbewegungen"
+                        affectedJoints = listOf("core", "hips")
                     ))
                 }
                 pattern.type.contains("control") && pattern.magnitude > 0.4f -> {
                     compensations.add(CompensationPattern(
-                        type = "control_compensation",
+                        pattern = "control_compensation", 
                         severity = pattern.magnitude,
-                        description = "Kompensation durch unruhige Bewegungsführung"
+                        affectedJoints = listOf("shoulders", "spine")
                     ))
                 }
             }
@@ -439,8 +441,8 @@ class AdvancedMLModels private constructor(private val context: Context) {
         compensations: List<CompensationPattern>,
         fatigueScore: Float
     ): Float {
-        val asymmetryRisk = asymmetries.maxOfOrNull { it.severity } ?: 0f
-        val compensationRisk = compensations.maxOfOrNull { it.severity } ?: 0f
+        val asymmetryRisk = asymmetries.maxOfOrNull { it.severity.toDouble() }?.toFloat() ?: 0f
+        val compensationRisk = compensations.maxOfOrNull { it.severity.toDouble() }?.toFloat() ?: 0f
         
         return maxOf(asymmetryRisk, compensationRisk, fatigueScore)
     }
@@ -591,15 +593,4 @@ data class ExerciseSpecificAnalysis(
     val safetyWarnings: List<String>
 )
 
-// Movement analysis data classes for ML models
-data class MovementAsymmetry(
-    val type: String,
-    val severity: Float,
-    val description: String
-)
-
-data class CompensationPattern(
-    val type: String,
-    val severity: Float,
-    val description: String
-)
+// Movement analysis data classes for ML models - using existing definitions from other files
