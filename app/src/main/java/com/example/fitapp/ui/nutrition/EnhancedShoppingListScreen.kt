@@ -368,6 +368,16 @@ fun EnhancedShoppingListScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.outline
                             )
+                            Spacer(Modifier.height(16.dp))
+                            // Add a prominent button for adding items when list is empty
+                            Button(
+                                onClick = { showAddDialog = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Filled.Add, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Ersten Artikel hinzufügen")
+                            }
                         }
                     }
                 }

@@ -40,9 +40,19 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ExerciseProgressionEntity::class,
         // Cooking Features
         CookingSessionEntity::class,
-        CookingTimerEntity::class
+        CookingTimerEntity::class,
+        // Health Connect Integration
+        HealthStepsEntity::class,
+        HealthHeartRateEntity::class,
+        HealthCalorieEntity::class,
+        HealthSleepEntity::class,
+        HealthExerciseSessionEntity::class,
+        // Cloud Sync Entities
+        CloudSyncEntity::class,
+        UserProfileEntity::class,
+        SyncConflictEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -74,6 +84,16 @@ abstract class AppDatabase : RoomDatabase() {
     // Cooking Mode Enhancement - Phase 2 DAOs
     abstract fun cookingSessionDao(): CookingSessionDao
     abstract fun cookingTimerDao(): CookingTimerDao
+    // Health Connect DAOs
+    abstract fun healthStepsDao(): HealthStepsDao
+    abstract fun healthHeartRateDao(): HealthHeartRateDao
+    abstract fun healthCalorieDao(): HealthCalorieDao
+    abstract fun healthSleepDao(): HealthSleepDao
+    abstract fun healthExerciseSessionDao(): HealthExerciseSessionDao
+    // Cloud Sync DAOs
+    abstract fun cloudSyncDao(): CloudSyncDao
+    abstract fun userProfileDao(): UserProfileDao
+    abstract fun syncConflictDao(): SyncConflictDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -545,6 +565,180 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_cooking_timers_isActive` ON `cooking_timers` (`isActive`)")
             }
         }
+
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create Cloud Sync tables
+                
+                // Create cloud_sync_metadata table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `cloud_sync_metadata` (
+                        `id` TEXT NOT NULL,
+                        `entityType` TEXT NOT NULL,
+                        `entityId` TEXT NOT NULL,
+                        `lastSyncTime` INTEGER NOT NULL,
+                        `lastModifiedTime` INTEGER NOT NULL,
+                        `syncStatus` TEXT NOT NULL,
+                        `deviceId` TEXT NOT NULL,
+                        `cloudVersion` TEXT,
+                        `conflictData` TEXT,
+                        `retryCount` INTEGER NOT NULL DEFAULT 0,
+                        `errorMessage` TEXT,
+                        `createdAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Create user_profiles table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `user_profiles` (
+                        `id` TEXT NOT NULL,
+                        `userId` TEXT NOT NULL,
+                        `email` TEXT NOT NULL,
+                        `displayName` TEXT,
+                        `deviceName` TEXT NOT NULL,
+                        `deviceId` TEXT NOT NULL,
+                        `lastSyncTime` INTEGER NOT NULL,
+                        `syncPreferences` TEXT NOT NULL,
+                        `encryptionKey` TEXT,
+                        `isActive` INTEGER NOT NULL DEFAULT 1,
+                        `createdAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Create sync_conflicts table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `sync_conflicts` (
+                        `id` TEXT NOT NULL,
+                        `entityType` TEXT NOT NULL,
+                        `entityId` TEXT NOT NULL,
+                        `localData` TEXT NOT NULL,
+                        `remoteData` TEXT NOT NULL,
+                        `localTimestamp` INTEGER NOT NULL,
+                        `remoteTimestamp` INTEGER NOT NULL,
+                        `status` TEXT NOT NULL,
+                        `resolution` TEXT,
+                        `resolvedData` TEXT,
+                        `resolvedBy` TEXT,
+                        `createdAt` INTEGER NOT NULL,
+                        `resolvedAt` INTEGER,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Create Health Connect tables
+                
+                // Health Connect Steps table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `health_connect_steps` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `date` TEXT NOT NULL,
+                        `steps` INTEGER NOT NULL,
+                        `source` TEXT NOT NULL,
+                        `syncedAt` INTEGER NOT NULL,
+                        `lastModified` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                
+                // Health Connect Heart Rate table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `health_connect_heart_rate` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `timestamp` INTEGER NOT NULL,
+                        `date` TEXT NOT NULL,
+                        `heartRate` INTEGER NOT NULL,
+                        `source` TEXT NOT NULL,
+                        `syncedAt` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                
+                // Health Connect Calories table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `health_connect_calories` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `date` TEXT NOT NULL,
+                        `calories` REAL NOT NULL,
+                        `calorieType` TEXT NOT NULL,
+                        `source` TEXT NOT NULL,
+                        `syncedAt` INTEGER NOT NULL,
+                        `lastModified` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                
+                // Health Connect Sleep table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `health_connect_sleep` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `date` TEXT NOT NULL,
+                        `startTime` INTEGER NOT NULL,
+                        `endTime` INTEGER NOT NULL,
+                        `durationMinutes` INTEGER NOT NULL,
+                        `sleepStage` TEXT NOT NULL,
+                        `source` TEXT NOT NULL,
+                        `syncedAt` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                
+                // Health Connect Exercise Sessions table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `health_connect_exercise_sessions` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `sessionId` TEXT NOT NULL,
+                        `date` TEXT NOT NULL,
+                        `startTime` INTEGER NOT NULL,
+                        `endTime` INTEGER NOT NULL,
+                        `durationMinutes` INTEGER NOT NULL,
+                        `exerciseType` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `calories` REAL,
+                        `avgHeartRate` INTEGER,
+                        `maxHeartRate` INTEGER,
+                        `distance` REAL,
+                        `source` TEXT NOT NULL,
+                        `syncedAt` INTEGER NOT NULL,
+                        `lastModified` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                
+                // Add indices for cloud_sync_metadata table
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_cloud_sync_metadata_entityType_entityId` ON `cloud_sync_metadata` (`entityType`, `entityId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cloud_sync_metadata_lastSyncTime` ON `cloud_sync_metadata` (`lastSyncTime`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cloud_sync_metadata_syncStatus` ON `cloud_sync_metadata` (`syncStatus`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cloud_sync_metadata_deviceId` ON `cloud_sync_metadata` (`deviceId`)")
+                
+                // Add indices for user_profiles table
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_user_profiles_userId` ON `user_profiles` (`userId`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_user_profiles_email` ON `user_profiles` (`email`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_user_profiles_lastSyncTime` ON `user_profiles` (`lastSyncTime`)")
+                
+                // Add indices for sync_conflicts table
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_conflicts_entityType_entityId` ON `sync_conflicts` (`entityType`, `entityId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_conflicts_createdAt` ON `sync_conflicts` (`createdAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_conflicts_status` ON `sync_conflicts` (`status`)")
+                
+                // Add indices for Health Connect tables
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_steps_date` ON `health_connect_steps` (`date`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_steps_source` ON `health_connect_steps` (`source`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_steps_syncedAt` ON `health_connect_steps` (`syncedAt`)")
+                
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_heart_rate_date` ON `health_connect_heart_rate` (`date`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_heart_rate_timestamp` ON `health_connect_heart_rate` (`timestamp`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_heart_rate_source` ON `health_connect_heart_rate` (`source`)")
+                
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_calories_date` ON `health_connect_calories` (`date`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_calories_calorieType` ON `health_connect_calories` (`calorieType`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_calories_source` ON `health_connect_calories` (`source`)")
+                
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_sleep_date` ON `health_connect_sleep` (`date`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_sleep_source` ON `health_connect_sleep` (`source`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_sleep_sleepStage` ON `health_connect_sleep` (`sleepStage`)")
+                
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_exercise_sessions_date` ON `health_connect_exercise_sessions` (`date`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_exercise_sessions_exerciseType` ON `health_connect_exercise_sessions` (`exerciseType`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_exercise_sessions_source` ON `health_connect_exercise_sessions` (`source`)")
+            }
+        }
         
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
@@ -554,7 +748,7 @@ abstract class AppDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): AppDatabase {
             return try {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
-                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
                     .apply {
                         // Only allow destructive migration in debug builds
                         if (com.example.fitapp.BuildConfig.DEBUG) {

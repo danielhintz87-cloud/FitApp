@@ -1,57 +1,66 @@
-# --- Core Kotlin / Coroutines ---
--dontwarn kotlinx.coroutines.**
--keep class kotlinx.coroutines.** { *; }
+# ===================================
+# FITAPP PROGUARD/R8 OPTIMIZATION RULES
+# ===================================
 
-# --- Room ---
--keep class androidx.room.** { *; }
+# --- Essential Attributes for Reflection & Serialization ---
+-keepattributes Signature, InnerClasses, EnclosingMethod
+-keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
+-keepattributes AnnotationDefault
+
+# --- Remove Debugging Information (Production) ---
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+    public static *** isLoggable(...);
+}
+
+# --- Kotlin Coroutines (Targeted) ---
+-dontwarn kotlinx.coroutines.**
+-keep class kotlinx.coroutines.channels.** { *; }
+-keep class kotlinx.coroutines.flow.** { *; }
+
+# --- Room Database (Specific) ---
 -keep class * extends androidx.room.RoomDatabase
+-keep @androidx.room.Database class * { *; }
+-keep @androidx.room.Entity class * { *; }
 -keep @androidx.room.Dao class * { *; }
 -keepclassmembers class * {
     @androidx.room.* <methods>;
+    @androidx.room.* <fields>;
 }
 
-# --- Jetpack Compose ---
--keep class androidx.compose.** { *; }
--dontwarn androidx.compose.**
-
-# --- Material3 ---
--dontwarn com.google.android.material.**
--keep class com.google.android.material.** { *; }
-
-# --- Nutrition API Integration ---
--keep class retrofit2.** { *; }
--keep class com.squareup.moshi.** { *; }
--keepattributes *Annotation*, Signature
-
-# --- WorkManager ---
--keep class androidx.work.impl.WorkManagerImpl { *; }
--keep class androidx.work.impl.background.systemjob.SystemJobService { *; }
--dontwarn androidx.work.**
-
-# --- Google Generative AI / Gemini ---
--keep class com.google.ai.client.generativeai.** { *; }
--dontwarn com.google.ai.client.generativeai.**
-
-# --- Prevent R class issues ---
--keep class **.R
--keepclassmembers class **.R$* { *; }
-
-# --- CameraX ---
--keep class androidx.camera.** { *; }
--dontwarn androidx.camera.**
-
-# --- ML Kit ---
--keep class com.google.mlkit.** { *; }
--dontwarn com.google.mlkit.**
-
-# --- FitApp specific entities ---
+# --- FitApp Room Entities (Required for Schema) ---
 -keep class com.example.fitapp.data.db.** { *; }
--keep class com.example.fitapp.ai.** { *; }
+-keepclassmembers class com.example.fitapp.data.db.** {
+    <init>(...);
+    <fields>;
+}
 
-# --- Serialization ---
+# --- Jetpack Compose (Optimized) ---
+-dontwarn androidx.compose.**
+-keep class androidx.compose.runtime.** { *; }
+-keep class androidx.compose.ui.platform.** { *; }
+
+# --- Retrofit & Networking (Targeted) ---
+-dontwarn retrofit2.**
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-keep class retrofit2.** { *; }
+-keepattributes Signature, Exceptions
+-keepclassmembers,allowshrinking,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
+}
+
+# --- Moshi JSON Serialization ---
+-keep class com.squareup.moshi.** { *; }
+-keepclassmembers class * {
+    @com.squareup.moshi.Json <fields>;
+}
+
+# --- Kotlinx Serialization (Optimized) ---
 -keepattributes SerializedName
 -keepclassmembers,allowobfuscation class * {
-  @kotlinx.serialization.SerialName <fields>;
+    @kotlinx.serialization.SerialName <fields>;
 }
 -keep,includedescriptorclasses class com.example.fitapp.**$$serializer { *; }
 -keepclassmembers class com.example.fitapp.** {
@@ -61,12 +70,65 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
-# --- OkHttp ---
--dontwarn okhttp3.**
--dontwarn okio.**
--keep class okhttp3.** { *; }
--keep class okio.** { *; }
+# --- Google AI / Gemini (Critical) ---
+-keep class com.google.ai.client.generativeai.** { *; }
+-dontwarn com.google.ai.client.generativeai.**
 
-# --- Coil ---
+# --- FitApp AI Module (Core Components) ---
+-keep class com.example.fitapp.ai.** { *; }
+-keep class com.example.fitapp.application.** { *; }
+-keep class com.example.fitapp.domain.** { *; }
+-keep class com.example.fitapp.infrastructure.** { *; }
+
+# --- ML Kit & CameraX (Essential) ---
+-keep class com.google.mlkit.** { *; }
+-dontwarn com.google.mlkit.**
+-keep class androidx.camera.core.** { *; }
+-keep class androidx.camera.lifecycle.** { *; }
+
+# --- WorkManager (Background Tasks) ---
+-keep class androidx.work.impl.WorkManagerImpl { *; }
+-keep class androidx.work.impl.background.systemjob.SystemJobService { *; }
+-keep class com.example.fitapp.services.** { *; }
+
+# --- Voice Recognition & Reflection ---
+-keep class android.speech.** { *; }
+-keep class com.example.fitapp.services.VoiceCommandManager { *; }
+-keepclassmembers class com.example.fitapp.services.VoiceCommandManager {
+    <methods>;
+}
+
+# --- Navigation & Gesture System ---
+-keep class com.example.fitapp.ui.navigation.** { *; }
+-keepclassmembers class com.example.fitapp.ui.navigation.** {
+    <methods>;
+}
+
+# --- Memory Management & Performance ---
+-keep class com.example.fitapp.util.MemoryLeakPrevention { *; }
+-keep class com.example.fitapp.util.performance.** { *; }
+
+# --- Coil Image Loading ---
 -keep class coil.** { *; }
 -dontwarn coil.**
+
+# --- Android Resources ---
+-keep class **.R
+-keep class **.R$* {
+    <fields>;
+}
+
+# --- Prevent Obfuscation of Entry Points ---
+-keep public class com.example.fitapp.MainActivity { *; }
+-keep public class com.example.fitapp.FitAppApplication { *; }
+
+# --- Enum Classes (Preserve) ---
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# --- Parcelable Classes ---
+-keepclassmembers class * implements android.os.Parcelable {
+    public static final android.os.Parcelable$Creator CREATOR;
+}

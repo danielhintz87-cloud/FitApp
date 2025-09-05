@@ -887,3 +887,275 @@ interface CookingTimerDao {
     suspend fun deleteAll()
 }
 
+// Health Connect DAOs
+
+@Dao
+interface HealthStepsDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(steps: HealthStepsEntity)
+
+    @Update
+    suspend fun update(steps: HealthStepsEntity)
+
+    @Query("DELETE FROM health_connect_steps WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM health_connect_steps WHERE date = :date ORDER BY syncedAt DESC")
+    suspend fun getByDate(date: String): List<HealthStepsEntity>
+
+    @Query("SELECT * FROM health_connect_steps WHERE date = :date AND source = :source")
+    suspend fun getByDateAndSource(date: String, source: String): HealthStepsEntity?
+
+    @Query("SELECT SUM(steps) FROM health_connect_steps WHERE date = :date")
+    suspend fun getTotalStepsForDate(date: String): Int?
+
+    @Query("""
+        SELECT * FROM health_connect_steps 
+        WHERE date BETWEEN :startDate AND :endDate 
+        ORDER BY date DESC
+    """)
+    suspend fun getByDateRange(startDate: String, endDate: String): List<HealthStepsEntity>
+
+    @Query("SELECT * FROM health_connect_steps ORDER BY date DESC LIMIT :limit")
+    suspend fun getRecent(limit: Int): List<HealthStepsEntity>
+
+    @Query("DELETE FROM health_connect_steps WHERE syncedAt < :beforeTimestamp")
+    suspend fun deleteOldEntries(beforeTimestamp: Long)
+
+    @Query("DELETE FROM health_connect_steps")
+    suspend fun deleteAll()
+}
+
+@Dao
+interface HealthHeartRateDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(heartRate: HealthHeartRateEntity)
+
+    @Update
+    suspend fun update(heartRate: HealthHeartRateEntity)
+
+    @Query("DELETE FROM health_connect_heart_rate WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM health_connect_heart_rate WHERE date = :date ORDER BY timestamp DESC")
+    suspend fun getByDate(date: String): List<HealthHeartRateEntity>
+
+    @Query("SELECT AVG(heartRate) FROM health_connect_heart_rate WHERE date = :date")
+    suspend fun getAverageHeartRateForDate(date: String): Float?
+
+    @Query("SELECT MAX(heartRate) FROM health_connect_heart_rate WHERE date = :date")
+    suspend fun getMaxHeartRateForDate(date: String): Int?
+
+    @Query("""
+        SELECT * FROM health_connect_heart_rate 
+        WHERE timestamp BETWEEN :startTimestamp AND :endTimestamp 
+        ORDER BY timestamp
+    """)
+    suspend fun getByTimeRange(startTimestamp: Long, endTimestamp: Long): List<HealthHeartRateEntity>
+
+    @Query("DELETE FROM health_connect_heart_rate WHERE syncedAt < :beforeTimestamp")
+    suspend fun deleteOldEntries(beforeTimestamp: Long)
+
+    @Query("DELETE FROM health_connect_heart_rate")
+    suspend fun deleteAll()
+}
+
+@Dao
+interface HealthCalorieDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(calories: HealthCalorieEntity)
+
+    @Update
+    suspend fun update(calories: HealthCalorieEntity)
+
+    @Query("DELETE FROM health_connect_calories WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM health_connect_calories WHERE date = :date ORDER BY syncedAt DESC")
+    suspend fun getByDate(date: String): List<HealthCalorieEntity>
+
+    @Query("""
+        SELECT * FROM health_connect_calories 
+        WHERE date = :date AND calorieType = :type AND source = :source
+    """)
+    suspend fun getByDateTypeAndSource(date: String, type: String, source: String): HealthCalorieEntity?
+
+    @Query("SELECT SUM(calories) FROM health_connect_calories WHERE date = :date AND calorieType = :type")
+    suspend fun getTotalCaloriesForDateAndType(date: String, type: String): Double?
+
+    @Query("""
+        SELECT * FROM health_connect_calories 
+        WHERE date BETWEEN :startDate AND :endDate 
+        ORDER BY date DESC
+    """)
+    suspend fun getByDateRange(startDate: String, endDate: String): List<HealthCalorieEntity>
+
+    @Query("DELETE FROM health_connect_calories WHERE syncedAt < :beforeTimestamp")
+    suspend fun deleteOldEntries(beforeTimestamp: Long)
+
+    @Query("DELETE FROM health_connect_calories")
+    suspend fun deleteAll()
+}
+
+@Dao
+interface HealthSleepDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(sleep: HealthSleepEntity)
+
+    @Update
+    suspend fun update(sleep: HealthSleepEntity)
+
+    @Query("DELETE FROM health_connect_sleep WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM health_connect_sleep WHERE date = :date ORDER BY startTime")
+    suspend fun getByDate(date: String): List<HealthSleepEntity>
+
+    @Query("SELECT SUM(durationMinutes) FROM health_connect_sleep WHERE date = :date")
+    suspend fun getTotalSleepForDate(date: String): Int?
+
+    @Query("""
+        SELECT SUM(durationMinutes) FROM health_connect_sleep 
+        WHERE date = :date AND sleepStage = :stage
+    """)
+    suspend fun getSleepDurationByStage(date: String, stage: String): Int?
+
+    @Query("""
+        SELECT * FROM health_connect_sleep 
+        WHERE startTime BETWEEN :startTimestamp AND :endTimestamp 
+        ORDER BY startTime
+    """)
+    suspend fun getByTimeRange(startTimestamp: Long, endTimestamp: Long): List<HealthSleepEntity>
+
+    @Query("DELETE FROM health_connect_sleep WHERE syncedAt < :beforeTimestamp")
+    suspend fun deleteOldEntries(beforeTimestamp: Long)
+
+    @Query("DELETE FROM health_connect_sleep")
+    suspend fun deleteAll()
+}
+
+@Dao
+interface HealthExerciseSessionDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(session: HealthExerciseSessionEntity)
+
+    @Update
+    suspend fun update(session: HealthExerciseSessionEntity)
+
+    @Query("DELETE FROM health_connect_exercise_sessions WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM health_connect_exercise_sessions WHERE sessionId = :sessionId")
+    suspend fun getBySessionId(sessionId: String): HealthExerciseSessionEntity?
+
+    @Query("SELECT * FROM health_connect_exercise_sessions WHERE date = :date ORDER BY startTime DESC")
+    suspend fun getByDate(date: String): List<HealthExerciseSessionEntity>
+
+    @Query("""
+        SELECT * FROM health_connect_exercise_sessions 
+        WHERE date BETWEEN :startDate AND :endDate 
+        ORDER BY startTime DESC
+    """)
+    suspend fun getByDateRange(startDate: String, endDate: String): List<HealthExerciseSessionEntity>
+
+    @Query("SELECT * FROM health_connect_exercise_sessions WHERE exerciseType = :type ORDER BY startTime DESC")
+    suspend fun getByExerciseType(type: String): List<HealthExerciseSessionEntity>
+
+    @Query("SELECT SUM(durationMinutes) FROM health_connect_exercise_sessions WHERE date = :date")
+    suspend fun getTotalExerciseTimeForDate(date: String): Int?
+
+    @Query("SELECT SUM(calories) FROM health_connect_exercise_sessions WHERE date = :date")
+    suspend fun getTotalCaloriesBurnedForDate(date: String): Double?
+
+    @Query("DELETE FROM health_connect_exercise_sessions WHERE syncedAt < :beforeTimestamp")
+    suspend fun deleteOldEntries(beforeTimestamp: Long)
+
+    @Query("DELETE FROM health_connect_exercise_sessions")
+    suspend fun deleteAll()
+}
+
+// Cloud Sync DAOs for Multi-Device Support
+@Dao
+interface CloudSyncDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertSyncMetadata(metadata: CloudSyncEntity)
+    
+    @Query("SELECT * FROM cloud_sync_metadata WHERE entityType = :entityType AND entityId = :entityId")
+    suspend fun getSyncMetadata(entityType: String, entityId: String): CloudSyncEntity?
+    
+    @Query("SELECT * FROM cloud_sync_metadata WHERE syncStatus = :status")
+    suspend fun getByStatus(status: String): List<CloudSyncEntity>
+    
+    @Query("SELECT * FROM cloud_sync_metadata WHERE syncStatus = 'pending' OR syncStatus = 'error'")
+    suspend fun getPendingSync(): List<CloudSyncEntity>
+    
+    @Query("SELECT * FROM cloud_sync_metadata WHERE deviceId = :deviceId")
+    suspend fun getByDeviceId(deviceId: String): List<CloudSyncEntity>
+    
+    @Query("UPDATE cloud_sync_metadata SET syncStatus = :status, lastSyncTime = :timestamp WHERE id = :id")
+    suspend fun updateSyncStatus(id: String, status: String, timestamp: Long)
+    
+    @Query("UPDATE cloud_sync_metadata SET retryCount = retryCount + 1, errorMessage = :error WHERE id = :id")
+    suspend fun incrementRetryCount(id: String, error: String?)
+    
+    @Query("DELETE FROM cloud_sync_metadata WHERE entityType = :entityType AND entityId = :entityId")
+    suspend fun deleteSyncMetadata(entityType: String, entityId: String)
+    
+    @Query("DELETE FROM cloud_sync_metadata WHERE lastSyncTime < :cutoffTime")
+    suspend fun cleanupOldMetadata(cutoffTime: Long)
+}
+
+@Dao
+interface UserProfileDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertUserProfile(profile: UserProfileEntity)
+    
+    @Query("SELECT * FROM user_profiles WHERE userId = :userId")
+    suspend fun getUserProfile(userId: String): UserProfileEntity?
+    
+    @Query("SELECT * FROM user_profiles WHERE isActive = 1 LIMIT 1")
+    suspend fun getActiveUserProfile(): UserProfileEntity?
+    
+    @Query("SELECT * FROM user_profiles WHERE deviceId = :deviceId")
+    suspend fun getByDeviceId(deviceId: String): UserProfileEntity?
+    
+    @Query("UPDATE user_profiles SET lastSyncTime = :timestamp WHERE userId = :userId")
+    suspend fun updateLastSyncTime(userId: String, timestamp: Long)
+    
+    @Query("UPDATE user_profiles SET syncPreferences = :preferences WHERE userId = :userId")
+    suspend fun updateSyncPreferences(userId: String, preferences: String)
+    
+    @Query("UPDATE user_profiles SET isActive = 0")
+    suspend fun deactivateAllProfiles()
+    
+    @Query("UPDATE user_profiles SET isActive = 1 WHERE userId = :userId")
+    suspend fun activateProfile(userId: String)
+    
+    @Query("DELETE FROM user_profiles WHERE userId = :userId")
+    suspend fun deleteUserProfile(userId: String)
+}
+
+@Dao
+interface SyncConflictDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertConflict(conflict: SyncConflictEntity)
+    
+    @Query("SELECT * FROM sync_conflicts WHERE status = 'pending'")
+    suspend fun getPendingConflicts(): List<SyncConflictEntity>
+    
+    @Query("SELECT * FROM sync_conflicts WHERE entityType = :entityType AND entityId = :entityId AND status = 'pending'")
+    suspend fun getConflictForEntity(entityType: String, entityId: String): SyncConflictEntity?
+    
+    @Query("UPDATE sync_conflicts SET status = :status, resolution = :resolution, resolvedData = :resolvedData, resolvedBy = :resolvedBy, resolvedAt = :resolvedAt WHERE id = :id")
+    suspend fun resolveConflict(id: String, status: String, resolution: String, resolvedData: String?, resolvedBy: String, resolvedAt: Long)
+    
+    @Query("DELETE FROM sync_conflicts WHERE id = :id")
+    suspend fun deleteConflict(id: String)
+    
+    @Query("DELETE FROM sync_conflicts WHERE createdAt < :cutoffTime AND status != 'pending'")
+    suspend fun cleanupResolvedConflicts(cutoffTime: Long)
+    
+    @Query("SELECT COUNT(*) FROM sync_conflicts WHERE status = 'pending'")
+    fun getPendingConflictCount(): Flow<Int>
+}
+
