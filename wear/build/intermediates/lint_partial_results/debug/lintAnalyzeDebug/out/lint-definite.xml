@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.12.1" type="incidents">
+
+    <incident
+        id="DefaultLocale"
+        severity="warning"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead">
+        <location
+            file="${:wear*debug*MAIN*sourceProvider*0*javaDir*0}/com/example/fitapp/wear/presentation/WorkoutScreen.kt"
+            line="354"
+            column="12"
+            startOffset="11300"
+            endLine="354"
+            endColumn="56"
+            endOffset="11344"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of `compileSdkVersion` than 34 is available: 36">
+        <fix-replace
+            description="Set compileSdkVersion to 36"
+            oldString="34"
+            replacement="36"
+            priority="0"/>
+        <location
+            file="${:wear*projectDir}/build.gradle.kts"
+            line="10"
+            column="5"
+            startOffset="219"
+            endLine="10"
+            endColumn="20"
+            endOffset="234"/>
+    </incident>
+
+</incidents>

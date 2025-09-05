@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.12.1" type="conditional_incidents">
+
+    <incident
+        id="HighSamplingRate"
+        severity="warning"
+        message="Most apps don&apos;t need access to high sensor sampling rate.">
+        <location
+            file="${:wear*debug*MAIN*sourceProvider*0*manifest*0}"
+            line="10"
+            column="36"
+            startOffset="485"
+            endLine="10"
+            endColumn="81"
+            endOffset="530"/>
+        <map>
+            <condition targetGE="31"/>
+        </map>
+    </incident>
+
+</incidents>
