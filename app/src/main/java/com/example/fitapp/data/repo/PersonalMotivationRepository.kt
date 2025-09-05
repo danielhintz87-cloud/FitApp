@@ -111,4 +111,78 @@ class PersonalMotivationRepository(private val db: AppDatabase) {
     // Weight entries for weight tracking streaks
     suspend fun hasWeightEntryForDate(dateIso: String): Int = 
         db.weightDao().hasEntryForDate(dateIso)
+    
+    // Social Challenge methods
+    fun allSocialChallengesFlow(): Flow<List<SocialChallengeEntity>> = 
+        db.socialChallengeDao().allChallengesFlow()
+    
+    fun challengesByStatusFlow(status: String): Flow<List<SocialChallengeEntity>> = 
+        db.socialChallengeDao().challengesByStatusFlow(status)
+    
+    fun challengesByCategoryFlow(category: String): Flow<List<SocialChallengeEntity>> = 
+        db.socialChallengeDao().challengesByCategoryFlow(category)
+    
+    fun officialChallengesFlow(): Flow<List<SocialChallengeEntity>> = 
+        db.socialChallengeDao().officialChallengesFlow()
+    
+    suspend fun insertSocialChallenge(challenge: SocialChallengeEntity): Long = 
+        db.socialChallengeDao().insert(challenge)
+    
+    suspend fun getSocialChallenge(id: Long): SocialChallengeEntity? = 
+        db.socialChallengeDao().getChallenge(id)
+    
+    suspend fun updateParticipantCount(challengeId: Long, count: Int) = 
+        db.socialChallengeDao().updateParticipantCount(challengeId, count)
+    
+    // Challenge Participation methods
+    fun participationsByUserFlow(userId: String): Flow<List<ChallengeParticipationEntity>> = 
+        db.challengeParticipationDao().participationsByUserFlow(userId)
+    
+    fun participationsByChallengeFlow(challengeId: Long): Flow<List<ChallengeParticipationEntity>> = 
+        db.challengeParticipationDao().participationsByChallengeFlow(challengeId)
+    
+    suspend fun insertChallengeParticipation(participation: ChallengeParticipationEntity): Long = 
+        db.challengeParticipationDao().insert(participation)
+    
+    suspend fun getUserParticipation(challengeId: Long, userId: String): ChallengeParticipationEntity? = 
+        db.challengeParticipationDao().getUserParticipation(challengeId, userId)
+    
+    suspend fun updateParticipationProgress(id: Long, progress: Double, percentage: Double, date: String) = 
+        db.challengeParticipationDao().updateProgress(id, progress, percentage, date)
+    
+    suspend fun updateParticipationStatus(id: Long, status: String, completedAt: Long?) = 
+        db.challengeParticipationDao().updateStatus(id, status, completedAt)
+    
+    suspend fun updateParticipationRank(id: Long, rank: Int) = 
+        db.challengeParticipationDao().updateRank(id, rank)
+    
+    // Challenge Progress Log methods
+    suspend fun insertChallengeProgressLog(log: ChallengeProgressLogEntity): Long = 
+        db.challengeProgressLogDao().insert(log)
+    
+    suspend fun getTotalProgress(participationId: Long): Double? = 
+        db.challengeProgressLogDao().getTotalProgress(participationId)
+    
+    // Social Badge methods
+    fun allSocialBadgesFlow(): Flow<List<SocialBadgeEntity>> = 
+        db.socialBadgeDao().allBadgesFlow()
+    
+    fun badgesByUnlockStatusFlow(unlocked: Boolean): Flow<List<SocialBadgeEntity>> = 
+        db.socialBadgeDao().badgesByUnlockStatusFlow(unlocked)
+    
+    suspend fun insertSocialBadge(badge: SocialBadgeEntity): Long = 
+        db.socialBadgeDao().insert(badge)
+    
+    suspend fun getUnlockedBadgeCount(): Int = 
+        db.socialBadgeDao().getUnlockedBadgeCount()
+    
+    // Leaderboard methods
+    fun leaderboardByChallengeFlow(challengeId: Long): Flow<List<LeaderboardEntryEntity>> = 
+        db.leaderboardEntryDao().leaderboardByChallengeFlow(challengeId)
+    
+    suspend fun insertLeaderboardEntry(entry: LeaderboardEntryEntity): Long = 
+        db.leaderboardEntryDao().insert(entry)
+    
+    suspend fun clearLeaderboard(challengeId: Long) = 
+        db.leaderboardEntryDao().clearLeaderboard(challengeId)
 }

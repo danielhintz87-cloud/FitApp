@@ -1159,3 +1159,164 @@ interface SyncConflictDao {
     fun getPendingConflictCount(): Flow<Int>
 }
 
+// Social Challenge DAOs for Freeletics-style gamification
+
+@Dao
+interface SocialChallengeDao {
+    @Insert
+    suspend fun insert(challenge: SocialChallengeEntity): Long
+
+    @Update
+    suspend fun update(challenge: SocialChallengeEntity)
+
+    @Query("DELETE FROM social_challenges WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM social_challenges ORDER BY startDate DESC")
+    fun allChallengesFlow(): Flow<List<SocialChallengeEntity>>
+
+    @Query("SELECT * FROM social_challenges WHERE status = :status ORDER BY startDate DESC")
+    fun challengesByStatusFlow(status: String): Flow<List<SocialChallengeEntity>>
+
+    @Query("SELECT * FROM social_challenges WHERE category = :category ORDER BY startDate DESC")
+    fun challengesByCategoryFlow(category: String): Flow<List<SocialChallengeEntity>>
+
+    @Query("SELECT * FROM social_challenges WHERE status = 'active' ORDER BY startDate ASC")
+    fun activeChallengesFlow(): Flow<List<SocialChallengeEntity>>
+
+    @Query("SELECT * FROM social_challenges WHERE isOfficial = 1 ORDER BY startDate DESC")
+    fun officialChallengesFlow(): Flow<List<SocialChallengeEntity>>
+
+    @Query("SELECT * FROM social_challenges WHERE id = :id")
+    suspend fun getChallenge(id: Long): SocialChallengeEntity?
+
+    @Query("UPDATE social_challenges SET currentParticipants = :count WHERE id = :id")
+    suspend fun updateParticipantCount(id: Long, count: Int)
+
+    @Query("UPDATE social_challenges SET status = :status WHERE id = :id")
+    suspend fun updateStatus(id: Long, status: String)
+}
+
+@Dao
+interface ChallengeParticipationDao {
+    @Insert
+    suspend fun insert(participation: ChallengeParticipationEntity): Long
+
+    @Update
+    suspend fun update(participation: ChallengeParticipationEntity)
+
+    @Query("DELETE FROM challenge_participations WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM challenge_participations WHERE challengeId = :challengeId ORDER BY currentProgress DESC")
+    fun participationsByChallengeFlow(challengeId: Long): Flow<List<ChallengeParticipationEntity>>
+
+    @Query("SELECT * FROM challenge_participations WHERE userId = :userId ORDER BY joinedAt DESC")
+    fun participationsByUserFlow(userId: String): Flow<List<ChallengeParticipationEntity>>
+
+    @Query("SELECT * FROM challenge_participations WHERE challengeId = :challengeId AND userId = :userId")
+    suspend fun getUserParticipation(challengeId: Long, userId: String): ChallengeParticipationEntity?
+
+    @Query("UPDATE challenge_participations SET currentProgress = :progress, progressPercentage = :percentage, lastActivityDate = :date WHERE id = :id")
+    suspend fun updateProgress(id: Long, progress: Double, percentage: Double, date: String)
+
+    @Query("UPDATE challenge_participations SET status = :status, completedAt = :completedAt WHERE id = :id")
+    suspend fun updateStatus(id: Long, status: String, completedAt: Long?)
+
+    @Query("UPDATE challenge_participations SET rank = :rank WHERE id = :id")
+    suspend fun updateRank(id: Long, rank: Int)
+
+    @Query("SELECT COUNT(*) FROM challenge_participations WHERE challengeId = :challengeId")
+    suspend fun getParticipantCount(challengeId: Long): Int
+
+    @Query("SELECT * FROM challenge_participations WHERE challengeId = :challengeId ORDER BY currentProgress DESC LIMIT :limit")
+    suspend fun getTopParticipants(challengeId: Long, limit: Int): List<ChallengeParticipationEntity>
+}
+
+@Dao
+interface ChallengeProgressLogDao {
+    @Insert
+    suspend fun insert(log: ChallengeProgressLogEntity): Long
+
+    @Update
+    suspend fun update(log: ChallengeProgressLogEntity)
+
+    @Query("DELETE FROM challenge_progress_logs WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM challenge_progress_logs WHERE participationId = :participationId ORDER BY timestamp DESC")
+    fun logsByParticipationFlow(participationId: Long): Flow<List<ChallengeProgressLogEntity>>
+
+    @Query("SELECT * FROM challenge_progress_logs WHERE participationId = :participationId AND logDate = :date")
+    suspend fun getLogForDate(participationId: Long, date: String): ChallengeProgressLogEntity?
+
+    @Query("SELECT SUM(value) FROM challenge_progress_logs WHERE participationId = :participationId")
+    suspend fun getTotalProgress(participationId: Long): Double?
+
+    @Query("SELECT SUM(value) FROM challenge_progress_logs WHERE participationId = :participationId AND logDate BETWEEN :startDate AND :endDate")
+    suspend fun getProgressBetweenDates(participationId: Long, startDate: String, endDate: String): Double?
+}
+
+@Dao
+interface SocialBadgeDao {
+    @Insert
+    suspend fun insert(badge: SocialBadgeEntity): Long
+
+    @Update
+    suspend fun update(badge: SocialBadgeEntity)
+
+    @Query("DELETE FROM social_badges WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM social_badges ORDER BY unlockedAt DESC")
+    fun allBadgesFlow(): Flow<List<SocialBadgeEntity>>
+
+    @Query("SELECT * FROM social_badges WHERE isUnlocked = :unlocked ORDER BY unlockedAt DESC")
+    fun badgesByUnlockStatusFlow(unlocked: Boolean): Flow<List<SocialBadgeEntity>>
+
+    @Query("SELECT * FROM social_badges WHERE category = :category ORDER BY unlockedAt DESC")
+    fun badgesByCategoryFlow(category: String): Flow<List<SocialBadgeEntity>>
+
+    @Query("SELECT * FROM social_badges WHERE badgeType = :type ORDER BY unlockedAt DESC")
+    fun badgesByTypeFlow(type: String): Flow<List<SocialBadgeEntity>>
+
+    @Query("SELECT * FROM social_badges WHERE id = :id")
+    suspend fun getBadge(id: Long): SocialBadgeEntity?
+
+    @Query("UPDATE social_badges SET isUnlocked = :unlocked, unlockedAt = :unlockedAt WHERE id = :id")
+    suspend fun updateUnlockStatus(id: Long, unlocked: Boolean, unlockedAt: Long?)
+
+    @Query("UPDATE social_badges SET progress = :progress WHERE id = :id")
+    suspend fun updateProgress(id: Long, progress: Double)
+
+    @Query("SELECT COUNT(*) FROM social_badges WHERE isUnlocked = 1")
+    suspend fun getUnlockedBadgeCount(): Int
+}
+
+@Dao
+interface LeaderboardEntryDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(entry: LeaderboardEntryEntity): Long
+
+    @Update
+    suspend fun update(entry: LeaderboardEntryEntity)
+
+    @Query("DELETE FROM leaderboard_entries WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM leaderboard_entries WHERE challengeId = :challengeId ORDER BY rank ASC")
+    fun leaderboardByChallengeFlow(challengeId: Long): Flow<List<LeaderboardEntryEntity>>
+
+    @Query("SELECT * FROM leaderboard_entries WHERE challengeId = :challengeId ORDER BY score DESC LIMIT :limit")
+    suspend fun getTopEntries(challengeId: Long, limit: Int): List<LeaderboardEntryEntity>
+
+    @Query("SELECT * FROM leaderboard_entries WHERE challengeId = :challengeId AND userId = :userId")
+    suspend fun getUserEntry(challengeId: Long, userId: String): LeaderboardEntryEntity?
+
+    @Query("UPDATE leaderboard_entries SET rank = :rank, score = :score, lastUpdated = :updated WHERE challengeId = :challengeId AND userId = :userId")
+    suspend fun updateEntry(challengeId: Long, userId: String, rank: Int, score: Double, updated: Long)
+
+    @Query("DELETE FROM leaderboard_entries WHERE challengeId = :challengeId")
+    suspend fun clearLeaderboard(challengeId: Long)
+}
+
