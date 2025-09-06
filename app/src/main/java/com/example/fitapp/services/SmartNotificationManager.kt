@@ -615,7 +615,7 @@ object SmartNotificationManager {
         )
         
         val notification = NotificationCompat.Builder(context, CHANNEL_SOCIAL_CHALLENGES)
-            .setSmallIcon(R.drawable.ic_fitness) // Assuming this icon exists
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("Challenge beigetreten! 🎯")
             .setContentText("Du bist jetzt Teil der \"${challenge.title}\" Challenge!")
             .setStyle(NotificationCompat.BigTextStyle()
@@ -653,7 +653,7 @@ object SmartNotificationManager {
         )
         
         val notification = NotificationCompat.Builder(context, CHANNEL_SOCIAL_CHALLENGES)
-            .setSmallIcon(R.drawable.ic_fitness)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("Challenge geschafft! 🏆")
             .setContentText("Glückwunsch! Du hast \"${challenge.title}\" erfolgreich abgeschlossen!")
             .setStyle(NotificationCompat.BigTextStyle()
@@ -694,7 +694,7 @@ object SmartNotificationManager {
         )
         
         val notification = NotificationCompat.Builder(context, CHANNEL_CHALLENGE_UPDATES)
-            .setSmallIcon(R.drawable.ic_fitness)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("Challenge Update 📊")
             .setContentText("$challengeTitle: $progressPercentage% erreicht (Rang #$rank)")
             .setStyle(NotificationCompat.BigTextStyle()
