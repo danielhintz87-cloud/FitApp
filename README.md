@@ -4,7 +4,7 @@
 [![Android Tests](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android_tests.yml/badge.svg)](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android_tests.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/danielhintz87-cloud/FitApp/main/badges/coverage.json)](./badges/coverage.json)
 [![Models](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/danielhintz87-cloud/FitApp/main/badges/models_integrity.json)](./badges/models_integrity.json)
-[![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=24)
+[![API](https://img.shields.io/badge/API-26%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=26)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.0.20-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![Gradle](https://img.shields.io/badge/gradle-8.14.3-blue.svg)](https://gradle.org)
 
@@ -31,7 +31,7 @@ Eine umfassende Android-Fitness-App mit KI-Integration, entwickelt mit Jetpack C
 
 ### Anforderungen
 - **Java 17** (erforderlich für Kompilierung)
-- **Android SDK 34** (Minimum SDK 24)
+- **Android SDK 36** (Minimum SDK 26)
 - **Gradle 8.14.3** (via Wrapper)
 - **2GB+ RAM** für Gradle Daemon
 

@@ -14,13 +14,7 @@ Always follow these instructions first and fallback to search or bash commands o
 FitApp is a comprehensive Android fitness tracking application built with modern technologies and inspired by market leaders like Freeletics, Nike Training Club, and other premium fitness platforms. The app combines personal fitness tracking with AI-powered coaching and community features.
 
 **Core Technologies:**
-- **Language**: Kotlin 100% with Jetpack Compose UI
-- **Architecture**: Clean Architecture (MVVM + Repository pattern)
-- **Database**: Room with SQLite, automated schema migrations
-- **Design**: Material 3 Design System with custom theming
-- **AI Integration**: Gemini + Perplexity APIs for intelligent coaching
-- **Target**: Android SDK 34, minimum SDK 24, Java 17
-- **Build System**: Gradle 8.14.3 with Kotlin DSL and version catalogs
+**Target**: Android SDK 36, minimum SDK 26, Java 17
 
 ## Market-Inspired Feature Strategy
 

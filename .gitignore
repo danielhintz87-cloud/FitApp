@@ -96,6 +96,10 @@ test-outputs/
 *.tmp
 logs/
 debug/
+# Build output logs (bereinigt)
+build_output.txt
+build_warnings.txt
+gradle_warnings.log
 crash-reports/
 proguard/
 mapping.txt
