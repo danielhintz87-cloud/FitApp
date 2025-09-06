@@ -29,7 +29,7 @@ jobs:
           git commit -m "docs: update badges" || echo "nix zu committen"
 
       - name: Create PR
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           title: "docs: update badges"
           branch: chore/update-badges
