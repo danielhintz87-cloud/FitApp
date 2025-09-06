@@ -119,10 +119,11 @@ Das Coverage-Badge wird automatisch über den Workflow `update-badges.yml` aktua
 
 ## 🤖 ML Modelle
 ### Integritätsprüfung (SHA-256)
-ONNX Hashes (optional) analog:
+ONNX Hashes (optional) analog – aktuell gepflegt (Lightning generiert, Thunder optional):
 ```
-export MODEL_MOVENET_THUNDER_ONNX_SHA256=<sha256>
-export MODEL_BLAZEPOSE_ONNX_SHA256=<sha256>
+export MODEL_MOVENET_LIGHTNING_ONNX_SHA256=435bd2411997e60030d4731bd3f33a3e21fc9d1f9aac39245cb31f301be3b14a
+export MODEL_MOVENET_THUNDER_ONNX_SHA256=<sha256>   # (falls später konvertiert)
+export MODEL_BLAZEPOSE_ONNX_SHA256=<sha256>         # (Task-Format, Konvertierung derzeit übersprungen)
 ```
 
 ### Integritätsreport generieren
@@ -130,7 +131,7 @@ export MODEL_BLAZEPOSE_ONNX_SHA256=<sha256>
 ./gradlew :app:generateModelIntegrity
 cat models/INTEGRITY.md
 ```
-Optional können erwartete Hashes gesetzt werden, damit `:app:verifyModels` Integrität erzwingt:
+Optional können erwartete Hashes gesetzt werden, damit `:app:verifyModels` / `:app:verifyOnnxModels` Integrität erzwingt:
 ```bash
 export MODEL_MOVENET_THUNDER_SHA256=<sha256>
 export MODEL_BLAZEPOSE_SHA256=<sha256>
@@ -144,8 +145,9 @@ Beispiel (aktuelle Repository-Versionen):
 MODEL_MOVENET_THUNDER.sha256=41641538679ec79b07d4101e591dda47d098c09af29607674b2a40b8a3798dd3
 # BlazePose
 MODEL_BLAZEPOSE.sha256=5134a3aad27a58b93da0088d431f366da362b44e3ccfbe3462b3827a839011b1
-# Movement Analysis (Dummy / sehr klein)
-MODEL_MOVEMENT_ANALYSIS_MODEL.sha256=f9de9fffe304907b6ed96cbece3c1f210e48ea869d74e79467abb31c2da35b23
+# Movement Analysis (MoveNet Lightning Variante)
+MODEL_MOVEMENT_ANALYSIS_MODEL.sha256=0fac2226112d0371903ca86e3853cec24ef603a0b2f96f589b180f0ebdd135ab
+MODEL_MOVENET_LIGHTNING_ONNX.sha256=435bd2411997e60030d4731bd3f33a3e21fc9d1f9aac39245cb31f301be3b14a
 ```
 ```
 MODEL_MOVENET_THUNDER.sha256=<sha256>
@@ -159,11 +161,27 @@ Die App nutzt mehrere On-Device Modelle:
 |-----|-------|--------|
 | Pose (MoveNet Thunder) | `models/tflite/movenet_thunder.tflite` | TF Hub |
 | Pose (BlazePose Landmark Full) | `models/tflite/blazepose.tflite` | MediaPipe |
-| Movement Analysis | `models/tflite/movement_analysis_model.tflite` | intern / UCI-HAR (custom) |
+| Movement Analysis (MoveNet Lightning) | `models/tflite/movement_analysis_model.tflite` | TF Hub (Lightning, repurposed) |
 
-ONNX-Konvertierungen (optional) können via Skript erzeugt werden:
+ONNX-Konvertierungen (MoveNet Lightning aktuell) via SavedModel Pipeline:
 ```bash
-python scripts/convert_to_onnx.py
+# Erst TFLite Modelle herunterladen (falls noch nicht)
+bash scripts/fetch_models.sh
+
+# Optional Variante (lightning | thunder)
+export MOVENET_VARIANT=lightning
+
+# SavedModel Export + ONNX Konvertierung
+python scripts/export_savedmodel_and_convert.py
+
+# (Legacy Fallback) Versuch für reine TFLite→ONNX
+python scripts/convert_to_onnx.py || true
+```
+
+Verifikation & Integritätsupdate:
+```bash
+./gradlew :app:verifyOnnxModels :app:generateModelIntegrity
+cat models/INTEGRITY.md
 ```
 
 ### Modelle beziehen / aktualisieren

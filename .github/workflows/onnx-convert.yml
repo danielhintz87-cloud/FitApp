@@ -19,6 +19,8 @@ jobs:
       GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false -Dfile.encoding=UTF-8"
       MOVEMENT_ANALYSIS_MODEL_URL: ${{ secrets.MOVEMENT_ANALYSIS_MODEL_URL }}
       MOVEMENT_ANALYSIS_MODEL_SHA256: ${{ secrets.MOVEMENT_ANALYSIS_MODEL_SHA256 }}
+  MOVENET_VARIANT: lightning
+  MODEL_MOVENET_LIGHTNING_ONNX_SHA256: ${{ secrets.MODEL_MOVENET_LIGHTNING_ONNX_SHA256 }}
 
     steps:
       - name: Force IPv4 (disable IPv6)
@@ -38,10 +40,10 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install conversion deps
+      - name: Install conversion deps (TensorFlow + tf2onnx)
         run: |
           python -m pip install --upgrade pip
-          pip install tflite2onnx onnx
+          pip install tensorflow==2.17.0 tf2onnx onnx tensorflow_hub
 
       - name: Fetch models (TFLite)
         run: bash scripts/fetch_models.sh
@@ -49,8 +51,14 @@ jobs:
       - name: Verify base TFLite models
         run: ./gradlew :app:verifyModels --stacktrace
 
-      - name: Convert to ONNX
-        run: python scripts/convert_to_onnx.py
+      - name: Convert to ONNX (SavedModel pipeline - MoveNet)
+        run: |
+          python scripts/export_savedmodel_and_convert.py
+          ls -lh models/onnx
+
+      - name: (Legacy) Attempt generic TFLite→ONNX conversion (best-effort)
+        run: |
+          python scripts/convert_to_onnx.py || echo "Legacy conversion script finished (non-fatal)"
 
       - name: Validate ONNX models
         run: |
@@ -60,7 +68,8 @@ jobs:
       - name: Gradle ONNX verify & integrity
         run: |
           ./gradlew :app:verifyOnnxModels :app:generateModelIntegrity --stacktrace
-          cat models/INTEGRITY.md | head -n 30
+          echo '--- INTEGRITY (head) ---'
+          sed -n '1,60p' models/INTEGRITY.md
 
       - name: ONNX Runtime Smoke Test
         run: |
