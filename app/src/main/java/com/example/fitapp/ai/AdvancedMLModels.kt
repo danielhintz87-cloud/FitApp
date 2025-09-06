@@ -81,6 +81,8 @@ class AdvancedMLModels private constructor(private val context: Context) {
     }
     
     private var poseInterpreter: Interpreter? = null
+    // Cache mehrerer Interpreter für schnelle Umschaltung (nur gültige Modelle werden geladen)
+    private val interpreterCache: MutableMap<PoseModelType, Interpreter> = mutableMapOf()
     private var currentModelType: PoseModelType = PoseModelType.MOVENET_THUNDER
     private var imageProcessor: ImageProcessor = ImageProcessor.Builder()
         .add(ResizeOp(INPUT_SIZE_THUNDER, INPUT_SIZE_THUNDER, ResizeOp.ResizeMethod.BILINEAR))
@@ -108,8 +110,13 @@ class AdvancedMLModels private constructor(private val context: Context) {
      */
     suspend fun initialize(modelType: PoseModelType = PoseModelType.MOVENET_THUNDER): Boolean = withContext(Dispatchers.IO) {
         try {
-            if (isInitialized) return@withContext true
-            
+            // Falls bereits initialisiert UND gewünschtes Modell vorhanden, nur Umschalten
+            if (isInitialized && interpreterCache.containsKey(modelType)) {
+                currentModelType = modelType
+                poseInterpreter = interpreterCache[modelType]
+                updateImageProcessorFor(modelType)
+                return@withContext true
+            }
             val startTime = System.currentTimeMillis()
             currentModelType = modelType
             
@@ -127,10 +134,7 @@ class AdvancedMLModels private constructor(private val context: Context) {
                 PoseModelType.MOVENET_LIGHTNING -> INPUT_SIZE_LIGHTNING
                 PoseModelType.BLAZEPOSE -> INPUT_SIZE_BLAZEPOSE
             }
-            imageProcessor = ImageProcessor.Builder()
-                .add(ResizeOp(inputSize, inputSize, ResizeOp.ResizeMethod.BILINEAR))
-                .add(NormalizeOp(0f, 255f))
-                .build()
+            updateImageProcessorFor(modelType)
             if (useOnnxBackend && modelType == PoseModelType.MOVENET_LIGHTNING) {
                 // Versuche ONNX Session
                 try {
@@ -144,16 +148,23 @@ class AdvancedMLModels private constructor(private val context: Context) {
                 }
             }
             if (ortSession == null) {
-                try {
-                    val options = Interpreter.Options().apply {
-                        setNumThreads(2)
-                        setUseNNAPI(true)
-                        setUseXNNPACK(true)
+                // Nur laden wenn noch nicht im Cache
+                if (!interpreterCache.containsKey(modelType)) {
+                    try {
+                        val options = Interpreter.Options().apply {
+                            setNumThreads(2)
+                            setUseNNAPI(true)
+                            setUseXNNPACK(true)
+                        }
+                        val interpreter = Interpreter(FileUtil.loadMappedFile(context, poseModelPath), options)
+                        interpreterCache[modelType] = interpreter
+                        poseInterpreter = interpreter
+                        Log.i(TAG, "Loaded TFLite pose model: $poseModelPath (input=$inputSize)")
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Could not load pose model $poseModelPath", e)
                     }
-                    poseInterpreter = Interpreter(FileUtil.loadMappedFile(context, poseModelPath), options)
-                    Log.i(TAG, "Loaded TFLite pose model: $poseModelPath (input=$inputSize)")
-                } catch (e: Exception) {
-                    Log.w(TAG, "Could not load pose model $poseModelPath", e)
+                } else {
+                    poseInterpreter = interpreterCache[modelType]
                 }
             }
             
@@ -172,6 +183,70 @@ class AdvancedMLModels private constructor(private val context: Context) {
             Log.e(TAG, "Failed to initialize ML models", e)
             false
         }
+    }
+
+    // Aktualisiert den ImageProcessor für das gewählte Modell
+    private fun updateImageProcessorFor(modelType: PoseModelType) {
+        val inputSize = when (modelType) {
+            PoseModelType.MOVENET_THUNDER -> INPUT_SIZE_THUNDER
+            PoseModelType.MOVENET_LIGHTNING -> INPUT_SIZE_LIGHTNING
+            PoseModelType.BLAZEPOSE -> INPUT_SIZE_BLAZEPOSE
+        }
+        imageProcessor = ImageProcessor.Builder()
+            .add(ResizeOp(inputSize, inputSize, ResizeOp.ResizeMethod.BILINEAR))
+            .add(NormalizeOp(0f, 255f))
+            .build()
+    }
+
+    /** Liefert alle verfügbaren (Datei existiert & kein Platzhalter) Modelle */
+    fun listAvailableModels(): List<PoseModelType> {
+        return PoseModelType.values().filter { modelType ->
+            val path = when (modelType) {
+                PoseModelType.MOVENET_THUNDER -> MOVENET_THUNDER_MODEL
+                PoseModelType.MOVENET_LIGHTNING -> MOVENET_LIGHTNING_MODEL
+                PoseModelType.BLAZEPOSE -> BLAZEPOSE_MODEL
+            }
+            try {
+                val afd = context.assets.open(path)
+                afd.use { stream ->
+                    val head = ByteArray(4)
+                    val read = stream.read(head)
+                    // Primitive Platzhalter-Erkennung: beginnt mit '#'
+                    read > 0 && head[0].toInt() != '#'.code
+                }
+            } catch (e: Exception) { false }
+        }
+    }
+
+    /** Preload aller verfügbaren Modelle (Interpreter werden im Cache vorgehalten). */
+    suspend fun preloadAllAvailableModels(): Int = withContext(Dispatchers.IO) {
+        val available = listAvailableModels()
+        var loaded = 0
+        for (m in available) {
+            if (!interpreterCache.containsKey(m) || (m == PoseModelType.MOVENET_LIGHTNING && useOnnxBackend && ortSession == null)) {
+                initialize(m) // nutzt Cache-Mechanik, lädt falls nötig
+                loaded++
+            }
+        }
+        // Nach Preload wieder auf ursprüngliches Modell zurück – Standard Thunder
+        if (currentModelType != PoseModelType.MOVENET_THUNDER && interpreterCache.containsKey(PoseModelType.MOVENET_THUNDER)) {
+            switchModel(PoseModelType.MOVENET_THUNDER)
+        }
+        loaded
+    }
+
+    /** Schnelles Umschalten ohne Neu-Laden (sofern vorab geladen) */
+    fun switchModel(modelType: PoseModelType): Boolean {
+        if (!interpreterCache.containsKey(modelType) && !(modelType == PoseModelType.MOVENET_LIGHTNING && ortSession != null)) {
+            Log.w(TAG, "Model $modelType nicht im Cache – zunächst initialize() aufrufen")
+            return false
+        }
+        currentModelType = modelType
+        if (modelType != PoseModelType.MOVENET_LIGHTNING || ortSession == null) {
+            poseInterpreter = interpreterCache[modelType]
+        }
+        updateImageProcessorFor(modelType)
+        return true
     }
     
     /**
