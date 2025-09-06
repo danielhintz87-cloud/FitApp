@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,7 +33,7 @@ fun CloudSyncSettingsScreen(
                 title = { Text("Cloud-Synchronisation") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                     }
                 },
                 actions = {
@@ -169,7 +170,7 @@ private fun UserAccountSection(
                         onClick = onSignOut,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Abmelden")
                     }

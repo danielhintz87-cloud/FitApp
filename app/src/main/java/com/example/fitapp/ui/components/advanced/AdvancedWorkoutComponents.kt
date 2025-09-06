@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -91,7 +92,7 @@ fun LivePerformanceDashboard(
                 
                 // Volume
                 PerformanceMetric(
-                    icon = Icons.Filled.ShowChart,
+                    icon = Icons.AutoMirrored.Filled.ShowChart,
                     value = "${volume.toInt()}",
                     unit = "KG",
                     color = MaterialTheme.colorScheme.tertiary,
@@ -273,7 +274,7 @@ private fun FormQualityIndicator(
         )
     ) {
         Icon(
-            imageVector = Icons.Filled.Assignment,
+            imageVector = Icons.AutoMirrored.Filled.Assignment,
             contentDescription = "Form Analysis",
             modifier = Modifier.size(16.dp)
         )
@@ -450,9 +451,9 @@ private fun CoachingTipCard(
     }
     
     val icon = when (tip.type) {
-        CoachingTipType.FORM_IMPROVEMENT -> Icons.Filled.Assignment
+        CoachingTipType.FORM_IMPROVEMENT -> Icons.AutoMirrored.Filled.Assignment
         CoachingTipType.REST_OPTIMIZATION -> Icons.Filled.AccessTime
-        CoachingTipType.PROGRESSION_SUGGESTION -> Icons.Filled.TrendingUp
+        CoachingTipType.PROGRESSION_SUGGESTION -> Icons.AutoMirrored.Filled.TrendingUp
         CoachingTipType.MOTIVATION -> Icons.Filled.EmojiEvents
         CoachingTipType.SAFETY_WARNING -> Icons.Filled.Warning
         CoachingTipType.TECHNIQUE_TIP -> Icons.Filled.Lightbulb
@@ -610,7 +611,7 @@ private fun ProgressionMetric(
             )
             
             Icon(
-                imageVector = if (isIncrease) Icons.Filled.ArrowForward else Icons.Filled.ArrowDownward,
+                imageVector = if (isIncrease) Icons.AutoMirrored.Filled.ArrowForward else Icons.Filled.ArrowDownward,
                 contentDescription = if (isIncrease) "Increase" else "Decrease",
                 tint = if (isIncrease) Color(0xFF4CAF50) else Color(0xFFFF9800),
                 modifier = Modifier.size(16.dp)
