@@ -181,8 +181,8 @@ class HapticFeedbackManager(private val context: Context) {
             val amplitudes = intArrayOf(0, 120, 0, 120)
             vibrator.vibrate(VibrationEffect.createWaveform(pattern, amplitudes, -1))
         } else {
-            @Suppress("DEPRECATION")
             val pattern = longArrayOf(0, 50, 100, 50)
+            @Suppress("DEPRECATION")
             vibrator.vibrate(pattern, -1)
         }
     }
@@ -196,8 +196,8 @@ class HapticFeedbackManager(private val context: Context) {
             val amplitudes = intArrayOf(0, 100, 0, 100)
             vibrator.vibrate(VibrationEffect.createWaveform(pattern, amplitudes, -1))
         } else {
-            @Suppress("DEPRECATION")
             val pattern = longArrayOf(0, 30, 50, 30)
+            @Suppress("DEPRECATION")
             vibrator.vibrate(pattern, -1)
         }
     }
@@ -232,8 +232,8 @@ class HapticFeedbackManager(private val context: Context) {
             val amplitudes = intArrayOf(0, 150, 0, 150, 0, 150)
             vibrator.vibrate(VibrationEffect.createWaveform(pattern, amplitudes, -1))
         } else {
-            @Suppress("DEPRECATION")
             val pattern = longArrayOf(0, 100, 50, 100, 50, 100)
+            @Suppress("DEPRECATION")
             vibrator.vibrate(pattern, -1)
         }
     }

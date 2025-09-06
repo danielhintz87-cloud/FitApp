@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -220,8 +223,8 @@ private fun WorkoutAdaptationAlert(
             ) {
                 Icon(
                     imageVector = when (adaptation.type) {
-                        AdaptationType.INCREASE_INTENSITY -> Icons.Default.TrendingUp
-                        AdaptationType.REDUCE_INTENSITY -> Icons.Default.TrendingDown
+                        AdaptationType.INCREASE_INTENSITY -> Icons.AutoMirrored.Filled.TrendingUp
+                        AdaptationType.REDUCE_INTENSITY -> Icons.AutoMirrored.Filled.TrendingDown
                         AdaptationType.SUBSTITUTE_EXERCISE -> Icons.Default.SwapHoriz
                         else -> Icons.Default.AutoFixHigh
                     },
@@ -403,7 +406,7 @@ private fun ExerciseSubstitutionAlert(
                 }
                 
                 Icon(
-                    imageVector = Icons.Default.ArrowForward,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp)
                 )
@@ -643,7 +646,7 @@ fun RealTimePerformanceInsights(
             
             // Session progress bar
             LinearProgressIndicator(
-                progress = sessionProgress / 100f,
+                progress = { sessionProgress / 100f },
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.primary
             )

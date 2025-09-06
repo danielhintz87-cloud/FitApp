@@ -6,6 +6,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -222,7 +225,7 @@ private fun StepIngredientsChip(
         leadingIcon = if (ingredient.isOptional) {
             {
                 Icon(
-                    Icons.Filled.HelpOutline,
+                    Icons.AutoMirrored.Filled.HelpOutline,
                     contentDescription = "Optional",
                     modifier = Modifier.size(16.dp)
                 )
@@ -459,7 +462,7 @@ fun CookingNavigationBar(
             enabled = canGoBack,
             modifier = Modifier.weight(1f)
         ) {
-            Icon(Icons.Filled.ArrowBack, contentDescription = null)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
             Spacer(Modifier.width(4.dp))
             Text("Zurück")
         }
@@ -490,7 +493,7 @@ fun CookingNavigationBar(
             } else {
                 Text("Weiter")
                 Spacer(Modifier.width(4.dp))
-                Icon(Icons.Filled.ArrowForward, contentDescription = null)
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
             }
         }
     }

@@ -94,6 +94,7 @@ class CameraXPoseFrameProvider(
         val rotation = previewView?.display?.rotation ?: 0
         val size = targetSize()
 
+        @Suppress("DEPRECATION")
         preview = Preview.Builder()
             .setTargetResolution(android.util.Size(size, size))
             .setTargetRotation(rotation)
@@ -101,6 +102,7 @@ class CameraXPoseFrameProvider(
                 previewView?.let { pv -> p.setSurfaceProvider(pv.surfaceProvider) }
             }
 
+        @Suppress("DEPRECATION")
         analysis = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .setTargetResolution(android.util.Size(size, size))

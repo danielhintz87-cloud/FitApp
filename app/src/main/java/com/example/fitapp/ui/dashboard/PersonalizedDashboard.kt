@@ -452,7 +452,7 @@ private fun ProgressItem(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         LinearProgressIndicator(
-            progress = progress,
+            progress = { progress },
             modifier = Modifier
                 .width(40.dp)
                 .height(2.dp),
@@ -559,7 +559,7 @@ private fun MacroProgress(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         CircularProgressIndicator(
-            progress = current.toFloat() / target,
+            progress = { current.toFloat() / target },
             modifier = Modifier.size(24.dp),
             color = color,
             strokeWidth = 3.dp
@@ -755,7 +755,7 @@ private fun WeeklySummaryWidget(widget: DashboardWidgetConfig) {
         
         if (widget.size == WidgetSize.LARGE || widget.size == WidgetSize.EXTRA_LARGE) {
             LinearProgressIndicator(
-                progress = 0.8f,
+                progress = { 0.8f },
                 modifier = Modifier.fillMaxWidth(),
                 color = Color(0xFF4CAF50)
             )

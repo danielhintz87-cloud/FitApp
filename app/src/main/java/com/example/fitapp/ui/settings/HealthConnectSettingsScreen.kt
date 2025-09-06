@@ -6,6 +6,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -388,7 +390,7 @@ private fun HelpInfoCard() {
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
                 Icon(
-                    Icons.Default.Help,
+                    Icons.AutoMirrored.Filled.Help,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -412,7 +414,7 @@ private fun HelpInfoCard() {
                 onClick = { /* TODO: Open help */ },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(Icons.Default.HelpOutline, null)
+                Icon(Icons.AutoMirrored.Filled.HelpOutline, null)
                 Spacer(Modifier.width(8.dp))
                 Text("Weitere Informationen")
             }

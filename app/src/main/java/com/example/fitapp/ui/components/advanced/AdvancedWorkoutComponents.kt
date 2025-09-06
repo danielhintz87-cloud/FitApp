@@ -1004,7 +1004,9 @@ fun SmartRestTimerDisplay(
                     
                     // Progress indicator
                     LinearProgressIndicator(
-                        progress = (timerState.total - timerState.remaining).toFloat() / timerState.total,
+                        progress = {
+                            (timerState.total - timerState.remaining).toFloat() / timerState.total
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.primary
                     )
