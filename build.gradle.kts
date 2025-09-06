@@ -6,5 +6,26 @@ plugins {
     // Statische Analyse
     id("io.gitlab.arturbosch.detekt") version "1.23.6" apply false
     id("org.jlleitschuh.gradle.ktlint") version "12.1.1" apply false
+    // Modern versioning from Git tags
+    id("pl.allegro.tech.build.axion-release") version "1.18.12"
 }
+
+// Modern versioning configuration using Git tags and semantic versioning
+scmVersion {
+    tag {
+        prefix = "v"
+        versionSeparator = ""
+    }
+    versionCreator.set { version, position ->
+        val baseVersion = version.ifEmpty { "1.8.0" }
+        if (position.isClean) {
+            baseVersion
+        } else {
+            "$baseVersion-${position.shortRevision}"
+        }
+    }
+}
+
+// Make version available to subprojects
+project.version = scmVersion.version
 
