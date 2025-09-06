@@ -14,9 +14,9 @@ jobs:
     timeout-minutes: 55
     env:
       GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false -Dfile.encoding=UTF-8"
-  MOVEMENT_ANALYSIS_MODEL_URL: ${{ secrets.MOVEMENT_ANALYSIS_MODEL_URL }}
-  MOVEMENT_ANALYSIS_MODEL_SHA256: ${{ secrets.MOVEMENT_ANALYSIS_MODEL_SHA256 }}
-  USE_ONNX_MOVENET: true
+      MOVEMENT_ANALYSIS_MODEL_URL: ${{ secrets.MOVEMENT_ANALYSIS_MODEL_URL }}
+      MOVEMENT_ANALYSIS_MODEL_SHA256: ${{ secrets.MOVEMENT_ANALYSIS_MODEL_SHA256 }}
+      USE_ONNX_MOVENET: true
     steps:
       - name: Force IPv4 (disable IPv6)
         run: |
