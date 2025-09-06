@@ -5,6 +5,12 @@ import android.graphics.Bitmap
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.google.mediapipe.framework.image.BitmapImageBuilder
+import com.google.mediapipe.framework.image.MPImage
+import com.google.mediapipe.tasks.core.BaseOptions
+import com.google.mediapipe.tasks.vision.core.RunningMode
+import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
+import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
 
 /**
  * BlazePose MediaPipe Tasks Implementation
@@ -19,7 +25,7 @@ class BlazePoseMediaPipe private constructor(private val context: Context) {
     
     companion object {
         private const val TAG = "BlazePoseMediaPipe"
-        private const val MODEL_PATH = "models/tflite/blazepose.task"
+        private const val MODEL_PATH = "models/tflite/blazepose.tflite"
         private const val MIN_POSE_DETECTION_CONFIDENCE = 0.5f
         private const val MIN_POSE_PRESENCE_CONFIDENCE = 0.5f
         private const val MIN_TRACKING_CONFIDENCE = 0.5f
@@ -38,25 +44,43 @@ class BlazePoseMediaPipe private constructor(private val context: Context) {
     private var resultListener: ((BlazePoseResult, Any) -> Unit)? = null
     private var errorListener: ((RuntimeException) -> Unit)? = null
     
+    // MediaPipe PoseLandmarker instances
+    private var imagePoseLandmarker: PoseLandmarker? = null
+    private var liveStreamPoseLandmarker: PoseLandmarker? = null
+    
     /**
      * Initialisiert BlazePose für IMAGE mode (einzelne Bilder)
      */
     suspend fun initializeImageMode(): Boolean = withContext(Dispatchers.IO) {
         try {
-            if (isInitialized) return@withContext true
+            if (isInitialized && imagePoseLandmarker != null) return@withContext true
             
             Log.i(TAG, "Initializing BlazePose for image mode...")
             
-            // TODO: Hier würde die echte MediaPipe Initialisierung stattfinden
-            // Für jetzt verwenden wir Simulationsmodus
-            Log.w(TAG, "Running in simulation mode - MediaPipe Tasks not fully integrated yet")
+            // Create BaseOptions for MediaPipe model
+            val baseOptions = BaseOptions.builder()
+                .setModelAssetPath(MODEL_PATH)
+                .build()
+            
+            // Create PoseLandmarker options for image mode
+            val options = PoseLandmarker.PoseLandmarkerOptions.builder()
+                .setBaseOptions(baseOptions)
+                .setRunningMode(RunningMode.IMAGE)
+                .setMinPoseDetectionConfidence(MIN_POSE_DETECTION_CONFIDENCE)
+                .setMinPosePresenceConfidence(MIN_POSE_PRESENCE_CONFIDENCE)
+                .setMinTrackingConfidence(MIN_TRACKING_CONFIDENCE)
+                .setNumPoses(1) // Single pose detection
+                .build()
+            
+            // Create PoseLandmarker
+            imagePoseLandmarker = PoseLandmarker.createFromOptions(context, options)
             
             isInitialized = true
-            Log.i(TAG, "BlazePose initialized successfully (simulation mode)")
+            Log.i(TAG, "BlazePose initialized successfully for image mode")
             true
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize BlazePose", e)
+            Log.e(TAG, "Failed to initialize BlazePose for image mode", e)
             false
         }
     }
@@ -69,18 +93,42 @@ class BlazePoseMediaPipe private constructor(private val context: Context) {
         errorListener: (RuntimeException) -> Unit
     ): Boolean = withContext(Dispatchers.IO) {
         try {
-            if (isInitialized) return@withContext true
+            if (isInitialized && liveStreamPoseLandmarker != null) return@withContext true
             
             Log.i(TAG, "Initializing BlazePose for live stream mode...")
             
             this@BlazePoseMediaPipe.resultListener = resultListener
             this@BlazePoseMediaPipe.errorListener = errorListener
             
-            // TODO: Hier würde die echte MediaPipe Initialisierung stattfinden
-            Log.w(TAG, "Running in simulation mode - MediaPipe Tasks not fully integrated yet")
+            // Create BaseOptions for MediaPipe model
+            val baseOptions = BaseOptions.builder()
+                .setModelAssetPath(MODEL_PATH)
+                .build()
+            
+            // Create PoseLandmarker options for live stream mode
+            val options = PoseLandmarker.PoseLandmarkerOptions.builder()
+                .setBaseOptions(baseOptions)
+                .setRunningMode(RunningMode.LIVE_STREAM)
+                .setMinPoseDetectionConfidence(MIN_POSE_DETECTION_CONFIDENCE)
+                .setMinPosePresenceConfidence(MIN_POSE_PRESENCE_CONFIDENCE)
+                .setMinTrackingConfidence(MIN_TRACKING_CONFIDENCE)
+                .setNumPoses(1) // Single pose detection
+                .setResultListener { result, input ->
+                    // Convert MediaPipe result to our format
+                    val blazePoseResult = convertMediaPipeResult(result)
+                    resultListener(blazePoseResult, input)
+                }
+                .setErrorListener { error ->
+                    Log.e(TAG, "MediaPipe error in live stream", error)
+                    errorListener(error)
+                }
+                .build()
+            
+            // Create PoseLandmarker
+            liveStreamPoseLandmarker = PoseLandmarker.createFromOptions(context, options)
             
             isInitialized = true
-            Log.i(TAG, "BlazePose live stream mode initialized successfully (simulation mode)")
+            Log.i(TAG, "BlazePose live stream mode initialized successfully")
             true
             
         } catch (e: Exception) {
@@ -93,16 +141,20 @@ class BlazePoseMediaPipe private constructor(private val context: Context) {
      * Pose Detection für einzelne Bilder
      */
     suspend fun detectPose(bitmap: Bitmap): BlazePoseResult = withContext(Dispatchers.Default) {
-        if (!isInitialized) {
-            Log.w(TAG, "BlazePose not initialized")
+        if (!isInitialized || imagePoseLandmarker == null) {
+            Log.w(TAG, "BlazePose not initialized for image mode")
             return@withContext BlazePoseResult.empty()
         }
         
         try {
-            // TODO: Hier würde die echte MediaPipe Inferenz stattfinden
-            // Für jetzt generieren wir simulierte Daten
-            Log.d(TAG, "Detecting pose in simulation mode")
-            return@withContext generateSimulatedResult()
+            // Convert Bitmap to MPImage
+            val mpImage = BitmapImageBuilder(bitmap).build()
+            
+            // Perform pose detection
+            val result = imagePoseLandmarker!!.detect(mpImage)
+            
+            // Convert result to our format
+            return@withContext convertMediaPipeResult(result)
             
         } catch (e: Exception) {
             Log.e(TAG, "Error during pose detection", e)
@@ -114,31 +166,61 @@ class BlazePoseMediaPipe private constructor(private val context: Context) {
      * Pose Detection für Live Stream (asynchron)
      */
     suspend fun detectPoseAsync(bitmap: Bitmap, timestampMs: Long): Boolean = withContext(Dispatchers.Default) {
-        if (!isInitialized) {
-            Log.w(TAG, "BlazePose not initialized")
+        if (!isInitialized || liveStreamPoseLandmarker == null) {
+            Log.w(TAG, "BlazePose not initialized for live stream mode")
             return@withContext false
         }
         
         try {
-            // TODO: Hier würde die echte MediaPipe Async-Inferenz stattfinden
-            // Für jetzt simulieren wir das Verhalten
-            Log.d(TAG, "Async pose detection in simulation mode")
+            // Convert Bitmap to MPImage
+            val mpImage = BitmapImageBuilder(bitmap).build()
             
-            // Simuliere Async-Verhalten
-            val result = generateSimulatedResult()
-            resultListener?.invoke(result, bitmap)
+            // Perform async pose detection - result will be delivered via callback
+            liveStreamPoseLandmarker!!.detectAsync(mpImage, timestampMs)
             
             true
             
         } catch (e: Exception) {
             Log.e(TAG, "Error during async pose detection", e)
-            errorListener?.invoke(RuntimeException("Simulated async detection error", e))
+            errorListener?.invoke(RuntimeException("Async detection error", e))
             false
         }
     }
     
     /**
-     * Generiert simulierte BlazePose Landmarks für Demo
+     * Converts MediaPipe PoseLandmarkerResult to our BlazePoseResult format
+     */
+    private fun convertMediaPipeResult(result: PoseLandmarkerResult): BlazePoseResult {
+        if (result.landmarks().isEmpty()) {
+            return BlazePoseResult.empty()
+        }
+        
+        // Get the first pose (we're configured for single pose detection)
+        val poseLandmarks = result.landmarks()[0]
+        val landmarks = mutableListOf<Landmark3D>()
+        
+        // Convert each landmark
+        for (i in 0 until minOf(poseLandmarks.size, BlazePoseSpec.COUNT)) {
+            val landmark = poseLandmarks[i]
+            landmarks.add(
+                Landmark3D(
+                    x = landmark.x(),
+                    y = landmark.y(),
+                    z = landmark.z(),
+                    visibility = 1.0f // Use constant visibility for now
+                )
+            )
+        }
+        
+        return BlazePoseResult(
+            landmarks = landmarks,
+            isDetected = landmarks.isNotEmpty(),
+            confidence = 1.0f // MediaPipe doesn't provide overall confidence in this version
+        )
+    }
+    
+    /**
+     * Generiert simulierte BlazePose Landmarks für Demo/Fallback
      */
     private fun generateSimulatedResult(): BlazePoseResult {
         val landmarks = mutableListOf<Landmark3D>()
@@ -195,10 +277,21 @@ class BlazePoseMediaPipe private constructor(private val context: Context) {
      * Cleanup
      */
     fun cleanup() {
-        // TODO: Hier würde das echte MediaPipe Model cleanup stattfinden
-        isInitialized = false
-        resultListener = null
-        errorListener = null
-        Log.i(TAG, "BlazePose cleaned up")
+        try {
+            // Cleanup MediaPipe PoseLandmarker instances
+            imagePoseLandmarker?.close()
+            imagePoseLandmarker = null
+            
+            liveStreamPoseLandmarker?.close()
+            liveStreamPoseLandmarker = null
+            
+            isInitialized = false
+            resultListener = null
+            errorListener = null
+            
+            Log.i(TAG, "BlazePose cleaned up")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during cleanup", e)
+        }
     }
 }
