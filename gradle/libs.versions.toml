@@ -43,7 +43,7 @@ play-services-wearable = "18.1.0"
 horologist = "0.6.12"
 
 # KSP
-ksp = "2.0.20-1.0.25"
+ksp = "2.2.10-2.0.2"
 
 # Testing
 junit = "4.13.2"
