@@ -118,6 +118,21 @@ PERPLEXITY_API_KEY=dein_perplexity_schlüssel
 Das Coverage-Badge wird automatisch über den Workflow `update-badges.yml` aktualisiert. Die Rohdaten liegen unter `badges/coverage.json`.
 
 ## 🤖 ML Modelle
+Zusätzliche Live-Kamera Pipeline: Der neue `CameraXPoseFrameProvider` (CameraX) liefert Echtzeit-Frames für die Pose-Analyse. Er richtet die Zielauflösung (192/256) am aktiven Modell aus und konvertiert YUV ➜ Bitmap effizient. Beispiel:
+```kotlin
+val ml = AdvancedMLModels.getInstance(context)
+ml.initializeAdaptive() // oder spezifisch initialize(MOVENET_THUNDER)
+val frameProvider = CameraXPoseFrameProvider(context, ml)
+frameProvider.start(lifecycleOwner, previewView)
+
+// Später zyklisch z.B. in Coroutine
+frameProvider.currentFrame()?.let { bmp ->
+	val result = ml.analyzePoseFromFrameOptimized(bmp)
+	// result verarbeiten
+}
+```
+Stoppen: `frameProvider.stop()` (z.B. onPause). Fallback ohne Kamera: `DefaultNoCameraFrameProvider`.
+
 ### Versionierte Modell-Dateien & Hashes
 Aktuell im Repository (unter `app/src/main/assets/models/`):
 
