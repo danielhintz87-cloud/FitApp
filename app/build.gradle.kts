@@ -102,12 +102,10 @@ android {
     }
 
     // Room Schema-Export für Migrationstests
-    applicationVariants.all {
-        ksp {
-            arg("room.schemaLocation", "$projectDir/schemas")
-            arg("room.incremental", "true")
-            arg("room.expandProjection", "true")
-        }
+    ksp {
+        arg("room.schemaLocation", "$projectDir/schemas")
+        arg("room.incremental", "true")
+        arg("room.expandProjection", "true")
     }
 
     kotlin {
