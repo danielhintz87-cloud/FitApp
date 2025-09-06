@@ -50,9 +50,15 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         // Cloud Sync Entities
         CloudSyncEntity::class,
         UserProfileEntity::class,
-        SyncConflictEntity::class
+        SyncConflictEntity::class,
+        // Social Challenge Entities
+        SocialChallengeEntity::class,
+        ChallengeParticipationEntity::class,
+        ChallengeProgressLogEntity::class,
+        SocialBadgeEntity::class,
+        LeaderboardEntryEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -94,6 +100,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun cloudSyncDao(): CloudSyncDao
     abstract fun userProfileDao(): UserProfileDao
     abstract fun syncConflictDao(): SyncConflictDao
+    // Social Challenge DAOs
+    abstract fun socialChallengeDao(): SocialChallengeDao
+    abstract fun challengeParticipationDao(): ChallengeParticipationDao
+    abstract fun challengeProgressLogDao(): ChallengeProgressLogDao
+    abstract fun socialBadgeDao(): SocialBadgeDao
+    abstract fun leaderboardEntryDao(): LeaderboardEntryDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -739,6 +751,147 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_exercise_sessions_source` ON `health_connect_exercise_sessions` (`source`)")
             }
         }
+
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add Social Challenge and Badge system tables
+                
+                // Create social_challenges table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `social_challenges` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `description` TEXT NOT NULL,
+                        `category` TEXT NOT NULL,
+                        `challengeType` TEXT NOT NULL,
+                        `targetMetric` TEXT NOT NULL,
+                        `targetValue` REAL NOT NULL,
+                        `unit` TEXT NOT NULL,
+                        `duration` INTEGER NOT NULL,
+                        `startDate` TEXT NOT NULL,
+                        `endDate` TEXT NOT NULL,
+                        `maxParticipants` INTEGER,
+                        `currentParticipants` INTEGER NOT NULL DEFAULT 0,
+                        `status` TEXT NOT NULL,
+                        `creatorId` TEXT,
+                        `reward` TEXT,
+                        `difficulty` TEXT NOT NULL,
+                        `imageUrl` TEXT,
+                        `rules` TEXT,
+                        `isOfficial` INTEGER NOT NULL DEFAULT 0,
+                        `createdAt` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                
+                // Create challenge_participations table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `challenge_participations` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `challengeId` INTEGER NOT NULL,
+                        `userId` TEXT NOT NULL,
+                        `userName` TEXT,
+                        `status` TEXT NOT NULL,
+                        `currentProgress` REAL NOT NULL DEFAULT 0.0,
+                        `progressPercentage` REAL NOT NULL DEFAULT 0.0,
+                        `lastActivityDate` TEXT,
+                        `completedAt` INTEGER,
+                        `joinedAt` INTEGER NOT NULL,
+                        `rank` INTEGER,
+                        `personalBest` REAL,
+                        `notes` TEXT,
+                        FOREIGN KEY(`challengeId`) REFERENCES `social_challenges`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                
+                // Create challenge_progress_logs table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `challenge_progress_logs` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `participationId` INTEGER NOT NULL,
+                        `logDate` TEXT NOT NULL,
+                        `value` REAL NOT NULL,
+                        `description` TEXT,
+                        `source` TEXT NOT NULL,
+                        `timestamp` INTEGER NOT NULL,
+                        FOREIGN KEY(`participationId`) REFERENCES `challenge_participations`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                
+                // Create social_badges table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `social_badges` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `description` TEXT NOT NULL,
+                        `category` TEXT NOT NULL,
+                        `badgeType` TEXT NOT NULL,
+                        `iconName` TEXT NOT NULL,
+                        `rarity` TEXT NOT NULL,
+                        `requirements` TEXT NOT NULL,
+                        `challengeId` INTEGER,
+                        `isUnlocked` INTEGER NOT NULL DEFAULT 0,
+                        `unlockedAt` INTEGER,
+                        `progress` REAL NOT NULL DEFAULT 0.0,
+                        `createdAt` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                
+                // Create leaderboard_entries table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `leaderboard_entries` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `challengeId` INTEGER NOT NULL,
+                        `userId` TEXT NOT NULL,
+                        `userName` TEXT,
+                        `rank` INTEGER NOT NULL,
+                        `score` REAL NOT NULL,
+                        `completionTime` INTEGER,
+                        `badge` TEXT,
+                        `lastUpdated` INTEGER NOT NULL,
+                        FOREIGN KEY(`challengeId`) REFERENCES `social_challenges`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                
+                // Add indexes for social_challenges
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_social_challenges_status` ON `social_challenges` (`status`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_social_challenges_category` ON `social_challenges` (`category`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_social_challenges_startDate` ON `social_challenges` (`startDate`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_social_challenges_endDate` ON `social_challenges` (`endDate`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_social_challenges_createdAt` ON `social_challenges` (`createdAt`)")
+                
+                // Add indexes for challenge_participations
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_challenge_participations_challengeId` ON `challenge_participations` (`challengeId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_challenge_participations_userId` ON `challenge_participations` (`userId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_challenge_participations_status` ON `challenge_participations` (`status`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_challenge_participations_joinedAt` ON `challenge_participations` (`joinedAt`)")
+                
+                // Add indexes for challenge_progress_logs
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_challenge_progress_logs_participationId` ON `challenge_progress_logs` (`participationId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_challenge_progress_logs_logDate` ON `challenge_progress_logs` (`logDate`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_challenge_progress_logs_timestamp` ON `challenge_progress_logs` (`timestamp`)")
+                
+                // Add indexes for social_badges
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_social_badges_category` ON `social_badges` (`category`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_social_badges_badgeType` ON `social_badges` (`badgeType`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_social_badges_rarity` ON `social_badges` (`rarity`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_social_badges_isUnlocked` ON `social_badges` (`isUnlocked`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_social_badges_unlockedAt` ON `social_badges` (`unlockedAt`)")
+                
+                // Add indexes for leaderboard_entries
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_leaderboard_entries_challengeId` ON `leaderboard_entries` (`challengeId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_leaderboard_entries_userId` ON `leaderboard_entries` (`userId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_leaderboard_entries_rank` ON `leaderboard_entries` (`rank`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_leaderboard_score` ON `leaderboard_entries` (`score`)")
+                
+                // Add new columns to personal_achievements table for enhanced badge system
+                db.execSQL("ALTER TABLE `personal_achievements` ADD COLUMN `badgeType` TEXT")
+                db.execSQL("ALTER TABLE `personal_achievements` ADD COLUMN `rarity` TEXT")
+                db.execSQL("ALTER TABLE `personal_achievements` ADD COLUMN `socialVisible` INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE `personal_achievements` ADD COLUMN `challengeId` INTEGER")
+                db.execSQL("ALTER TABLE `personal_achievements` ADD COLUMN `shareMessage` TEXT")
+                db.execSQL("ALTER TABLE `personal_achievements` ADD COLUMN `pointsValue` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
         
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
@@ -748,7 +901,7 @@ abstract class AppDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): AppDatabase {
             return try {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
-                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
                     .apply {
                         // Only allow destructive migration in debug builds
                         if (com.example.fitapp.BuildConfig.DEBUG) {

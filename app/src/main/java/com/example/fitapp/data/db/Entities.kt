@@ -164,14 +164,21 @@ data class PersonalAchievementEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
     val description: String,
-    val category: String, // "fitness", "nutrition", "streak", "milestone"
+    val category: String, // "fitness", "nutrition", "streak", "milestone", "social", "challenge"
     val iconName: String, // Material icon name for display
     val targetValue: Double? = null, // target for numeric achievements
     val currentValue: Double = 0.0, // current progress
     val unit: String? = null, // "kg", "reps", "days", "kcal", etc.
     val isCompleted: Boolean = false,
     val completedAt: Long? = null,
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
+    // NEW: Enhanced badge system like Freeletics
+    val badgeType: String? = null, // "bronze", "silver", "gold", "platinum", "diamond"
+    val rarity: String? = null, // "common", "rare", "epic", "legendary"
+    val socialVisible: Boolean = true, // whether to show in social feeds
+    val challengeId: Long? = null, // if earned from completing a challenge
+    val shareMessage: String? = null, // custom message when sharing achievement
+    val pointsValue: Int = 0 // points earned for completing this achievement
 )
 
 @Entity(tableName = "personal_streaks")
@@ -699,4 +706,154 @@ data class SyncConflictEntity(
     val resolvedBy: String? = null,   // "auto", "user", "ai"
     val createdAt: Long = System.currentTimeMillis() / 1000,
     val resolvedAt: Long? = null
+)
+
+// Social Challenge Entities for Freeletics-style gamification
+
+@Entity(
+    tableName = "social_challenges",
+    indices = [
+        Index(value = ["status"]),
+        Index(value = ["category"]),
+        Index(value = ["startDate"]),
+        Index(value = ["endDate"]),
+        Index(value = ["createdAt"])
+    ]
+)
+data class SocialChallengeEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String,
+    val description: String,
+    val category: String, // "fitness", "nutrition", "weight_loss", "endurance", "strength"
+    val challengeType: String, // "public", "private", "featured"
+    val targetMetric: String, // "workouts", "calories", "weight_loss", "steps", "water_intake"
+    val targetValue: Double,
+    val unit: String, // "trainings", "kcal", "kg", "steps", "liters"
+    val duration: Int, // days
+    val startDate: String, // ISO date string
+    val endDate: String, // ISO date string
+    val maxParticipants: Int? = null, // null for unlimited
+    val currentParticipants: Int = 0,
+    val status: String, // "upcoming", "active", "completed", "cancelled"
+    val creatorId: String? = null, // for user-created challenges
+    val reward: String? = null, // badge or reward description
+    val difficulty: String, // "beginner", "intermediate", "advanced", "expert"
+    val imageUrl: String? = null,
+    val rules: String? = null, // Additional rules or description
+    val isOfficial: Boolean = false, // true for app-created challenges
+    val createdAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "challenge_participations",
+    foreignKeys = [
+        ForeignKey(
+            entity = SocialChallengeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["challengeId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["challengeId"]),
+        Index(value = ["userId"]),
+        Index(value = ["status"]),
+        Index(value = ["joinedAt"])
+    ]
+)
+data class ChallengeParticipationEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val challengeId: Long,
+    val userId: String, // can be device ID or user ID if we have user accounts
+    val userName: String? = null, // display name for leaderboards
+    val status: String, // "active", "completed", "quit", "failed"
+    val currentProgress: Double = 0.0,
+    val progressPercentage: Double = 0.0, // calculated percentage
+    val lastActivityDate: String? = null, // ISO date string
+    val completedAt: Long? = null,
+    val joinedAt: Long = System.currentTimeMillis() / 1000,
+    val rank: Int? = null, // current ranking in challenge
+    val personalBest: Double? = null, // best single day/session performance
+    val notes: String? = null // user notes or motivation
+)
+
+@Entity(
+    tableName = "challenge_progress_logs",
+    foreignKeys = [
+        ForeignKey(
+            entity = ChallengeParticipationEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["participationId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["participationId"]),
+        Index(value = ["logDate"]),
+        Index(value = ["timestamp"])
+    ]
+)
+data class ChallengeProgressLogEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val participationId: Long,
+    val logDate: String, // ISO date string
+    val value: Double, // progress value for this day/session
+    val description: String? = null, // what was accomplished
+    val source: String, // "workout", "nutrition", "manual", "automatic"
+    val timestamp: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "social_badges",
+    indices = [
+        Index(value = ["category"]),
+        Index(value = ["badgeType"]),
+        Index(value = ["rarity"]),
+        Index(value = ["isUnlocked"]),
+        Index(value = ["unlockedAt"])
+    ]
+)
+data class SocialBadgeEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String,
+    val description: String,
+    val category: String, // "achievement", "streak", "challenge", "social", "milestone"
+    val badgeType: String, // "bronze", "silver", "gold", "platinum", "diamond", "special"
+    val iconName: String, // Material icon name
+    val rarity: String, // "common", "rare", "epic", "legendary"
+    val requirements: String, // JSON or text description of unlock requirements
+    val challengeId: Long? = null, // associated with specific challenge
+    val isUnlocked: Boolean = false,
+    val unlockedAt: Long? = null,
+    val progress: Double = 0.0, // progress towards unlocking (0.0 to 100.0)
+    val createdAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "leaderboard_entries",
+    foreignKeys = [
+        ForeignKey(
+            entity = SocialChallengeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["challengeId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["challengeId"]),
+        Index(value = ["userId"]),
+        Index(value = ["rank"]),
+        Index(value = ["score"], name = "index_leaderboard_score")
+    ]
+)
+data class LeaderboardEntryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val challengeId: Long,
+    val userId: String,
+    val userName: String? = null,
+    val rank: Int,
+    val score: Double, // final score/progress
+    val completionTime: Long? = null, // when they completed the challenge
+    val badge: String? = null, // badge earned for this ranking
+    val lastUpdated: Long = System.currentTimeMillis() / 1000
 )
