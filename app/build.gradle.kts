@@ -420,11 +420,11 @@ tasks.register("verifyModels") {
                     val read = bis.read(bytes)
                     if (read > 0) String(bytes, 0, read) else ""
                 }
-                if (size < minSize) {
-                    logger.warn("WARNUNG: ${f.name} ist kleiner (${size} Bytes) als erwartete Mindestgröße ${minSize} Bytes – evtl. Platzhalter oder unvollständiger Download")
-                }
                 if (head.startsWith("# ")) {
-                    logger.warn("WARNUNG: ${f.name} scheint ein Platzhalter zu sein (beginnt mit '#')")
+                    logger.error("PLATZHALTER: ${f.name} enthält nur Platzhalter-Kommentar – bitte echtes Modell bereitstellen")
+                    failures++
+                } else if (size < minSize) {
+                    logger.warn("WARNUNG: ${f.name} ist kleiner (${size} Bytes) als erwartete Mindestgröße ${minSize} Bytes – prüfen ob korrekt")
                 }
                 logger.lifecycle("OK: ${f.name} (${size} Bytes)")
             }

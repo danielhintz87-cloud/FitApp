@@ -52,6 +52,9 @@ jobs:
       - name: detekt
         run: ./gradlew detekt --stacktrace || true
 
+      - name: Verify ML Models
+        run: ./gradlew :app:verifyModels --stacktrace || true
+
       - name: Unit Coverage
         run: ./gradlew jacocoTestReport --stacktrace || true
 

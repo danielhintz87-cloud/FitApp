@@ -38,6 +38,19 @@ fi
 
 echo "==> movement_analysis_model.tflite bereits vorhanden – kein Download nötig"
 
+# Bewegungsauswertungsmodell (Optionaler Download – Beispielquelle mit Checksum)
+ANALYSIS_MODEL="$TFLITE_DIR/movement_analysis_model.tflite"
+if [ ! -s "$ANALYSIS_MODEL" ] || grep -q "placeholder" "$ANALYSIS_MODEL" 2>/dev/null; then
+  echo "==> Lade Movement Analysis Modell..."
+  # Beispiel-Download-URL (Platzhalter). Bitte echte Quelle hinterlegen.
+  ANALYSIS_URL="https://raw.githubusercontent.com/danielhintz87-cloud/model-hosting/main/movement_analysis_model.tflite"
+  if curl -L --fail "$ANALYSIS_URL" -o "$ANALYSIS_MODEL" 2>/dev/null; then
+    echo "Movement Analysis Modell heruntergeladen"
+  else
+    echo "Warnung: Konnte Movement Analysis Modell nicht laden – vorhandene Datei bleibt"
+  fi
+fi
+
 echo "==> Aufräumen..."
 rm -rf "$TMP_DIR"
 
