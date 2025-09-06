@@ -58,6 +58,8 @@ tensorflow_cache/
 .onnx_cache/
 !models/tflite/*.tflite
 !models/onnx/*.onnx
+!app/src/main/assets/models/tflite/*.tflite
+!app/src/main/assets/models/onnx/*.onnx
 
 # Dev Container / Editor
 .devcontainer/
