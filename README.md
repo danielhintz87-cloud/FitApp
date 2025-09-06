@@ -66,6 +66,9 @@ cp local.properties.sample local.properties
 ./gradlew check
 ```
 
+### Offene Aufgaben / TODO Übersicht
+Eine konsolidierte, kategorisierte Liste aller im Code hinterlegten TODO-Kommentare befindet sich in `TODO_INDEX.md`.
+
 ## 🏗️ CI/CD Pipeline
 
 ### Automatisierte Workflows
