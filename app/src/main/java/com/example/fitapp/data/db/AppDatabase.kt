@@ -905,7 +905,7 @@ abstract class AppDatabase : RoomDatabase() {
                     .apply {
                         // Only allow destructive migration in debug builds
                         if (com.example.fitapp.BuildConfig.DEBUG) {
-                            fallbackToDestructiveMigration()
+                            fallbackToDestructiveMigration(true)
                         }
                     }
                     .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING) // Enable WAL mode for better performance
@@ -945,7 +945,7 @@ abstract class AppDatabase : RoomDatabase() {
                 // Create a new database with fallback
                 try {
                     Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp_fallback.db")
-                        .fallbackToDestructiveMigration()
+                        .fallbackToDestructiveMigration(true)
                         .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
                         .build().also { 
                             INSTANCE = it 
