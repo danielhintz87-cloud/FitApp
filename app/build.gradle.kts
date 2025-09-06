@@ -342,7 +342,7 @@ tasks.register("verifyCoverage") {
     description = "Verifies line coverage >= coverage.min (default 40%)"
     dependsOn("jacocoTestReport")
     doLast {
-        val reportFile = file("${buildDir}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
+        val reportFile = file("${layout.buildDirectory.get().asFile}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
         if (!reportFile.exists()) {
             logger.warn("Jacoco report fehlt: ${reportFile.path} – überspringe Gate")
             return@doLast
