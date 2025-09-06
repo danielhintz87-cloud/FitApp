@@ -117,6 +117,20 @@ PERPLEXITY_API_KEY=dein_perplexity_schlüssel
 Das Coverage-Badge wird automatisch über den Workflow `update-badges.yml` aktualisiert. Die Rohdaten liegen unter `badges/coverage.json`.
 
 ## 🤖 ML Modelle
+### Integritätsprüfung (SHA-256)
+Optional können erwartete Hashes gesetzt werden, damit `:app:verifyModels` Integrität erzwingt:
+```bash
+export MODEL_MOVENET_THUNDER_SHA256=<sha256>
+export MODEL_BLAZEPOSE_SHA256=<sha256>
+# optional
+export MODEL_MOVEMENT_ANALYSIS_MODEL_SHA256=<sha256>
+```
+Oder in `local.properties`:
+```
+MODEL_MOVENET_THUNDER.sha256=<sha256>
+MODEL_BLAZEPOSE.sha256=<sha256>
+```
+
 
 Die App nutzt mehrere On-Device Modelle:
 

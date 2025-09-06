@@ -1,4 +1,5 @@
 import java.util.Properties
+import java.security.MessageDigest
 import org.gradle.api.tasks.Copy
 
 plugins {
@@ -408,6 +409,16 @@ tasks.register("verifyModels") {
     // Nach copyModels liegen die Dateien unter app/src/main/assets/models/tflite
     val baseDir = layout.projectDirectory.dir("src/main/assets/models/tflite").asFile
         var failures = 0
+        // Optional erwartete SHA256 Hashes (Env > local.properties)
+        val props = Properties()
+        val lp = rootProject.file("local.properties")
+        if (lp.exists()) props.load(lp.inputStream())
+
+        fun expectedHash(name: String): String? =
+            (System.getenv("MODEL_${name.uppercase()}_SHA256")
+                ?: props.getProperty("MODEL_${name}.sha256")
+                ?: props.getProperty("MODEL_${name.uppercase()}_SHA256"))
+
         required.forEach { (fileName, minSize) ->
             val f = baseDir.resolve(fileName)
             if (!f.exists()) {
@@ -425,6 +436,18 @@ tasks.register("verifyModels") {
                     failures++
                 } else if (size < minSize) {
                     logger.warn("WARNUNG: ${f.name} ist kleiner (${size} Bytes) als erwartete Mindestgröße ${minSize} Bytes – prüfen ob korrekt")
+                }
+                // Hash-Prüfung falls erwarteter Hash vorhanden
+                val baseName = fileName.substringBefore('.')
+                val expected = expectedHash(baseName)
+                if (expected != null) {
+                    val actual = MessageDigest.getInstance("SHA-256").digest(f.readBytes()).joinToString("") { byteVal -> "%02x".format(byteVal) }
+                    if (!actual.equals(expected, ignoreCase = true)) {
+                        logger.error("HASH MISMATCH: ${f.name} erwartet ${expected.take(12)}..., erhalten ${actual.take(12)}...")
+                        failures++
+                    } else {
+                        logger.lifecycle("HASH OK: ${f.name}")
+                    }
                 }
                 logger.lifecycle("OK: ${f.name} (${size} Bytes)")
             }
