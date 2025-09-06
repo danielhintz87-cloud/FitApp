@@ -8,6 +8,9 @@ import com.example.fitapp.services.CompensationPattern
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.tensorflow.lite.Interpreter
+import ai.onnxruntime.OrtEnvironment
+import ai.onnxruntime.OrtSession
+import ai.onnxruntime.OnnxTensor
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
@@ -78,6 +81,10 @@ class AdvancedMLModels private constructor(private val context: Context) {
         .add(ResizeOp(INPUT_SIZE_THUNDER, INPUT_SIZE_THUNDER, ResizeOp.ResizeMethod.BILINEAR))
         .add(NormalizeOp(0f, 255f))
         .build()
+    // Optional ONNX Backend
+    private val useOnnxBackend: Boolean = System.getenv("USE_ONNX_MOVENET") == "true"
+    private var ortEnv: OrtEnvironment? = null
+    private var ortSession: OrtSession? = null
     
     private var isInitialized = false
     private var lastAnalysisTime = 0L
@@ -117,16 +124,30 @@ class AdvancedMLModels private constructor(private val context: Context) {
                 .add(ResizeOp(inputSize, inputSize, ResizeOp.ResizeMethod.BILINEAR))
                 .add(NormalizeOp(0f, 255f))
                 .build()
-            try {
-                val options = Interpreter.Options().apply {
-                    setNumThreads(2)
-                    setUseNNAPI(true)
-                    setUseXNNPACK(true)
+            if (useOnnxBackend && modelType == PoseModelType.MOVENET_LIGHTNING) {
+                // Versuche ONNX Session
+                try {
+                    val assetPath = "models/onnx/movenet_lightning.onnx"
+                    val bytes = FileUtil.loadMappedFile(context, assetPath)
+                    ortEnv = OrtEnvironment.getEnvironment()
+                    ortSession = ortEnv!!.createSession(bytes, OrtSession.SessionOptions())
+                    Log.i(TAG, "ONNX MoveNet Lightning geladen (Backend aktiviert)")
+                } catch (e: Exception) {
+                    Log.w(TAG, "ONNX Backend konnte nicht initialisiert werden – fallback auf TFLite", e)
                 }
-                poseInterpreter = Interpreter(FileUtil.loadMappedFile(context, poseModelPath), options)
-                Log.i(TAG, "Loaded pose model: $poseModelPath (input=$inputSize)")
-            } catch (e: Exception) {
-                Log.w(TAG, "Could not load pose model $poseModelPath", e)
+            }
+            if (ortSession == null) {
+                try {
+                    val options = Interpreter.Options().apply {
+                        setNumThreads(2)
+                        setUseNNAPI(true)
+                        setUseXNNPACK(true)
+                    }
+                    poseInterpreter = Interpreter(FileUtil.loadMappedFile(context, poseModelPath), options)
+                    Log.i(TAG, "Loaded TFLite pose model: $poseModelPath (input=$inputSize)")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not load pose model $poseModelPath", e)
+                }
             }
             
             // Initialize movement analysis model (simulated for mobile optimization)
@@ -535,6 +556,69 @@ class AdvancedMLModels private constructor(private val context: Context) {
      * Run real MoveNet style pose inference: expects output [1,1,17,3] -> (y,x,score)
      */
     private fun runPoseInference(processedImage: TensorImage): List<Keypoint> {
+        // ONNX bevorzugt wenn Session vorhanden
+        ortSession?.let { session ->
+            return try {
+                val inputSize = when (currentModelType) {
+                    PoseModelType.MOVENET_THUNDER -> INPUT_SIZE_THUNDER
+                    PoseModelType.MOVENET_LIGHTNING -> INPUT_SIZE_LIGHTNING
+                    PoseModelType.BLAZEPOSE -> INPUT_SIZE_BLAZEPOSE
+                }
+                // TensorImage -> FloatArray
+                val floatBuf = processedImage.buffer.asFloatBuffer()
+                val arr = FloatArray(floatBuf.remaining())
+                floatBuf.get(arr)
+                // Form: [1,H,W,3]
+                val shape = longArrayOf(1, inputSize.toLong(), inputSize.toLong(), 3)
+                val env = ortEnv ?: return emptyList()
+                OnnxTensor.createTensor(env, arr, shape).use { tensor ->
+                    val inputName = session.inputNames.first()
+                    val results = session.run(mapOf(inputName to tensor))
+                    results.use { r ->
+                        val first = r[0]
+                        if (first is OnnxTensor) {
+                            val infoShape = first.info.shape
+                            val fb = first.floatBuffer
+                            // Erwartet (1,1,17,3) oder (1,17,3)
+                            val keypoints = mutableListOf<Keypoint>()
+                            if (infoShape.size == 4L && infoShape[2] == 17L) {
+                                for (i in 0 until 17) {
+                                    val base = i * 3
+                                    val y = fb.get(base).coerceIn(0f,1f)
+                                    val x = fb.get(base+1).coerceIn(0f,1f)
+                                    val score = fb.get(base+2)
+                                    if (score >= CONFIDENCE_THRESHOLD) {
+                                        keypoints.add(Keypoint(
+                                            name = MoveNetNames[i], x = x, y = y, confidence = score
+                                        ))
+                                    }
+                                }
+                            } else if (infoShape.size == 3L && infoShape[1] == 17L) { // (1,17,3)
+                                for (i in 0 until 17) {
+                                    val base = i * 3
+                                    val y = fb.get(base).coerceIn(0f,1f)
+                                    val x = fb.get(base+1).coerceIn(0f,1f)
+                                    val score = fb.get(base+2)
+                                    if (score >= CONFIDENCE_THRESHOLD) {
+                                        keypoints.add(Keypoint(
+                                            name = MoveNetNames[i], x = x, y = y, confidence = score
+                                        ))
+                                    }
+                                }
+                            } else {
+                                Log.w(TAG, "Unexpected ONNX output shape: ${infoShape.contentToString()}")
+                            }
+                            return keypoints
+                        }
+                    }
+                }
+                emptyList()
+            } catch (e: Exception) {
+                Log.w(TAG, "ONNX inference failed – fallback TFLite", e)
+                // Weiter unten TFLite Versuch
+            }
+        }
+
         val interpreter = poseInterpreter ?: return emptyList()
         return try {
             val output = Array(1) { Array(1) { Array(NUM_KEYPOINTS) { FloatArray(3) } } }
@@ -545,6 +629,13 @@ class AdvancedMLModels private constructor(private val context: Context) {
             emptyList()
         }
     }
+
+    private val MoveNetNames = listOf(
+        "nose", "left_eye", "right_eye", "left_ear", "right_ear",
+        "left_shoulder", "right_shoulder", "left_elbow", "right_elbow",
+        "left_wrist", "right_wrist", "left_hip", "right_hip",
+        "left_knee", "right_knee", "left_ankle", "right_ankle"
+    )
     
     /**
      * Analyze form quality from detected keypoints
@@ -823,6 +914,9 @@ class AdvancedMLModels private constructor(private val context: Context) {
         movementInterpreter?.close()
         poseInterpreter = null
         movementInterpreter = null
+    try { ortSession?.close() } catch (_: Exception) {}
+    ortSession = null
+    // OrtEnvironment sollte nur einmal pro Prozess existieren; kein force close notwendig
         
         // Clear all caches and buffers
         clearCache()
