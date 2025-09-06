@@ -24,6 +24,13 @@ jobs:
 
       - uses: gradle/gradle-build-action@v3
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platforms & build-tools
+        run: |
+          sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
       - name: Run unit tests (coverage)
         run: ./gradlew jacocoTestReport --no-daemon --stacktrace
 
