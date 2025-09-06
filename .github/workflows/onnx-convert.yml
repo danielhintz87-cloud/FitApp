@@ -36,6 +36,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
       - name: Install conversion deps
         run: |
@@ -55,6 +56,29 @@ jobs:
         run: |
           python -m pip install onnx
           python scripts/validate_onnx.py
+
+      - name: ONNX Runtime Smoke Test
+        run: |
+          python -m pip install onnxruntime
+          python - <<'PY'
+import os, onnxruntime as ort
+root='models/onnx'
+failed=0
+for f in os.listdir(root):
+  if not f.endswith('.onnx'): continue
+  path=os.path.join(root,f)
+  print('SmokeTest', f)
+  try:
+    sess=ort.InferenceSession(path, providers=['CPUExecutionProvider'])
+    inputs={i.name: ( ( [ [ [0.0]* (d or 1) ] ] ) if len(i.shape)==4 else [0.0]*(i.shape[1] if len(i.shape)>1 and i.shape[1] else 1) ) for i in sess.get_inputs()}
+    sess.run(None, inputs)
+    print('  OK')
+  except Exception as e:
+    print('  FAIL', e)
+    failed+=1
+if failed:
+  raise SystemExit(f"{failed} ONNX smoke test(s) failed")
+PY
 
       - name: List ONNX outputs
         run: ls -lh models/onnx

@@ -126,6 +126,15 @@ export MODEL_BLAZEPOSE_SHA256=<sha256>
 export MODEL_MOVEMENT_ANALYSIS_MODEL_SHA256=<sha256>
 ```
 Oder in `local.properties`:
+Beispiel (aktuelle Repository-Versionen):
+```
+# MoveNet Thunder
+MODEL_MOVENET_THUNDER.sha256=41641538679ec79b07d4101e591dda47d098c09af29607674b2a40b8a3798dd3
+# BlazePose
+MODEL_BLAZEPOSE.sha256=5134a3aad27a58b93da0088d431f366da362b44e3ccfbe3462b3827a839011b1
+# Movement Analysis (Dummy / sehr klein)
+MODEL_MOVEMENT_ANALYSIS_MODEL.sha256=f9de9fffe304907b6ed96cbece3c1f210e48ea869d74e79467abb31c2da35b23
+```
 ```
 MODEL_MOVENET_THUNDER.sha256=<sha256>
 MODEL_BLAZEPOSE.sha256=<sha256>
