@@ -26,6 +26,73 @@ class AdvancedAICoach(private val context: Context, private val poseFrameProvide
     
     private val database = AppDatabase.get(context)
     private val advancedMLModels = AdvancedMLModels.getInstance(context)
+
+    /**
+     * Kontinuierlicher Pose-Analyse Stream (Best Effort):
+     * - Nutzt bereitgestellten PoseFrameProvider (oder Default Platzhalter)
+     * - Throttling über intervalMs; interne Analyse nutzt zusätzlich internes Throttle des Services
+     * - Überspringt Frames wenn kein Bitmap vorliegt
+     */
+    fun realtimePoseStream(
+        exerciseType: String,
+        intervalMs: Long = 250L,
+        autoInitModels: Boolean = true
+    ): Flow<PoseAnalysisResult> = flow {
+        if (autoInitModels) {
+            // Adaptive Initialisierung (nicht blockierend falls bereits init)
+            try { advancedMLModels.initializeAdaptive() } catch (_: Exception) {}
+        }
+        val provider = poseFrameProvider ?: DefaultNoCameraFrameProvider
+        while (true) {
+            val bmp = provider.currentFrame()
+            if (bmp != null) {
+                val result = advancedMLModels.analyzePoseFromFrameOptimized(bmp)
+                emit(result)
+            }
+            delay(intervalMs)
+        }
+    }
+
+    /**
+     * Liefert CoachingFeedback in Echtzeit (vereinfacht):
+     * - Verknüpft Pose Analyse + heuristische Rep Quality
+     * - Kann in der UI über collectAsState genutzt werden
+     */
+    fun realtimeCoachingStream(
+        exerciseType: String,
+        intervalMs: Long = 500L,
+        autoInitModels: Boolean = true
+    ): Flow<CoachingFeedback> = flow {
+        if (autoInitModels) {
+            try { advancedMLModels.initializeAdaptive() } catch (_: Exception) {}
+        }
+        val provider = poseFrameProvider ?: DefaultNoCameraFrameProvider
+        val movementBuffer = ArrayDeque<MovementData>()
+        while (true) {
+            val bmp = provider.currentFrame()
+            val pose = if (bmp != null) advancedMLModels.analyzePoseFromFrameOptimized(bmp) else PoseAnalysisResult.empty()
+            // synthetische MovementData für repQuality (bis echte Sensorpipeline angebunden ist)
+            val fake = MovementData(
+                accelerometer = Triple(Math.random().toFloat(), Math.random().toFloat(), Math.random().toFloat()),
+                gyroscope = Triple(Math.random().toFloat(), Math.random().toFloat(), Math.random().toFloat()),
+                timestamp = System.currentTimeMillis()
+            )
+            movementBuffer.addLast(fake)
+            if (movementBuffer.size > 50) movementBuffer.removeFirst()
+            val repQuality = calculateRepQuality(movementBuffer.toList())
+            val feedback = CoachingFeedback(
+                immediateCorrections = if (pose.overallFormQuality < 0.6f) listOf("Mehr Rumpfspannung") else listOf("Weiter so!"),
+                motivationalMessages = if (pose.overallFormQuality > 0.85f) listOf("Starke Technik 💪") else emptyList(),
+                safetyWarnings = if (pose.riskFactors.isNotEmpty()) pose.riskFactors else emptyList(),
+                formScore = pose.overallFormQuality,
+                repQuality = repQuality,
+                recommendedAdjustments = if (pose.overallFormQuality < 0.6f) listOf("Gewicht reduzieren") else emptyList(),
+                timestamp = System.currentTimeMillis()
+            )
+            emit(feedback)
+            delay(intervalMs)
+        }
+    }
     
     /**
      * Detect training plateau using machine learning-like analysis
