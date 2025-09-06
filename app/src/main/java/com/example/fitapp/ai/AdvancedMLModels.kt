@@ -113,11 +113,13 @@ class AdvancedMLModels private constructor(private val context: Context) {
             // Only initialize TensorFlow Lite models for now (ONNX would need additional setup)
             if (modelType == PoseModelType.TFLITE_MOVENET || modelType == PoseModelType.TFLITE_BLAZEPOSE) {
                 try {
-                    poseInterpreter = Interpreter(FileUtil.loadMappedFile(context, poseModelPath))
-                    // Optimize interpreter for mobile performance
-                    poseInterpreter?.setNumThreads(2) // Limit threads for battery life
-                    poseInterpreter?.setUseNNAPI(true) // Enable NNAPI for performance
-                    poseInterpreter?.setUseXNNPACK(true) // Enable XNNPACK for CPU optimization
+                    // Configure interpreter options for mobile performance optimization
+                    val options = Interpreter.Options().apply {
+                        setNumThreads(2) // Limit threads for battery life
+                        setUseNNAPI(true) // Enable NNAPI for performance
+                        setUseXNNPACK(true) // Enable XNNPACK for CPU optimization
+                    }
+                    poseInterpreter = Interpreter(FileUtil.loadMappedFile(context, poseModelPath), options)
                     Log.i(TAG, "Loaded TensorFlow Lite model: $poseModelPath")
                 } catch (e: Exception) {
                     Log.w(TAG, "Could not load pose model $poseModelPath (using placeholder)", e)
@@ -127,8 +129,11 @@ class AdvancedMLModels private constructor(private val context: Context) {
             // Initialize movement analysis model (simulated for mobile optimization)
             Log.i(TAG, "Initializing optimized movement analysis model...")
             try {
-                movementInterpreter = Interpreter(FileUtil.loadMappedFile(context, MOVEMENT_MODEL_FILE))
-                movementInterpreter?.setNumThreads(1) // Single thread for sensor analysis
+                // Configure interpreter options for single-threaded analysis
+                val movementOptions = Interpreter.Options().apply {
+                    setNumThreads(1) // Single thread for sensor analysis
+                }
+                movementInterpreter = Interpreter(FileUtil.loadMappedFile(context, MOVEMENT_MODEL_FILE), movementOptions)
                 Log.i(TAG, "Loaded movement analysis model: $MOVEMENT_MODEL_FILE")
             } catch (e: Exception) {
                 Log.w(TAG, "Could not load movement model (using placeholder)", e)
