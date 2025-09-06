@@ -282,13 +282,24 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 // ==== Models Copy Task ====
 val modelsRoot = rootProject.layout.projectDirectory.dir("models")
 val appAssets = layout.projectDirectory.dir("src/main/assets/models")
+val appMl = layout.projectDirectory.dir("src/main/ml")
 
-tasks.register<Copy>("copyModels") {
-    from(modelsRoot.dir("tflite")) { into("tflite") }
-    from(modelsRoot.dir("onnx")) { into("onnx") }
-    into(appAssets)
+tasks.register("copyModels") {
     doFirst {
-        println("Kopiere Modelle in: ${appAssets.asFile.absolutePath}")
+        println(
+            "Kopiere Modelle in: ${appAssets.asFile.absolutePath} und ${appMl.asFile.absolutePath}"
+        )
+    }
+    doLast {
+        project.copy {
+            from(modelsRoot.dir("tflite")) { into("tflite") }
+            from(modelsRoot.dir("onnx")) { into("onnx") }
+            into(appAssets)
+        }
+        project.copy {
+            from(modelsRoot.dir("tflite"))
+            into(appMl)
+        }
     }
 }
 
