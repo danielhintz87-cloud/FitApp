@@ -629,7 +629,7 @@ class AdvancedMLModels private constructor(private val context: Context) {
     private fun runPoseInference(processedImage: TensorImage): List<Keypoint> {
         // ONNX bevorzugt wenn Session vorhanden
         ortSession?.let { session ->
-            return try {
+            try {
                 val inputSize = when (currentModelType) {
                     PoseModelType.MOVENET_THUNDER -> INPUT_SIZE_THUNDER
                     PoseModelType.MOVENET_LIGHTNING -> INPUT_SIZE_LIGHTNING
@@ -642,7 +642,7 @@ class AdvancedMLModels private constructor(private val context: Context) {
                 // Form: [1,H,W,3]
                 val shape = longArrayOf(1, inputSize.toLong(), inputSize.toLong(), 3)
                 val env = ortEnv ?: return emptyList()
-                OnnxTensor.createTensor(env, arr, shape).use { tensor ->
+                OnnxTensor.createTensor(env, arr).use { tensor ->
                     val inputName = session.inputNames.first()
                     val results = session.run(mapOf(inputName to tensor))
                     results.use { r ->
@@ -652,7 +652,7 @@ class AdvancedMLModels private constructor(private val context: Context) {
                             val fb = first.floatBuffer
                             // Erwartet (1,1,17,3) oder (1,17,3)
                             val keypoints = mutableListOf<Keypoint>()
-                            if (infoShape.size == 4L && infoShape[2] == 17L) {
+                            if (infoShape.size == 4 && infoShape[2] == 17L) {
                                 for (i in 0 until 17) {
                                     val base = i * 3
                                     val y = fb.get(base).coerceIn(0f,1f)
@@ -664,7 +664,7 @@ class AdvancedMLModels private constructor(private val context: Context) {
                                         ))
                                     }
                                 }
-                            } else if (infoShape.size == 3L && infoShape[1] == 17L) { // (1,17,3)
+                            } else if (infoShape.size == 3 && infoShape[1] == 17L) { // (1,17,3)
                                 for (i in 0 until 17) {
                                     val base = i * 3
                                     val y = fb.get(base).coerceIn(0f,1f)
@@ -683,7 +683,7 @@ class AdvancedMLModels private constructor(private val context: Context) {
                         }
                     }
                 }
-                emptyList()
+                return emptyList<Keypoint>()
             } catch (e: Exception) {
                 Log.w(TAG, "ONNX inference failed – fallback TFLite", e)
                 // Weiter unten TFLite Versuch

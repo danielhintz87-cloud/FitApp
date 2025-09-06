@@ -206,16 +206,17 @@ dependencies {
     implementation("com.google.mediapipe:tasks-vision:0.10.14")
 
     // ML Kit Barcode Scanning
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.9.0")
-        // Entfernt ältere 1.7.3 Android Coroutines – nur Version Katalog (1.9.0) aktiv
+    implementation(libs.mlkit.barcode.scanning)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.10.2")
+        // Entfernt ältere 1.7.3 Android Coroutines – nur Version Katalog (1.10.2) aktiv
     // TensorFlow Lite (Advanced ML)
     implementation(libs.tensorflow.lite)
     implementation(libs.tensorflow.lite.support)
     implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0")
     // Entfernt: gpu-delegate-plugin (Artefakt nicht auffindbar). GPU Delegate ist bereits in tensorflow-lite-gpu enthalten.
 
-    // ONNX Runtime (Optional)
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.16.3")
+    // ONNX Runtime (Updated version)
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.22.0")
 
     // Health Connect (Aktivitäts-/Kaloriensync)
     implementation(libs.health.connect.client)
