@@ -1,6 +1,7 @@
 package com.example.fitapp.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -26,12 +27,16 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
 import com.example.fitapp.R
+import com.example.fitapp.services.DigitalCoachManager
+import com.example.fitapp.services.CoachingContext
+import com.example.fitapp.services.CoachingMessage
 
 @Composable
 fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = null) {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
     val motivationRepo = remember { PersonalMotivationRepository(AppDatabase.get(ctx)) }
+    val digitalCoach = remember { DigitalCoachManager(ctx) }
     val scope = rememberCoroutineScope()
     val todayEpoch = remember { LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond() }
     
@@ -59,6 +64,11 @@ fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = n
         
         // Daily Motivation Card
         DailyMotivationCard(activeStreaks, recentAchievements)
+        
+        Spacer(Modifier.height(16.dp))
+        
+        // Digital Coach Card (proactive AI coaching)
+        DigitalCoachCard(digitalCoach, scope)
         
         Spacer(Modifier.height(16.dp))
         
@@ -210,6 +220,9 @@ fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = n
                                             PersonalMotivationRepository(AppDatabase.get(ctx))
                                         )
                                         streakManager.trackWorkoutCompletion(today)
+                                        
+                                        // Trigger post-workout coaching notification
+                                        com.example.fitapp.services.DigitalCoachTriggers.onWorkoutCompleted(ctx)
                                     } catch (e: Exception) {
                                         android.util.Log.e("TodayScreen", "Error marking training as completed", e)
                                     }
@@ -511,4 +524,214 @@ private fun generateMotivationText(
     }
     
     return messages.joinToString(" ")
+}
+
+@Composable
+private fun DigitalCoachCard(
+    digitalCoach: DigitalCoachManager,
+    scope: kotlinx.coroutines.CoroutineScope
+) {
+    var coachingMessage by remember { mutableStateOf<CoachingMessage?>(null) }
+    var showFeedback by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    
+    // Load coaching message on first composition
+    LaunchedEffect(Unit) {
+        isLoading = true
+        try {
+            coachingMessage = digitalCoach.generateContextualCoachingMessage(
+                context = CoachingContext.DAILY_CHECK_IN
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("DigitalCoachCard", "Error loading coaching message", e)
+        } finally {
+            isLoading = false
+        }
+    }
+    
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+        )
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Psychology,
+                    contentDescription = "Digital Coach",
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Dein digitaler Coach",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Spacer(Modifier.weight(1f))
+                
+                // Refresh button
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            isLoading = true
+                            try {
+                                coachingMessage = digitalCoach.generateContextualCoachingMessage(
+                                    context = CoachingContext.DAILY_CHECK_IN
+                                )
+                                showFeedback = false
+                            } catch (e: Exception) {
+                                android.util.Log.e("DigitalCoachCard", "Error refreshing coaching message", e)
+                            } finally {
+                                isLoading = false
+                            }
+                        }
+                    },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = "Neuen Tipp holen",
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+            
+            Spacer(Modifier.height(12.dp))
+            
+            if (isLoading) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Personalisiere deinen Tipp...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
+            } else {
+                coachingMessage?.let { message ->
+                    Text(
+                        message.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                    
+                    Spacer(Modifier.height(8.dp))
+                    
+                    Text(
+                        message.content,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                    
+                    if (message.actionButtons.isNotEmpty()) {
+                        Spacer(Modifier.height(12.dp))
+                        
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            message.actionButtons.take(2).forEach { buttonText ->
+                                OutlinedButton(
+                                    onClick = {
+                                        // Handle action button clicks
+                                        when (buttonText) {
+                                            "Los geht's!" -> {
+                                                // Navigate to training or today's plan
+                                            }
+                                            "Nutrition loggen" -> {
+                                                // Navigate to nutrition screen
+                                            }
+                                            "Details anzeigen" -> {
+                                                // Show detailed progress
+                                            }
+                                            // Add more action handlers as needed
+                                        }
+                                    },
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.tertiary
+                                    ),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary)
+                                ) {
+                                    Text(
+                                        buttonText,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    
+                    Spacer(Modifier.height(8.dp))
+                    
+                    // Feedback section
+                    if (!showFeedback) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "War das hilfreich?",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                            )
+                            
+                            TextButton(
+                                onClick = {
+                                    scope.launch {
+                                        digitalCoach.processCoachingFeedback(
+                                            message.id,
+                                            com.example.fitapp.services.CoachingFeedback.HELPFUL
+                                        )
+                                        showFeedback = true
+                                    }
+                                },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.tertiary
+                                )
+                            ) {
+                                Text("👍 Ja")
+                            }
+                            
+                            TextButton(
+                                onClick = {
+                                    scope.launch {
+                                        digitalCoach.processCoachingFeedback(
+                                            message.id,
+                                            com.example.fitapp.services.CoachingFeedback.MORE_OF_THIS
+                                        )
+                                        showFeedback = true
+                                    }
+                                },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.tertiary
+                                )
+                            ) {
+                                Text("🔥 Mehr davon")
+                            }
+                        }
+                    } else {
+                        Text(
+                            "Danke für dein Feedback! 💚",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
