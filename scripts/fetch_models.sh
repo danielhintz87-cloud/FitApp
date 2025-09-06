@@ -36,10 +36,7 @@ else
   echo "# BlazePose placeholder - replace with actual model" > "$TFLITE_DIR/blazepose.tflite"
 fi
 
-echo "==> Erzeuge Platzhalter für movement_analysis_model.tflite (später ersetzen)..."
-if [[ ! -f "$TFLITE_DIR/movement_analysis_model.tflite" ]]; then
-  echo "placeholder model – replace with your own movement analysis model" > "$TFLITE_DIR/movement_analysis_model.tflite"
-fi
+echo "==> movement_analysis_model.tflite bereits vorhanden – kein Download nötig"
 
 echo "==> Aufräumen..."
 rm -rf "$TMP_DIR"
@@ -47,4 +44,4 @@ rm -rf "$TMP_DIR"
 echo "Fertig:"
 echo " - $TFLITE_DIR/blazepose.tflite"
 echo " - $TFLITE_DIR/movenet_thunder.tflite"
-echo " - $TFLITE_DIR/movement_analysis_model.tflite (Platzhalter)"
+echo " - $TFLITE_DIR/movement_analysis_model.tflite"

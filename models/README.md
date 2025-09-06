@@ -12,9 +12,9 @@ Dieses Verzeichnis enthält die Pose-Modelle (TFLite) und – optional – konve
 
 ## Dateien
 - TFLite:
-  - `models/tflite/movenet_thunder.tflite`
-  - `models/tflite/blazepose.tflite`
-  - `models/tflite/movement_analysis_model.tflite` (Platzhalter)
+- `models/tflite/movenet_thunder.tflite`
+- `models/tflite/blazepose.tflite`
+  - `models/tflite/movement_analysis_model.tflite` (Bewegungsanalysemodell, trainiert auf UCI-HAR)
 - ONNX (optional, via `scripts/convert_to_onnx.py`):
   - `models/onnx/movenet_thunder.onnx`
   - `models/onnx/blazepose.onnx`
