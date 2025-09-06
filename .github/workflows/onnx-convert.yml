@@ -57,6 +57,11 @@ jobs:
           python -m pip install onnx
           python scripts/validate_onnx.py
 
+      - name: Gradle ONNX verify & integrity
+        run: |
+          ./gradlew :app:verifyOnnxModels :app:generateModelIntegrity --stacktrace
+          cat models/INTEGRITY.md | head -n 30
+
       - name: ONNX Runtime Smoke Test
         run: |
           python -m pip install onnxruntime
@@ -88,9 +93,10 @@ PY
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          if [ -n "$(git status --porcelain models/onnx)" ]; then
+          git add models/INTEGRITY.md || true
+          if [ -n "$(git status --porcelain models/onnx models/INTEGRITY.md)" ]; then
             git add models/onnx
-            git commit -m "chore(onnx): update converted ONNX models"
+            git commit -m "chore(onnx): update ONNX models & integrity report"
             git push
           else
             echo "No ONNX changes to commit"

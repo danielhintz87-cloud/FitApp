@@ -459,3 +459,69 @@ tasks.register("verifyModels") {
         }
     }
 }
+
+// Verifiziert ONNX Modelle (Existenz + optionale SHA256 Hashes)
+tasks.register("verifyOnnxModels") {
+    group = "verification"
+    description = "Prüft Existenz & optionale Hashes der ONNX-Modelle"
+    doLast {
+        val onnxDir = rootProject.layout.projectDirectory.dir("models/onnx").asFile
+        if (!onnxDir.exists()) {
+            logger.warn("ONNX Verzeichnis fehlt – überspringe")
+            return@doLast
+        }
+        val props = Properties()
+        val lp = rootProject.file("local.properties")
+        if (lp.exists()) props.load(lp.inputStream())
+        fun expectedHash(base: String): String? =
+            (System.getenv("MODEL_${base.uppercase()}_ONNX_SHA256")
+                ?: props.getProperty("MODEL_${base}.onnx.sha256")
+                ?: props.getProperty("MODEL_${base.uppercase()}_ONNX_SHA256"))
+        var failures = 0
+        onnxDir.listFiles { f -> f.extension.lowercase() == "onnx" }?.forEach { f ->
+            val base = f.nameWithoutExtension
+            val expected = expectedHash(base)
+            if (expected != null) {
+                val actual = MessageDigest.getInstance("SHA-256").digest(f.readBytes()).joinToString("") { b -> "%02x".format(b) }
+                if (!actual.equals(expected, true)) {
+                    logger.error("HASH MISMATCH (ONNX): ${f.name} erwartet ${expected.take(12)}..., erhalten ${actual.take(12)}...")
+                    failures++
+                } else logger.lifecycle("HASH OK (ONNX): ${f.name}")
+            } else {
+                logger.lifecycle("ONNX: ${f.name} – kein erwarteter Hash gesetzt")
+            }
+        }
+        if (failures > 0) throw GradleException("verifyOnnxModels fehlgeschlagen – $failures Hash-Fehler")
+        logger.lifecycle("verifyOnnxModels abgeschlossen")
+    }
+}
+
+// Erzeugt eine Integritätsdatei mit SHA256 Hashes aller Modelle
+tasks.register("generateModelIntegrity") {
+    group = "documentation"
+    description = "Generiert models/INTEGRITY.md mit SHA256 Hashes (TFLite & ONNX)"
+    dependsOn("copyModels")
+    doLast {
+        val tfliteDir = rootProject.layout.projectDirectory.dir("models/tflite").asFile
+        val onnxDir = rootProject.layout.projectDirectory.dir("models/onnx").asFile
+        val outFile = rootProject.file("models/INTEGRITY.md")
+        fun hash(f: java.io.File): String = MessageDigest.getInstance("SHA-256").digest(f.readBytes()).joinToString("") { b -> "%02x".format(b) }
+        val lines = mutableListOf<String>()
+        lines += "# Model Integrity Report"
+        lines += "Generiert: ${java.time.Instant.now()}"
+        lines += ""
+        lines += "## TFLite"
+        tfliteDir.listFiles { f -> f.extension.lowercase() == "tflite" }?.sortedBy { it.name }?.forEach { f ->
+            lines += "- ${f.name} | size=${f.length()} | sha256=${hash(f)}"
+        }
+        lines += ""
+        lines += "## ONNX"
+        if (onnxDir.exists()) {
+            onnxDir.listFiles { f -> f.extension.lowercase() == "onnx" }?.sortedBy { it.name }?.forEach { f ->
+                lines += "- ${f.name} | size=${f.length()} | sha256=${hash(f)}"
+            }
+        } else lines += "(kein ONNX Verzeichnis)"
+        outFile.writeText(lines.joinToString("\n"))
+        logger.lifecycle("Integrity File aktualisiert: ${outFile.path}")
+    }
+}

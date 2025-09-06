@@ -118,6 +118,17 @@ Das Coverage-Badge wird automatisch über den Workflow `update-badges.yml` aktua
 
 ## 🤖 ML Modelle
 ### Integritätsprüfung (SHA-256)
+ONNX Hashes (optional) analog:
+```
+export MODEL_MOVENET_THUNDER_ONNX_SHA256=<sha256>
+export MODEL_BLAZEPOSE_ONNX_SHA256=<sha256>
+```
+
+### Integritätsreport generieren
+```bash
+./gradlew :app:generateModelIntegrity
+cat models/INTEGRITY.md
+```
 Optional können erwartete Hashes gesetzt werden, damit `:app:verifyModels` Integrität erzwingt:
 ```bash
 export MODEL_MOVENET_THUNDER_SHA256=<sha256>
