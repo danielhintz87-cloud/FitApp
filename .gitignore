@@ -1,75 +1,65 @@
 #########################
-# Android FitApp - Complete .gitignore
+# Android FitApp - .gitignore (bereinigt & erweitert)
 #########################
 
-#########################
-# Android Studio / IntelliJ
-#########################
+# IDE
 *.iml
 .idea/
-.idea/*
 !.idea/codeStyles/
-!.idea/copyright/
 !.idea/runConfigurations/
-!.idea/scopes/
 !.idea/vcs.xml
+
+# Lokale Konfiguration
 local.properties
+
+# OS / Temp
 .DS_Store
+Thumbs.db
+*~
+.directory
+.Trash-*
+
+# Gradle / Build
 .gradle/
 gradle-app.setting
 .gradletasknamecache
-
-#########################
-# Android Build Files
-#########################
 build/
 */build/
-app/build/
 .externalNativeBuild/
 .cxx/
 outputs/
+
+# Artefakte
 *.apk
 *.aab
 *.ap_
 *.dex
 *.class
+*.so
 
-#########################
-# Android NDK
-#########################
+# Native / NDK
 obj/
-.externalNativeBuild
-.cxx
 cmake-build-*/
 .ninja_deps
 .ninja_log
 
-#########################
-# Android Keystore
-#########################
+# Signing / Keystore
 *.jks
 *.keystore
 key.properties
 keystore.properties
 signing.properties
 
-#########################
-# AI/ML Models & Cache
-#########################
+# ML / AI
 models/cache/
-*.pb
 *.tflite.tmp
 ml_cache/
 tensorflow_cache/
 .onnx_cache/
-
-# Aber echte Modelle behalten:
 !models/tflite/*.tflite
 !models/onnx/*.onnx
 
-#########################
-# Development Container
-#########################
+# Dev Container / Editor
 .devcontainer/
 .copilot/
 .vscode/settings.json
@@ -78,28 +68,24 @@ tensorflow_cache/
 .vscode/.ropeproject
 *.code-workspace
 
-#########################
-# API Keys & Secrets
-#########################
+# Secrets / Environment
 secrets.properties
 api_keys.properties
 .env
 .env.local
 .env.production
 google-services.json.backup
+# google-services.json   # auskommentieren falls nicht versionieren
 
-#########################
-# Testing & Coverage
-#########################
+# Tests / Coverage
 coverage/
 test-results/
 jacoco/
 lint-results*
 test-outputs/
+*.ec
 
-#########################
-# Logs & Debug
-#########################
+# Logs / Debug / Profiling
 *.log
 *.tmp
 logs/
@@ -109,11 +95,11 @@ proguard/
 mapping.txt
 seeds.txt
 usage.txt
+*.hprof
+*.trace
+hs_err_pid*
 
-#########################
-# Backup & Temp Files
-#########################
-*~
+# Backups / Temp
 *.bak
 *.backup
 *.old
@@ -122,18 +108,7 @@ usage.txt
 *.swp
 *.swo
 
-#########################
-# OS Generated Files
-#########################
-.DS_Store
-Thumbs.db
-*~
-.directory
-.Trash-*
-
-#########################
-# Keep Important Files
-#########################
+# Wichtig behalten
 !README.md
 !LICENSE
 !.github/
