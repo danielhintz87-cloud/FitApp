@@ -2,6 +2,7 @@ package com.example.fitapp.ui.nutrition
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -64,7 +65,7 @@ fun SmartShoppingListScreen(
                 navigationIcon = {
                     if (onBackPressed != null) {
                         IconButton(onClick = onBackPressed) {
-                            Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                         }
                     }
                 },
@@ -74,7 +75,7 @@ fun SmartShoppingListScreen(
                         onClick = { sortBySupermarket = !sortBySupermarket }
                     ) {
                         Icon(
-                            if (sortBySupermarket) Icons.Filled.Store else Icons.Filled.List,
+                            if (sortBySupermarket) Icons.Filled.Store else Icons.AutoMirrored.Filled.List,
                             contentDescription = if (sortBySupermarket) "Nach Liste sortieren" else "Nach Supermarkt sortieren"
                         )
                     }

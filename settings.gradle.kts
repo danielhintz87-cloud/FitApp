@@ -5,10 +5,10 @@ pluginManagement {
         gradlePluginPortal()
     }
     plugins {
-        id("com.android.application") version "8.12.2"
-        id("org.jetbrains.kotlin.android") version "1.9.24"
-        id("org.jetbrains.kotlin.plugin.serialization") version "1.9.24"
-        id("org.jetbrains.kotlin.kapt") version "1.9.24"
+        id("com.android.application") version "8.12.1"
+        id("org.jetbrains.kotlin.android") version "2.0.20"
+        id("org.jetbrains.kotlin.plugin.serialization") version "2.0.20"
+        id("com.google.devtools.ksp") version "2.0.20-1.0.25"
     }
 }
 
