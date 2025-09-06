@@ -203,7 +203,7 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite-gpu-delegate-plugin:0.5.0")
 
     // ONNX Runtime (Optional)
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.16.3")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.22.0")
 
     // Health Connect (Aktivitäts-/Kaloriensync)
     implementation(libs.health.connect.client)
