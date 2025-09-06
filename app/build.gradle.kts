@@ -232,6 +232,10 @@ dependencies {
         // TensorFlow Lite (Advanced ML) – vereinheitlicht, vermeidet doppelte Artefakte
     // (Bereinigt) – Duplikate entfernt
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")
+    testImplementation(libs.junit)
+    testImplementation(libs.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.mockito.core)
 }
 
 // Jacoco
