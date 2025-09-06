@@ -2,6 +2,7 @@
 
 [![Android CI](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android-room-ci.yml/badge.svg)](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android-room-ci.yml)
 [![Android Tests](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android_tests.yml/badge.svg)](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android_tests.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/danielhintz87-cloud/FitApp/main/badges/coverage.json)](./badges/coverage.json)
 [![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=24)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.0.20-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![Gradle](https://img.shields.io/badge/gradle-8.14.3-blue.svg)](https://gradle.org)
@@ -111,6 +112,49 @@ PERPLEXITY_API_KEY=dein_perplexity_schlüssel
 - **Unit Tests**: Business Logic und Repository Tests
 - **Instrumented Tests**: UI und Datenbank-Integrationstests
 - **Schema Tests**: Room-Datenbankmigrationen
+
+### Coverage Badge
+Das Coverage-Badge wird automatisch über den Workflow `update-badges.yml` aktualisiert. Die Rohdaten liegen unter `badges/coverage.json`.
+
+## 🤖 ML Modelle
+
+Die App nutzt mehrere On-Device Modelle:
+
+| Typ | Datei | Quelle |
+|-----|-------|--------|
+| Pose (MoveNet Thunder) | `models/tflite/movenet_thunder.tflite` | TF Hub |
+| Pose (BlazePose Landmark Full) | `models/tflite/blazepose.tflite` | MediaPipe |
+| Movement Analysis | `models/tflite/movement_analysis_model.tflite` | intern / UCI-HAR (custom) |
+
+ONNX-Konvertierungen (optional) können via Skript erzeugt werden:
+```bash
+python scripts/convert_to_onnx.py
+```
+
+### Modelle beziehen / aktualisieren
+```bash
+# Optional echte Movement-Analyse-URL und Checksum bereitstellen
+export MOVEMENT_ANALYSIS_MODEL_URL="https://example.com/path/movement_analysis_model.tflite"
+export MOVEMENT_ANALYSIS_MODEL_SHA256="<sha256>"
+
+# Modelle herunterladen
+bash scripts/fetch_models.sh
+
+# (Re-)Verifikation
+./gradlew :app:verifyModels
+```
+
+Alternativ kann in `local.properties` gesetzt werden:
+```
+MOVEMENT_ANALYSIS_MODEL_URL=https://example.com/path/movement_analysis_model.tflite
+```
+
+### CI Secrets
+In GitHub Actions Secrets hinterlegen:
+- `MOVEMENT_ANALYSIS_MODEL_URL`
+- (optional) `MOVEMENT_ANALYSIS_MODEL_SHA256`
+
+Automatische Prüfung erfolgt im Code Quality Workflow (`Verify ML Models`).
 
 ## 🤝 Beitragen
 

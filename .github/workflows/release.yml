@@ -15,6 +15,8 @@ jobs:
 
     env:
       GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false -Dfile.encoding=UTF-8"
+  MOVEMENT_ANALYSIS_MODEL_URL: ${{ secrets.MOVEMENT_ANALYSIS_MODEL_URL }}
+  MOVEMENT_ANALYSIS_MODEL_SHA256: ${{ secrets.MOVEMENT_ANALYSIS_MODEL_SHA256 }}
 
     steps:
       - name: Force IPv4 (disable IPv6)
@@ -46,6 +48,9 @@ jobs:
           java-version: '21'
 
       - uses: gradle/gradle-build-action@v3
+
+      - name: Verify ML Models
+        run: ./gradlew :app:verifyModels --stacktrace
 
       # Optional: Signing vorbereiten (falls Play-Upload geplant)
       # - name: Decode signing keystore
