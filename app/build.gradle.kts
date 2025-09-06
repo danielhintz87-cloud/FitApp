@@ -393,3 +393,46 @@ tasks.register("copyModels") {
 tasks.named("preBuild").configure {
     dependsOn("copyModels")
 }
+
+// Verifiziert, dass alle erforderlichen Modelle vorhanden und keine Platzhalter sind
+tasks.register("verifyModels") {
+    group = "verification"
+    description = "Prüft Existenz & Integrität (kein Platzhalter) der TFLite-Modelle"
+    dependsOn("copyModels")
+    doLast {
+        val required = listOf(
+            "movenet_thunder.tflite" to 300_000, // erwartete Mindestgröße ~ >300KB (eigentlich ~4-5MB float16)
+            "blazepose.tflite" to 300_000,       // BlazePose Landmark Full ~9MB
+            "movement_analysis_model.tflite" to 5_000 // Eigenes kleines Modell kann kleiner sein
+        )
+    // Nach copyModels liegen die Dateien unter app/src/main/assets/models/tflite
+    val baseDir = layout.projectDirectory.dir("src/main/assets/models/tflite").asFile
+        var failures = 0
+        required.forEach { (fileName, minSize) ->
+            val f = baseDir.resolve(fileName)
+            if (!f.exists()) {
+                logger.error("FEHLT: ${f.path}")
+                failures++
+            } else {
+                val size = f.length()
+                val head = f.inputStream().buffered().use { bis ->
+                    val bytes = ByteArray(64)
+                    val read = bis.read(bytes)
+                    if (read > 0) String(bytes, 0, read) else ""
+                }
+                if (size < minSize) {
+                    logger.warn("WARNUNG: ${f.name} ist kleiner (${size} Bytes) als erwartete Mindestgröße ${minSize} Bytes – evtl. Platzhalter oder unvollständiger Download")
+                }
+                if (head.startsWith("# ")) {
+                    logger.warn("WARNUNG: ${f.name} scheint ein Platzhalter zu sein (beginnt mit '#')")
+                }
+                logger.lifecycle("OK: ${f.name} (${size} Bytes)")
+            }
+        }
+        if (failures > 0) {
+            throw GradleException("Model Verification fehlgeschlagen – ${failures} fehlende Datei(en)")
+        } else {
+            logger.lifecycle("Model Verification abgeschlossen – alle Dateien vorhanden (Prüfe Warnungen oben für Größe/Platzhalter)")
+        }
+    }
+}
