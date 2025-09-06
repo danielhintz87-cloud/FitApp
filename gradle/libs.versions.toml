@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.0.20"
-agp = "8.12.1"
+agp = "8.13.0"
 serialization = "1.7.3"
 
 # Compose
