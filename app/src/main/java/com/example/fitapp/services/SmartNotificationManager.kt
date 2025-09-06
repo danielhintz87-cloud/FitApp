@@ -15,6 +15,7 @@ import com.example.fitapp.MainActivity
 import com.example.fitapp.R
 import com.example.fitapp.data.db.PersonalAchievementEntity
 import com.example.fitapp.data.db.PersonalStreakEntity
+import com.example.fitapp.data.db.SocialChallengeEntity
 
 object SmartNotificationManager {
     
@@ -27,6 +28,8 @@ object SmartNotificationManager {
     private const val CHANNEL_NUTRITION_REMINDERS = "nutrition_reminders"
     private const val CHANNEL_WATER_REMINDERS = "water_reminders"
     private const val CHANNEL_MACRO_WARNINGS = "macro_warnings"
+    private const val CHANNEL_SOCIAL_CHALLENGES = "social_challenges"
+    private const val CHANNEL_CHALLENGE_UPDATES = "challenge_updates"
     
     // Notification IDs
     private const val NOTIFICATION_ID_ACHIEVEMENT = 1000
@@ -37,6 +40,9 @@ object SmartNotificationManager {
     private const val NOTIFICATION_ID_MEAL_REMINDER = 6000
     private const val NOTIFICATION_ID_WATER_REMINDER = 7000
     private const val NOTIFICATION_ID_MACRO_WARNING = 8000
+    private const val NOTIFICATION_ID_CHALLENGE_JOINED = 9000
+    private const val NOTIFICATION_ID_CHALLENGE_COMPLETED = 10000
+    private const val NOTIFICATION_ID_CHALLENGE_UPDATE = 11000
     
     fun createNotificationChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -129,6 +135,29 @@ object SmartNotificationManager {
                 enableLights(true)
             }
             
+            // Social challenge channels
+            val socialChallengeChannel = NotificationChannel(
+                CHANNEL_SOCIAL_CHALLENGES,
+                "Social Challenges",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Benachrichtigungen für Challenge-Teilnahme und Abschluss"
+                setShowBadge(true)
+                enableLights(true)
+                lightColor = android.graphics.Color.BLUE
+            }
+            
+            val challengeUpdateChannel = NotificationChannel(
+                CHANNEL_CHALLENGE_UPDATES,
+                "Challenge Updates",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Updates zu Challenge-Fortschritt und Ranglisten"
+                setShowBadge(false)
+                enableLights(true)
+                lightColor = android.graphics.Color.GREEN
+            }
+            
             notificationManager.createNotificationChannels(listOf(
                 achievementChannel,
                 streakChannel,
@@ -137,7 +166,9 @@ object SmartNotificationManager {
                 workoutChannel,
                 nutritionChannel,
                 waterChannel,
-                macroChannel
+                macroChannel,
+                socialChallengeChannel,
+                challengeUpdateChannel
             ))
         }
     }
@@ -560,6 +591,122 @@ object SmartNotificationManager {
         try {
             NotificationManagerCompat.from(context).notify(
                 NOTIFICATION_ID_MACRO_WARNING + macroType.hashCode(),
+                notification
+            )
+        } catch (e: SecurityException) {
+            // Handle missing notification permission
+        }
+    }
+    
+    /**
+     * Show notification when user joins a challenge
+     */
+    fun showChallengeJoined(context: Context, challenge: SocialChallengeEntity) {
+        if (!hasNotificationPermission(context)) return
+        
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("navigate_to", "challenges") // For navigation to challenges screen
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        
+        val notification = NotificationCompat.Builder(context, CHANNEL_SOCIAL_CHALLENGES)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("Challenge beigetreten! 🎯")
+            .setContentText("Du bist jetzt Teil der \"${challenge.title}\" Challenge!")
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText("Du bist jetzt Teil der \"${challenge.title}\" Challenge!\n\nZiel: ${challenge.targetValue} ${challenge.unit} in ${challenge.duration} Tagen\n\nViel Erfolg! 💪"))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setVibrate(longArrayOf(0, 300, 300, 300))
+            .build()
+        
+        try {
+            NotificationManagerCompat.from(context).notify(
+                NOTIFICATION_ID_CHALLENGE_JOINED + challenge.id.toInt(),
+                notification
+            )
+        } catch (e: SecurityException) {
+            // Handle missing notification permission
+        }
+    }
+    
+    /**
+     * Show notification when user completes a challenge
+     */
+    fun showChallengeCompleted(context: Context, challenge: SocialChallengeEntity) {
+        if (!hasNotificationPermission(context)) return
+        
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("navigate_to", "achievements") // For navigation to achievements screen
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        
+        val notification = NotificationCompat.Builder(context, CHANNEL_SOCIAL_CHALLENGES)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("Challenge geschafft! 🏆")
+            .setContentText("Glückwunsch! Du hast \"${challenge.title}\" erfolgreich abgeschlossen!")
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText("🎉 CHALLENGE ABGESCHLOSSEN! 🎉\n\n\"${challenge.title}\"\n\nDu hast ${challenge.targetValue} ${challenge.unit} erreicht!\n\n${challenge.reward?.let { "Belohnung: $it" } ?: ""}\n\nAuf zur nächsten Challenge! 💪"))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setVibrate(longArrayOf(0, 500, 200, 500, 200, 500))
+            .build()
+        
+        try {
+            NotificationManagerCompat.from(context).notify(
+                NOTIFICATION_ID_CHALLENGE_COMPLETED + challenge.id.toInt(),
+                notification
+            )
+        } catch (e: SecurityException) {
+            // Handle missing notification permission
+        }
+    }
+    
+    /**
+     * Show notification for challenge progress updates
+     */
+    fun showChallengeProgressUpdate(context: Context, challengeTitle: String, progress: Double, target: Double, rank: Int) {
+        if (!hasNotificationPermission(context)) return
+        
+        val progressPercentage = (progress / target * 100).toInt()
+        val remainingProgress = target - progress
+        
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("navigate_to", "challenges")
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        
+        val notification = NotificationCompat.Builder(context, CHANNEL_CHALLENGE_UPDATES)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("Challenge Update 📊")
+            .setContentText("$challengeTitle: $progressPercentage% erreicht (Rang #$rank)")
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText("$challengeTitle\n\n📊 Fortschritt: $progress / $target\n🎯 $progressPercentage% erreicht\n🏆 Aktueller Rang: #$rank\n\nNoch ${remainingProgress.toInt()} bis zum Ziel!"))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+        
+        try {
+            NotificationManagerCompat.from(context).notify(
+                NOTIFICATION_ID_CHALLENGE_UPDATE + challengeTitle.hashCode(),
                 notification
             )
         } catch (e: SecurityException) {

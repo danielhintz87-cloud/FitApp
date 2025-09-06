@@ -46,6 +46,7 @@ import com.example.fitapp.ui.screens.WeightLossProgramScreen
 import com.example.fitapp.ui.screens.AIPersonalTrainerScreen
 import com.example.fitapp.ui.screens.HIITBuilderScreen
 import com.example.fitapp.ui.screens.HIITExecutionScreen
+import com.example.fitapp.ui.screens.SocialChallengesScreen
 import com.example.fitapp.ui.settings.ApiKeysScreen
 import com.example.fitapp.ui.settings.NotificationSettingsScreen
 import com.example.fitapp.ui.settings.HealthConnectSettingsScreen
@@ -151,6 +152,12 @@ fun MainScaffold() {
                     selected = false, 
                     onClick = { scope.launch { drawerState.close() }; nav.navigate("weight_tracking") },
                     icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Social Challenges") }, 
+                    selected = false, 
+                    onClick = { scope.launch { drawerState.close() }; nav.navigate("social_challenges") },
+                    icon = { Icon(Icons.Filled.EmojiEvents, contentDescription = null) }
                 )
                 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -518,6 +525,11 @@ fun MainScaffold() {
                 composable("weight_tracking") {
                     WeightTrackingScreen(
                         onBackPressed = { nav.popBackStack() }
+                    )
+                }
+                composable("social_challenges") {
+                    SocialChallengesScreen(
+                        modifier = Modifier.padding(padding)
                     )
                 }
                 composable("food_diary") {
