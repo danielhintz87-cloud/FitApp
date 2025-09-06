@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import List
 
 # Installation:
 #   python3 -m venv .venv && source .venv/bin/activate
@@ -7,29 +8,68 @@ import sys
 #   pip install tflite2onnx onnx
 
 def convert_tflite_to_onnx(src_tflite: str, dst_onnx: str):
-    from tflite2onnx.converter import convert
+    # tflite2onnx exposes convert function in convert.convert
+    from tflite2onnx.convert import convert
     os.makedirs(os.path.dirname(dst_onnx), exist_ok=True)
     print(f"Converting {src_tflite} -> {dst_onnx}")
-    convert(src_tflite, dst_onnx, experimental_opset=True)
+    convert(src_tflite, dst_onnx)
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 TFLITE_DIR = os.path.join(ROOT, "models", "tflite")
 ONNX_DIR = os.path.join(ROOT, "models", "onnx")
 
-pairs = [
-    (os.path.join(TFLITE_DIR, "movenet_thunder.tflite"),
-     os.path.join(ONNX_DIR, "movenet_thunder.onnx")),
-    (os.path.join(TFLITE_DIR, "blazepose.tflite"),
-     os.path.join(ONNX_DIR, "blazepose.onnx")),
-]
-
-missing = [src for src, _ in pairs if not os.path.exists(src)]
-if missing:
-    print("Fehlende TFLite-Dateien:\n - " + "\n - ".join(missing), file=sys.stderr)
-    print("Bitte zuerst 'bash scripts/fetch_models.sh' ausführen.", file=sys.stderr)
+if not os.path.isdir(TFLITE_DIR):
+    print(f"TFLite Verzeichnis fehlt: {TFLITE_DIR}", file=sys.stderr)
     sys.exit(1)
 
-for src, dst in pairs:
-    convert_tflite_to_onnx(src, dst)
+# Dynamisch alle .tflite konvertieren – außer sehr kleine Platzhalter (< 1KB) oder spezielle Dateien
+tflite_files: List[str] = [
+    os.path.join(TFLITE_DIR, f) for f in sorted(os.listdir(TFLITE_DIR)) if f.lower().endswith('.tflite')
+]
 
-print("ONNX-Modelle erstellt in:", ONNX_DIR)
+if not tflite_files:
+    print("Keine TFLite Modelle gefunden – bitte fetch_models.sh ausführen", file=sys.stderr)
+    sys.exit(1)
+
+skipped: List[str] = []
+converted: List[str] = []
+failed: List[str] = []
+
+for src in tflite_files:
+    size = os.path.getsize(src)
+    base = os.path.splitext(os.path.basename(src))[0]
+    if base.startswith("blazepose"):
+        skipped.append(f"{os.path.basename(src)} (MediaPipe Task/landmark format – Konvertierung übersprungen)")
+        continue
+    if size < 1024:  # Platzhalter oder Mini-Datei überspringen
+        skipped.append(f"{os.path.basename(src)} (zu klein: {size} Bytes – vermutlich Platzhalter)")
+        continue
+    dst = os.path.join(ONNX_DIR, f"{base}.onnx")
+    try:
+        convert_tflite_to_onnx(src, dst)
+        converted.append(os.path.basename(dst))
+    except Exception as e:
+        err = f"{os.path.basename(src)} -> {os.path.basename(dst)}: {e}"
+        failed.append(err)
+        print(f"FEHLER (fortgesetzt) {err}", file=sys.stderr)
+
+print("\n=== Zusammenfassung ===")
+if converted:
+    print("Konvertiert:")
+    for c in converted:
+        print(f" - {c}")
+else:
+    print("Keine Modelle konvertiert")
+if skipped:
+    print("Übersprungen:")
+    for s in skipped:
+        print(f" - {s}")
+if failed:
+    print("Fehlgeschlagen:")
+    for f in failed:
+        print(f" - {f}")
+print("ONNX-Modelle Zielverzeichnis:", ONNX_DIR)
+
+# Exit-Code Logik: nur Fehlercode, wenn kein einziges Modell konvertiert wurde und mindestens eins fehlgeschlagen ist
+if not converted and failed:
+    sys.exit(2)
