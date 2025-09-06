@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.kotlin.compose) // Compose plugin alias aus deiner libs.versions.toml
     alias(libs.plugins.ksp)
     jacoco
+    id("io.gitlab.arturbosch.detekt")
+    id("org.jlleitschuh.gradle.ktlint")
 }
 
 android {
@@ -279,6 +281,51 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     classDirectories.setFrom(files(debugTree.exclude(fileFilter)))
     executionData.setFrom(fileTree(layout.buildDirectory.get()).include("jacoco/testDebugUnitTest.exec"))
 }
+
+// Kombinierter Coverage Report (Unit + Instrumented, falls später connected Tests laufen)
+tasks.register<JacocoReport>("jacocoMergedReport") {
+    group = "verification"
+    description = "Merged coverage for unit + android tests"
+    val unitExec = fileTree(layout.buildDirectory.get()).include("jacoco/testDebugUnitTest.exec")
+    val androidExec = fileTree(layout.buildDirectory.get()).include("outputs/code_coverage/**/connectedDebugAndroidTest.exec")
+    executionData.setFrom(files(unitExec, androidExec))
+
+    dependsOn("testDebugUnitTest")
+    // connectedDebugAndroidTest optional: falls nicht vorhanden, ignoriere
+    // doFirst { }
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+
+    val fileFilter = listOf(
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*"
+    )
+    val debugTree = fileTree("${layout.buildDirectory.get()}/tmp/kotlin-classes/debug").exclude(fileFilter)
+    sourceDirectories.setFrom(files("src/main/java"))
+    classDirectories.setFrom(files(debugTree))
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    allRules = false
+    config.setFrom(files(rootProject.file("detekt.yml")))
+    autoCorrect = false
+}
+
+ktlint {
+    version.set("1.2.1")
+    android.set(true)
+    ignoreFailures.set(false)
+    reporters { reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.PLAIN) }
+}
+
+tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.GenerateReportsTask> { reportsOutputDirectory.set(layout.buildDirectory.dir("reports/ktlint").get().asFile) }
 
 // ==== Models Copy Task ====
 val modelsRoot = rootProject.layout.projectDirectory.dir("models")

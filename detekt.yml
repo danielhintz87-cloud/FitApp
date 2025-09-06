@@ -1,0 +1,67 @@
+build:
+  maxIssues: 0
+
+config:
+  validation: true
+
+processors:
+  active: true
+
+console-reports:
+  active: true
+  exclude: [ 'ProjectStatisticsReport' ]
+
+output-reports:
+  active: true
+
+style:
+  MagicNumber:
+    active: true
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    excludes: [ '**/test/**' ]
+  MaxLineLength:
+    active: true
+    maxLineLength: 140
+  WildcardImport:
+    active: true
+  UnusedImports:
+    active: true
+
+naming:
+  FunctionNaming:
+    active: true
+    ignoreAnnotated: [ 'Composable' ]
+  TopLevelPropertyNaming:
+    active: true
+
+performance:
+  SpreadOperator:
+    active: false
+
+coroutines:
+  GlobalScopeUsage:
+    active: true
+
+complexity:
+  LongMethod:
+    active: true
+    threshold: 70
+  TooManyFunctions:
+    active: false
+  NestedBlockDepth:
+    active: true
+    threshold: 4
+
+compose:
+  CompositionLocalAllowlist:
+    active: false
+
+potential-bugs:
+  DuplicateCaseInWhenExpression:
+    active: true
+
+exceptions:
+  SwallowedException:
+    active: true
+    ignoredExceptionTypes: [ 'InterruptedException', 'NumberFormatException' ]
