@@ -27,14 +27,14 @@ coil = "2.7.0"
 
 # Camera / ML
 camerax = "1.3.1"
-mlkit-barcode = "17.2.0"
+mlkit-barcode = "17.3.0"
 
 # Health
-health-connect = "1.1.0-alpha07"
+health-connect = "1.2.0-alpha01"
 
 # TensorFlow Lite
-tensorflow-lite = "2.14.0"
-tensorflow-lite-support = "0.4.4"
+tensorflow-lite = "2.17.0"
+tensorflow-lite-support = "0.5.0"
 
 # Wear OS
 wear-compose = "1.4.0"
@@ -50,7 +50,7 @@ junit = "4.13.2"
 android-test-junit = "1.2.1"
 espresso = "3.6.1"
 android-test-core = "1.6.1"
-tensorflow-lite-metadata = "0.2.0"
+tensorflow-lite-metadata = "0.5.0"
 
 [libraries]
 # Kotlin / Serialization / Coroutines
