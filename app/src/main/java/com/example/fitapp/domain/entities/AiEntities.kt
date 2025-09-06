@@ -267,5 +267,95 @@ enum class ProgressionType {
     REP_INCREASE, 
     DELOAD,
     MAINTAIN,
-    TECHNIQUE_FOCUS
+    TECHNIQUE_FOCUS,
+    // Bodyweight progression types
+    TIME_INCREASE,
+    DIFFICULTY_INCREASE,
+    INTERVAL_DECREASE,
+    HIIT_INTENSITY_INCREASE
+}
+
+// Bodyweight Exercise and HIIT specific entities
+data class BodyweightExercise(
+    val name: String,
+    val category: BodyweightCategory,
+    val difficultyLevel: Int = 1, // 1-5 scale
+    val baseReps: Int? = null,
+    val baseTime: Int? = null, // seconds
+    val description: String,
+    val instructions: List<String> = emptyList(),
+    val progressionOptions: List<BodyweightProgression> = emptyList()
+)
+
+enum class BodyweightCategory {
+    PUSH,       // Push-ups, Pike push-ups, etc.
+    PULL,       // Pull-ups, Bodyweight rows, etc.
+    SQUAT,      // Squats, Pistol squats, etc.
+    CORE,       // Planks, Mountain climbers, etc.
+    CARDIO,     // Burpees, Jumping jacks, etc.
+    FULL_BODY   // Combination movements
+}
+
+data class BodyweightProgression(
+    val type: ProgressionType,
+    val targetIncrease: String, // "5 reps", "10 seconds", "Next difficulty"
+    val description: String,
+    val difficultyIncrease: Int = 0
+)
+
+data class HIITWorkout(
+    val name: String,
+    val rounds: Int,
+    val workInterval: Int, // seconds
+    val restInterval: Int, // seconds
+    val exercises: List<HIITExercise>,
+    val totalDuration: Int, // calculated total duration in seconds
+    val difficulty: HIITDifficulty = HIITDifficulty.BEGINNER
+)
+
+data class HIITExercise(
+    val bodyweightExercise: BodyweightExercise,
+    val targetReps: Int? = null,
+    val isTimeBased: Boolean = false, // true if exercise is performed for time, false for reps
+    val order: Int
+)
+
+enum class HIITDifficulty {
+    BEGINNER,    // 20s work, 40s rest
+    INTERMEDIATE, // 30s work, 30s rest  
+    ADVANCED,    // 45s work, 15s rest
+    EXPERT       // 60s work, 10s rest
+}
+
+data class HIITBuilder(
+    val selectedExercises: List<BodyweightExercise> = emptyList(),
+    val workInterval: Int = 30,
+    val restInterval: Int = 30,
+    val rounds: Int = 4,
+    val difficulty: HIITDifficulty = HIITDifficulty.BEGINNER
+) {
+    fun generateWorkout(name: String): HIITWorkout {
+        val hiitExercises = selectedExercises.mapIndexed { index, exercise ->
+            HIITExercise(
+                bodyweightExercise = exercise,
+                targetReps = exercise.baseReps,
+                isTimeBased = exercise.baseTime != null,
+                order = index
+            )
+        }
+        
+        val exerciseTime = selectedExercises.size * workInterval
+        val restTime = selectedExercises.size * restInterval
+        val totalDuration = rounds * (exerciseTime + restTime)
+        
+        return HIITWorkout(
+            name = name,
+            rounds = rounds,
+            workInterval = workInterval,
+            restInterval = restInterval,
+            exercises = hiitExercises,
+            totalDuration = totalDuration,
+            difficulty = difficulty
+        )
+    }
 }

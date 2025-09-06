@@ -6,6 +6,9 @@ import com.example.fitapp.util.StructuredLogger
 import com.example.fitapp.domain.entities.PlateauDetectionResult
 import com.example.fitapp.domain.entities.ProgressionRecommendation
 import com.example.fitapp.domain.entities.ProgressionType
+import com.example.fitapp.domain.entities.BodyweightCategory
+import com.example.fitapp.domain.entities.BodyweightExercise
+import com.example.fitapp.domain.entities.HIITWorkout
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +29,8 @@ class WorkoutManager(
         private const val PLATEAU_THRESHOLD_WEEKS = 3
         private const val REST_TIME_MULTIPLIER = 1.2f
     }
+    
+    private val bodyweightProgressionManager = BodyweightProgressionManager(context)
     
     /**
      * Calculate progressive overload based on performance metrics
@@ -332,6 +337,58 @@ class WorkoutManager(
             tempoScore >= 0.9f -> "Gutes Tempo, Winkel korrigieren"
             else -> "Form und Tempo verbessern"
         }
+    }
+    
+    /**
+     * Calculate progression for bodyweight exercises
+     */
+    suspend fun calculateBodyweightProgression(
+        exerciseId: String,
+        currentReps: Int?,
+        currentTime: Int?,
+        currentDifficulty: Int,
+        formScore: Float,
+        rpeScore: Float,
+        category: BodyweightCategory
+    ): ProgressionRecommendation = withContext(Dispatchers.IO) {
+        try {
+            bodyweightProgressionManager.calculateBodyweightProgression(
+                exerciseId = exerciseId,
+                currentReps = currentReps,
+                currentTime = currentTime,
+                currentDifficulty = currentDifficulty,
+                formScore = formScore,
+                rpeScore = rpeScore,
+                exerciseCategory = category
+            )
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.USER_ACTION,
+                TAG,
+                "Failed to calculate bodyweight progression for exercise: $exerciseId",
+                exception = e
+            )
+            ProgressionRecommendation.maintain(
+                0f,
+                currentReps ?: 0,
+                1,
+                "Fehler bei Progressionsberechnung"
+            )
+        }
+    }
+    
+    /**
+     * Get default bodyweight exercises
+     */
+    fun getDefaultBodyweightExercises(): List<BodyweightExercise> {
+        return bodyweightProgressionManager.getDefaultBodyweightExercises()
+    }
+    
+    /**
+     * Create default HIIT workouts
+     */
+    fun createDefaultHIITWorkouts(): List<HIITWorkout> {
+        return bodyweightProgressionManager.createDefaultHIITWorkouts()
     }
 }
 
