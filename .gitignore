@@ -61,7 +61,10 @@ tensorflow_cache/
 
 # Dev Container / Editor
 .devcontainer/
-.copilot/
+# Copilot Konfiguration versionieren – nur Cache ignorieren
+.copilot/cache/
+.copilot/tmp/
+!.copilot/instructions.md
 .vscode/settings.json
 .vscode/launch.json
 .vscode/tasks.json
