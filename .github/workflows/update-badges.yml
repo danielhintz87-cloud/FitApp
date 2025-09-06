@@ -34,6 +34,14 @@ jobs:
       - name: Run unit tests (coverage)
         run: ./gradlew jacocoTestReport --no-daemon --stacktrace
 
+      - name: Generate integrity report
+        run: ./gradlew :app:generateModelIntegrity --no-daemon --stacktrace || true
+
+      - name: Generate model integrity badge
+        run: |
+          chmod +x scripts/generate_integrity_badge.sh
+          ./scripts/generate_integrity_badge.sh
+
       - name: Generate coverage badge
         run: |
           chmod +x scripts/generate_coverage_badge.sh
@@ -46,6 +54,9 @@ jobs:
           # ./scripts/update_badges.sh
           if [ -f badges/coverage.json ]; then
             jq '.' badges/coverage.json || true
+          fi
+          if [ -f badges/models_integrity.json ]; then
+            jq '.' badges/models_integrity.json || true
           fi
 
       - name: Commit changes

@@ -3,6 +3,7 @@
 [![Android CI](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android-room-ci.yml/badge.svg)](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android-room-ci.yml)
 [![Android Tests](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android_tests.yml/badge.svg)](https://github.com/danielhintz87-cloud/FitApp/actions/workflows/android_tests.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/danielhintz87-cloud/FitApp/main/badges/coverage.json)](./badges/coverage.json)
+[![Models](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/danielhintz87-cloud/FitApp/main/badges/models_integrity.json)](./badges/models_integrity.json)
 [![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=24)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.0.20-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![Gradle](https://img.shields.io/badge/gradle-8.14.3-blue.svg)](https://gradle.org)
