@@ -161,8 +161,7 @@ dependencies {
     // Lifecycle/Coroutines
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.9.0") // Nur eine Guava Bridge
 
     // DataStore (Preferences + Core) – Migration Ziel statt SharedPreferences
     implementation(libs.datastore.preferences)
@@ -194,10 +193,6 @@ dependencies {
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
-    implementation("androidx.camera:camera-core:1.3.4")
-    implementation("androidx.camera:camera-camera2:1.3.4")
-    implementation("androidx.camera:camera-lifecycle:1.3.4")
-    implementation("androidx.camera:camera-view:1.3.4")
 
     // MediaPipe Tasks - Pose Landmarker
     implementation("com.google.mediapipe:tasks-vision:0.10.14")
@@ -208,8 +203,6 @@ dependencies {
     // TensorFlow Lite (Advanced ML)
     implementation(libs.tensorflow.lite)
     implementation(libs.tensorflow.lite.support)
-    implementation("org.tensorflow:tensorflow-lite:2.17.0")
-    implementation("org.tensorflow:tensorflow-lite-support:0.5.0")
     implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0")
     // Entfernt: gpu-delegate-plugin (Artefakt nicht auffindbar). GPU Delegate ist bereits in tensorflow-lite-gpu enthalten.
 
@@ -230,19 +223,14 @@ dependencies {
 
         // CameraX (Barcode and ML) – vereinheitlicht über Version Catalog (camerax=1.3.1)
         // Optionales Upgrade auf 1.3.4 möglich durch Anpassung libs.versions.toml (versions.camerax)
-        implementation(libs.camerax.core)
-        implementation(libs.camerax.camera2)
-        implementation(libs.camerax.lifecycle)
-        implementation(libs.camerax.view)
+    // (Bereinigt) – Duplikate entfernt
     // Instrumented Tests
     androidTestImplementation(libs.android.test.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.room.testing)
     androidTestImplementation(libs.android.test.core)
         // TensorFlow Lite (Advanced ML) – vereinheitlicht, vermeidet doppelte Artefakte
-        implementation(libs.tensorflow.lite)
-        implementation(libs.tensorflow.lite.support)
-        implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0")
+    // (Bereinigt) – Duplikate entfernt
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")
 }
 
