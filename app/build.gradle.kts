@@ -327,6 +327,45 @@ ktlint {
 
 tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.GenerateReportsTask> { reportsOutputDirectory.set(layout.buildDirectory.dir("reports/ktlint").get().asFile) }
 
+// Coverage Verification (simpler Gate)
+val coverageMin = (project.findProperty("coverage.min") as String?)?.toDoubleOrNull() ?: 0.40 // 40% Default
+
+tasks.register("verifyCoverage") {
+    group = "verification"
+    description = "Verifies line coverage >= coverage.min (default 40%)"
+    dependsOn("jacocoTestReport")
+    doLast {
+        val reportFile = file("${buildDir}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
+        if (!reportFile.exists()) {
+            logger.warn("Jacoco report fehlt: ${reportFile.path} – überspringe Gate")
+            return@doLast
+        }
+        val content = reportFile.readText()
+        val regex = Regex("<counter type=\"LINE\" missed=\"(\\d+)\" covered=\"(\\d+)\"/>")
+        val match = regex.find(content)
+        if (match != null) {
+            val missed = match.groupValues[1].toDouble()
+            val covered = match.groupValues[2].toDouble()
+            val total = missed + covered
+            val ratio = if (total == 0.0) 0.0 else covered / total
+            logger.lifecycle("Line Coverage: ${(ratio * 100).format(2)}% (Threshold ${(coverageMin * 100).format(2)}%)")
+            if (ratio < coverageMin) {
+                throw GradleException("Coverage Gate failed: ${(ratio * 100).format(2)}% < ${(coverageMin * 100).format(2)}% (override with -Pcoverage.min=<value>)")
+            }
+        } else {
+            logger.warn("Konnte LINE counter nicht parsen – Gate übersprungen")
+        }
+    }
+}
+
+fun Double.format(decimals: Int) = String.format("% .${decimals}f", this).trim()
+
+// Aggregierter Quality Task
+tasks.register("qualityCheck") {
+    group = "verification"
+    dependsOn("ktlintCheck", "detekt", "jacocoTestReport", "verifyCoverage")
+}
+
 // ==== Models Copy Task ====
 val modelsRoot = rootProject.layout.projectDirectory.dir("models")
 val appAssets = layout.projectDirectory.dir("src/main/assets/models")

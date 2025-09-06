@@ -52,6 +52,12 @@ jobs:
       - name: detekt
         run: ./gradlew detekt --stacktrace || true
 
+      - name: Unit Coverage
+        run: ./gradlew jacocoTestReport --stacktrace || true
+
+      - name: Quality Gate (Coverage + Static Analysis)
+        run: ./gradlew qualityCheck -Pcoverage.min=0.35 --stacktrace || true
+
       - name: Upload quality reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -60,5 +66,6 @@ jobs:
           path: |
             **/build/reports/ktlint/**
             **/build/reports/detekt/**
+            **/build/reports/jacoco/**
           retention-days: 7
           if-no-files-found: warn
