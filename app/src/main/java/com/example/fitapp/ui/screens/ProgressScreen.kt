@@ -19,11 +19,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.PersonalAchievementEntity
 import com.example.fitapp.data.db.PersonalStreakEntity
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.data.repo.PersonalMotivationRepository
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -85,6 +87,11 @@ fun ProgressScreen(contentPadding: PaddingValues) {
         
         // Progress Milestones
         ProgressMilestonesSection(milestones)
+        
+        Spacer(Modifier.height(16.dp))
+        
+        // Nutrition-Training Relationship Analytics (Enhanced Feature)
+        NutritionTrainingRelationshipCard(nutritionRepo, last7Days, dailyCalories)
         
         Spacer(Modifier.height(16.dp))
         
@@ -473,4 +480,336 @@ private fun ProgressMilestonesSection(milestones: List<com.example.fitapp.data.d
             }
         }
     }
+}
+
+@Composable
+private fun NutritionTrainingRelationshipCard(
+    nutritionRepo: NutritionRepository,
+    last7Days: List<LocalDate>,
+    dailyCalories: Map<LocalDate, Int>
+) {
+    var workoutDays by remember { mutableStateOf<Set<LocalDate>>(emptySet()) }
+    var showAnalysis by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    
+    // Load workout data
+    LaunchedEffect(Unit) {
+        val completedWorkouts = mutableSetOf<LocalDate>()
+        last7Days.forEach { date ->
+            try {
+                val workout = nutritionRepo.getTodayWorkout(date.toString())
+                if (workout?.status == "completed") {
+                    completedWorkouts.add(date)
+                }
+            } catch (e: Exception) {
+                // Ignore errors
+            }
+        }
+        workoutDays = completedWorkouts
+    }
+    
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+        )
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Analytics,
+                        contentDescription = "Nutrition Training Analysis",
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Ernährungs-Training Analyse",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                
+                IconButton(
+                    onClick = { showAnalysis = !showAnalysis }
+                ) {
+                    Icon(
+                        if (showAnalysis) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (showAnalysis) "Einklappen" else "Ausklappen"
+                    )
+                }
+            }
+            
+            Spacer(Modifier.height(8.dp))
+            
+            // Basic stats
+            val workoutDaysCount = workoutDays.size
+            val nutritionDaysCount = dailyCalories.count { it.value > 0 }
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                StatCard(
+                    title = "Training Tage",
+                    value = "$workoutDaysCount/7",
+                    color = MaterialTheme.colorScheme.primary
+                )
+                StatCard(
+                    title = "Ernährung Tage",
+                    value = "$nutritionDaysCount/7",
+                    color = MaterialTheme.colorScheme.secondary
+                )
+                StatCard(
+                    title = "Synchron",
+                    value = "${workoutDays.intersect(dailyCalories.keys.filter { dailyCalories[it]!! > 0 }.toSet()).size}/7",
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            }
+            
+            if (showAnalysis) {
+                Spacer(Modifier.height(16.dp))
+                
+                // Weekly correlation analysis
+                Text(
+                    "Wöchentliche Korrelation",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(Modifier.height(8.dp))
+                
+                // Calculate averages
+                val workoutDayCalories = workoutDays.mapNotNull { date -> 
+                    dailyCalories[date]?.takeIf { it > 0 }
+                }
+                val restDayCalories = last7Days.filterNot { workoutDays.contains(it) }
+                    .mapNotNull { date -> dailyCalories[date]?.takeIf { it > 0 } }
+                
+                val avgWorkoutDayCalories = if (workoutDayCalories.isNotEmpty()) 
+                    workoutDayCalories.average().toInt() else 0
+                val avgRestDayCalories = if (restDayCalories.isNotEmpty()) 
+                    restDayCalories.average().toInt() else 0
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Training Tage",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                        )
+                        Text(
+                            "⌀ $avgWorkoutDayCalories kcal",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Ruhe Tage",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+                        )
+                        Text(
+                            "⌀ $avgRestDayCalories kcal",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+                
+                Spacer(Modifier.height(12.dp))
+                
+                // Insights
+                val insights = generateNutritionTrainingInsights(
+                    workoutDaysCount,
+                    nutritionDaysCount,
+                    avgWorkoutDayCalories,
+                    avgRestDayCalories
+                )
+                
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            "🧠 AI Insights",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            insights,
+                            style = MaterialTheme.typography.bodySmall,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+                
+                Spacer(Modifier.height(12.dp))
+                
+                // Daily breakdown
+                Text(
+                    "7-Tage Übersicht",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(Modifier.height(8.dp))
+                
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(last7Days) { date ->
+                        DayActivityCard(
+                            date = date,
+                            hasWorkout = workoutDays.contains(date),
+                            calories = dailyCalories[date] ?: 0
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatCard(
+    title: String,
+    value: String,
+    color: Color
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+        Text(
+            title,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+        )
+    }
+}
+
+@Composable
+private fun DayActivityCard(
+    date: LocalDate,
+    hasWorkout: Boolean,
+    calories: Int
+) {
+    val dayName = date.format(DateTimeFormatter.ofPattern("EEE"))
+    
+    Surface(
+        modifier = Modifier.width(60.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+        color = when {
+            hasWorkout && calories > 0 -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+            hasWorkout -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)
+            calories > 0 -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+        }
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                dayName,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(Modifier.height(4.dp))
+            
+            if (hasWorkout) {
+                Icon(
+                    Icons.Default.FitnessCenter,
+                    contentDescription = "Workout",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            } else {
+                Icon(
+                    Icons.Default.Remove,
+                    contentDescription = "No workout",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.outline
+                )
+            }
+            
+            Spacer(Modifier.height(2.dp))
+            
+            if (calories > 0) {
+                Icon(
+                    Icons.Default.Restaurant,
+                    contentDescription = "Nutrition logged",
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.secondary
+                )
+                Text(
+                    "${calories}",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 10.sp
+                )
+            } else {
+                Icon(
+                    Icons.Default.Remove,
+                    contentDescription = "No nutrition",
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.outline
+                )
+            }
+        }
+    }
+}
+
+private fun generateNutritionTrainingInsights(
+    workoutDays: Int,
+    nutritionDays: Int,
+    avgWorkoutCalories: Int,
+    avgRestCalories: Int
+): String {
+    val insights = mutableListOf<String>()
+    
+    // Training consistency
+    if (workoutDays >= 5) {
+        insights.add("Exzellente Trainings-Konsistenz! 💪")
+    } else if (workoutDays >= 3) {
+        insights.add("Gute Trainings-Routine. Versuche 4-5 Tage pro Woche zu erreichen.")
+    } else {
+        insights.add("Mehr regelmäßiges Training würde deine Ziele beschleunigen.")
+    }
+    
+    // Nutrition tracking
+    if (nutritionDays >= 6) {
+        insights.add("Hervorragendes Ernährungs-Tracking! 📊")
+    } else if (nutritionDays >= 4) {
+        insights.add("Gutes Bewusstsein für deine Ernährung.")
+    } else {
+        insights.add("Tracke deine Ernährung konsequenter für bessere Ergebnisse.")
+    }
+    
+    // Calorie adjustment insight
+    if (avgWorkoutCalories > 0 && avgRestCalories > 0) {
+        val difference = avgWorkoutCalories - avgRestCalories
+        when {
+            difference > 200 -> insights.add("Perfekt! Du isst an Trainingstagen mehr.")
+            difference > 0 -> insights.add("Gut - kleine Anpassung an Trainingstagen erkennbar.")
+            difference < -100 -> insights.add("Achtung: An Trainingstagen weniger Kalorien - das könnte die Regeneration beeinträchtigen.")
+            else -> insights.add("Gleiche Kalorienzufuhr an Trainings- und Ruhetagen.")
+        }
+    }
+    
+    return insights.joinToString(" ")
 }
