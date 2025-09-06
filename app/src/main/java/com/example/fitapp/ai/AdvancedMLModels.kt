@@ -32,16 +32,16 @@ class AdvancedMLModels private constructor(private val context: Context) {
     companion object {
         private const val TAG = "AdvancedMLModels"
 
-        // TensorFlow Lite Models
-        private const val POSE_MODEL_TFLITE = "models/tflite/movenet_thunder.tflite"
-        private const val POSE_MODEL_BLAZEPOSE = "models/tflite/blazepose.tflite"
-        private const val MOVEMENT_MODEL_FILE = "models/tflite/movement_analysis_model.tflite"
+    // TensorFlow Lite Models (Thunder + Lightning alias (movement))
+    private const val MOVENET_THUNDER_MODEL = "models/tflite/movenet_thunder.tflite"
+    private const val MOVENET_LIGHTNING_MODEL = "models/tflite/movement_analysis_model.tflite" // repurposed lightning
+    private const val BLAZEPOSE_MODEL = "models/tflite/blazepose.tflite"
+    private const val MOVEMENT_MODEL_FILE = MOVENET_LIGHTNING_MODEL // placeholder until dedicated movement model
 
-        // ONNX Models (Optional)
-        private const val POSE_MODEL_ONNX = "models/onnx/movenet_thunder.onnx"
-        private const val BLAZEPOSE_ONNX = "models/onnx/blazepose.onnx"
-
-        private const val INPUT_SIZE = 256
+    // Dynamic input sizes
+    private const val INPUT_SIZE_THUNDER = 256
+    private const val INPUT_SIZE_LIGHTNING = 192
+    private const val INPUT_SIZE_BLAZEPOSE = 256
         private const val NUM_KEYPOINTS = 17 // Standard COCO pose keypoints for MoveNet
         private const val NUM_KEYPOINTS_BLAZEPOSE = 33 // BlazePose landmarks
         private const val CONFIDENCE_THRESHOLD = 0.3f
@@ -66,17 +66,16 @@ class AdvancedMLModels private constructor(private val context: Context) {
      * Enum for different pose model types
      */
     enum class PoseModelType {
-        TFLITE_MOVENET,
-        TFLITE_BLAZEPOSE,
-        ONNX_MOVENET,
-        ONNX_BLAZEPOSE
+        MOVENET_THUNDER,
+        MOVENET_LIGHTNING,
+        BLAZEPOSE
     }
     
     private var poseInterpreter: Interpreter? = null
     private var movementInterpreter: Interpreter? = null
-    private var currentModelType: PoseModelType = PoseModelType.TFLITE_MOVENET
-    private val imageProcessor = ImageProcessor.Builder()
-        .add(ResizeOp(INPUT_SIZE, INPUT_SIZE, ResizeOp.ResizeMethod.BILINEAR))
+    private var currentModelType: PoseModelType = PoseModelType.MOVENET_THUNDER
+    private var imageProcessor: ImageProcessor = ImageProcessor.Builder()
+        .add(ResizeOp(INPUT_SIZE_THUNDER, INPUT_SIZE_THUNDER, ResizeOp.ResizeMethod.BILINEAR))
         .add(NormalizeOp(0f, 255f))
         .build()
     
@@ -93,7 +92,7 @@ class AdvancedMLModels private constructor(private val context: Context) {
     /**
      * Initialize ML models with performance optimization and model type selection
      */
-    suspend fun initialize(modelType: PoseModelType = PoseModelType.TFLITE_MOVENET): Boolean = withContext(Dispatchers.IO) {
+    suspend fun initialize(modelType: PoseModelType = PoseModelType.MOVENET_THUNDER): Boolean = withContext(Dispatchers.IO) {
         try {
             if (isInitialized) return@withContext true
             
@@ -104,26 +103,30 @@ class AdvancedMLModels private constructor(private val context: Context) {
             Log.i(TAG, "Initializing optimized pose detection model: $modelType")
             
             val poseModelPath = when (modelType) {
-                PoseModelType.TFLITE_MOVENET -> POSE_MODEL_TFLITE
-                PoseModelType.TFLITE_BLAZEPOSE -> POSE_MODEL_BLAZEPOSE
-                PoseModelType.ONNX_MOVENET -> POSE_MODEL_ONNX
-                PoseModelType.ONNX_BLAZEPOSE -> BLAZEPOSE_ONNX
+                PoseModelType.MOVENET_THUNDER -> MOVENET_THUNDER_MODEL
+                PoseModelType.MOVENET_LIGHTNING -> MOVENET_LIGHTNING_MODEL
+                PoseModelType.BLAZEPOSE -> BLAZEPOSE_MODEL
             }
             
-            // Only initialize TensorFlow Lite models for now (ONNX would need additional setup)
-            if (modelType == PoseModelType.TFLITE_MOVENET || modelType == PoseModelType.TFLITE_BLAZEPOSE) {
-                try {
-                    // Configure interpreter options for mobile performance optimization
-                    val options = Interpreter.Options().apply {
-                        setNumThreads(2) // Limit threads for battery life
-                        setUseNNAPI(true) // Enable NNAPI for performance
-                        setUseXNNPACK(true) // Enable XNNPACK for CPU optimization
-                    }
-                    poseInterpreter = Interpreter(FileUtil.loadMappedFile(context, poseModelPath), options)
-                    Log.i(TAG, "Loaded TensorFlow Lite model: $poseModelPath")
-                } catch (e: Exception) {
-                    Log.w(TAG, "Could not load pose model $poseModelPath (using placeholder)", e)
+            val inputSize = when (modelType) {
+                PoseModelType.MOVENET_THUNDER -> INPUT_SIZE_THUNDER
+                PoseModelType.MOVENET_LIGHTNING -> INPUT_SIZE_LIGHTNING
+                PoseModelType.BLAZEPOSE -> INPUT_SIZE_BLAZEPOSE
+            }
+            imageProcessor = ImageProcessor.Builder()
+                .add(ResizeOp(inputSize, inputSize, ResizeOp.ResizeMethod.BILINEAR))
+                .add(NormalizeOp(0f, 255f))
+                .build()
+            try {
+                val options = Interpreter.Options().apply {
+                    setNumThreads(2)
+                    setUseNNAPI(true)
+                    setUseXNNPACK(true)
                 }
+                poseInterpreter = Interpreter(FileUtil.loadMappedFile(context, poseModelPath), options)
+                Log.i(TAG, "Loaded pose model: $poseModelPath (input=$inputSize)")
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not load pose model $poseModelPath", e)
             }
             
             // Initialize movement analysis model (simulated for mobile optimization)
@@ -195,15 +198,15 @@ class AdvancedMLModels private constructor(private val context: Context) {
         val modelType = when {
             deviceInfo.isHighEnd -> {
                 Log.i(TAG, "High-end device detected, using MoveNet Thunder")
-                PoseModelType.TFLITE_MOVENET
+                PoseModelType.MOVENET_THUNDER
             }
             deviceInfo.isMidRange -> {
                 Log.i(TAG, "Mid-range device detected, using BlazePose")
-                PoseModelType.TFLITE_BLAZEPOSE
+                PoseModelType.BLAZEPOSE
             }
             else -> {
                 Log.i(TAG, "Lower-end device detected, using BlazePose (lightweight)")
-                PoseModelType.TFLITE_BLAZEPOSE
+                PoseModelType.BLAZEPOSE
             }
         }
         
@@ -398,17 +401,17 @@ class AdvancedMLModels private constructor(private val context: Context) {
         }
         
         try {
+            val start = System.currentTimeMillis()
             // Process image
             val tensorImage = TensorImage.fromBitmap(bitmap)
             val processedImage = imageProcessor.process(tensorImage)
             
             // Run pose detection (simulated advanced analysis)
-            val keypoints = detectKeypoints(processedImage)
+            val keypoints = runPoseInference(processedImage)
             val formQuality = analyzeFormFromKeypoints(keypoints)
             val riskFactors = detectInjuryRisks(keypoints)
             val improvements = generateFormImprovements(keypoints, formQuality)
-            
-            PoseAnalysisResult(
+            val result = PoseAnalysisResult(
                 keypoints = keypoints,
                 overallFormQuality = formQuality,
                 confidence = calculateConfidence(keypoints),
@@ -416,6 +419,10 @@ class AdvancedMLModels private constructor(private val context: Context) {
                 improvements = improvements,
                 timestamp = System.currentTimeMillis()
             )
+            val elapsed = System.currentTimeMillis() - start
+            performanceMetrics.recordPoseAnalysis(elapsed)
+            performanceMetrics.updateMemoryUsage()
+            result
         } catch (e: Exception) {
             Log.e(TAG, "Error analyzing pose", e)
             PoseAnalysisResult.empty()
@@ -434,6 +441,7 @@ class AdvancedMLModels private constructor(private val context: Context) {
         }
         
         try {
+            val start = System.currentTimeMillis()
             // Advanced sensor fusion and pattern analysis
             val smoothedData = applySensorFusion(sensorData)
             val patterns = extractAdvancedPatterns(smoothedData, exerciseType)
@@ -441,7 +449,7 @@ class AdvancedMLModels private constructor(private val context: Context) {
             val compensations = detectCompensationPatterns(patterns)
             val fatigue = detectFatigueIndicators(patterns)
             
-            MovementPatternAnalysis(
+            val result = MovementPatternAnalysis(
                 patterns = patterns,
                 asymmetryScore = asymmetries.maxOfOrNull { it.severity.toDouble() }?.toFloat() ?: 0f,
                 compensationScore = compensations.maxOfOrNull { it.severity.toDouble() }?.toFloat() ?: 0f,
@@ -450,6 +458,10 @@ class AdvancedMLModels private constructor(private val context: Context) {
                 recommendations = generateMovementRecommendations(patterns, asymmetries, compensations),
                 confidence = calculatePatternConfidence(sensorData.size)
             )
+            val elapsed = System.currentTimeMillis() - start
+            performanceMetrics.recordMovementAnalysis(elapsed)
+            performanceMetrics.updateMemoryUsage()
+            result
         } catch (e: Exception) {
             Log.e(TAG, "Error analyzing movement pattern", e)
             MovementPatternAnalysis.empty()
@@ -520,24 +532,17 @@ class AdvancedMLModels private constructor(private val context: Context) {
     }
     
     /**
-     * Detect keypoints from processed image (simulated advanced pose detection)
+     * Run real MoveNet style pose inference: expects output [1,1,17,3] -> (y,x,score)
      */
-    private fun detectKeypoints(processedImage: TensorImage): List<Keypoint> {
-        // Simulated advanced pose detection - in production would use actual TFLite model
-        val baseKeypoints = listOf(
-            "nose", "left_eye", "right_eye", "left_ear", "right_ear",
-            "left_shoulder", "right_shoulder", "left_elbow", "right_elbow",
-            "left_wrist", "right_wrist", "left_hip", "right_hip",
-            "left_knee", "right_knee", "left_ankle", "right_ankle"
-        )
-        
-        return baseKeypoints.mapIndexed { index, name ->
-            Keypoint(
-                name = name,
-                x = 0.3f + (Math.random() * 0.4).toFloat(), // Simulated coordinates
-                y = 0.2f + (Math.random() * 0.6).toFloat(),
-                confidence = 0.7f + (Math.random() * 0.3).toFloat()
-            )
+    private fun runPoseInference(processedImage: TensorImage): List<Keypoint> {
+        val interpreter = poseInterpreter ?: return emptyList()
+        return try {
+            val output = Array(1) { Array(1) { Array(NUM_KEYPOINTS) { FloatArray(3) } } }
+            interpreter.run(processedImage.buffer, output)
+            parseMoveNetOutput(output, CONFIDENCE_THRESHOLD)
+        } catch (e: Exception) {
+            Log.w(TAG, "Pose inference failed", e)
+            emptyList()
         }
     }
     

@@ -32,20 +32,16 @@ class AdvancedMLModelsTest {
 
     @Test
     fun testModelTypeSelection() {
-        // Test that all model types are available
-        val modelTypes = AdvancedMLModels.PoseModelType.values()
-        assertEquals(4, modelTypes.size)
-        
-        assertTrue(modelTypes.contains(AdvancedMLModels.PoseModelType.TFLITE_MOVENET))
-        assertTrue(modelTypes.contains(AdvancedMLModels.PoseModelType.TFLITE_BLAZEPOSE))
-        assertTrue(modelTypes.contains(AdvancedMLModels.PoseModelType.ONNX_MOVENET))
-        assertTrue(modelTypes.contains(AdvancedMLModels.PoseModelType.ONNX_BLAZEPOSE))
+        val modelTypes = AdvancedMLModels.PoseModelType.values().toSet()
+        assertEquals(3, modelTypes.size)
+        assertTrue(modelTypes.contains(AdvancedMLModels.PoseModelType.MOVENET_THUNDER))
+        assertTrue(modelTypes.contains(AdvancedMLModels.PoseModelType.MOVENET_LIGHTNING))
+        assertTrue(modelTypes.contains(AdvancedMLModels.PoseModelType.BLAZEPOSE))
     }
 
     @Test
     fun testDefaultModelType() {
-        // Test that default model is MoveNet
-        assertEquals(AdvancedMLModels.PoseModelType.TFLITE_MOVENET, mlModels.getCurrentModelType())
+        assertEquals(AdvancedMLModels.PoseModelType.MOVENET_THUNDER, mlModels.getCurrentModelType())
     }
 
     @Test
