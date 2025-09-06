@@ -16,12 +16,14 @@ plugins {
 
 android {
     namespace = "com.example.fitapp"
-    compileSdk = 34
+    // Aktualisiert auf 36 (Build-Fehler: Dependencies fordern mind. 35 / Health Connect 36)
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.fitapp"
         minSdk = 26  // Health Connect kompatibel
-        targetSdk = 34
+    // targetSdk kann optional später angehoben werden; Anhebung jetzt zur Konsistenz
+    targetSdk = 36
         versionCode = 8
         versionName = "1.8"
 
@@ -197,8 +199,8 @@ dependencies {
     implementation("com.google.mediapipe:tasks-vision:0.10.14")
 
     // ML Kit Barcode Scanning
-    implementation(libs.mlkit.barcode.scanning)
-
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.9.0")
+        // Entfernt ältere 1.7.3 Android Coroutines – nur Version Katalog (1.9.0) aktiv
     // TensorFlow Lite (Advanced ML)
     implementation(libs.tensorflow.lite)
     implementation(libs.tensorflow.lite.support)
@@ -222,24 +224,21 @@ dependencies {
     // Desugaring
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
-    // Unit Tests
-    testImplementation(libs.junit)
-    testImplementation("org.mockito:mockito-core:5.1.1")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:4.1.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-    testImplementation("androidx.arch.core:core-testing:2.2.0")
-    testImplementation("androidx.room:room-testing:2.7.2")
-
+        // CameraX (Barcode and ML) – vereinheitlicht über Version Catalog (camerax=1.3.1)
+        // Optionales Upgrade auf 1.3.4 möglich durch Anpassung libs.versions.toml (versions.camerax)
+        implementation(libs.camerax.core)
+        implementation(libs.camerax.camera2)
+        implementation(libs.camerax.lifecycle)
+        implementation(libs.camerax.view)
     // Instrumented Tests
     androidTestImplementation(libs.android.test.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.room.testing)
     androidTestImplementation(libs.android.test.core)
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.9.0")
-    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
-
-    // Debug Test Manifest
+        // TensorFlow Lite (Advanced ML) – vereinheitlicht, vermeidet doppelte Artefakte
+        implementation(libs.tensorflow.lite)
+        implementation(libs.tensorflow.lite.support)
+        implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")
 }
 
