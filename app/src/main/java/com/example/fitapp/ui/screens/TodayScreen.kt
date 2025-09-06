@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.data.repo.PersonalMotivationRepository
@@ -76,6 +77,17 @@ fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = n
         TodayStreaksCard(activeStreaks)
         
         Spacer(Modifier.height(16.dp))
+        
+        // Enhanced Nutrition-Training Coupling Card
+        if (latestPlan != null) {
+            WorkoutNutritionCouplingCard(
+                repo = repo,
+                scope = scope,
+                latestPlan = latestPlan
+            )
+            
+            Spacer(Modifier.height(16.dp))
+        }
         
         // Calorie Summary Card (existing, enhanced)
         Card {
@@ -722,16 +734,239 @@ private fun DigitalCoachCard(
                                 Text("🔥 Mehr davon")
                             }
                         }
-                    } else {
-                        Text(
-                            "Danke für dein Feedback! 💚",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-                        )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun WorkoutNutritionCouplingCard(
+    repo: NutritionRepository,
+    scope: kotlinx.coroutines.CoroutineScope,
+    latestPlan: com.example.fitapp.data.db.PlanEntity
+) {
+    var preWorkoutNutrition by remember { mutableStateOf<String?>(null) }
+    var postWorkoutNutrition by remember { mutableStateOf<String?>(null) }
+    var hydrationNeeds by remember { mutableStateOf<String?>(null) }
+    var showExpanded by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.FitnessCenter,
+                        contentDescription = "Nutrition Training Coupling",
+                        tint = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Training & Ernährung",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                
+                IconButton(
+                    onClick = { showExpanded = !showExpanded }
+                ) {
+                    Icon(
+                        if (showExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (showExpanded) "Einklappen" else "Ausklappen"
+                    )
+                }
+            }
+            
+            Spacer(Modifier.height(8.dp))
+            
+            // Training plan info
+            Text(
+                "Plan: ${latestPlan.title}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                "Ziel: ${latestPlan.goal} • ${latestPlan.minutesPerSession} Min",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+            )
+            
+            if (showExpanded) {
+                Spacer(Modifier.height(12.dp))
+                
+                // Generate recommendations button
+                Button(
+                    onClick = {
+                        scope.launch {
+                            isLoading = true
+                            try {
+                                // Generate workout-specific nutrition recommendations
+                                preWorkoutNutrition = repo.generatePreWorkoutNutrition(
+                                    workoutType = latestPlan.goal,
+                                    minutesUntilWorkout = 60
+                                )
+                                
+                                postWorkoutNutrition = repo.generatePostWorkoutNutrition(
+                                    workoutType = latestPlan.goal,
+                                    durationMinutes = latestPlan.minutesPerSession,
+                                    intensityLevel = "mittel"
+                                )
+                                
+                                hydrationNeeds = repo.calculateWorkoutHydration(
+                                    durationMinutes = latestPlan.minutesPerSession,
+                                    intensityLevel = "mittel"
+                                )
+                            } catch (e: Exception) {
+                                android.util.Log.e("WorkoutNutritionCard", "Error generating recommendations", e)
+                            } finally {
+                                isLoading = false
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading
+                ) {
+                    if (isLoading) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(if (isLoading) "Generiere..." else "Ernährungs-Empfehlungen generieren")
+                }
+                
+                // Display recommendations
+                preWorkoutNutrition?.let { nutrition ->
+                    Spacer(Modifier.height(12.dp))
+                    NutritionRecommendationCard(
+                        title = "Vor dem Training",
+                        content = nutrition,
+                        icon = Icons.Default.Schedule,
+                        backgroundColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    )
+                }
+                
+                postWorkoutNutrition?.let { nutrition ->
+                    Spacer(Modifier.height(8.dp))
+                    NutritionRecommendationCard(
+                        title = "Nach dem Training",
+                        content = nutrition,
+                        icon = Icons.Default.RestaurantMenu,
+                        backgroundColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+                    )
+                }
+                
+                hydrationNeeds?.let { hydration ->
+                    Spacer(Modifier.height(8.dp))
+                    NutritionRecommendationCard(
+                        title = "Flüssigkeitsbedarf",
+                        content = hydration,
+                        icon = Icons.Default.LocalDrink,
+                        backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
+                
+                // Quick action buttons
+                if (preWorkoutNutrition != null || postWorkoutNutrition != null) {
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    // Adjust calories for planned workout
+                                    repo.adjustCaloriesForCompletedWorkout(
+                                        date = LocalDate.now(),
+                                        workoutType = latestPlan.goal,
+                                        durationMinutes = latestPlan.minutesPerSession,
+                                        intensityLevel = "mittel"
+                                    )
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.TrendingUp, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Kalorien anpassen", style = MaterialTheme.typography.bodySmall)
+                        }
+                        
+                        OutlinedButton(
+                            onClick = {
+                                // Navigate to food diary to log meals
+                                // navController?.navigate("food_diary")
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Mahlzeit loggen", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            } else {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Tippe für personalisierte Ernährungs-Empfehlungen basierend auf deinem Training",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NutritionRecommendationCard(
+    title: String,
+    content: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    backgroundColor: Color
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = backgroundColor
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = title,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                content,
+                style = MaterialTheme.typography.bodySmall,
+                lineHeight = 16.sp
+            )
         }
     }
 }

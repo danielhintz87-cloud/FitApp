@@ -284,6 +284,136 @@ class NutritionRepository(private val db: AppDatabase) {
         val recommendedKcal = generateAICalorieRecommendation()
         setDailyGoal(date, recommendedKcal)
     }
+    
+    /**
+     * Enhanced workout-aware calorie adjustment
+     * Dynamically adjusts daily calorie goal based on completed workouts
+     */
+    suspend fun adjustCaloriesForCompletedWorkout(
+        date: LocalDate,
+        workoutType: String,
+        durationMinutes: Int,
+        intensityLevel: String
+    ) {
+        val currentGoal = goalFlow(date).firstOrNull()?.targetKcal ?: 2000
+        val caloriesBurned = estimateWorkoutCaloriesBurned(workoutType, durationMinutes, intensityLevel)
+        
+        // Add 50% of burned calories to daily goal for proper fueling
+        val adjustedGoal = currentGoal + (caloriesBurned * 0.5).toInt()
+        
+        setDailyGoal(date, adjustedGoal)
+    }
+    
+    /**
+     * Generate pre-workout nutrition recommendations based on timing and workout type
+     */
+    suspend fun generatePreWorkoutNutrition(
+        workoutType: String,
+        minutesUntilWorkout: Int
+    ): String {
+        return when {
+            minutesUntilWorkout < 30 -> when (workoutType.lowercase()) {
+                "kraft", "strength" -> "Schnelle Kohlenhydrate: Banane oder 2-3 Datteln"
+                "ausdauer", "cardio" -> "Leichte Kohlenhydrate: 1 Scheibe Toast mit Honig"
+                "hiit" -> "Minimal: 1/2 Banane, viel Wasser"
+                else -> "Banane und etwas Wasser"
+            }
+            minutesUntilWorkout < 90 -> when (workoutType.lowercase()) {
+                "kraft", "strength" -> "Haferflocken mit Banane + Kaffee (optional)"
+                "ausdauer", "cardio" -> "Toast mit Honig + Beeren"
+                "hiit" -> "Haferflocken mit wenig Milch"
+                else -> "Leichte Kohlenhydrate + Protein"
+            }
+            else -> when (workoutType.lowercase()) {
+                "kraft", "strength" -> "Vollständige Mahlzeit: Haferflocken mit Protein + Früchte"
+                "ausdauer", "cardio" -> "Kohlenhydratreiche Mahlzeit mit mäßig Protein"
+                "hiit" -> "Ausgewogene Mahlzeit, nicht zu schwer"
+                else -> "Normale Mahlzeit, 2-3h vor Training"
+            }
+        }
+    }
+    
+    /**
+     * Generate post-workout nutrition recommendations
+     */
+    suspend fun generatePostWorkoutNutrition(
+        workoutType: String,
+        durationMinutes: Int,
+        intensityLevel: String
+    ): String {
+        val proteinNeeds = when (workoutType.lowercase()) {
+            "kraft", "strength" -> "25-30g Protein"
+            "ausdauer", "cardio" -> "15-20g Protein"
+            "hiit" -> "20-25g Protein"
+            else -> "20g Protein"
+        }
+        
+        val carbNeeds = when (intensityLevel.lowercase()) {
+            "hoch", "high" -> "40-50g Kohlenhydrate"
+            "mittel", "moderate" -> "30-40g Kohlenhydrate"
+            else -> "20-30g Kohlenhydrate"
+        }
+        
+        return when (workoutType.lowercase()) {
+            "kraft", "strength" -> "Post-Workout: $proteinNeeds + $carbNeeds\nEmpfehlung: Magerquark mit Früchten oder Protein-Smoothie"
+            "ausdauer", "cardio" -> "Post-Workout: $proteinNeeds + $carbNeeds\nEmpfehlung: Smoothie mit Banane und Proteinpulver"
+            "hiit" -> "Post-Workout: $proteinNeeds + $carbNeeds\nEmpfehlung: Hühnerbrust mit Reis oder Recovery-Shake"
+            else -> "Post-Workout: $proteinNeeds + $carbNeeds\nEmpfehlung: Ausgewogene Mahlzeit innerhalb 60 Min"
+        }
+    }
+    
+    /**
+     * Calculate hydration needs based on workout parameters
+     */
+    suspend fun calculateWorkoutHydration(
+        durationMinutes: Int,
+        intensityLevel: String,
+        environmentTemp: String = "normal"
+    ): String {
+        val baseFluid = (durationMinutes / 60f) * 500 // 500ml per hour base
+        
+        val intensityMultiplier = when (intensityLevel.lowercase()) {
+            "hoch", "high" -> 1.5f
+            "mittel", "moderate" -> 1.2f
+            else -> 1.0f
+        }
+        
+        val tempMultiplier = when (environmentTemp.lowercase()) {
+            "heiß", "hot" -> 1.3f
+            "warm" -> 1.1f
+            else -> 1.0f
+        }
+        
+        val totalFluid = (baseFluid * intensityMultiplier * tempMultiplier).toInt()
+        
+        return if (durationMinutes > 60) {
+            "Gesamt: ${totalFluid}ml\nVor Training: 250ml\nWährend Training: ${(totalFluid * 0.7).toInt()}ml (alle 15-20 Min)\nNach Training: ${(totalFluid * 0.3).toInt()}ml\nTyp: Elektrolytgetränk empfohlen"
+        } else {
+            "Gesamt: ${totalFluid}ml\nVor Training: 250ml\nWährend Training: ${(totalFluid * 0.6).toInt()}ml\nNach Training: ${(totalFluid * 0.4).toInt()}ml\nTyp: Wasser ausreichend"
+        }
+    }
+    
+    private fun estimateWorkoutCaloriesBurned(
+        workoutType: String,
+        durationMinutes: Int,
+        intensityLevel: String
+    ): Int {
+        val baseRate = when (workoutType.lowercase()) {
+            "kraft", "strength" -> 6 // calories per minute
+            "ausdauer", "cardio" -> 10
+            "hiit" -> 12
+            "funktionell", "functional" -> 8
+            else -> 7
+        }
+        
+        val intensityMultiplier = when (intensityLevel.lowercase()) {
+            "hoch", "high" -> 1.3f
+            "mittel", "moderate" -> 1.0f
+            else -> 0.7f
+        }
+        
+        return (baseRate * durationMinutes * intensityMultiplier).toInt()
+    }
 
     private fun parseMarkdownRecipes(markdown: String): List<UiRecipe> {
         val blocks = markdown.split("\n## ").mapIndexed { idx, block ->

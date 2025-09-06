@@ -373,6 +373,250 @@ class NutritionManager(
         
         return recommendations
     }
+    
+    /**
+     * Generate workout-specific nutrition recommendations
+     * Enhanced nutrition-training coupling feature
+     */
+    suspend fun generateWorkoutNutritionRecommendations(
+        workoutType: WorkoutType,
+        workoutDuration: Int,
+        workoutIntensity: WorkoutIntensity,
+        timeUntilWorkout: Int? = null
+    ): WorkoutNutritionRecommendation = withContext(Dispatchers.IO) {
+        try {
+            val preWorkoutMeal = generatePreWorkoutMeal(workoutType, workoutIntensity, timeUntilWorkout)
+            val postWorkoutMeal = generatePostWorkoutMeal(workoutType, workoutDuration, workoutIntensity)
+            val duringWorkoutHydration = calculateWorkoutHydration(workoutDuration, workoutIntensity)
+            val macroAdjustments = calculateWorkoutMacroAdjustments(workoutType, workoutDuration, workoutIntensity)
+            
+            WorkoutNutritionRecommendation(
+                preWorkoutMeal = preWorkoutMeal,
+                postWorkoutMeal = postWorkoutMeal,
+                hydrationNeeds = duringWorkoutHydration,
+                macroAdjustments = macroAdjustments,
+                workoutType = workoutType,
+                estimatedCaloriesBurned = estimateCaloriesBurned(workoutType, workoutDuration, workoutIntensity)
+            )
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.NUTRITION,
+                TAG,
+                "Failed to generate workout nutrition recommendations",
+                exception = e
+            )
+            WorkoutNutritionRecommendation.getDefault()
+        }
+    }
+    
+    private fun generatePreWorkoutMeal(
+        workoutType: WorkoutType, 
+        intensity: WorkoutIntensity,
+        timeUntilWorkout: Int?
+    ): MealRecommendation {
+        val timeGap = timeUntilWorkout ?: 60 // Default 1 hour
+        
+        return when {
+            timeGap < 30 -> MealRecommendation(
+                foods = listOf("Banane", "Datteln"),
+                calories = 100,
+                timing = "15-30 Min vor Training",
+                reasoning = "Schnell verfügbare Kohlenhydrate für sofortige Energie"
+            )
+            timeGap < 90 -> when (workoutType) {
+                WorkoutType.STRENGTH -> MealRecommendation(
+                    foods = listOf("Haferflocken mit Banane", "Kaffee"),
+                    calories = 200,
+                    timing = "60-90 Min vor Training",
+                    reasoning = "Kohlenhydrate für Kraft + Koffein für Fokus"
+                )
+                WorkoutType.CARDIO, WorkoutType.HIIT -> MealRecommendation(
+                    foods = listOf("Toast mit Honig", "Beeren"),
+                    calories = 150,
+                    timing = "60-90 Min vor Training",
+                    reasoning = "Leichte Kohlenhydrate für Ausdauerleistung"
+                )
+                WorkoutType.MIXED -> MealRecommendation(
+                    foods = listOf("Haferflocken mit Früchten"),
+                    calories = 175,
+                    timing = "60-90 Min vor Training",
+                    reasoning = "Ausgewogene Energie für gemischtes Training"
+                )
+            }
+            else -> MealRecommendation(
+                foods = listOf("Haferflocken mit Protein", "Früchte"),
+                calories = 300,
+                timing = "2-3 Std vor Training",
+                reasoning = "Vollständige Mahlzeit für optimale Energieversorgung"
+            )
+        }
+    }
+    
+    private fun generatePostWorkoutMeal(
+        workoutType: WorkoutType,
+        duration: Int,
+        intensity: WorkoutIntensity
+    ): MealRecommendation {
+        val proteinNeeds = when (workoutType) {
+            WorkoutType.STRENGTH -> 25
+            WorkoutType.CARDIO -> 15
+            WorkoutType.HIIT -> 20
+            WorkoutType.MIXED -> 20
+        }
+        
+        val carbNeeds = when (intensity) {
+            WorkoutIntensity.LOW -> 20
+            WorkoutIntensity.MODERATE -> 30
+            WorkoutIntensity.HIGH -> 40
+        }
+        
+        val totalCalories = (proteinNeeds * 4) + (carbNeeds * 4)
+        
+        return when (workoutType) {
+            WorkoutType.STRENGTH -> MealRecommendation(
+                foods = listOf("Magerquark mit Früchten", "Vollkornbrot"),
+                calories = totalCalories,
+                timing = "30-60 Min nach Training",
+                reasoning = "Protein für Muskelaufbau, Kohlenhydrate für Glykogen-Replenishment"
+            )
+            WorkoutType.CARDIO -> MealRecommendation(
+                foods = listOf("Smoothie mit Protein", "Banane"),
+                calories = totalCalories,
+                timing = "30-60 Min nach Training",
+                reasoning = "Schnelle Regeneration nach Ausdauertraining"
+            )
+            else -> MealRecommendation(
+                foods = listOf("Hühnerbrust mit Reis", "Gemüse"),
+                calories = totalCalories,
+                timing = "30-60 Min nach Training",
+                reasoning = "Ausgewogene Nährstoffe für komplette Regeneration"
+            )
+        }
+    }
+    
+    private fun calculateWorkoutHydration(duration: Int, intensity: WorkoutIntensity): HydrationRecommendation {
+        val baseFluid = 500 // ml per hour
+        val intensityMultiplier = when (intensity) {
+            WorkoutIntensity.LOW -> 1.0f
+            WorkoutIntensity.MODERATE -> 1.3f
+            WorkoutIntensity.HIGH -> 1.6f
+        }
+        
+        val totalFluid = ((duration / 60f) * baseFluid * intensityMultiplier).toInt()
+        
+        return HydrationRecommendation(
+            totalFluidNeeds = totalFluid,
+            timing = "250ml alle 15-20 Min während Training",
+            type = if (duration > 60) "Elektrolytgetränk" else "Wasser"
+        )
+    }
+    
+    private fun calculateWorkoutMacroAdjustments(
+        workoutType: WorkoutType,
+        duration: Int,
+        intensity: WorkoutIntensity
+    ): WorkoutMacroAdjustments {
+        val baseCaloriesBurned = estimateCaloriesBurned(workoutType, duration, intensity)
+        
+        return WorkoutMacroAdjustments(
+            additionalProtein = when (workoutType) {
+                WorkoutType.STRENGTH -> 15
+                WorkoutType.CARDIO -> 5
+                WorkoutType.HIIT -> 10
+                WorkoutType.MIXED -> 10
+            },
+            additionalCarbs = when (intensity) {
+                WorkoutIntensity.LOW -> 20
+                WorkoutIntensity.MODERATE -> 35
+                WorkoutIntensity.HIGH -> 50
+            },
+            additionalCalories = (baseCaloriesBurned * 0.2).toInt() // 20% of burned calories
+        )
+    }
+    
+    private fun estimateCaloriesBurned(
+        workoutType: WorkoutType,
+        duration: Int,
+        intensity: WorkoutIntensity
+    ): Int {
+        val baseRate = when (workoutType) {
+            WorkoutType.STRENGTH -> 6 // calories per minute
+            WorkoutType.CARDIO -> 8
+            WorkoutType.HIIT -> 12
+            WorkoutType.MIXED -> 7
+        }
+        
+        val intensityMultiplier = when (intensity) {
+            WorkoutIntensity.LOW -> 0.8f
+            WorkoutIntensity.MODERATE -> 1.0f
+            WorkoutIntensity.HIGH -> 1.3f
+        }
+        
+        return (baseRate * duration * intensityMultiplier).toInt()
+    }
+    
+    /**
+     * Calculate optimal meal timing around workout schedule
+     */
+    suspend fun calculateOptimalMealTiming(
+        workoutStartTime: Int, // Hour of day (24h format)
+        workoutDuration: Int,
+        totalDailyMeals: Int = 4
+    ): MealTimingRecommendation = withContext(Dispatchers.IO) {
+        try {
+            val workoutEndTime = workoutStartTime + (workoutDuration / 60f).toInt()
+            val preWorkoutMealTime = maxOf(6, workoutStartTime - 2) // At least 2h before, not before 6 AM
+            val postWorkoutMealTime = minOf(22, workoutEndTime + 1) // At most 1h after, not after 10 PM
+            
+            val otherMealTimes = distributeRemainingMeals(
+                totalDailyMeals - 2, // Excluding pre/post workout meals
+                preWorkoutMealTime,
+                postWorkoutMealTime
+            )
+            
+            val allMealTimes = (listOf(preWorkoutMealTime, postWorkoutMealTime) + otherMealTimes).sorted()
+            
+            MealTimingRecommendation(
+                recommendedTimes = allMealTimes,
+                preWorkoutMealTime = preWorkoutMealTime,
+                postWorkoutMealTime = postWorkoutMealTime,
+                reasoning = "Optimiert für Training um ${workoutStartTime}:00 Uhr"
+            )
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.NUTRITION,
+                TAG,
+                "Failed to calculate meal timing",
+                exception = e
+            )
+            MealTimingRecommendation.getDefault()
+        }
+    }
+    
+    private fun distributeRemainingMeals(
+        mealCount: Int,
+        preWorkoutTime: Int,
+        postWorkoutTime: Int
+    ): List<Int> {
+        if (mealCount <= 0) return emptyList()
+        
+        val morningMeals = mealCount / 2
+        val eveningMeals = mealCount - morningMeals
+        
+        val morningTimes = (0 until morningMeals).map { i ->
+            val startTime = 7 // 7 AM
+            val endTime = preWorkoutTime - 1
+            startTime + (i * (endTime - startTime) / maxOf(1, morningMeals - 1))
+        }
+        
+        val eveningTimes = (0 until eveningMeals).map { i ->
+            val startTime = postWorkoutTime + 2
+            val endTime = 21 // 9 PM
+            startTime + (i * (endTime - startTime) / maxOf(1, eveningMeals - 1))
+        }
+        
+        return morningTimes + eveningTimes
+    }
 }
 
 // Data classes for nutrition management
@@ -404,7 +648,16 @@ data class MealTimingRecommendation(
     val preWorkoutMealTime: Int?,
     val postWorkoutMealTime: Int,
     val reasoning: String
-)
+) {
+    companion object {
+        fun getDefault() = MealTimingRecommendation(
+            recommendedTimes = listOf(7, 12, 18),
+            preWorkoutMealTime = null,
+            postWorkoutMealTime = 19,
+            reasoning = "Standard Mahlzeitenverteilung"
+        )
+    }
+}
 
 data class CalorieBalanceResult(
     val targetCalories: Int,
@@ -446,6 +699,84 @@ enum class ActivityLevel(val multiplier: Float) {
     MODERATELY_ACTIVE(1.55f),
     VERY_ACTIVE(1.725f),
     EXTREMELY_ACTIVE(1.9f)
+}
+
+enum class WorkoutType {
+    STRENGTH,
+    CARDIO,
+    HIIT,
+    MIXED
+}
+
+enum class WorkoutIntensity {
+    LOW,
+    MODERATE,
+    HIGH
+}
+
+// Enhanced data classes for workout-nutrition coupling
+data class WorkoutNutritionRecommendation(
+    val preWorkoutMeal: MealRecommendation,
+    val postWorkoutMeal: MealRecommendation,
+    val hydrationNeeds: HydrationRecommendation,
+    val macroAdjustments: WorkoutMacroAdjustments,
+    val workoutType: WorkoutType,
+    val estimatedCaloriesBurned: Int
+) {
+    companion object {
+        fun getDefault() = WorkoutNutritionRecommendation(
+            preWorkoutMeal = MealRecommendation.getDefault(),
+            postWorkoutMeal = MealRecommendation.getDefault(),
+            hydrationNeeds = HydrationRecommendation.getDefault(),
+            macroAdjustments = WorkoutMacroAdjustments.getDefault(),
+            workoutType = WorkoutType.MIXED,
+            estimatedCaloriesBurned = 0
+        )
+    }
+}
+
+data class MealRecommendation(
+    val foods: List<String>,
+    val calories: Int,
+    val timing: String,
+    val reasoning: String
+) {
+    companion object {
+        fun getDefault() = MealRecommendation(
+            foods = listOf("Banane"),
+            calories = 100,
+            timing = "Vor Training",
+            reasoning = "Standard Empfehlung"
+        )
+    }
+}
+
+data class HydrationRecommendation(
+    val totalFluidNeeds: Int, // ml
+    val timing: String,
+    val type: String
+) {
+    companion object {
+        fun getDefault() = HydrationRecommendation(
+            totalFluidNeeds = 500,
+            timing = "Während Training",
+            type = "Wasser"
+        )
+    }
+}
+
+data class WorkoutMacroAdjustments(
+    val additionalProtein: Int, // grams
+    val additionalCarbs: Int, // grams
+    val additionalCalories: Int
+) {
+    companion object {
+        fun getDefault() = WorkoutMacroAdjustments(
+            additionalProtein = 0,
+            additionalCarbs = 0,
+            additionalCalories = 0
+        )
+    }
 }
 
 enum class NutritionGoal {
