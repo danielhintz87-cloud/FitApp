@@ -19,8 +19,8 @@ jobs:
       GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false -Dfile.encoding=UTF-8"
       MOVEMENT_ANALYSIS_MODEL_URL: ${{ secrets.MOVEMENT_ANALYSIS_MODEL_URL }}
       MOVEMENT_ANALYSIS_MODEL_SHA256: ${{ secrets.MOVEMENT_ANALYSIS_MODEL_SHA256 }}
-  MOVENET_VARIANT: lightning
-  MODEL_MOVENET_LIGHTNING_ONNX_SHA256: ${{ secrets.MODEL_MOVENET_LIGHTNING_ONNX_SHA256 }}
+      MOVENET_VARIANT: lightning
+      MODEL_MOVENET_LIGHTNING_ONNX_SHA256: ${{ secrets.MODEL_MOVENET_LIGHTNING_ONNX_SHA256 }}
 
     steps:
       - name: Force IPv4 (disable IPv6)

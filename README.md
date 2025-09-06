@@ -209,6 +209,33 @@ In GitHub Actions Secrets hinterlegen:
 
 Automatische Prüfung erfolgt im Code Quality Workflow (`Verify ML Models`).
 
+### ONNX Laufzeit (Optionales Backend)
+Die App unterstützt experimentell ein ONNX Runtime Backend für **MoveNet Lightning**.
+
+Aktivierung zur Laufzeit (z. B. für Instrumented Tests oder lokale Builds):
+```bash
+export USE_ONNX_MOVENET=true
+./gradlew assembleDebug
+```
+Der Code versucht ONNX zu laden, falls
+1. `USE_ONNX_MOVENET=true` gesetzt ist und
+2. `AdvancedMLModels.initialize(MOVENET_LIGHTNING)` aufgerufen wird.
+
+Fallback: Wenn ONNX Session nicht initialisiert werden kann, erfolgt automatischer Rückfall auf TFLite Interpreter (Log-Warnung, kein Crash).
+
+Hinweise:
+- Output-Shape-Unterstützung: `(1,1,17,3)` oder `(1,17,3)` (y,x,score)
+- Ressourcenfreigabe erfolgt in `cleanup()` (ONNX Session wird geschlossen, Env wird behalten)
+- Für reproduzierbare CI-Läufe wird die Variable in Instrumented Tests aktiviert.
+
+Mini-Beispiel (Lightning / ONNX Pfad forcieren):
+```kotlin
+val ml = AdvancedMLModels.getInstance(context)
+ml.initialize(AdvancedMLModels.PoseModelType.MOVENET_LIGHTNING)
+```
+
+Leistungsmetriken (Durchschnittszeiten, Speicher) werden über `getPerformanceMetrics()` zugänglich. ONNX und TFLite teilen denselben Auswertungsfluss nach der Roh-Inferenz.
+
 ## 🤝 Beitragen
 
 1. Fork das Repository
