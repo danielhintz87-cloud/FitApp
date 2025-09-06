@@ -1,7 +1,10 @@
 [versions]
 kotlin = "2.0.20"
 agp = "8.13.0"
-serialization = "1.9.0"
+# kotlinx-serialization 1.9.0 targets Kotlin 2.2, which is incompatible
+# with the project's Kotlin 2.0.20 setup. Downgrade to the latest
+# version built for Kotlin 2.0 to resolve metadata version conflicts.
+serialization = "1.7.3"
 
 # Versioning
 axion-release = "1.18.12"

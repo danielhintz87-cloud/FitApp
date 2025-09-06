@@ -16,7 +16,7 @@ This document summarizes the dependency version updates made to address Dependab
 
 | Dependency | Proposed Version | Reason for Not Updating |
 |------------|------------------|-------------------------|
-| `kotlinx-serialization-json` | 1.9.0 | Requires Kotlin 2.2.0, but project uses 2.0.20 |
+| `kotlinx-serialization-json` | 1.9.0 (reverted to 1.7.3) | Requires Kotlin 2.2.0, but project uses 2.0.20 |
 | `com.android.application` | 8.13.0 | Would require broader testing due to AGP changes |
 | `com.google.devtools.ksp` | 2.2.10-2.0.2 | Incompatible with current Kotlin version |
 
