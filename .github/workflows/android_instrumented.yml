@@ -60,6 +60,17 @@ jobs:
               assembleDebug \
               assembleAndroidTest \
               connectedDebugAndroidTest
+      - name: Collect benchmark artifact
+        if: success()
+        run: |
+          find . -name pose_backend_latency_ci.csv -maxdepth 6 -print -exec cp {} benchmarks_pose_backend_latency_ci.csv \; || true
+      - name: Upload benchmark latency CSV
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pose-backend-latency
+          path: benchmarks_pose_backend_latency_ci.csv
+          if-no-files-found: warn
       - name: Upload instrumented test reports
         if: always()
         uses: actions/upload-artifact@v4

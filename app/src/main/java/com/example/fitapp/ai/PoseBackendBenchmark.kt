@@ -15,6 +15,11 @@ import kotlinx.coroutines.withContext
 object PoseBackendBenchmark {
     data class Result(val variant: String, val backend: String, val avgMs: Double, val runs: Int)
 
+    fun toCsv(results: List<Result>): String = buildString {
+        appendLine("variant,backend,avg_ms,runs")
+        results.forEach { r -> appendLine("${r.variant},${r.backend},${"%.2f".format(r.avgMs)},${r.runs}") }
+    }
+
     suspend fun run(
         context: Context,
         variants: List<AdvancedMLModels.PoseModelType> = listOf(
@@ -28,10 +33,9 @@ object PoseBackendBenchmark {
         val results = mutableListOf<Result>()
         val testBitmap = makeTestBitmap(512,512)
         for (variant in variants) {
-            // Toggle ONNX via env var simulation (process-wide flag read at init)
+            // Force ONNX if requested and variant lightning
+            AdvancedMLModels.forceOnnxBackend(if (useOnnx && variant == AdvancedMLModels.PoseModelType.MOVENET_LIGHTNING) true else false)
             val ml = AdvancedMLModels.getInstance(context)
-            // NOTE: For switching backend between runs in same process an app restart might be needed;
-            // here we proceed sequentially (best effort) but real measurement should isolate processes.
             ml.initialize(variant)
             // Warmup
             repeat(warmup) { ml.analyzePoseFromFrame(testBitmap) }

@@ -63,6 +63,13 @@ class AdvancedMLModels private constructor(private val context: Context) {
                 INSTANCE ?: AdvancedMLModels(context.applicationContext).also { INSTANCE = it }
             }
         }
+
+        /**
+         * Programmatic override for ONNX backend (null = use env var) – mainly for tests/benchmarks.
+         */
+        fun forceOnnxBackend(enabled: Boolean?) {
+            INSTANCE?.overrideOnnxBackend = enabled
+        }
     }
 
     /**
@@ -82,7 +89,9 @@ class AdvancedMLModels private constructor(private val context: Context) {
         .add(NormalizeOp(0f, 255f))
         .build()
     // Optional ONNX Backend
-    private val useOnnxBackend: Boolean = System.getenv("USE_ONNX_MOVENET") == "true"
+    private val envOnnxBackend: Boolean = System.getenv("USE_ONNX_MOVENET") == "true"
+    @Volatile private var overrideOnnxBackend: Boolean? = null
+    private val useOnnxBackend: Boolean get() = overrideOnnxBackend ?: envOnnxBackend
     private var ortEnv: OrtEnvironment? = null
     private var ortSession: OrtSession? = null
     
