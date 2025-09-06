@@ -127,6 +127,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.tensorflow.lite.metadata)
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
