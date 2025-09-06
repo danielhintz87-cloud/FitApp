@@ -15,7 +15,7 @@ Dieses Verzeichnis enthält die Pose-Modelle (TFLite) und – optional – konve
 - `models/tflite/movenet_thunder.tflite`
 - `models/tflite/blazepose.tflite`
   - `models/tflite/movement_analysis_model.tflite` (Bewegungsanalysemodell, trainiert auf UCI-HAR)
-- ONNX (optional, via `scripts/convert_to_onnx.py`):
+- ONNX (optional, via `scripts/convert_to_onnx.py` oder CI-Workflow `onnx-convert.yml`):
   - `models/onnx/movenet_thunder.onnx`
   - `models/onnx/blazepose.onnx`
 
@@ -24,3 +24,6 @@ Bitte die jeweiligen Google-/MediaPipe-Lizenzen beachten.
 
 ## Versionierung
 Große Binärdateien nicht direkt committen; ggf. Git LFS verwenden (siehe `.gitattributes`).
+
+## Automatisierte Konvertierung
+Der Workflow `.github/workflows/onnx-convert.yml` konvertiert TFLite → ONNX bei Änderungen und committet aktualisierte Dateien (falls Unterschiede). Manuell auslösbar über "Run workflow".
