@@ -118,6 +118,18 @@ PERPLEXITY_API_KEY=dein_perplexity_schlüssel
 Das Coverage-Badge wird automatisch über den Workflow `update-badges.yml` aktualisiert. Die Rohdaten liegen unter `badges/coverage.json`.
 
 ## 🤖 ML Modelle
+### Versionierte Modell-Dateien & Hashes
+Aktuell im Repository (unter `app/src/main/assets/models/`):
+
+| Datei (Asset-Pfad) | Zweck | SHA-256 |
+|--------------------|-------|---------|
+| `tflite/movenet_thunder.tflite` | Pose Estimation (Hauptmodell Thunder) | 41641538679ec79b07d4101e591dda47d098c09af29607674b2a40b8a3798dd3 |
+| `tflite/blazepose.tflite` | Alternative / Landmark (BlazePose) | 5134a3aad27a58b93da0088d431f366da362b44e3ccfbe3462b3827a839011b1 |
+| `tflite/movement_analysis_model.tflite` | Repurposed Lightning für Bewegungsanalyse / Heuristiken | 0fac2226112d0371903ca86e3853cec24ef603a0b2f96f589b180f0ebdd135ab |
+| `onnx/movenet_lightning.onnx` | ONNX Backend (experimentell) | 435bd2411997e60030d4731bd3f33a3e21fc9d1f9aac39245cb31f301be3b14a |
+
+Hinweis: Thunder ONNX Variante kann zusätzlich generiert werden (siehe unten). Wenn neue Modelle hinzugefügt oder aktualisiert werden, bitte Integritäts-Task `:app:generateModelIntegrity` ausführen und Tabelle aktualisieren.
+
 ### Integritätsprüfung (SHA-256)
 ONNX Hashes (optional) analog – aktuell gepflegt (Lightning generiert, Thunder optional):
 ```
