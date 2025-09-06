@@ -3,6 +3,7 @@ package com.example.fitapp.services
 import android.content.Context
 import androidx.work.*
 import com.example.fitapp.data.db.AppDatabase
+import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.services.SmartNotificationManager
 import java.time.LocalDate
 import java.util.concurrent.TimeUnit
@@ -16,13 +17,10 @@ class WaterReminderWorker(
         return try {
             val database = AppDatabase.get(applicationContext)
             
-            // Get today's water intake - simplified approach
-            val today = LocalDate.now()
-            // TODO: Implement proper water tracking in nutrition repository
-            // For now, use a simple calculation
-            val waterIntake = 800 // Placeholder - would need actual tracking
-            
-            val targetIntake = 2000 // 2L target
+            val today = LocalDate.now().toString()
+            val repo = NutritionRepository(database)
+            val waterIntake = repo.getTotalWaterForDate(today)
+            val targetIntake = 2000 // Default Ziel; könnte künftig aus Zielen stammen
             
             SmartNotificationManager.showWaterReminder(
                 applicationContext,

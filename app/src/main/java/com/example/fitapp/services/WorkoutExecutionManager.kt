@@ -25,6 +25,8 @@ class WorkoutExecutionManager(
     }
 
     private val scope = CoroutineScope(Dispatchers.Main)
+    private var currentSetStartTime: Long? = null
+    private var lastSetEndTime: Long? = null
     
     // Flow states for reactive UI
     private val _workoutFlow = MutableStateFlow<WorkoutExecutionFlow?>(null)
@@ -97,7 +99,7 @@ class WorkoutExecutionManager(
         val session = WorkoutSessionEntity(
             id = sessionId,
             planId = planId,
-            userId = "current_user", // TODO: Get from user context
+            userId = getCurrentUserId(),
             startTime = startTime
         )
         
@@ -204,6 +206,9 @@ class WorkoutExecutionManager(
         
         val updatedStep = currentStepValue.copy(sets = updatedSets)
         _currentStep.value = updatedStep
+    val now = System.currentTimeMillis() / 1000
+    val actualSetDuration = currentSetStartTime?.let { now - it } ?: 60L
+    lastSetEndTime = now
         
         // Save performance to database
         val performance = WorkoutPerformanceEntity(
@@ -215,10 +220,10 @@ class WorkoutExecutionManager(
             weight = weight.toFloat(),
             volume = weight.toFloat() * reps,
             restTime = currentStepValue.restTime.toLong(),
-            actualRestTime = currentStepValue.restTime.toLong(), // TODO: Track actual
+            actualRestTime = calculateActualRest(),
             formQuality = formQuality ?: 1.0f,
             perceivedExertion = rpe,
-            duration = 60, // TODO: Track actual duration
+            duration = actualSetDuration.toInt(),
             notes = notes
         )
         
@@ -240,6 +245,9 @@ class WorkoutExecutionManager(
     suspend fun startRestTimer(duration: Int) {
         val currentStepValue = _currentStep.value ?: return
         val currentSet = currentStepValue.sets.getOrNull(currentStepValue.currentSet)
+
+    // Mark set end and compute rest start
+    lastSetEndTime = System.currentTimeMillis() / 1000
         
         // Calculate adaptive rest based on performance
         val adaptiveRest = calculateAdaptiveRest(
@@ -254,6 +262,14 @@ class WorkoutExecutionManager(
             perceivedExertion = currentSet?.rpe
         )
     }
+
+    private fun calculateActualRest(): Long {
+        val now = System.currentTimeMillis() / 1000
+        val lastEnd = lastSetEndTime ?: return 0
+        return now - lastEnd
+    }
+
+    private fun getCurrentUserId(): String = "current_user" // Platzhalter für UserSessionProvider
 
     /**
      * Skip current rest period

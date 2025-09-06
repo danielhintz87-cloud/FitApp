@@ -285,7 +285,7 @@ fun MainScaffold() {
                                 text = { Text("Help & Support") },
                                 onClick = {
                                     showOverflowMenu = false
-                                    // TODO: Add help/support screen
+                                    nav.navigate("help")
                                 },
                                 leadingIcon = {
                                     Icon(Icons.AutoMirrored.Filled.Help, contentDescription = null)
@@ -295,7 +295,7 @@ fun MainScaffold() {
                                 text = { Text("About") },
                                 onClick = {
                                     showOverflowMenu = false
-                                    // TODO: Add about screen
+                                    nav.navigate("about")
                                 },
                                 leadingIcon = {
                                     Icon(Icons.Filled.Info, contentDescription = null)
@@ -351,6 +351,8 @@ fun MainScaffold() {
                 composable("health_connect_settings") {
                     HealthConnectSettingsScreen(navController = nav)
                 }
+                composable("help") { com.example.fitapp.ui.settings.HelpScreen(onBack = { nav.popBackStack() }) }
+                composable("about") { com.example.fitapp.ui.settings.AboutScreen(onBack = { nav.popBackStack() }) }
                 composable("cloud_sync_settings") {
                     CloudSyncSettingsScreen(
                         onNavigateBack = { nav.popBackStack() }

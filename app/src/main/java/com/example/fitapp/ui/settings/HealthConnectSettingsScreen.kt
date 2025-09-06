@@ -15,6 +15,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.fitapp.network.healthconnect.HealthConnectManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Context
+import com.example.fitapp.data.prefs.UserPreferencesFactory
 import com.example.fitapp.services.HealthConnectSyncWorker
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -38,8 +42,15 @@ fun HealthConnectSettingsScreen(
     LaunchedEffect(Unit) {
         isAvailable = healthConnectManager.isAvailable()
         hasPermissions = healthConnectManager.hasPermissions()
-        // Load sync preferences
-        lastSyncTime = "Noch nie" // TODO: Load from preferences
+        // Load last sync from preferences (DataStore fallback)
+        lastSyncTime = loadLastSync(LocalContext.current)
+    }
+
+    // Permission launcher
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        hasPermissions = results.values.all { it }
     }
     
     Scaffold(
@@ -68,8 +79,12 @@ fun HealthConnectSettingsScreen(
                 hasPermissions = hasPermissions,
                 onRequestPermissions = {
                     scope.launch {
-                        // TODO: Request permissions
-                        hasPermissions = true
+                        val needed = healthConnectManager.getMissingPermissions()
+                        if (needed.isNotEmpty()) {
+                            permissionLauncher.launch(needed.toTypedArray())
+                        } else {
+                            hasPermissions = true
+                        }
                     }
                 }
             )
@@ -93,7 +108,9 @@ fun HealthConnectSettingsScreen(
                             syncStatus = "Synchronisiere..."
                             try {
                                 HealthConnectSyncWorker.triggerImmediateSync(context)
-                                lastSyncTime = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
+                                val syncTime = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
+                                lastSyncTime = syncTime
+                                saveLastSync(LocalContext.current, syncTime)
                                 syncStatus = "Erfolgreich synchronisiert"
                             } catch (e: Exception) {
                                 syncStatus = "Synchronisation fehlgeschlagen"
@@ -113,6 +130,17 @@ fun HealthConnectSettingsScreen(
             HelpInfoCard()
         }
     }
+}
+
+private suspend fun saveLastSync(context: Context, value: String) {
+    // Kurzer einfacher SP Fallback bis eigener DataStore Key modelliert ist
+    val prefs = context.getSharedPreferences("health_connect_prefs", Context.MODE_PRIVATE)
+    prefs.edit().putString("last_sync", value).apply()
+}
+
+private fun loadLastSync(context: Context): String {
+    val prefs = context.getSharedPreferences("health_connect_prefs", Context.MODE_PRIVATE)
+    return prefs.getString("last_sync", "Noch nie") ?: "Noch nie"
 }
 
 @Composable

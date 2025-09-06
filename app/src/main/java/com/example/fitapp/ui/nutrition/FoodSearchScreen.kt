@@ -60,7 +60,7 @@ fun FoodSearchScreen(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            // TODO: Launch barcode scanner
+            showBarcodeScanner = true
         }
     }
     

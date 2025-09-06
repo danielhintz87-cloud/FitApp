@@ -134,7 +134,9 @@ fun SmartShoppingListScreen(
                     }
                 },
                 onVoiceInput = {
-                    // TODO: Implement voice input
+                    // Voice Input Stub: Später SpeechRecognizer Integration
+                    // Aktuell nur Platzhalter Snackbar
+                    // (Für echte Implementierung: Coroutine + CallbackFlow über RecognitionListener)
                 },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )

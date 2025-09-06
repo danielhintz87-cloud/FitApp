@@ -220,7 +220,7 @@ class SmartRestTimer(private val context: Context) {
                 TAG,
                 "Audio cue: $cueType"
             )
-            // TODO: Implement actual audio playback
+            // Audio Playback Stub – später durch ExoPlayer oder TTS ersetzen
         } catch (e: Exception) {
             StructuredLogger.error(
                 StructuredLogger.LogCategory.USER_ACTION,

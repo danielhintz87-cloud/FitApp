@@ -164,6 +164,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
+    // DataStore (Preferences + Core) – Migration Ziel statt SharedPreferences
+    implementation(libs.datastore.preferences)
+    implementation(libs.datastore.core)
+
     // Room (AI-Logs)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
