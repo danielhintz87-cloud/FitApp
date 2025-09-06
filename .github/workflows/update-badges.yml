@@ -14,12 +14,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/gradle-build-action@v3
+
+      - name: Run unit tests (coverage)
+        run: ./gradlew jacocoTestReport --no-daemon --stacktrace
+
+      - name: Generate coverage badge
+        run: |
+          chmod +x scripts/generate_coverage_badge.sh
+          ./scripts/generate_coverage_badge.sh
 
       # dein Script / Tool zum Badge-Update hier einfügen
       - name: Update README badges
         run: |
           echo "Update badges..."
           # ./scripts/update_badges.sh
+          if [ -f badges/coverage.json ]; then
+            jq '.' badges/coverage.json || true
+          fi
 
       - name: Commit changes
         run: |
