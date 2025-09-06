@@ -1,6 +1,7 @@
 import java.util.Properties
 import java.security.MessageDigest
 import org.gradle.api.tasks.Copy
+import java.time.Instant
 
 plugins {
     alias(libs.plugins.android.application)
@@ -508,7 +509,7 @@ tasks.register("generateModelIntegrity") {
         fun hash(f: java.io.File): String = MessageDigest.getInstance("SHA-256").digest(f.readBytes()).joinToString("") { b -> "%02x".format(b) }
         val lines = mutableListOf<String>()
         lines += "# Model Integrity Report"
-        lines += "Generiert: ${java.time.Instant.now()}"
+    lines += "Generiert: ${Instant.now()}"
         lines += ""
         lines += "## TFLite"
         tfliteDir.listFiles { f -> f.extension.lowercase() == "tflite" }?.sortedBy { it.name }?.forEach { f ->
