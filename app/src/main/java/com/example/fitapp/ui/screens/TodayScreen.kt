@@ -177,6 +177,18 @@ fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = n
                         }
                     }
                     Spacer(Modifier.height(8.dp))
+                    // HIIT Builder button row
+                    OutlinedButton(
+                        onClick = { 
+                            navController?.navigate("hiit_builder")
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Filled.Speed, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text("HIIT Builder")
+                    }
+                    Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
                             onClick = {

@@ -80,6 +80,8 @@ object NavigationRoutes {
     const val PROFILE_SETTINGS = "profile/settings"
     const val WEIGHT_TRACKING = "profile/weight"
     const val TODAY_WORKOUT = "profile/workout"
+    const val HIIT_BUILDER = "hiit_builder"
+    const val HIIT_EXECUTION = "hiit_execution"
     
     // Navigation helper functions
     fun isMainDestination(route: String?): Boolean {

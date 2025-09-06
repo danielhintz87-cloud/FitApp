@@ -44,6 +44,8 @@ import com.example.fitapp.ui.screens.WeightTrackingScreen
 import com.example.fitapp.ui.screens.BMICalculatorScreen
 import com.example.fitapp.ui.screens.WeightLossProgramScreen
 import com.example.fitapp.ui.screens.AIPersonalTrainerScreen
+import com.example.fitapp.ui.screens.HIITBuilderScreen
+import com.example.fitapp.ui.screens.HIITExecutionScreen
 import com.example.fitapp.ui.screens.SocialChallengesScreen
 import com.example.fitapp.ui.settings.ApiKeysScreen
 import com.example.fitapp.ui.settings.NotificationSettingsScreen
@@ -51,6 +53,7 @@ import com.example.fitapp.ui.settings.HealthConnectSettingsScreen
 import com.example.fitapp.ui.settings.CloudSyncSettingsScreen
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
+import com.example.fitapp.domain.entities.HIITWorkout
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -465,6 +468,59 @@ fun MainScaffold() {
                         minutes = minutes,
                         onBackPressed = { nav.popBackStack() }
                     )
+                }
+                composable("hiit_builder") {
+                    HIITBuilderScreen(
+                        onBackPressed = { nav.popBackStack() },
+                        onWorkoutCreated = { workout ->
+                            // Store workout temporarily for execution
+                            // For now, navigate directly to execution
+                            nav.navigate("hiit_execution")
+                        }
+                    )
+                }
+                composable("hiit_execution") {
+                    // For demo purposes, create a sample workout
+                    // In a real app, this would get the workout from state/database
+                    val workoutManager = remember { com.example.fitapp.services.WorkoutManager(ctx) }
+                    var sampleWorkout by remember { mutableStateOf<HIITWorkout?>(null) }
+                    
+                    LaunchedEffect(Unit) {
+                        sampleWorkout = workoutManager.createDefaultHIITWorkouts().firstOrNull()
+                    }
+                    
+                    sampleWorkout?.let { workout ->
+                        HIITExecutionScreen(
+                            workout = workout,
+                            onBackPressed = { nav.popBackStack() },
+                            onWorkoutCompleted = {
+                                scope.launch {
+                                    try {
+                                        val today = LocalDate.now()
+                                        val dateIso = today.toString()
+                                        val repo = NutritionRepository(AppDatabase.get(ctx))
+                                        
+                                        // Mark today's workout as completed
+                                        repo.setWorkoutStatus(
+                                            dateIso = dateIso,
+                                            status = "completed",
+                                            completedAt = System.currentTimeMillis() / 1000
+                                        )
+                                        
+                                        // Trigger workout streak tracking
+                                        val streakManager = com.example.fitapp.services.PersonalStreakManager(
+                                            ctx, 
+                                            com.example.fitapp.data.repo.PersonalMotivationRepository(AppDatabase.get(ctx))
+                                        )
+                                        streakManager.trackWorkoutCompletion(today)
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("MainScaffold", "Error saving HIIT completion", e)
+                                    }
+                                }
+                                nav.popBackStack()
+                            }
+                        )
+                    }
                 }
                 composable("weight_tracking") {
                     WeightTrackingScreen(
