@@ -13,8 +13,16 @@ android {
         applicationId = "com.example.fitapp.wear"
         minSdk = 26  // Wear OS 2.0 minimum
         targetSdk = 34
-        versionCode = 8
-        versionName = "1.8"
+        
+        // Modern versioning: automatically derived from Git tags (same as main app)
+        val projectVersion = rootProject.version.toString()
+        val versionParts = projectVersion.removePrefix("v").split("-")[0].split(".")
+        val major = versionParts.getOrElse(0) { "1" }.toIntOrNull() ?: 1
+        val minor = versionParts.getOrElse(1) { "8" }.toIntOrNull() ?: 8  
+        val patch = versionParts.getOrElse(2) { "0" }.toIntOrNull() ?: 0
+        
+        versionCode = major * 10000 + minor * 100 + patch
+        versionName = projectVersion
     }
 
     buildTypes {

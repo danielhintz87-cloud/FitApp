@@ -223,7 +223,7 @@ class WorkoutExecutionManager(
             actualRestTime = calculateActualRest(),
             formQuality = formQuality ?: 1.0f,
             perceivedExertion = rpe,
-            duration = actualSetDuration.toInt(),
+            duration = actualSetDuration,
             notes = notes
         )
         

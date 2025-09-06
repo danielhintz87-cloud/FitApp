@@ -43,7 +43,7 @@ fun HealthConnectSettingsScreen(
         isAvailable = healthConnectManager.isAvailable()
         hasPermissions = healthConnectManager.hasPermissions()
         // Load last sync from preferences (DataStore fallback)
-        lastSyncTime = loadLastSync(LocalContext.current)
+        lastSyncTime = loadLastSync(context)
     }
 
     // Permission launcher
@@ -79,11 +79,15 @@ fun HealthConnectSettingsScreen(
                 hasPermissions = hasPermissions,
                 onRequestPermissions = {
                     scope.launch {
-                        val needed = healthConnectManager.getMissingPermissions()
-                        if (needed.isNotEmpty()) {
-                            permissionLauncher.launch(needed.toTypedArray())
-                        } else {
-                            hasPermissions = true
+                        // Use the permission controller directly 
+                        val permissionController = healthConnectManager.getPermissionController()
+                        if (permissionController != null) {
+                            // Request all required permissions
+                            permissionLauncher.launch(
+                                com.example.fitapp.network.healthconnect.HealthConnectManager.REQUIRED_PERMISSIONS
+                                    .map { it.toString() }
+                                    .toTypedArray()
+                            )
                         }
                     }
                 }
@@ -110,7 +114,7 @@ fun HealthConnectSettingsScreen(
                                 HealthConnectSyncWorker.triggerImmediateSync(context)
                                 val syncTime = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
                                 lastSyncTime = syncTime
-                                saveLastSync(LocalContext.current, syncTime)
+                                saveLastSync(context, syncTime)
                                 syncStatus = "Erfolgreich synchronisiert"
                             } catch (e: Exception) {
                                 syncStatus = "Synchronisation fehlgeschlagen"

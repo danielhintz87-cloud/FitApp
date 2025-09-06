@@ -305,6 +305,45 @@ Dieses Projekt ist unter der MIT-Lizenz lizenziert.
 
 Die App wird automatisch durch GitHub Actions gebaut und getestet. Release-Builds werden bei Git-Tags automatisch erstellt.
 
+### 🏷️ Versionierung
+
+Das Projekt verwendet **moderne, automatisierte Versionierung** basierend auf Git-Tags und [Semantic Versioning](https://semver.org/lang/de/).
+
+#### Versionsformat
+- **Format**: `v<MAJOR>.<MINOR>.<PATCH>` (z.B. `v1.8.0`, `v1.9.0`, `v2.0.0`)
+- **MAJOR**: Inkompatible API-Änderungen
+- **MINOR**: Neue Features (rückwärts kompatibel)  
+- **PATCH**: Bugfixes (rückwärts kompatibel)
+
+#### Version-Utilities
+```bash
+# Aktuelle Versionsinformationen anzeigen
+./version.sh info
+
+# Neues Release erstellen
+./version.sh release patch   # 1.8.0 → 1.8.1
+./version.sh release minor   # 1.8.0 → 1.9.0  
+./version.sh release major   # 1.8.0 → 2.0.0
+
+# Version aus Gradle anzeigen
+./gradlew currentVersion
+```
+
+#### Automatische Versionierung
+- **versionCode** wird automatisch aus `MAJOR * 10000 + MINOR * 100 + PATCH` generiert
+- **versionName** entspricht dem Git-Tag (z.B. `v1.8.0`)
+- Builds zwischen Tags erhalten Commit-Hash: `1.8.0-ac201d4`
+- Konsistente Versionierung zwischen App und Wear-Modulen
+
+#### Release-Prozess
+1. Changes in Feature-Branch entwickeln
+2. Pull Request erstellen und mergen
+3. `./version.sh release <type>` ausführen
+4. Tag mit `git push --tags` veröffentlichen
+5. GitHub Actions erstellt automatisch Release-Build
+
+**Siehe [CHANGELOG.md](CHANGELOG.md) für detaillierte Versionshistorie.**
+
 ---
 
 **Entwickelt mit ❤️ für Fitness-Enthusiasten**

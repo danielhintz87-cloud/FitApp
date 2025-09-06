@@ -150,6 +150,9 @@ private fun ImageProxy.toBitmap(): Bitmap? {
     yuvImage.compressToJpeg(Rect(0, 0, width, height), 75, out)
     val jpeg = out.toByteArray()
     val bitmap = android.graphics.BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size)
+    
+    // Use the image rotation from ImageProxy
+    val rotationDegrees = imageInfo.rotationDegrees
     if (rotationDegrees != 0) {
         val matrix = android.graphics.Matrix().apply { postRotate(rotationDegrees.toFloat()) }
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
