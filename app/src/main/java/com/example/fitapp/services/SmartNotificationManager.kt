@@ -24,6 +24,7 @@ object SmartNotificationManager {
     private const val CHANNEL_STREAKS = "streaks"
     private const val CHANNEL_MILESTONES = "milestones"
     private const val CHANNEL_DAILY_MOTIVATION = "daily_motivation"
+    private const val CHANNEL_DIGITAL_COACH = "digital_coach"
     private const val CHANNEL_WORKOUT_REMINDERS = "workout_reminders"
     private const val CHANNEL_NUTRITION_REMINDERS = "nutrition_reminders"
     private const val CHANNEL_WATER_REMINDERS = "water_reminders"
@@ -36,6 +37,7 @@ object SmartNotificationManager {
     private const val NOTIFICATION_ID_STREAK_WARNING = 2000
     private const val NOTIFICATION_ID_STREAK_MILESTONE = 3000
     private const val NOTIFICATION_ID_DAILY_MOTIVATION = 4000
+    private const val NOTIFICATION_ID_DIGITAL_COACH = 4500
     private const val NOTIFICATION_ID_WORKOUT_REMINDER = 5000
     private const val NOTIFICATION_ID_MEAL_REMINDER = 6000
     private const val NOTIFICATION_ID_WATER_REMINDER = 7000
@@ -91,6 +93,18 @@ object SmartNotificationManager {
             ).apply {
                 description = "Tägliche Motivationsnachrichten"
                 setShowBadge(false)
+            }
+            
+            // Digital coach channel
+            val digitalCoachChannel = NotificationChannel(
+                CHANNEL_DIGITAL_COACH,
+                "Digitaler Coach",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Proaktive Coaching-Tipps und personalisierte Empfehlungen"
+                setShowBadge(true)
+                enableLights(true)
+                lightColor = android.graphics.Color.BLUE
             }
             
             // Workout reminders channel
@@ -163,6 +177,7 @@ object SmartNotificationManager {
                 streakChannel,
                 milestoneChannel,
                 motivationChannel,
+                digitalCoachChannel,
                 workoutChannel,
                 nutritionChannel,
                 waterChannel,
@@ -708,6 +723,75 @@ object SmartNotificationManager {
             NotificationManagerCompat.from(context).notify(
                 NOTIFICATION_ID_CHALLENGE_UPDATE + challengeTitle.hashCode(),
                 notification
+            )
+        } catch (e: SecurityException) {
+            // Handle missing notification permission
+        }
+    }
+    
+    /**
+     * Show digital coach notification with personalized content
+     */
+    fun showDigitalCoachNotification(
+        context: Context, 
+        coachingMessage: com.example.fitapp.services.CoachingMessage
+    ) {
+        if (!hasNotificationPermission(context)) return
+        
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("navigate_to", "today")
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            NOTIFICATION_ID_DIGITAL_COACH + coachingMessage.id.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        val priorityLevel = when (coachingMessage.priority) {
+            com.example.fitapp.services.CoachingPriority.HIGH -> NotificationCompat.PRIORITY_HIGH
+            com.example.fitapp.services.CoachingPriority.MEDIUM -> NotificationCompat.PRIORITY_DEFAULT
+            com.example.fitapp.services.CoachingPriority.LOW -> NotificationCompat.PRIORITY_LOW
+        }
+        
+        val icon = when (coachingMessage.type) {
+            com.example.fitapp.services.CoachingMessageType.POST_WORKOUT -> "🏆"
+            com.example.fitapp.services.CoachingMessageType.WORKOUT_REMINDER -> "💪"
+            com.example.fitapp.services.CoachingMessageType.GOAL_PROGRESS -> "🎯"
+            com.example.fitapp.services.CoachingMessageType.STREAK_MOTIVATION -> "🔥"
+            com.example.fitapp.services.CoachingMessageType.NUTRITION_TIP -> "🥗"
+            com.example.fitapp.services.CoachingMessageType.RECOVERY_REMINDER -> "😴"
+            else -> "🧠"
+        }
+        
+        val notification = NotificationCompat.Builder(context, CHANNEL_DIGITAL_COACH)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("$icon ${coachingMessage.title}")
+            .setContentText(coachingMessage.content)
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText(coachingMessage.content))
+            .setPriority(priorityLevel)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            
+        // Add action buttons if available
+        if (coachingMessage.actionButtons.isNotEmpty()) {
+            val firstAction = coachingMessage.actionButtons.first()
+            notification.addAction(
+                0,
+                firstAction,
+                pendingIntent
+            )
+        }
+        
+        val finalNotification = notification.build()
+        
+        try {
+            NotificationManagerCompat.from(context).notify(
+                NOTIFICATION_ID_DIGITAL_COACH + coachingMessage.id.hashCode(),
+                finalNotification
             )
         } catch (e: SecurityException) {
             // Handle missing notification permission
