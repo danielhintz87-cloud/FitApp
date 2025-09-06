@@ -38,16 +38,37 @@ fi
 
 echo "==> movement_analysis_model.tflite bereits vorhanden – kein Download nötig"
 
-# Bewegungsauswertungsmodell (Optionaler Download – Beispielquelle mit Checksum)
+# Bewegungsauswertungsmodell (konfigurierbarer Download)
 ANALYSIS_MODEL="$TFLITE_DIR/movement_analysis_model.tflite"
 if [ ! -s "$ANALYSIS_MODEL" ] || grep -q "placeholder" "$ANALYSIS_MODEL" 2>/dev/null; then
   echo "==> Lade Movement Analysis Modell..."
-  # Beispiel-Download-URL (Platzhalter). Bitte echte Quelle hinterlegen.
-  ANALYSIS_URL="https://raw.githubusercontent.com/danielhintz87-cloud/model-hosting/main/movement_analysis_model.tflite"
-  if curl -L --fail "$ANALYSIS_URL" -o "$ANALYSIS_MODEL" 2>/dev/null; then
-    echo "Movement Analysis Modell heruntergeladen"
+  # Priorität: Umgebungsvariable > local.properties > Fallback (Fehler)
+  ANALYSIS_URL="${MOVEMENT_ANALYSIS_MODEL_URL:-}"
+  if [ -z "$ANALYSIS_URL" ] && [ -f "$ROOT_DIR/local.properties" ]; then
+    # Versuche aus local.properties zu lesen
+    PROP_URL=$(grep '^MOVEMENT_ANALYSIS_MODEL_URL=' "$ROOT_DIR/local.properties" | cut -d'=' -f2- || true)
+    ANALYSIS_URL="$PROP_URL"
+  fi
+  if [ -z "$ANALYSIS_URL" ]; then
+    echo "WARNUNG: Keine URL für Movement Analysis Modell gesetzt (MOVEMENT_ANALYSIS_MODEL_URL). Überspringe Download."
   else
-    echo "Warnung: Konnte Movement Analysis Modell nicht laden – vorhandene Datei bleibt"
+    echo "Download von: $ANALYSIS_URL"
+    if curl -L --fail "$ANALYSIS_URL" -o "$ANALYSIS_MODEL" 2>/dev/null; then
+      echo "Movement Analysis Modell heruntergeladen"
+      # Optional: SHA256 Validierung falls MOVEMENT_ANALYSIS_MODEL_SHA256 gesetzt
+      if [ -n "${MOVEMENT_ANALYSIS_MODEL_SHA256:-}" ]; then
+        echo "Prüfe SHA256 Hash..."
+        FILE_HASH=$(sha256sum "$ANALYSIS_MODEL" | awk '{print $1}')
+        if [ "$FILE_HASH" != "$MOVEMENT_ANALYSIS_MODEL_SHA256" ]; then
+          echo "FEHLER: SHA256 stimmt nicht überein (erwartet $MOVEMENT_ANALYSIS_MODEL_SHA256, erhalten $FILE_HASH)"
+          exit 1
+        else
+          echo "SHA256 OK"
+        fi
+      fi
+    else
+      echo "Warnung: Konnte Movement Analysis Modell nicht laden – vorhandene Datei bleibt"
+    fi
   fi
 fi
 
