@@ -15,7 +15,7 @@ import kotlin.math.*
  * Extends existing AI infrastructure with form checking, plateau detection,
  * injury prevention, and predictive analytics. Now enhanced with ML models.
  */
-class AdvancedAICoach(private val context: Context) {
+class AdvancedAICoach(private val context: Context, private val poseFrameProvider: PoseFrameProvider? = null) {
     
     companion object {
         private const val TAG = "AdvancedAICoach"
@@ -326,8 +326,11 @@ class AdvancedAICoach(private val context: Context) {
                 return CoachingFeedback.basic(exerciseType, currentRep)
             }
             
+            val frameProvider = poseFrameProvider ?: DefaultNoCameraFrameProvider
+            val bitmap = frameProvider.currentFrame() ?: return CoachingFeedback.basic(exerciseType, currentRep)
+            val pose = advancedMLModels.analyzePoseFromFrame(bitmap)
             val formFeedback = advancedMLModels.getRealtimeFormFeedback(
-                advancedMLModels.analyzePoseFromFrame(createDummyBitmap()), // Would use actual camera frame
+                pose,
                 exerciseType,
                 determineRepPhase(currentMovementData)
             )
@@ -540,10 +543,7 @@ class AdvancedAICoach(private val context: Context) {
         return recommendations
     }
     
-    private fun createDummyBitmap(): android.graphics.Bitmap {
-        // Create a small dummy bitmap for simulation
-        return android.graphics.Bitmap.createBitmap(100, 100, android.graphics.Bitmap.Config.RGB_565)
-    }
+    // Removed dummy bitmap; now using injected PoseFrameProvider
     
     /**
      * Load management for optimal recovery

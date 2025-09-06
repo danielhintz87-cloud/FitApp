@@ -39,7 +39,6 @@ class AdvancedMLModels private constructor(private val context: Context) {
     private const val MOVENET_THUNDER_MODEL = "models/tflite/movenet_thunder.tflite"
     private const val MOVENET_LIGHTNING_MODEL = "models/tflite/movement_analysis_model.tflite" // repurposed lightning
     private const val BLAZEPOSE_MODEL = "models/tflite/blazepose.tflite"
-    private const val MOVEMENT_MODEL_FILE = MOVENET_LIGHTNING_MODEL // placeholder until dedicated movement model
 
     // Dynamic input sizes
     private const val INPUT_SIZE_THUNDER = 256
@@ -82,7 +81,6 @@ class AdvancedMLModels private constructor(private val context: Context) {
     }
     
     private var poseInterpreter: Interpreter? = null
-    private var movementInterpreter: Interpreter? = null
     private var currentModelType: PoseModelType = PoseModelType.MOVENET_THUNDER
     private var imageProcessor: ImageProcessor = ImageProcessor.Builder()
         .add(ResizeOp(INPUT_SIZE_THUNDER, INPUT_SIZE_THUNDER, ResizeOp.ResizeMethod.BILINEAR))
@@ -159,18 +157,7 @@ class AdvancedMLModels private constructor(private val context: Context) {
                 }
             }
             
-            // Initialize movement analysis model (simulated for mobile optimization)
-            Log.i(TAG, "Initializing optimized movement analysis model...")
-            try {
-                // Configure interpreter options for single-threaded analysis
-                val movementOptions = Interpreter.Options().apply {
-                    setNumThreads(1) // Single thread for sensor analysis
-                }
-                movementInterpreter = Interpreter(FileUtil.loadMappedFile(context, MOVEMENT_MODEL_FILE), movementOptions)
-                Log.i(TAG, "Loaded movement analysis model: $MOVEMENT_MODEL_FILE")
-            } catch (e: Exception) {
-                Log.w(TAG, "Could not load movement model (using placeholder)", e)
-            }
+            // Movement model removed (sensor-based heuristics instead)
             
             // Clear any existing cache
             clearCache()
@@ -919,10 +906,8 @@ class AdvancedMLModels private constructor(private val context: Context) {
      */
     fun cleanup() {
         Log.i(TAG, "Cleaning up ML models...")
-        poseInterpreter?.close()
-        movementInterpreter?.close()
-        poseInterpreter = null
-        movementInterpreter = null
+    poseInterpreter?.close()
+    poseInterpreter = null
     try { ortSession?.close() } catch (_: Exception) {}
     ortSession = null
     // OrtEnvironment sollte nur einmal pro Prozess existieren; kein force close notwendig
