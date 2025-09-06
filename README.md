@@ -235,6 +235,23 @@ ml.initialize(AdvancedMLModels.PoseModelType.MOVENET_LIGHTNING)
 ```
 
 Leistungsmetriken (Durchschnittszeiten, Speicher) werden über `getPerformanceMetrics()` zugänglich. ONNX und TFLite teilen denselben Auswertungsfluss nach der Roh-Inferenz.
+\n+#### Thunder ONNX Variante erzeugen
+```bash
+export MOVENET_VARIANT=thunder
+python scripts/export_savedmodel_and_convert.py
+ls -lh models/onnx/movenet_thunder.onnx
+```
+Optional Hash setzen:
+```bash
+export MODEL_MOVENET_THUNDER_ONNX_SHA256="<sha256>"
+```
+#### Geplanter Benchmark
+Ein geplanter Benchmark misst mittlere Inferenzzeiten für (Lightning TFLite, Lightning ONNX, Thunder TFLite, Thunder ONNX) mit 50 Durchläufen (Warmup 5). Ergebnisse werden künftig unter `benchmarks/ml/pose_backend_latency.csv` gespeichert.
+Initialisierung der CSV:
+```bash
+python scripts/benchmark_pose_backends.py
+cat benchmarks/ml/pose_backend_latency.csv
+```
 
 ## 🤝 Beitragen
 

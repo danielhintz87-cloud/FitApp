@@ -31,8 +31,9 @@ os.makedirs(onnx_dir, exist_ok=True)
 print(f"Loading TF Hub model for MoveNet {variant}...")
 model = hub.load(MOVENET_VARIANTS[variant])
 
-# Build concrete function
-input_signature = tf.TensorSpec([1, 192, 192, 3], dtype=tf.int32, name='input')
+# Build concrete function (thunder hat 256x256 Eingabe, lightning 192x192)
+input_side = 256 if variant == 'thunder' else 192
+input_signature = tf.TensorSpec([1, input_side, input_side, 3], dtype=tf.int32, name='input')
 serving_fn = model.signatures['serving_default']
 # Wrap to enforce input spec (forward as 'input')
 @tf.function(input_signature=[input_signature])
