@@ -75,7 +75,8 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-        mlModelBinding = true
+    // ML Model Binding deaktiviert: Modelle ohne eingebettete Metadata verursachen Fehler
+    mlModelBinding = false
     }
 
     composeOptions {
@@ -204,7 +205,7 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite:2.17.0")
     implementation("org.tensorflow:tensorflow-lite-support:0.5.0")
     implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0")
-    implementation("org.tensorflow:tensorflow-lite-gpu-delegate-plugin:0.5.0")
+    // Entfernt: gpu-delegate-plugin (Artefakt nicht auffindbar). GPU Delegate ist bereits in tensorflow-lite-gpu enthalten.
 
     // ONNX Runtime (Optional)
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.16.3")
@@ -371,23 +372,15 @@ tasks.register("qualityCheck") {
 // ==== Models Copy Task ====
 val modelsRoot = rootProject.layout.projectDirectory.dir("models")
 val appAssets = layout.projectDirectory.dir("src/main/assets/models")
-val appMl = layout.projectDirectory.dir("src/main/ml")
+// Entfernt: separates ml-Verzeichnis (Model Binding deaktiviert)
 
 tasks.register("copyModels") {
-    doFirst {
-        println(
-            "Kopiere Modelle in: ${appAssets.asFile.absolutePath} und ${appMl.asFile.absolutePath}"
-        )
-    }
+    doFirst { println("Kopiere Modelle in: ${appAssets.asFile.absolutePath}") }
     doLast {
         project.copy {
             from(modelsRoot.dir("tflite")) { into("tflite") }
             from(modelsRoot.dir("onnx")) { into("onnx") }
             into(appAssets)
-        }
-        project.copy {
-            from(modelsRoot.dir("tflite"))
-            into(appMl)
         }
     }
 }
