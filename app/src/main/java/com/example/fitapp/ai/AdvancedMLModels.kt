@@ -628,6 +628,8 @@ class AdvancedMLModels private constructor(private val context: Context) {
      */
     private fun runPoseInference(processedImage: TensorImage): List<Keypoint> {
         // ONNX bevorzugt wenn Session vorhanden
+        // TODO: Temporarily disabled ONNX support to fix compilation with Kotlin 2.2.10
+        /*
         ortSession?.let { session ->
             try {
                 val inputSize = when (currentModelType) {
@@ -689,6 +691,7 @@ class AdvancedMLModels private constructor(private val context: Context) {
                 // Weiter unten TFLite Versuch
             }
         }
+        */
 
         val interpreter = poseInterpreter ?: return emptyList()
         return try {
