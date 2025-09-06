@@ -97,4 +97,9 @@ updates:
           - "actions/cache"
           - "actions/upload-artifact"
       android-actions:
-        pat
+        patterns:
+          - "reactivecircus/android-emulator-runner"
+          - "android-actions/setup-android"
+          - "gradle/gradle-build-action"
+          - "dependabot/fetch-metadata"
+          - "nick-invision/retry"
