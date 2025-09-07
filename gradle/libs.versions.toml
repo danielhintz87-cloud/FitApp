@@ -48,6 +48,8 @@ onnxruntime = "1.22.0"
 
 # Wear OS
 wear-compose = "1.4.0"
+wear-compose-foundation = "1.4.0"
+wear-compose-navigation = "1.4.0"
 wear-complications = "1.2.0"
 play-services-wearable = "18.1.0"
 horologist = "0.6.12"
@@ -134,10 +136,13 @@ onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android"
 health-connect-client = { module = "androidx.health.connect:connect-client", version.ref = "health-connect" }
 
 # Wear OS
-wear-compose = { module = "androidx.wear.compose:compose-material", version.ref = "wear-compose" }
+wear-compose-material = { module = "androidx.wear.compose:compose-material", version.ref = "wear-compose" }
+wear-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "wear-compose-foundation" }
+wear-compose-navigation = { module = "androidx.wear.compose:compose-navigation", version.ref = "wear-compose-navigation" }
 wear-complications = { module = "androidx.wear:wear-complications-data", version.ref = "wear-complications" }
 play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "play-services-wearable" }
-horologist = { module = "com.google.android.horologist:horologist-compose-tools", version.ref = "horologist" }
+horologist-compose-layout = { module = "com.google.android.horologist:horologist-compose-layout", version.ref = "horologist" }
+horologist-compose-material = { module = "com.google.android.horologist:horologist-compose-material", version.ref = "horologist" }
 
 # WorkManager
 work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }

@@ -39,4 +39,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "FitApp"
 include(":app")
-// include(":wear") // Disabled due to build configuration issues
+include(":wear")
