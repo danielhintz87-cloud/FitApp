@@ -125,4 +125,5 @@ hs_err_pid*
 !gradle/wrapper/
 !gradlew
 !gradlew.bat
-!proguard-rules.pro
+!proguard-rules.procommandlinetools-linux-*.zip
+android-sdk/
