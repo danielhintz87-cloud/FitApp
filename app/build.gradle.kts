@@ -143,15 +143,15 @@ android {
 
 dependencies {
     implementation(libs.tensorflow-lite-metadata)
-    val composeBom = platform(libs.compose.bom)
+    val composeBom = platform(libs.compose-bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
     // Compose
-    implementation(libs.compose.ui)
-    implementation(libs.compose.material3)
-    implementation(libs.compose.ui.tooling.preview)
-    debugImplementation(libs.compose.ui.tooling)
+    implementation(libs.compose-ui)
+    implementation(libs.compose-material3)
+    implementation(libs.compose-ui-tooling-preview)
+    debugImplementation(libs.compose-ui-tooling)
 
     // AppCompat (Theming-Kompatibilität)
     implementation(libs.appcompat)
@@ -183,30 +183,30 @@ dependencies {
 
     // Networking & JSON
     implementation(libs.okhttp)
-    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx-serialization-json)
 
     // Retrofit Stack (OpenFoodFacts)
     implementation(libs.retrofit)
-    implementation(libs.retrofit.converter.moshi)
-    implementation(libs.retrofit.logging.interceptor)
+    implementation(libs.retrofit-converter-moshi)
+    implementation(libs.retrofit-logging-interceptor)
     implementation(libs.moshi)
-    implementation(libs.moshi.kotlin)
-    ksp(libs.moshi.codegen)
+    implementation(libs.moshi-kotlin)
+    ksp(libs.moshi-codegen)
 
     // Coil (Bildvorschau)
-    implementation(libs.coil.compose)
+    implementation(libs.coil-compose)
 
     // CameraX (Barcode and ML)
-    implementation(libs.camerax.core)
-    implementation(libs.camerax.camera2)
-    implementation(libs.camerax.lifecycle)
-    implementation(libs.camerax.view)
+    implementation(libs.camerax-core)
+    implementation(libs.camerax-camera2)
+    implementation(libs.camerax-lifecycle)
+    implementation(libs.camerax-view)
 
     // MediaPipe Tasks - Pose Landmarker
     implementation("com.google.mediapipe:tasks-vision:0.10.14")
 
     // ML Kit Barcode Scanning
-    implementation(libs.mlkit.barcode.scanning)
+    implementation(libs.mlkit-barcode-scanning)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.10.2")
         // Entfernt ältere 1.7.3 Android Coroutines – nur Version Katalog (1.10.2) aktiv
     // TensorFlow Lite (Advanced ML)
@@ -219,16 +219,16 @@ dependencies {
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.22.0")
 
     // Health Connect (Aktivitäts-/Kaloriensync)
-    implementation(libs.health.connect.client)
+    implementation(libs.health-connect-client)
 
     // Wearable Data Layer (Wear OS Kommunikation)
-    implementation(libs.play.services.wearable)
+    implementation(libs.play-services-wearable)
 
     // WorkManager (Hintergrundjobs)
-    implementation(libs.work.runtime.ktx)
+    implementation(libs.work-runtime-ktx)
 
     // Desugaring
-    coreLibraryDesugaring(libs.desugar.jdk.libs)
+    coreLibraryDesugaring(libs.desugar-jdk-libs)
 
         // CameraX (Barcode and ML) – vereinheitlicht über Version Catalog (camerax=1.3.1)
         // Optionales Upgrade auf 1.3.4 möglich durch Anpassung libs.versions.toml (versions.camerax)
