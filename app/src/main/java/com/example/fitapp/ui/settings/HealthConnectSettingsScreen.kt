@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.example.fitapp.network.healthconnect.HealthConnectManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,7 +28,6 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HealthConnectSettingsScreen(
-    navController: NavController,
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val context = LocalContext.current
@@ -61,7 +59,7 @@ fun HealthConnectSettingsScreen(
             TopAppBar(
                 title = { Text("Health Connect") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
+                    IconButton(onClick = { /* TODO: Falls Navigation benötigt, Callback hinzufügen */ }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück")
                     }
                 }
@@ -369,9 +367,9 @@ private fun PrivacySettingsCard() {
             OutlinedButton(
                 onClick = { 
                     // Open privacy policy URL in browser
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, 
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
                         android.net.Uri.parse("https://developer.android.com/health-and-fitness/guides/health-connect/privacy"))
-                    navController.context.startActivity(intent)
+                    context.startActivity(intent)
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -420,9 +418,9 @@ private fun HelpInfoCard() {
             OutlinedButton(
                 onClick = { 
                     // Open Health Connect help documentation
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, 
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
                         android.net.Uri.parse("https://developer.android.com/health-and-fitness/guides/health-connect"))
-                    navController.context.startActivity(intent)
+                    context.startActivity(intent)
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {

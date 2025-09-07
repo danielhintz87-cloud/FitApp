@@ -253,8 +253,9 @@ class BudgetTierOptimizer(private val context: Context) {
                 if (status.geminiRemaining < 1.0) {
                     add("⚠️ Gemini-Budget fast aufgebraucht (${String.format("%.2f", status.geminiRemaining)}$ verbleibend)")
                 }
-                if (status.perplexityRemaining < 1.0) {
-                    add("⚠️ Perplexity-Budget fast aufgebraucht (${String.format("%.2f", status.perplexityRemaining)}$ verbleibend)")
+                // Verwende Budgetrest (Dollar) statt verbleibender Suchanzahl
+                if (status.perplexityBudgetRemaining < 1.0) {
+                    add("⚠️ Perplexity-Budget fast aufgebraucht (${String.format("%.2f", status.perplexityBudgetRemaining)}$ verbleibend)")
                 }
                 if (status.totalRemaining < 2.0) {
                     add("🚨 Monatsbudget von $10 fast erreicht!")

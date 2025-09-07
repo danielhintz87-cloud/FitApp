@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.getPersonalizedRecommendations
 import com.example.fitapp.domain.entities.*
@@ -38,7 +37,7 @@ data class AIPersonalTrainerUiState(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AIPersonalTrainerScreen(
-    navController: NavController,
+    onBack: (() -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val context = LocalContext.current
@@ -127,7 +126,7 @@ fun AIPersonalTrainerScreen(
                 }
             },
             navigationIcon = {
-                IconButton(onClick = { navController.navigateUp() }) {
+                IconButton(onClick = { onBack?.invoke() }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Zurück"

@@ -342,53 +342,16 @@ fun MainScaffold() {
                 composable("logs") {
                     AiLogsScreen(padding)
                 }
-                composable("apikeys") {
-                    ApiKeysScreen(padding)
-                }
-                composable("notification_settings") {
-                    NotificationSettingsScreen(
-                        navController = nav,
-                        
-                    )
-                }
+                composable("apikeys") { ApiKeysScreen(padding) }
+                composable("notification_settings") { NotificationSettingsScreen(onBack = { nav.popBackStack() }) }
                 composable("health_connect_settings") {
-                    HealthConnectSettingsScreen(
-                        navController = nav
-                    )
+                    HealthConnectSettingsScreen()
                 }
-                composable("help") { 
-                    com.example.fitapp.ui.settings.HelpScreen(
-                        onBack = { nav.popBackStack() },
-                        
-                    ) 
-                }
-                composable("about") { 
-                    com.example.fitapp.ui.settings.AboutScreen(
-                        onBack = { nav.popBackStack() },
-                        
-                    ) 
-                }
-                composable("cloud_sync_settings") {
-                    CloudSyncSettingsScreen(
-                        onNavigateBack = { nav.popBackStack() },
-                        
-                    )
-                }
-                composable("equipment") { 
-                    EquipmentSelectionScreen(
-                        selectedEquipment = emptyList(), // Let the screen load from UserPreferences
-                        onEquipmentChanged = { }, // Equipment is saved automatically in UserPreferences
-                        onBackPressed = { nav.popBackStack() },
-                        
-                    )
-                }
-                composable("todaytraining") {
-                    TodayTrainingScreen(
-                        navController = nav,
-                        onBackPressed = { nav.popBackStack() },
-                        
-                    )
-                }
+                composable("help") { com.example.fitapp.ui.settings.HelpScreen(onBack = { nav.popBackStack() }) }
+                composable("about") { com.example.fitapp.ui.settings.AboutScreen(onBack = { nav.popBackStack() }) }
+                composable("cloud_sync_settings") { CloudSyncSettingsScreen(onNavigateBack = { nav.popBackStack() }) }
+                composable("equipment") { EquipmentSelectionScreen(selectedEquipment = emptyList(), onEquipmentChanged = { }, onBackPressed = { nav.popBackStack() }) }
+                composable("todaytraining") { TodayTrainingScreen(navController = nav, onBackPressed = { nav.popBackStack() }) }
                 composable("saved_recipes") {
                     SavedRecipesScreen(
                         onBackPressed = { nav.popBackStack() },
@@ -589,34 +552,18 @@ fun MainScaffold() {
                 }
                 composable("bmi_calculator") {
                     BMICalculatorScreen(
-                        navController = nav,
-                        
-                        onWeightLossProgramSuggested = { bmi, targetWeight ->
-                            nav.navigate("weight_loss_program/$bmi/$targetWeight")
-                        }
+                        onBack = { nav.popBackStack() },
+                        onWeightLossProgramSuggested = { bmi, targetWeight -> nav.navigate("weight_loss_program/$bmi/$targetWeight") }
                     )
                 }
                 composable("weight_loss_program/{bmi}/{targetWeight}") { backStackEntry ->
                     val bmi = backStackEntry.arguments?.getString("bmi")?.toFloatOrNull()
                     val targetWeight = backStackEntry.arguments?.getString("targetWeight")?.toFloatOrNull()
-                    WeightLossProgramScreen(
-                        navController = nav,
-                        initialBMI = bmi,
-                        initialTargetWeight = targetWeight,
-                        
-                    )
+                    WeightLossProgramScreen(onBack = { nav.popBackStack() }, initialBMI = bmi, initialTargetWeight = targetWeight)
                 }
-                composable("weight_loss_program") {
-                    WeightLossProgramScreen(
-                        navController = nav,
-                        
-                    )
-                }
+                composable("weight_loss_program") { WeightLossProgramScreen(onBack = { nav.popBackStack() }) }
                 composable("ai_personal_trainer") {
-                    AIPersonalTrainerScreen(
-                        navController = nav,
-                        
-                    )
+                    AIPersonalTrainerScreen(onBack = { nav.popBackStack() })
                 }
 
             }

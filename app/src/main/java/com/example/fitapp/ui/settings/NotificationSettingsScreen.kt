@@ -13,14 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.example.fitapp.services.*
 import java.time.LocalTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationSettingsScreen(
-    navController: NavController,
+    onBack: (() -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val context = LocalContext.current
@@ -39,7 +38,7 @@ fun NotificationSettingsScreen(
             TopAppBar(
                 title = { Text("Benachrichtigungen") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
+                    IconButton(onClick = { onBack?.invoke() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück")
                     }
                 }
