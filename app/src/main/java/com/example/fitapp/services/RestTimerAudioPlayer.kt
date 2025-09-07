@@ -104,7 +104,7 @@ class RestTimerAudioPlayer(private val context: Context) {
      */
     fun playAudioCue(cueType: String) {
         if (!isInitialized) {
-            StructuredLogger.debug(TAG, "Audio not initialized, skipping cue: $cueType")
+            StructuredLogger.debug(StructuredLogger.LogCategory.SYSTEM, TAG, "Audio not initialized, skipping cue: $cueType")
             return
         }
         
@@ -188,7 +188,7 @@ class RestTimerAudioPlayer(private val context: Context) {
             tts?.stop()
             soundPool?.autoPause()
         } catch (e: Exception) {
-            StructuredLogger.error(TAG, "Failed to stop audio", exception = e)
+            StructuredLogger.error(StructuredLogger.LogCategory.SYSTEM, TAG, "Failed to stop audio", exception = e)
         }
     }
     

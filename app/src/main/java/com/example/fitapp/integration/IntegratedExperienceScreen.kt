@@ -77,9 +77,7 @@ fun IntegratedExperienceScreen(
                 )
             }
             DemoType.SHOPPING -> {
-                SmartShoppingListScreen(
-                    onBackPressed = { selectedDemo = null }
-                )
+                SmartShoppingListScreen()
             }
             null -> {
                 IntegrationOverviewScreen(

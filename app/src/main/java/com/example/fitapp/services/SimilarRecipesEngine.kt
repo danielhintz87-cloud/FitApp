@@ -7,7 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.example.fitapp.data.db.*
 import com.example.fitapp.ai.AppAi
-import com.example.fitapp.domain.entities.RecipeRequest
+import com.example.fitapp.ai.RecipeRequest
 import com.example.fitapp.util.StructuredLogger
 import kotlin.math.sqrt
 
@@ -257,12 +257,9 @@ class SimilarRecipesEngine(
                 val variationPrompt = createVariationPrompt(originalRecipe, variationType)
                 
                 val request = RecipeRequest(
-                    count = 1,
-                    dietType = getDietTypeForVariation(variationType),
-                    cuisineStyle = extractCuisineStyle(originalRecipe),
-                    ingredients = extractKeyIngredients(originalRecipe),
-                    maxCalories = adjustCaloriesForVariation(originalRecipe.calories, variationType),
-                    maxPrepTime = adjustPrepTimeForVariation(originalRecipe.prepTime, variationType)
+                    preferences = "Similar to ${originalRecipe.title}. ${extractCuisineStyle(originalRecipe) ?: "International cuisine"}. Key ingredients: ${extractKeyIngredients(originalRecipe).take(5).joinToString(", ")}",
+                    diet = getDietTypeForVariation(variationType) ?: "balanced",
+                    count = 1
                 )
                 
                 val result = AppAi.recipesWithOptimalProvider(context, request)
@@ -309,17 +306,13 @@ class SimilarRecipesEngine(
             val prompt = createFeedbackBasedPrompt(originalRecipe, variationType, feedback)
             
             val request = RecipeRequest(
-                count = 1,
-                dietType = when {
+                preferences = "Recipe based on ${originalRecipe.title}. Cuisine: ${feedback.preferredCuisine ?: extractCuisineStyle(originalRecipe)}. Ingredients: ${extractKeyIngredients(originalRecipe).filter { it !in feedback.dislikedIngredients }.take(5).joinToString(", ")}",
+                diet = when {
                     feedback.wantVegan -> "vegan"
                     feedback.wantHealthier -> "healthy"
-                    else -> null
+                    else -> "balanced"
                 },
-                cuisineStyle = feedback.preferredCuisine ?: extractCuisineStyle(originalRecipe),
-                ingredients = extractKeyIngredients(originalRecipe)
-                    .filter { it !in feedback.dislikedIngredients },
-                maxCalories = if (feedback.wantHealthier) originalRecipe.calories?.let { it * 0.8 }?.toInt() else originalRecipe.calories,
-                maxPrepTime = feedback.maxPrepTime ?: if (feedback.tooTimeConsuming) originalRecipe.prepTime?.let { it / 2 } else originalRecipe.prepTime
+                count = 1
             )
             
             val result = AppAi.recipesWithOptimalProvider(context, request)

@@ -84,11 +84,11 @@ class VoiceInputManager(private val context: Context) {
         val recognitionListener = object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 _isListening.value = true
-                StructuredLogger.debug(TAG, "Ready for speech input")
+                StructuredLogger.debug(StructuredLogger.LogCategory.SYSTEM, TAG, "Ready for speech input")
             }
             
             override fun onBeginningOfSpeech() {
-                StructuredLogger.debug(TAG, "Speech input started")
+                StructuredLogger.debug(StructuredLogger.LogCategory.SYSTEM, TAG, "Speech input started")
             }
             
             override fun onRmsChanged(rmsdB: Float) {
@@ -101,7 +101,7 @@ class VoiceInputManager(private val context: Context) {
             
             override fun onEndOfSpeech() {
                 _isListening.value = false
-                StructuredLogger.debug(TAG, "Speech input ended")
+                StructuredLogger.debug(StructuredLogger.LogCategory.SYSTEM, TAG, "Speech input ended")
             }
             
             override fun onError(error: Int) {
@@ -164,7 +164,7 @@ class VoiceInputManager(private val context: Context) {
                     val result = VoiceInputResult.Partial(partial)
                     trySend(result)
                     
-                    StructuredLogger.debug(TAG, "Partial result: '$partial'")
+                    StructuredLogger.debug(StructuredLogger.LogCategory.SYSTEM, TAG, "Partial result: '$partial'")
                 }
             }
             
