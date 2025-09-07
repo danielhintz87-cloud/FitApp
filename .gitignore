@@ -1,44 +1,5 @@
-# Android / Gradle
-.gradle/
-build/
-*/build/
-local.properties
-.idea/
-*.iml
-captures/
-
-# Android SDK (nicht versionieren!)
-android-sdk/
-
-# Distribution Artefakte
-*.apk
-*.aab
-*.aar
-*.keystore
-*.jks
-
-# Cache / Logs
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Temporary
-*.tmp
-*.swp
-
-# Large archives (verhindert versehentliches Einchecken)
-*.zip
-*.tar
-*.tar.gz
-*.tgz
-*.rar
-
-# Python helper scripts artefacts
-__pycache__/
 #########################
-# Android FitApp - .gitignore (bereinigt & erweitert)
+# FitApp - Clean .gitignore
 #########################
 
 # IDE
@@ -47,19 +8,12 @@ __pycache__/
 !.idea/codeStyles/
 !.idea/runConfigurations/
 !.idea/vcs.xml
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+*.code-workspace
 
-# Lokale Konfiguration
-local.properties
-
-# OS / Temp
-.DS_Store
-Thumbs.db
-*~
-.directory
-.Trash-*
-.venv/
-
-# Gradle / Build
+# Android / Gradle
 .gradle/
 gradle-app.setting
 .gradletasknamecache
@@ -68,8 +22,9 @@ build/
 .externalNativeBuild/
 .cxx/
 outputs/
+local.properties
 
-# Artefakte
+# Android Artefakte
 *.apk
 *.aab
 *.ap_
@@ -83,62 +38,58 @@ cmake-build-*/
 .ninja_deps
 .ninja_log
 
-# Signing / Keystore
+# Signing / Security
 *.jks
 *.keystore
 key.properties
 keystore.properties
 signing.properties
-
-# ML / AI
-models/cache/
-*.tflite.tmp
-ml_cache/
-tensorflow_cache/
-.onnx_cache/
-!models/tflite/*.tflite
-!models/onnx/*.onnx
-!app/src/main/assets/models/tflite/*.tflite
-!app/src/main/assets/models/onnx/*.onnx
-
-# Dev Container / Editor
-.devcontainer/
-# Copilot Konfiguration versionieren – nur Cache ignorieren
-.copilot/cache/
-.copilot/tmp/
-!.copilot/instructions.md
-.vscode/settings.json
-.vscode/launch.json
-.vscode/tasks.json
-.vscode/.ropeproject
-*.code-workspace
-
-# Secrets / Environment
 secrets.properties
 api_keys.properties
 .env
 .env.local
 .env.production
-google-services.json.backup
-# google-services.json   # auskommentieren falls nicht versionieren
 
-# Tests / Coverage
-coverage/
-test-results/
-jacoco/
-lint-results*
-test-outputs/
-*.ec
+# Android SDK (not versioned)
+android-sdk/
 
-# Logs / Debug / Profiling
-*.log
+# ML / AI Models Cache
+models/cache/
+*.tflite.tmp
+ml_cache/
+tensorflow_cache/
+.onnx_cache/
+# Keep actual models
+!models/tflite/*.tflite
+!models/onnx/*.onnx
+!app/src/main/assets/models/tflite/*.tflite
+!app/src/main/assets/models/onnx/*.onnx
+
+# Copilot
+.copilot/cache/
+.copilot/tmp/
+!.copilot/instructions.md
+
+# OS / Temp Files
+.DS_Store
+Thumbs.db
+*~
+.directory
+.Trash-*
+.venv/
 *.tmp
+*.swp
+*.swo
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+
+# Logs / Debug
+*.log
 logs/
 debug/
-# Build output logs (bereinigt)
-build_output.txt
-build_warnings.txt
-gradle_warnings.log
 crash-reports/
 proguard/
 mapping.txt
@@ -148,21 +99,36 @@ usage.txt
 *.trace
 hs_err_pid*
 
-# Backups / Temp
-*.bak
-*.backup
-*.old
-*.orig
-*.rej
-*.swp
-*.swo
+# Tests / Coverage
+coverage/
+test-results/
+jacoco/
+lint-results*
+test-outputs/
+*.ec
 
-# Wichtig behalten
+# Temporary build outputs (cleaned up)
+build_output.txt
+build_warnings.txt
+gradle_warnings.log
+ziplist.txt
+check_api_config.kt
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+
+# Python helper scripts
+__pycache__/
+
+# Keep important files
 !README.md
 !LICENSE
 !.github/
 !gradle/wrapper/
 !gradlew
 !gradlew.bat
-!proguard-rules.procommandlinetools-linux-*.zip
-android-sdk/
+!proguard-rules.pro

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/widget_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Mon, Jan 1"
+        android:textSize="16sp"/>
+
+    <TextView
+        android:id="@+id/widget_calories"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0"
+        android:textSize="16sp"/>
+
+    <TextView
+        android:id="@+id/widget_steps"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0"
+        android:textSize="16sp"/>
+
+    <TextView
+        android:id="@+id/widget_water"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0L"
+        android:textSize="16sp"/>
+
+    <TextView
+        android:id="@+id/widget_workout_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Pending"
+        android:textSize="16sp"/>
+
+    <TextView
+        android:id="@+id/widget_streak"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0 days"
+        android:textSize="16sp"/>
+
+    <TextView
+        android:id="@+id/widget_macro_protein"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="P: 0g"
+        android:textSize="16sp"/>
+
+    <TextView
+        android:id="@+id/widget_macro_fat"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="F: 0g"
+        android:textSize="16sp"/>
+
+    <TextView
+        android:id="@+id/widget_macro_carbs"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="C: 0g"
+        android:textSize="16sp"/>
+</LinearLayout>

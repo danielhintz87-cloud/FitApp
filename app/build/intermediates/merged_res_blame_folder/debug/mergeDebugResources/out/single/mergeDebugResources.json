@@ -1,0 +1,42 @@
+[
+    {
+        "merged": "com.example.fitapp-debug-72:/drawable_ic_recipes.xml.flat",
+        "source": "com.example.fitapp-main-74:/drawable/ic_recipes.xml"
+    },
+    {
+        "merged": "com.example.fitapp-debug-72:/drawable-nodpi_generated_image_5.png.flat",
+        "source": "com.example.fitapp-main-74:/drawable-nodpi/generated_image_5.png"
+    },
+    {
+        "merged": "com.example.fitapp-debug-72:/drawable-nodpi_generated_image.png.flat",
+        "source": "com.example.fitapp-main-74:/drawable-nodpi/generated_image.png"
+    },
+    {
+        "merged": "com.example.fitapp-debug-72:/drawable-nodpi_generated_image_10.png.flat",
+        "source": "com.example.fitapp-main-74:/drawable-nodpi/generated_image_10.png"
+    },
+    {
+        "merged": "com.example.fitapp-debug-72:/layout_widget_progress_large.xml.flat",
+        "source": "com.example.fitapp-main-74:/layout/widget_progress_large.xml"
+    },
+    {
+        "merged": "com.example.fitapp-debug-72:/layout_widget_progress_medium.xml.flat",
+        "source": "com.example.fitapp-main-74:/layout/widget_progress_medium.xml"
+    },
+    {
+        "merged": "com.example.fitapp-debug-72:/drawable_ic_today.xml.flat",
+        "source": "com.example.fitapp-main-74:/drawable/ic_today.xml"
+    },
+    {
+        "merged": "com.example.fitapp-debug-72:/layout_widget_progress_compact.xml.flat",
+        "source": "com.example.fitapp-main-74:/layout/widget_progress_compact.xml"
+    },
+    {
+        "merged": "com.example.fitapp-debug-72:/layout_widget_quick_actions.xml.flat",
+        "source": "com.example.fitapp-main-74:/layout/widget_quick_actions.xml"
+    },
+    {
+        "merged": "com.example.fitapp-debug-72:/layout_widget_weekly_summary.xml.flat",
+        "source": "com.example.fitapp-main-74:/layout/widget_weekly_summary.xml"
+    }
+]
