@@ -18,14 +18,15 @@ import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.data.prefs.UserPreferences
 import com.example.fitapp.data.prefs.UserPreferencesLegacy
 import kotlinx.coroutines.launch
+import com.example.fitapp.ui.util.applyContentPadding
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayTrainingScreen(
-    navController: androidx.navigation.NavController? = null,
     onBackPressed: () -> Unit,
-    contentPadding: PaddingValues = PaddingValues(0.dp)
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    onNavigateToDailyWorkout: ((String, Int) -> Unit)? = null
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -79,8 +80,7 @@ fun TodayTrainingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-                .padding(bottom = contentPadding.calculateBottomPadding())
+                .applyContentPadding(contentPadding)
         ) {
             currentPlan?.let { plan ->
                 Card {
@@ -196,7 +196,7 @@ fun TodayTrainingScreen(
                     // Navigate to DailyWorkoutScreen with current parameters
                     val goal = customGoal.replace("Angepasst: ", "")
                     val minutes = customMinutes.toIntOrNull() ?: 60
-                    navController?.navigate("daily_workout/$goal/$minutes")
+                    onNavigateToDailyWorkout?.invoke(goal, minutes)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(

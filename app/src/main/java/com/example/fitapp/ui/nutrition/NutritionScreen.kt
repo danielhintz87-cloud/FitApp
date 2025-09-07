@@ -23,10 +23,12 @@ import com.example.fitapp.data.db.SavedRecipeEntity
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.ui.components.AiKeyGate
 import kotlinx.coroutines.launch
+import com.example.fitapp.ui.util.applyContentPadding
 
 @Composable
 fun NutritionScreen(
-    navController: androidx.navigation.NavController? = null,
+    onNavigateToApiKeys: (() -> Unit)? = null,
+    onNavigateToCookingMode: ((String) -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     modifier: Modifier = Modifier
 ) {
@@ -44,14 +46,14 @@ fun NutritionScreen(
     val history by repo.history().collectAsState(initial = emptyList())
     val tabs = listOf("Generieren", "Favoriten", "Historie", "Einkaufsliste")
 
-    Column(modifier.fillMaxSize()) {
+    Column(modifier.fillMaxSize().applyContentPadding(contentPadding)) {
         ScrollableTabRow(selectedTabIndex = tab) {
             tabs.forEachIndexed { i, title ->
                 Tab(selected = tab == i, onClick = { tab = i }, text = { Text(title) })
             }
         }
         when (tab) {
-            0 -> GenerateTab(prompt, { prompt = it }, generating, results, error, navController, onGenerate = {
+            0 -> GenerateTab(prompt, { prompt = it }, generating, results, error, onNavigateToApiKeys, onGenerate = {
                 generating = true
                 scope.launch {
                     try {
@@ -80,11 +82,12 @@ private fun GenerateTab(
     generating: Boolean,
     results: List<UiRecipe>,
     error: String?,
-    navController: androidx.navigation.NavController? = null,
+    onNavigateToApiKeys: (() -> Unit)? = null,
     onGenerate: () -> Unit,
     onFav: (String, Boolean) -> Unit,
     onToShopping: (String) -> Unit,
     onLog: (UiRecipe) -> Unit,
+    onNavigateToCookingMode: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val ctx = LocalContext.current
@@ -92,9 +95,7 @@ private fun GenerateTab(
     
     AiKeyGate(
         modifier = Modifier.fillMaxSize(),
-        onNavigateToApiKeys = {
-            navController?.navigate("apikeys")
-        },
+    onNavigateToApiKeys = { onNavigateToApiKeys?.invoke() },
         requireBothProviders = true
     ) { isEnabled ->
         Column(Modifier.fillMaxSize()) {
@@ -135,7 +136,7 @@ private fun GenerateTab(
                             scope.launch {
                                 // Save recipe first, then navigate to cooking mode
                                 saveToSavedRecipes(ctx, r)
-                                navController?.navigate("cooking_mode/${r.id}")
+                                onNavigateToCookingMode?.invoke(r.id)
                             }
                         }
                     )

@@ -11,15 +11,24 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 - Moderne Versionierung mit Git-Tags und automatischer Version-Generierung
 - Zentrale Versionsverwaltung für App und Wear-Module
 - Semantic Versioning Support mit axion-release Plugin
+- Callback-basierte Navigation (Entkopplung von NavController in Screens: Plan, Today, Nutrition, TodayTraining, Settings-Unterseiten)
+- Einheitliche Padding-Extension `applyContentPadding` für konsistentes Layout
+- AI Fehlerklassifikation (`AiErrors.kt`) mit normalisierten Kategorien (auth, quota, rate_limit, server, etc.)
+- Vereinheitlichte Logging-Tags für Gemini & Perplexity Provider
 
 ### Changed
 - Versionierung erfolgt jetzt automatisch aus Git-Tags
 - Build-Skripte nutzen zentrale Version aus Root-Projekt
+- Gemini Provider bereinigt (entfernte doppelte Code-Pfade, konsolidierte Textgenerierung)
+- Navigation in `MainScaffold` auf Callback-Routen aktualisiert
+- Konsistente Fehler-Wrapping mit `ClassifiedAiException` in AI Providern
 
 ### Technical
 - Axion-Release Plugin für Git-Tag-basierte Versionierung hinzugefügt
 - Version-Code wird automatisch aus Major.Minor.Patch generiert
 - Konsistente Versionierung zwischen App und Wear-Modulen
+- Gemeinsame Modelloptimierungs- und Fehlerklassifikations-Infrastruktur vereinheitlicht
+- Reduktion doppelter Padding-Ketten in zentralen Screens
 
 ## [1.8.0] - 2025-01-09
 

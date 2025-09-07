@@ -17,7 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.WeightLossRepository
 import com.example.fitapp.domain.BMICalculator
@@ -29,7 +28,7 @@ import java.time.LocalDate
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BMICalculatorScreen(
-    navController: NavController,
+    onBack: (() -> Unit)? = null,
     onWeightLossProgramSuggested: ((bmi: Float, targetWeight: Float) -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
@@ -78,7 +77,7 @@ fun BMICalculatorScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { navController.popBackStack() }) {
+            IconButton(onClick = { onBack?.invoke() }) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
             }
             Text(

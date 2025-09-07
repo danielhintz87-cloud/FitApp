@@ -18,7 +18,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.WeightLossProgramEntity
 import com.example.fitapp.data.repo.WeightLossRepository
@@ -31,7 +30,7 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeightLossProgramScreen(
-    navController: NavController,
+    onBack: (() -> Unit)? = null,
     initialBMI: Float? = null,
     initialTargetWeight: Float? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp)
@@ -82,7 +81,7 @@ fun WeightLossProgramScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { navController.popBackStack() }) {
+            IconButton(onClick = { onBack?.invoke() }) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
             }
             Text(

@@ -7,6 +7,7 @@ import com.example.fitapp.data.prefs.ApiKeys
 import com.example.fitapp.domain.entities.CaloriesEstimate
 import com.example.fitapp.util.ApiCallWrapper
 import com.example.fitapp.util.safeApiCall
+import com.example.fitapp.infrastructure.ai.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -52,6 +53,7 @@ class GeminiAiProvider(
     private val context: Context,
     private val httpClient: OkHttpClient
 ) : AiProvider {
+    private val logTag = "GeminiProvider"
     
     override val providerType = com.example.fitapp.domain.entities.AiProvider.Gemini
     
@@ -67,113 +69,66 @@ class GeminiAiProvider(
     /**
      * Intelligente Textgenerierung mit funktionsbasierter Modellauswahl
      */
-    suspend fun generateTextWithTaskType(prompt: String, taskType: TaskType): Result<String> = 
-        safeApiCall(context, "Gemini Text Generation") {
-            val apiKey = ApiKeys.getGeminiKey(context)
-            if (apiKey.isBlank()) {
-                throw IllegalStateException("Gemini API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
-            }
-            
-            // Intelligente Modellauswahl basierend auf Task
-            val modelSelection = ModelOptimizer.selectOptimalModel(taskType, false)
-            val model = when (modelSelection.geminiModel) {
-                ModelOptimizer.GeminiModel.FLASH -> "gemini-2.5-flash-latest"
-                ModelOptimizer.GeminiModel.FLASH_LITE -> "gemini-2.5-flash-8b"
-                null -> "gemini-2.5-flash-8b" // Fallback
-            }
-            
-            android.util.Log.d("GeminiAI", "Task: $taskType → Model: $model (${modelSelection.reason})")
-            
-            val body = """
-                {
-                    "contents": [{
-                        "parts": [{"text": "${prompt.json()}"}]
-                    }],
-                    "generationConfig": {
-                        "temperature": 0.4,
-                        "maxOutputTokens": 4096
-                    }
-                }
-            """.trimIndent()
-            
-            val request = Request.Builder()
-                .url("https://generativelanguage.googleapis.com/v1/models/$model:generateContent?key=$apiKey")
-                .post(body.toRequestBody("application/json".toMediaType()))
-                .build()
-                
-            httpClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    throw Exception("API Fehler: ${response.code} - ${response.body?.string()}")
-                }
-                
-                val responseBody = response.body?.string() ?: ""
-                val json = JSONObject(responseBody)
-                
-                json.optJSONArray("candidates")
-                    ?.optJSONObject(0)
-                    ?.optJSONObject("content")
-                    ?.optJSONArray("parts")
-                    ?.optJSONObject(0)
-                    ?.optString("text")
-                    ?: throw Exception("Unerwartete API-Antwort: $responseBody")
-            }
+    suspend fun generateTextWithTaskType(prompt: String, taskType: TaskType): Result<String> = safeApiCall(context, "Gemini Text Generation") {
+        val apiKey = ApiKeys.getGeminiKey(context)
+        if (apiKey.isBlank()) {
+            throw IllegalStateException("Gemini API-Schlüssel nicht konfiguriert. Bitte unter Einstellungen → API-Schlüssel eingeben.")
         }
-            """.trimIndent().toRequestBody("application/json".toMediaType())
 
-            val request = Request.Builder()
-                .url("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-8b:generateContent?key=$apiKey")
-                .header("User-Agent", "fitapp/1.0")
-                .post(body)
-                .build()
+        val modelSelection = ModelOptimizer.selectOptimalModel(taskType, false)
+        val model = when (modelSelection.geminiModel) {
+            ModelOptimizer.GeminiModel.FLASH -> "gemini-2.5-flash-latest"
+            ModelOptimizer.GeminiModel.FLASH_LITE -> "gemini-2.5-flash-8b"
+            null -> "gemini-2.5-flash-8b"
+        }
+    android.util.Log.d(logTag, "Task=$taskType model=$model reason=${modelSelection.reason}")
 
-            val response = httpClient.newCall(request).execute()
-            response.use {
-                if (!response.isSuccessful) {
-                    val bodyStr = response.body?.string().orEmpty()
-                    val errorMsg = when (response.code) {
-                        400 -> "Gemini 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen."
-                        401 -> "Gemini 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen."
-                        403 -> "Gemini 403: Zugriff verweigert oder API-Limit erreicht. Prüfen Sie Ihr Google Cloud Konto."
-                        429 -> "Gemini 429: Zu viele Anfragen. Bitte warten Sie ein paar Sekunden und versuchen Sie es erneut."
-                        in 500..599 -> "Gemini ${response.code}: Server-Fehler. Bitte versuchen Sie es später erneut."
-                        else -> "Gemini ${response.code}: ${bodyStr.take(200)}"
-                    }
-                    throw IllegalStateException(errorMsg)
-                }
-                
-                val responseBodyResult = ApiCallWrapper.safeReadResponseBody(response)
-                if (responseBodyResult.isFailure) {
-                    throw responseBodyResult.exceptionOrNull() ?: IllegalStateException("Failed to read response")
-                }
-                
-                val txt = responseBodyResult.getOrThrow()
-                val jsonObj = JSONObject(txt)
-                val candidates = jsonObj.optJSONArray("candidates")
-                    ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - candidates fehlt")
-                
-                if (candidates.length() > 0) {
-                    val candidate = candidates.optJSONObject(0)
-                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - candidate fehlt")
-                    
-                    val content = candidate.optJSONObject("content")
-                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - content fehlt")
-                    
-                    val parts = content.optJSONArray("parts")
-                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - parts fehlt")
-                    
-                    val part = parts.optJSONObject(0)
-                        ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - part fehlt")
-                    
-                    val text = part.optString("text")
-                    if (text.isNullOrBlank()) {
-                        throw IllegalStateException("Gemini: Kein Text in der Antwort gefunden")
-                    }
-                    text
-                } else {
-                    throw IllegalStateException("Keine Antwort von Gemini erhalten")
+        val body = """
+            {
+                "contents": [{
+                    "parts": [{"text": ${prompt.json()}}]
+                }],
+                "generationConfig": {
+                    "temperature": 0.4,
+                    "maxOutputTokens": 4096
                 }
             }
+        """.trimIndent().toRequestBody("application/json".toMediaType())
+
+        val request = Request.Builder()
+            .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey")
+            .header("User-Agent", "fitapp/1.0")
+            .post(body)
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                val bodyStr = response.body?.string().orEmpty()
+                val errorMsg = when (response.code) {
+                    400 -> "Gemini 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen."
+                    401 -> "Gemini 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen."
+                    403 -> "Gemini 403: Zugriff verweigert oder API-Limit erreicht. Prüfen Sie Ihr Google Cloud Konto."
+                    429 -> "Gemini 429: Zu viele Anfragen. Bitte warten Sie ein paar Sekunden und versuchen Sie es erneut."
+                    in 500..599 -> "Gemini ${response.code}: Server-Fehler. Bitte versuchen Sie es später erneut."
+                    else -> "Gemini ${response.code}: ${bodyStr.take(200)}"
+                }
+                val aiErr = classifyHttpError(response.code, bodyStr)
+                android.util.Log.w(logTag, "http_error code=${response.code} aiErr=${aiErr.code} bodySnippet=${bodyStr.take(120)}")
+                throw ClassifiedAiException(errorMsg, aiErr, response.code)
+            }
+            val responseBody = response.body?.string().orEmpty()
+            val jsonObj = JSONObject(responseBody)
+            val candidates = jsonObj.optJSONArray("candidates") ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - candidates fehlt")
+            if (candidates.length() == 0) throw IllegalStateException("Keine Antwort von Gemini erhalten")
+            val candidate = candidates.optJSONObject(0) ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - candidate fehlt")
+            val content = candidate.optJSONObject("content") ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - content fehlt")
+            val parts = content.optJSONArray("parts") ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - parts fehlt")
+            val part = parts.optJSONObject(0) ?: throw IllegalStateException("Gemini: Ungültige Antwortstruktur - part fehlt")
+            val text = part.optString("text")
+            if (text.isNullOrBlank()) throw IllegalStateException("Gemini: Kein Text in der Antwort gefunden")
+            text
         }
+    }
     
     override suspend fun analyzeImage(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> = 
         analyzeImageWithTaskType(prompt, bitmap, TaskType.CALORIE_ESTIMATION)

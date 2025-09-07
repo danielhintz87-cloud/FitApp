@@ -1,3 +1,42 @@
+# Android / Gradle
+.gradle/
+build/
+*/build/
+local.properties
+.idea/
+*.iml
+captures/
+
+# Android SDK (nicht versionieren!)
+android-sdk/
+
+# Distribution Artefakte
+*.apk
+*.aab
+*.aar
+*.keystore
+*.jks
+
+# Cache / Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+*.tmp
+*.swp
+
+# Large archives (verhindert versehentliches Einchecken)
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+
+# Python helper scripts artefacts
+__pycache__/
 #########################
 # Android FitApp - .gitignore (bereinigt & erweitert)
 #########################

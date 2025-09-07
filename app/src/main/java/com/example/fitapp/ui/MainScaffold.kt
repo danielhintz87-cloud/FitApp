@@ -332,9 +332,30 @@ fun MainScaffold() {
             }
         ) { padding ->
             NavHost(navController = nav, startDestination = "plan", modifier = Modifier.fillMaxSize()) {
-                composable("plan") { PlanScreen(padding, nav) }
-                composable("today") { TodayScreen(padding, nav) }
-                composable("nutrition") { NutritionScreen(nav, padding) }
+                composable("plan") {
+                    PlanScreen(
+                        contentPadding = padding,
+                        onNavigateToApiKeys = { nav.navigate("apikeys") },
+                        onNavigateToBmi = { nav.navigate("bmi_calculator") },
+                        onNavigateToWeightProgram = { nav.navigate("weight_loss_program") },
+                        onNavigateToEquipment = { nav.navigate("equipment") }
+                    )
+                }
+                composable("today") {
+                    TodayScreen(
+                        contentPadding = padding,
+                        onNavigateToTodayTraining = { nav.navigate("todaytraining") },
+                        onNavigateToDailyWorkout = { goal, minutes -> nav.navigate("daily_workout/$goal/$minutes") },
+                        onNavigateToHiitBuilder = { nav.navigate("hiit_builder") }
+                    )
+                }
+                composable("nutrition") {
+                    NutritionScreen(
+                        onNavigateToApiKeys = { nav.navigate("apikeys") },
+                        onNavigateToCookingMode = { id -> nav.navigate("cooking_mode/$id") },
+                        contentPadding = padding
+                    )
+                }
                 composable("progress") { ProgressScreen(padding) }
                 composable("foodscan") {
                     FoodScanScreen(padding)
@@ -351,7 +372,12 @@ fun MainScaffold() {
                 composable("about") { com.example.fitapp.ui.settings.AboutScreen(onBack = { nav.popBackStack() }) }
                 composable("cloud_sync_settings") { CloudSyncSettingsScreen(onNavigateBack = { nav.popBackStack() }) }
                 composable("equipment") { EquipmentSelectionScreen(selectedEquipment = emptyList(), onEquipmentChanged = { }, onBackPressed = { nav.popBackStack() }) }
-                composable("todaytraining") { TodayTrainingScreen(navController = nav, onBackPressed = { nav.popBackStack() }) }
+                composable("todaytraining") {
+                    TodayTrainingScreen(
+                        onBackPressed = { nav.popBackStack() },
+                        onNavigateToDailyWorkout = { goal, minutes -> nav.navigate("daily_workout/$goal/$minutes") }
+                    )
+                }
                 composable("saved_recipes") {
                     SavedRecipesScreen(
                         onBackPressed = { nav.popBackStack() },

@@ -19,7 +19,7 @@ import com.example.fitapp.data.prefs.UserPreferences
 import com.example.fitapp.data.prefs.UserPreferencesLegacy
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.ui.components.AiKeyGate
-import androidx.navigation.NavController
+import com.example.fitapp.ui.util.applyContentPadding
 import kotlinx.coroutines.launch
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -31,7 +31,13 @@ import com.example.fitapp.util.rememberAutoClearing
 @OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
-fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = null) {
+fun PlanScreen(
+    contentPadding: PaddingValues,
+    onNavigateToApiKeys: (() -> Unit)? = null,
+    onNavigateToBmi: (() -> Unit)? = null,
+    onNavigateToWeightProgram: (() -> Unit)? = null,
+    onNavigateToEquipment: (() -> Unit)? = null
+) {
     val ctx = LocalContext.current
     val scope = rememberSafeCoroutineScope()
     
@@ -121,19 +127,15 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
 
     AiKeyGate(
         modifier = Modifier
-            .padding(contentPadding)
             .fillMaxSize(),
-        onNavigateToApiKeys = {
-            navController?.navigate("apikeys")
-        },
+    onNavigateToApiKeys = { onNavigateToApiKeys?.invoke() },
         requireBothProviders = false // Allow with at least one provider
     ) { isEnabled ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(contentPadding)
-                .padding(16.dp)
+                .applyContentPadding(contentPadding)
         ) {
         Text("12-Wochen-Trainingsplan", style = MaterialTheme.typography.titleLarge)
         Text(
@@ -171,7 +173,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                 ) {
                     OutlinedButton(
                         onClick = {
-                            navController?.navigate("bmi_calculator")
+                            onNavigateToBmi?.invoke()
                         },
                         modifier = Modifier.weight(1f)
                     ) {
@@ -179,7 +181,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
                     }
                     Button(
                         onClick = {
-                            navController?.navigate("weight_loss_program")
+                            onNavigateToWeightProgram?.invoke()
                         },
                         modifier = Modifier.weight(1f)
                     ) {
@@ -339,7 +341,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
         // Equipment selection button
         OutlinedButton(
             onClick = {
-                navController?.navigate("equipment")
+                onNavigateToEquipment?.invoke()
             },
             modifier = Modifier.fillMaxWidth()
         ) {

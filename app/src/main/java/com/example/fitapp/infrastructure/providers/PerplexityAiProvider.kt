@@ -11,6 +11,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import com.example.fitapp.infrastructure.ai.*
 /**
  * Perplexity AI provider implementation
  * 
@@ -33,6 +34,7 @@ class PerplexityAiProvider(
     private val context: Context,
     private val httpClient: OkHttpClient
 ) : AiProvider {
+    private val logTag = "PerplexityProvider"
     
     // Cost-optimized model hierarchy for Fitness App (2025)
     // Primary: Sonar Basic ($1/$1 + $5/1000 searches) - Best price/performance
@@ -62,7 +64,7 @@ class PerplexityAiProvider(
             makeApiCall(apiKey, modelHierarchy.first(), "test")
             true
         } catch (e: Exception) {
-            android.util.Log.w("PerplexityProvider", "Availability check failed: ${e.message}")
+            android.util.Log.w(logTag, "availability_check_failed message=${e.message}")
             // Return true if we have a key - let the actual usage handle model issues
             true
         }
@@ -84,10 +86,10 @@ class PerplexityAiProvider(
                 try {
                     val response = makeApiCall(apiKey, model, prompt)
                     // Log successful model for future optimization
-                    android.util.Log.d("PerplexityProvider", "Successfully used model: $model")
+                    android.util.Log.d(logTag, "model_success model=$model")
                     return@runCatching response
                 } catch (e: Exception) {
-                    android.util.Log.w("PerplexityProvider", "Model $model failed: ${e.message}")
+                    android.util.Log.w(logTag, "model_failed model=$model message=${e.message}")
                     lastError = e
                     
                     // Don't try other models for auth errors
@@ -138,7 +140,9 @@ class PerplexityAiProvider(
                         in 500..599 -> "Perplexity ${response.code}: Server-Fehler. Bitte versuchen Sie es später erneut."
                         else -> "Perplexity ${response.code}: ${bodyStr.take(200)}"
                     }
-                    throw IllegalStateException(errorMsg)
+                    val aiErr = classifyHttpError(response.code, bodyStr)
+                    android.util.Log.w(logTag, "http_error code=${response.code} model=$model aiErr=${aiErr.code} bodySnippet=${bodyStr.take(120)}")
+                    throw ClassifiedAiException(errorMsg, aiErr, response.code)
                 }
                 
                 val responseBody = response.body

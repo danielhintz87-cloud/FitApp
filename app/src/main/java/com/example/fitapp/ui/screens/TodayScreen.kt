@@ -25,7 +25,6 @@ import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.data.repo.PersonalMotivationRepository
 import com.example.fitapp.ui.components.BudgetBar
-import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
@@ -33,9 +32,15 @@ import com.example.fitapp.R
 import com.example.fitapp.services.DigitalCoachManager
 import com.example.fitapp.services.CoachingContext
 import com.example.fitapp.services.CoachingMessage
+import com.example.fitapp.ui.util.applyContentPadding
 
 @Composable
-fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = null) {
+fun TodayScreen(
+    contentPadding: PaddingValues,
+    onNavigateToTodayTraining: (() -> Unit)? = null,
+    onNavigateToDailyWorkout: ((planGoal: String, minutes: Int) -> Unit)? = null,
+    onNavigateToHiitBuilder: (() -> Unit)? = null
+) {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
     val motivationRepo = remember { PersonalMotivationRepository(AppDatabase.get(ctx)) }
@@ -57,10 +62,9 @@ fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = n
 
     Column(
         modifier = Modifier
-            .padding(contentPadding)
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .applyContentPadding(contentPadding)
     ) {
         Text("Heute", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(16.dp))
@@ -178,7 +182,7 @@ fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = n
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             onClick = { 
-                                navController?.navigate("todaytraining")
+                                onNavigateToTodayTraining?.invoke()
                             },
                             modifier = Modifier.weight(1f)
                         ) {
@@ -191,7 +195,7 @@ fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = n
                                 // Use plan data for daily workout
                                 val planGoal = latestPlan.goal
                                 val minutes = latestPlan.minutesPerSession
-                                navController?.navigate("daily_workout/$planGoal/$minutes")
+                                onNavigateToDailyWorkout?.invoke(planGoal, minutes)
                             },
                             modifier = Modifier.weight(1f)
                         ) {
@@ -204,7 +208,7 @@ fun TodayScreen(contentPadding: PaddingValues, navController: NavController? = n
                     // HIIT Builder button row
                     OutlinedButton(
                         onClick = { 
-                            navController?.navigate("hiit_builder")
+                            onNavigateToHiitBuilder?.invoke()
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
