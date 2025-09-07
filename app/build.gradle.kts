@@ -142,7 +142,7 @@ android {
 }
 
 dependencies {
-    implementation(libs.tensorflow.lite.metadata)
+    implementation(libs.tensorflow_lite_metadata)
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
@@ -150,14 +150,14 @@ dependencies {
     // Compose
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
-    implementation(libs.compose.ui.tooling.preview)
-    debugImplementation(libs.compose.ui.tooling)
+    implementation(libs.compose_ui_tooling_preview)
+    debugImplementation(libs.compose_ui_tooling)
 
     // AppCompat (Theming-Kompatibilität)
     implementation(libs.appcompat)
 
     // Material Icons
-    implementation(libs.compose.material.icons)
+    implementation(libs.compose_material_icons)
 
     // Navigation (Compose)
     implementation(libs.navigation.compose)
@@ -167,13 +167,13 @@ dependencies {
     implementation(libs.activity.ktx)
 
     // Lifecycle/Coroutines
-    implementation(libs.lifecycle.runtime.ktx)
-    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.lifecycle_runtime_ktx)
+    implementation(libs.kotlinx_coroutines_android)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.9.0") // Nur eine Guava Bridge
 
     // DataStore (Preferences + Core) – Migration Ziel statt SharedPreferences
-    implementation(libs.datastore.preferences)
-    implementation(libs.datastore.core)
+    implementation(libs.datastore_preferences)
+    implementation(libs.datastore_core)
 
     // Room (AI-Logs)
     implementation(libs.room.runtime)
@@ -183,35 +183,35 @@ dependencies {
 
     // Networking & JSON
     implementation(libs.okhttp)
-    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx_serialization_json)
 
     // Retrofit Stack (OpenFoodFacts)
     implementation(libs.retrofit)
-    implementation(libs.retrofit.converter.moshi)
-    implementation(libs.retrofit.logging.interceptor)
+    implementation(libs.retrofit_converter_moshi)
+    implementation(libs.retrofit_logging_interceptor)
     implementation(libs.moshi)
-    implementation(libs.moshi.kotlin)
-    ksp(libs.moshi.codegen)
+    implementation(libs.moshi_kotlin)
+    ksp(libs.moshi_codegen)
 
     // Coil (Bildvorschau)
-    implementation(libs.coil.compose)
+    implementation(libs.coil_compose)
 
     // CameraX (Barcode and ML)
-    implementation(libs.camerax.core)
-    implementation(libs.camerax.camera2)
-    implementation(libs.camerax.lifecycle)
-    implementation(libs.camerax.view)
+    implementation(libs.camerax_core)
+    implementation(libs.camerax_camera2)
+    implementation(libs.camerax_lifecycle)
+    implementation(libs.camerax_view)
 
     // MediaPipe Tasks - Pose Landmarker
     implementation("com.google.mediapipe:tasks-vision:0.10.14")
 
     // ML Kit Barcode Scanning
-    implementation(libs.mlkit.barcode.scanning)
+    implementation(libs.mlkit_barcode_scanning)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.10.2")
         // Entfernt ältere 1.7.3 Android Coroutines – nur Version Katalog (1.10.2) aktiv
     // TensorFlow Lite (Advanced ML)
-    implementation(libs.tensorflow.lite)
-    implementation(libs.tensorflow.lite.support)
+    implementation(libs.tensorflow_lite)
+    implementation(libs.tensorflow_lite_support)
     implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0")
     // Entfernt: gpu-delegate-plugin (Artefakt nicht auffindbar). GPU Delegate ist bereits in tensorflow-lite-gpu enthalten.
 
@@ -219,32 +219,32 @@ dependencies {
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.22.0")
 
     // Health Connect (Aktivitäts-/Kaloriensync)
-    implementation(libs.health.connect.client)
+    implementation(libs.health_connect_client)
 
     // Wearable Data Layer (Wear OS Kommunikation)
-    implementation(libs.play.services.wearable)
+    implementation(libs.play_services_wearable)
 
     // WorkManager (Hintergrundjobs)
-    implementation(libs.work.runtime.ktx)
+    implementation(libs.work_runtime_ktx)
 
     // Desugaring
-    coreLibraryDesugaring(libs.desugar.jdk.libs)
+    coreLibraryDesugaring(libs.desugar_jdk_libs)
 
         // CameraX (Barcode and ML) – vereinheitlicht über Version Catalog (camerax=1.3.1)
         // Optionales Upgrade auf 1.3.4 möglich durch Anpassung libs.versions.toml (versions.camerax)
     // (Bereinigt) – Duplikate entfernt
     // Instrumented Tests
-    androidTestImplementation(libs.android.test.junit)
-    androidTestImplementation(libs.espresso.core)
-    androidTestImplementation(libs.room.testing)
-    androidTestImplementation(libs.android.test.core)
+    androidTestImplementation(libs.android_test_junit)
+    androidTestImplementation(libs.espresso_core)
+    androidTestImplementation(libs.room_testing)
+    androidTestImplementation(libs.android_test_core)
         // TensorFlow Lite (Advanced ML) – vereinheitlicht, vermeidet doppelte Artefakte
     // (Bereinigt) – Duplikate entfernt
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")
     testImplementation(libs.junit)
-    testImplementation(libs.coroutines.test)
+    testImplementation(libs.coroutines_test)
     testImplementation(libs.robolectric)
-    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito_core)
 }
 
 // Jacoco
