@@ -90,7 +90,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
+        kotlinCompilerExtensionVersion = libs.versions.compose_compiler.get()
     }
 
     compileOptions {
@@ -143,13 +143,13 @@ android {
 
 dependencies {
     implementation(libs.tensorflow_lite_metadata)
-    val composeBom = platform(libs.compose.bom)
+    val composeBom = platform(libs.compose_bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
     // Compose
-    implementation(libs.compose.ui)
-    implementation(libs.compose.material3)
+    implementation(libs.compose_ui)
+    implementation(libs.compose_material3)
     implementation(libs.compose_ui_tooling_preview)
     debugImplementation(libs.compose_ui_tooling)
 
@@ -160,11 +160,11 @@ dependencies {
     implementation(libs.compose_material_icons)
 
     // Navigation (Compose)
-    implementation(libs.navigation.compose)
+    implementation(libs.navigation_compose)
 
     // Activity (Compose + Photo Picker)
-    implementation(libs.activity.compose)
-    implementation(libs.activity.ktx)
+    implementation(libs.activity_compose)
+    implementation(libs.activity_ktx)
 
     // Lifecycle/Coroutines
     implementation(libs.lifecycle_runtime_ktx)
@@ -176,10 +176,10 @@ dependencies {
     implementation(libs.datastore_core)
 
     // Room (AI-Logs)
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    implementation(libs.room.paging)
-    ksp(libs.room.compiler)
+    implementation(libs.room_runtime)
+    implementation(libs.room_ktx)
+    implementation(libs.room_paging)
+    ksp(libs.room_compiler)
 
     // Networking & JSON
     implementation(libs.okhttp)
