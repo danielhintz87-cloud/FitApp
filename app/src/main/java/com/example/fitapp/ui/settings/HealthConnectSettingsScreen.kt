@@ -7,16 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.Help
-import androidx.co            OutlinedButton(
-                onClick = { 
-                    UrlOpener.openFeatureHelp(context, "health_connect")
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.AutoMirrored.Filled.HelpOutline, null)
-                Spacer(Modifier.width(8.dp))
-                Text("Weitere Informationen")
-            }l.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +20,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.health.connect.client.PermissionController
 import com.example.fitapp.data.prefs.UserPreferencesRepository
 import com.example.fitapp.services.HealthConnectSyncWorker
+import com.example.fitapp.util.UrlOpener
 import com.example.fitapp.util.UrlOpener
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
