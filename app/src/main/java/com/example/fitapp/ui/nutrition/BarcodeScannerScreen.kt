@@ -83,11 +83,11 @@ fun BarcodeScannerScreen(
                     // Convert to entity and save to local database if from online source
                     if (foodItem.source != "Local Database") {
                         val entity = FoodItemEntity(
-                            name = name,
-                            calories = calories.toIntOrNull() ?: 0,
-                            carbs = carbs.toFloatOrNull() ?: 0f,
-                            protein = protein.toFloatOrNull() ?: 0f,
-                            fat = fat.toFloatOrNull() ?: 0f
+                            name = foodItem.name,
+                            calories = foodItem.caloriesPer100g.toInt(),
+                            carbs = foodItem.carbsPer100g,
+                            protein = foodItem.proteinPer100g,
+                            fat = foodItem.fatPer100g
                         )
                         repo.addFoodItem(entity)
                         onFoodItemFound(entity)
@@ -271,10 +271,10 @@ private fun BarcodeNotFoundScreen(
                         val foodItem = FoodItemEntity(
                             name = name.trim(),
                             barcode = barcode,
-                            caloriesPer100g = calories.toFloatOrNull() ?: 0f,
-                            carbsPer100g = carbs.toFloatOrNull() ?: 0f,
-                            proteinPer100g = protein.toFloatOrNull() ?: 0f,
-                            fatPer100g = fat.toFloatOrNull() ?: 0f
+                            calories = calories.toIntOrNull() ?: 0,
+                            carbs = carbs.toFloatOrNull() ?: 0f,
+                            protein = protein.toFloatOrNull() ?: 0f,
+                            fat = fat.toFloatOrNull() ?: 0f
                         )
                         onFoodItemCreated(foodItem)
                     }

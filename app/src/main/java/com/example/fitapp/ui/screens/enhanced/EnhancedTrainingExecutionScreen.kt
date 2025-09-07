@@ -107,7 +107,7 @@ fun EnhancedTrainingExecutionScreen(
     DisposableEffect(Unit) {
         onDispose {
             smartRestTimer.release()
-            voiceCommandManager.release()
+            voiceCommandManager.cleanup()
         }
     }
     

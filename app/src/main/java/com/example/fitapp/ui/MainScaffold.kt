@@ -529,21 +529,21 @@ fun MainScaffold() {
                 }
                 composable("food_diary") {
                     FoodDiaryScreen(
-                        contentPadding = it,
+                        contentPadding = padding,
                         onBackPressed = { nav.popBackStack() },
                         onAddFoodClick = { nav.navigate("food_search") }
                     )
                 }
                 composable("food_search") {
                     FoodSearchScreen(
-                        contentPadding = it,
+                        contentPadding = padding,
                         onBackPressed = { nav.popBackStack() },
                         onFoodAdded = { nav.popBackStack() }
                     )
                 }
                 composable("nutrition_analytics") {
                     NutritionAnalyticsScreen(
-                        contentPadding = it,
+                        contentPadding = padding,
                         onBackPressed = { nav.popBackStack() }
                     )
                 }

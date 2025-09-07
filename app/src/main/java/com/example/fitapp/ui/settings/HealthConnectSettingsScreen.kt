@@ -114,7 +114,7 @@ fun HealthConnectSettingsScreen(
                 DataSourcesCard()
                 
                 // Privacy Settings
-                PrivacySettingsCard()
+                PrivacySettingsCard(context)
             }
             
             // Help & Info
@@ -351,7 +351,7 @@ private fun DataSourcesCard() {
 }
 
 @Composable
-private fun PrivacySettingsCard() {
+private fun PrivacySettingsCard(context: android.content.Context) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -386,7 +386,6 @@ private fun PrivacySettingsCard() {
             
             OutlinedButton(
                 onClick = { 
-                    val context = LocalContext.current
                     UrlOpener.openPrivacyPolicy(context)
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -438,7 +437,6 @@ private fun HelpInfoCard() {
                     // Open Health Connect help documentation
                     val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
                         android.net.Uri.parse("https://developer.android.com/health-and-fitness/guides/health-connect"))
-                    val context = LocalContext.current
                     context.startActivity(intent)
                 },
                 modifier = Modifier.fillMaxWidth()

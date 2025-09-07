@@ -59,12 +59,12 @@ fun EnhancedRecipeDetailScreen(
     var showSimilarRecipes by remember { mutableStateOf(false) }
     var showIngredientDialog by remember { mutableStateOf(false) }
     var showNutritionInfo by remember { mutableStateOf(false) }
-    var similarRecipes by remember { mutableStateOf<List<SavedRecipeEntity>>(emptyList()) }
+    var similarRecipes by remember { mutableStateOf<List<SimilarRecipesEngine.SimilarRecipeResult>>(emptyList()) }
     
     // Load similar recipes
     LaunchedEffect(recipe.id) {
         try {
-            similarRecipes = similarRecipesEngine.findSimilarRecipes(recipe, limit = 5)
+            similarRecipes = similarRecipesEngine.findSimilarRecipes(recipe, maxResults = 5)
         } catch (e: Exception) {
             // Handle error
         }
@@ -96,9 +96,8 @@ fun EnhancedRecipeDetailScreen(
                             scope.launch {
                                 isFavorite = !isFavorite
                                 favoritesManager.toggleFavorite(
-                                    recipe.copy(isFavorite = isFavorite),
-                                    if (isFavorite) RecipeFavoritesManager.FavoriteCategory.LOVED 
-                                    else null
+                                    recipe.id,
+                                    if (isFavorite) "loved" else "general"
                                 )
                             }
                         }
@@ -159,7 +158,7 @@ fun EnhancedRecipeDetailScreen(
                 // Tags section
                 if (recipe.tags.isNotEmpty()) {
                     item {
-                        RecipeTagsSection(tags = recipe.tags)
+                        RecipeTagsSection(tags = recipe.tags.split(",").map { it.trim() }.filter { it.isNotEmpty() })
                     }
                 }
                 
@@ -167,7 +166,7 @@ fun EnhancedRecipeDetailScreen(
                 if (similarRecipes.isNotEmpty()) {
                     item {
                         SimilarRecipesSection(
-                            similarRecipes = similarRecipes,
+                            similarRecipes = similarRecipes.map { it.recipe },
                             onRecipeClick = { /* Navigate to recipe */ }
                         )
                     }
@@ -217,7 +216,7 @@ fun EnhancedRecipeDetailScreen(
     if (showSimilarRecipes) {
         SimilarRecipesDetailDialog(
             recipe = recipe,
-            similarRecipes = similarRecipes,
+            similarRecipes = similarRecipes.map { it.recipe },
             similarRecipesEngine = similarRecipesEngine,
             onDismiss = { showSimilarRecipes = false },
             onRecipeSelected = { /* Navigate to recipe */ }
