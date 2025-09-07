@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun CloudSyncSettingsScreen(
     onNavigateBack: () -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     viewModel: CloudSyncSettingsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -62,6 +63,7 @@ fun CloudSyncSettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .padding(contentPadding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)

@@ -11,7 +11,11 @@ import androidx.compose.ui.unit.dp
 import com.example.fitapp.BuildConfig
 
 @Composable
-fun AboutScreen(onBack: () -> Unit, versionName: String = BuildConfig.VERSION_NAME) {
+fun AboutScreen(
+    onBack: () -> Unit, 
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    versionName: String = BuildConfig.VERSION_NAME
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -25,6 +29,7 @@ fun AboutScreen(onBack: () -> Unit, versionName: String = BuildConfig.VERSION_NA
         Column(
             modifier = Modifier
                 .padding(padding)
+                .padding(contentPadding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {

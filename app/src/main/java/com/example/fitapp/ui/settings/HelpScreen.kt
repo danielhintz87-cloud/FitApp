@@ -11,7 +11,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun HelpScreen(onBack: () -> Unit) {
+fun HelpScreen(
+    onBack: () -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -25,6 +28,7 @@ fun HelpScreen(onBack: () -> Unit) {
         Column(
             modifier = Modifier
                 .padding(padding)
+                .padding(contentPadding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {

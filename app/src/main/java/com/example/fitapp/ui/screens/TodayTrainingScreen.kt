@@ -24,7 +24,8 @@ import java.time.LocalDate
 @Composable
 fun TodayTrainingScreen(
     navController: androidx.navigation.NavController? = null,
-    onBackPressed: () -> Unit
+    onBackPressed: () -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -79,6 +80,7 @@ fun TodayTrainingScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
+                .padding(bottom = contentPadding.calculateBottomPadding())
         ) {
             currentPlan?.let { plan ->
                 Card {

@@ -33,7 +33,8 @@ import java.time.format.DateTimeFormatter
 fun WeightLossProgramScreen(
     navController: NavController,
     initialBMI: Float? = null,
-    initialTargetWeight: Float? = null
+    initialTargetWeight: Float? = null,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -72,6 +73,7 @@ fun WeightLossProgramScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .padding(contentPadding)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {

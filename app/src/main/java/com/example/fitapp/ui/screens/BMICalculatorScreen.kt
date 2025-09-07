@@ -30,7 +30,8 @@ import java.time.LocalDate
 @Composable
 fun BMICalculatorScreen(
     navController: NavController,
-    onWeightLossProgramSuggested: ((bmi: Float, targetWeight: Float) -> Unit)? = null
+    onWeightLossProgramSuggested: ((bmi: Float, targetWeight: Float) -> Unit)? = null,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -68,6 +69,7 @@ fun BMICalculatorScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .padding(contentPadding)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {

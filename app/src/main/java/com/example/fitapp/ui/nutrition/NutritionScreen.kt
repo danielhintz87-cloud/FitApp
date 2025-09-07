@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun NutritionScreen(
     navController: androidx.navigation.NavController? = null,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     modifier: Modifier = Modifier
 ) {
     val ctx = LocalContext.current
@@ -65,8 +66,8 @@ fun NutritionScreen(
                 repo.logIntake(r.calories ?: 0, "Rezept: ${'$'}{r.title}", "RECIPE", r.id)
                 repo.adjustDailyGoal(java.time.LocalDate.now())
             } })
-            1 -> RecipeList("Favoriten", favorites, onFavClick = { id, fav -> scope.launch { repo.setFavorite(id, fav) } })
-            2 -> RecipeList("Historie", history, onFavClick = { id, fav -> scope.launch { repo.setFavorite(id, fav) } })
+            1 -> RecipeList("Favoriten", favorites, onFavClick = { id, fav -> scope.launch { repo.setFavorite(id, fav) } }, contentPadding = contentPadding)
+            2 -> RecipeList("Historie", history, onFavClick = { id, fav -> scope.launch { repo.setFavorite(id, fav) } }, contentPadding = contentPadding)
             3 -> SimpleShoppingListTab(repo)
         }
     }
@@ -149,6 +150,7 @@ private fun RecipeList(
     title: String, 
     items: List<RecipeEntity>, 
     onFavClick: (String, Boolean) -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     modifier: Modifier = Modifier
 ) {
     val ctx = LocalContext.current
@@ -157,7 +159,12 @@ private fun RecipeList(
     
     LazyColumn(
         modifier = modifier.fillMaxSize(), 
-        contentPadding = PaddingValues(16.dp,16.dp,16.dp,96.dp), 
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 16.dp,
+            bottom = 16.dp + contentPadding.calculateBottomPadding()
+        ), 
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item { Text(title, style = MaterialTheme.typography.titleLarge) }

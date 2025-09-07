@@ -23,7 +23,8 @@ import java.time.LocalDate
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeightTrackingScreen(
-    onBackPressed: () -> Unit
+    onBackPressed: () -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -52,6 +53,7 @@ fun WeightTrackingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .padding(contentPadding)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)

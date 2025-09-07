@@ -24,6 +24,7 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
     var showGeminiPassword by remember { mutableStateOf(false) }
     var showPerplexityPassword by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(false) }
+    var showDebugInfo by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -43,6 +44,47 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        // Status-Info Card
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer
+            )
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Provider Status",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    TextButton(onClick = { showDebugInfo = !showDebugInfo }) {
+                        Text(if (showDebugInfo) "Weniger" else "Details")
+                    }
+                }
+                
+                if (showDebugInfo) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = ApiKeys.getConfigurationStatus(context),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                } else {
+                    Text(
+                        text = if (ApiKeys.isPrimaryProviderAvailable(context)) 
+                            "✅ Beide Provider konfiguriert und verfügbar" 
+                        else "⚠️ Konfiguration prüfen - Details anzeigen",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 

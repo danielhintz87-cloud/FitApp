@@ -38,7 +38,8 @@ data class AIPersonalTrainerUiState(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AIPersonalTrainerScreen(
-    navController: NavController
+    navController: NavController,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -190,7 +191,12 @@ fun AIPersonalTrainerScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    top = 16.dp,
+                    end = 16.dp,
+                    bottom = 16.dp + contentPadding.calculateBottomPadding()
+                ),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Daily AI Summary Card

@@ -18,7 +18,18 @@ enum class TaskType {
     WORKOUT_GENERATION,
     NUTRITION_ADVICE,
     PROGRESS_ANALYSIS,
-    MOTIVATIONAL_COACHING
+    MOTIVATIONAL_COACHING,
+    // Neue funktionsspezifische TaskTypes für optimale Modellauswahl
+    FORM_CHECK_ANALYSIS,      // Haltungskorrektur mit Trainingsfotos
+    EQUIPMENT_RECOGNITION,    // Gym-Geräte identifizieren
+    PROGRESS_PHOTO_ANALYSIS,  // Body-Transformation tracking
+    LIVE_COACHING_FEEDBACK,   // Echtzeit-Feedback basierend auf Pose-Daten
+    RESEARCH_TRENDS,         // Aktuelle Fitness-Trends via Perplexity
+    SUPPLEMENT_RESEARCH,     // Supplement-Studies und Reviews
+    MEAL_PHOTO_ANALYSIS,     // Detaillierte Food-Recognition
+    RECIPE_WITH_IMAGE_GEN,   // Rezepte mit AI-generierten Bildern
+    SIMPLE_TEXT_COACHING,    // Einfache Motivations-Texte
+    COMPLEX_PLAN_ANALYSIS    // Komplexe Trainingsplan-Logik
 }
 
 data class PlanRequest(

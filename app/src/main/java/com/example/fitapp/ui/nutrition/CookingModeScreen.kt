@@ -29,7 +29,8 @@ import android.view.WindowManager
 fun CookingModeScreen(
     recipe: SavedRecipeEntity,
     onBackPressed: () -> Unit,
-    onFinishCooking: () -> Unit
+    onFinishCooking: () -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val ctx = LocalContext.current
     val db = remember { AppDatabase.get(ctx) }
@@ -137,6 +138,7 @@ fun CookingModeScreen(
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
                         .padding(24.dp)
+                        .padding(bottom = contentPadding.calculateBottomPadding())
                 ) {
                     Text(
                         "Schritt ${currentStep + 1}",
@@ -241,7 +243,12 @@ fun CookingModeScreen(
                     
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
+                        contentPadding = PaddingValues(
+                            start = 16.dp,
+                            top = 16.dp,
+                            end = 16.dp,
+                            bottom = 16.dp + contentPadding.calculateBottomPadding()
+                        ),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(ingredients.size) { index ->
@@ -474,7 +481,8 @@ private fun categorizeIngredient(ingredient: String): String {
 fun CookingModeFromId(
     recipeId: String,
     onBackPressed: () -> Unit,
-    onFinishCooking: () -> Unit
+    onFinishCooking: () -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val ctx = LocalContext.current
     val db = remember { AppDatabase.get(ctx) }
@@ -488,7 +496,8 @@ fun CookingModeFromId(
         CookingModeScreen(
             recipe = savedRecipe,
             onBackPressed = onBackPressed,
-            onFinishCooking = onFinishCooking
+            onFinishCooking = onFinishCooking,
+            contentPadding = contentPadding
         )
     } ?: run {
         // Loading or recipe not found

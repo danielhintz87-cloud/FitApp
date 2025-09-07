@@ -22,7 +22,8 @@ import kotlinx.coroutines.launch
 fun SavedRecipesScreen(
     onBackPressed: () -> Unit,
     onRecipeClick: (SavedRecipeEntity) -> Unit,
-    onCookRecipe: (SavedRecipeEntity) -> Unit
+    onCookRecipe: (SavedRecipeEntity) -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val ctx = LocalContext.current
     val db = remember { AppDatabase.get(ctx) }
@@ -118,7 +119,12 @@ fun SavedRecipesScreen(
         // Recipe List
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                top = 16.dp,
+                end = 16.dp,
+                bottom = 16.dp + contentPadding.calculateBottomPadding()
+            ),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(recipes) { recipe ->

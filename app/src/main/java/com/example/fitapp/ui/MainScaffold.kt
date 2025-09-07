@@ -84,7 +84,7 @@ fun MainScaffold() {
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(bottom = 16.dp) // Add bottom padding for better scrolling
+                        .padding(bottom = 80.dp) // Extra padding for navigation bar
                 ) {
                     Text(
                         "Navigation", 
@@ -334,7 +334,7 @@ fun MainScaffold() {
             NavHost(navController = nav, startDestination = "plan", modifier = Modifier.fillMaxSize()) {
                 composable("plan") { PlanScreen(padding, nav) }
                 composable("today") { TodayScreen(padding, nav) }
-                composable("nutrition") { NutritionScreen(nav) }
+                composable("nutrition") { NutritionScreen(nav, padding) }
                 composable("progress") { ProgressScreen(padding) }
                 composable("foodscan") {
                     FoodScanScreen(contentPadding = padding)
@@ -346,29 +346,48 @@ fun MainScaffold() {
                     ApiKeysScreen(padding)
                 }
                 composable("notification_settings") {
-                    NotificationSettingsScreen(navController = nav)
+                    NotificationSettingsScreen(
+                        navController = nav,
+                        contentPadding = padding
+                    )
                 }
                 composable("health_connect_settings") {
-                    HealthConnectSettingsScreen(navController = nav)
+                    HealthConnectSettingsScreen(
+                        navController = nav,
+                        contentPadding = padding
+                    )
                 }
-                composable("help") { com.example.fitapp.ui.settings.HelpScreen(onBack = { nav.popBackStack() }) }
-                composable("about") { com.example.fitapp.ui.settings.AboutScreen(onBack = { nav.popBackStack() }) }
+                composable("help") { 
+                    com.example.fitapp.ui.settings.HelpScreen(
+                        onBack = { nav.popBackStack() },
+                        contentPadding = padding
+                    ) 
+                }
+                composable("about") { 
+                    com.example.fitapp.ui.settings.AboutScreen(
+                        onBack = { nav.popBackStack() },
+                        contentPadding = padding
+                    ) 
+                }
                 composable("cloud_sync_settings") {
                     CloudSyncSettingsScreen(
-                        onNavigateBack = { nav.popBackStack() }
+                        onNavigateBack = { nav.popBackStack() },
+                        contentPadding = padding
                     )
                 }
                 composable("equipment") { 
                     EquipmentSelectionScreen(
                         selectedEquipment = emptyList(), // Let the screen load from UserPreferences
                         onEquipmentChanged = { }, // Equipment is saved automatically in UserPreferences
-                        onBackPressed = { nav.popBackStack() }
+                        onBackPressed = { nav.popBackStack() },
+                        contentPadding = padding
                     )
                 }
                 composable("todaytraining") {
                     TodayTrainingScreen(
                         navController = nav,
-                        onBackPressed = { nav.popBackStack() }
+                        onBackPressed = { nav.popBackStack() },
+                        contentPadding = padding
                     )
                 }
                 composable("saved_recipes") {
@@ -380,7 +399,8 @@ fun MainScaffold() {
                         },
                         onCookRecipe = { recipe ->
                             nav.navigate("cooking_mode/${recipe.id}")
-                        }
+                        },
+                        contentPadding = padding
                     )
                 }
                 composable("enhanced_recipes") {
@@ -394,7 +414,8 @@ fun MainScaffold() {
                         },
                         onCreateRecipe = {
                             nav.navigate("recipe_edit")
-                        }
+                        },
+                        contentPadding = padding
                     )
                 }
                 composable("recipe_detail/{recipeId}") { backStackEntry ->
@@ -403,7 +424,8 @@ fun MainScaffold() {
                         recipeId = recipeId,
                         onBackPressed = { nav.popBackStack() },
                         onCookRecipe = { nav.navigate("cooking_mode/$recipeId") },
-                        onEditRecipe = { nav.navigate("recipe_edit/$recipeId") }
+                        onEditRecipe = { nav.navigate("recipe_edit/$recipeId") },
+                        contentPadding = padding
                     )
                 }
                 composable("recipe_edit/{recipeId?}") { backStackEntry ->
@@ -411,7 +433,8 @@ fun MainScaffold() {
                     RecipeEditFromId(
                         recipeId = recipeId,
                         onBackPressed = { nav.popBackStack() },
-                        onSaveRecipe = { nav.popBackStack() }
+                        onSaveRecipe = { nav.popBackStack() },
+                        contentPadding = padding
                     )
                 }
                 composable("cooking_mode/{recipeId}") { backStackEntry ->
@@ -420,7 +443,8 @@ fun MainScaffold() {
                     CookingModeFromId(
                         recipeId = recipeId,
                         onBackPressed = { nav.popBackStack() },
-                        onFinishCooking = { nav.popBackStack() }
+                        onFinishCooking = { nav.popBackStack() },
+                        contentPadding = padding
                     )
                 }
                 composable("shopping_list") {
@@ -434,6 +458,7 @@ fun MainScaffold() {
                     TrainingExecutionScreen(
                         planId = planId,
                         onBackPressed = { nav.popBackStack() },
+                        contentPadding = padding,
                         onTrainingCompleted = { 
                             scope.launch {
                                 try {
@@ -468,7 +493,8 @@ fun MainScaffold() {
                     DailyWorkoutScreen(
                         goal = goal,
                         minutes = minutes,
-                        onBackPressed = { nav.popBackStack() }
+                        onBackPressed = { nav.popBackStack() },
+                        contentPadding = padding
                     )
                 }
                 composable("hiit_builder") {
@@ -478,7 +504,8 @@ fun MainScaffold() {
                             // Store workout temporarily for execution
                             // For now, navigate directly to execution
                             nav.navigate("hiit_execution")
-                        }
+                        },
+                        contentPadding = padding
                     )
                 }
                 composable("hiit_execution") {
@@ -526,7 +553,8 @@ fun MainScaffold() {
                 }
                 composable("weight_tracking") {
                     WeightTrackingScreen(
-                        onBackPressed = { nav.popBackStack() }
+                        onBackPressed = { nav.popBackStack() },
+                        contentPadding = padding
                     )
                 }
                 composable("social_challenges") {
@@ -563,6 +591,7 @@ fun MainScaffold() {
                 composable("bmi_calculator") {
                     BMICalculatorScreen(
                         navController = nav,
+                        contentPadding = padding,
                         onWeightLossProgramSuggested = { bmi, targetWeight ->
                             nav.navigate("weight_loss_program/$bmi/$targetWeight")
                         }
@@ -574,14 +603,21 @@ fun MainScaffold() {
                     WeightLossProgramScreen(
                         navController = nav,
                         initialBMI = bmi,
-                        initialTargetWeight = targetWeight
+                        initialTargetWeight = targetWeight,
+                        contentPadding = padding
                     )
                 }
                 composable("weight_loss_program") {
-                    WeightLossProgramScreen(navController = nav)
+                    WeightLossProgramScreen(
+                        navController = nav,
+                        contentPadding = padding
+                    )
                 }
                 composable("ai_personal_trainer") {
-                    AIPersonalTrainerScreen(navController = nav)
+                    AIPersonalTrainerScreen(
+                        navController = nav,
+                        contentPadding = padding
+                    )
                 }
 
             }

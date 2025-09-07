@@ -22,7 +22,7 @@ object AppAiClean {
     suspend fun planWithOptimalProvider(context: Context, req: PlanRequest): Result<String> {
         if (!ApiKeys.isPrimaryProviderAvailable(context)) {
             val statusInfo = ApiKeys.getConfigurationStatus(context)
-            return Result.failure(IllegalStateException("$statusInfo\n\nBitte beide API-Schlüssel unter Einstellungen → API-Schlüssel eingeben."))
+            return Result.failure(IllegalStateException("$statusInfo\n\nBitte Gemini API-Schlüssel unter Einstellungen → API-Schlüssel eingeben."))
         }
         
         val container = AiDiContainer.getInstance(context)
@@ -42,7 +42,7 @@ object AppAiClean {
     suspend fun recipesWithOptimalProvider(context: Context, req: RecipeRequest): Result<String> {
         if (!ApiKeys.isPrimaryProviderAvailable(context)) {
             val statusInfo = ApiKeys.getConfigurationStatus(context)
-            return Result.failure(IllegalStateException("$statusInfo\n\nBitte beide API-Schlüssel unter Einstellungen → API-Schlüssel eingeben."))
+            return Result.failure(IllegalStateException("$statusInfo\n\nBitte Gemini API-Schlüssel unter Einstellungen → API-Schlüssel eingeben."))
         }
         
         val container = AiDiContainer.getInstance(context)
@@ -60,7 +60,7 @@ object AppAiClean {
     suspend fun caloriesWithOptimalProvider(context: Context, bitmap: Bitmap, note: String = ""): Result<CaloriesEstimate> {
         if (!ApiKeys.isPrimaryProviderAvailable(context)) {
             val statusInfo = ApiKeys.getConfigurationStatus(context)
-            return Result.failure(IllegalStateException("$statusInfo\n\nBitte beide API-Schlüssel unter Einstellungen → API-Schlüssel eingeben."))
+            return Result.failure(IllegalStateException("$statusInfo\n\nBitte Gemini API-Schlüssel unter Einstellungen → API-Schlüssel eingeben."))
         }
         
         val container = AiDiContainer.getInstance(context)
@@ -91,7 +91,7 @@ object AppAiClean {
      */
     suspend fun estimateCaloriesForManualEntry(context: Context, foodDescription: String): Result<Int> {
         if (!ApiKeys.isPrimaryProviderAvailable(context)) {
-            return Result.failure(IllegalStateException("Beide API-Schlüssel erforderlich für Kalorienschätzung."))
+            return Result.failure(IllegalStateException("Gemini API-Schlüssel erforderlich für Kalorienschätzung."))
         }
         
         val container = AiDiContainer.getInstance(context)

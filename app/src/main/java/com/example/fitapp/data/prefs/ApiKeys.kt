@@ -21,7 +21,18 @@ object ApiKeys {
     }
 
     fun getGeminiKey(context: Context): String {
-        return getPrefs(context).getString(KEY_GEMINI, "") ?: ""
+        // Erst SharedPreferences prüfen (User-Eingabe hat Priorität)
+        val userKey = getPrefs(context).getString(KEY_GEMINI, "") ?: ""
+        if (userKey.isNotBlank()) {
+            return userKey
+        }
+        
+        // Fallback auf BuildConfig wenn nichts in SharedPreferences
+        return try {
+            com.example.fitapp.BuildConfig.GEMINI_API_KEY
+        } catch (e: Exception) {
+            ""
+        }
     }
 
     fun savePerplexityKey(context: Context, key: String) {
@@ -29,7 +40,18 @@ object ApiKeys {
     }
 
     fun getPerplexityKey(context: Context): String {
-        return getPrefs(context).getString(KEY_PERPLEXITY, "") ?: ""
+        // Erst SharedPreferences prüfen (User-Eingabe hat Priorität)
+        val userKey = getPrefs(context).getString(KEY_PERPLEXITY, "") ?: ""
+        if (userKey.isNotBlank()) {
+            return userKey
+        }
+        
+        // Fallback auf BuildConfig wenn nichts in SharedPreferences
+        return try {
+            com.example.fitapp.BuildConfig.PERPLEXITY_API_KEY
+        } catch (e: Exception) {
+            ""
+        }
     }
 
     // Legacy methods for migration compatibility
@@ -49,9 +71,13 @@ object ApiKeys {
 
     /**
      * Check if both primary providers are available
+     * Updated for cost optimization: Gemini is sufficient for most operations
      */
     fun isPrimaryProviderAvailable(context: Context): Boolean {
-        return getGeminiKey(context).isNotBlank() && getPerplexityKey(context).isNotBlank()
+        val geminiKey = getGeminiKey(context)
+        
+        // Gemini allein ist ausreichend für die meisten App-Funktionen
+        return geminiKey.isNotBlank() && !geminiKey.startsWith("demo_")
     }
 
     /**
@@ -59,8 +85,14 @@ object ApiKeys {
      */
     fun isProviderAvailable(context: Context, provider: com.example.fitapp.ai.AiProvider): Boolean {
         return when (provider) {
-            com.example.fitapp.ai.AiProvider.Gemini -> getGeminiKey(context).isNotBlank()
-            com.example.fitapp.ai.AiProvider.Perplexity -> getPerplexityKey(context).isNotBlank()
+            com.example.fitapp.ai.AiProvider.Gemini -> {
+                val key = getGeminiKey(context)
+                key.isNotBlank() && !key.startsWith("demo_")
+            }
+            com.example.fitapp.ai.AiProvider.Perplexity -> {
+                val key = getPerplexityKey(context)
+                key.isNotBlank() && !key.startsWith("demo_")
+            }
         }
     }
 
@@ -73,14 +105,46 @@ object ApiKeys {
         
         return buildString {
             appendLine("AI Provider Status:")
-            append("- Gemini: ${if (geminiKey.isNotBlank()) "✓ Konfiguriert" else "✗ API-Schlüssel erforderlich"}")
-            appendLine()
-            append("- Perplexity: ${if (perplexityKey.isNotBlank()) "✓ Konfiguriert" else "✗ API-Schlüssel erforderlich"}")
             
-            if (geminiKey.isBlank()) {
+            when {
+                geminiKey.isBlank() -> append("- Gemini: ❌ API-Schlüssel fehlt")
+                geminiKey.startsWith("demo_") -> append("- Gemini: ❌ Demo-Schlüssel (ungültig)")
+                geminiKey.startsWith("AIza") -> append("- Gemini: ✅ Konfiguriert und funktional")
+                else -> append("- Gemini: ⚠️ Konfiguriert (Format unbekannt)")
+            }
+            appendLine()
+            
+            when {
+                perplexityKey.isBlank() -> append("- Perplexity: ⚪ Optional (nicht erforderlich)")
+                perplexityKey.startsWith("demo_") -> append("- Perplexity: ❌ Demo-Schlüssel (ungültig)")
+                perplexityKey.startsWith("pplx-") -> append("- Perplexity: ⚠️ Konfiguriert (API-Änderungen möglich)")
+                else -> append("- Perplexity: ⚠️ Konfiguriert (Format unbekannt)")
+            }
+            
+            // Status-Quelle anzeigen
+            appendLine()
+            appendLine()
+            val userGemini = getPrefs(context).getString(KEY_GEMINI, "")?.isNotBlank() == true
+            val userPerplexity = getPrefs(context).getString(KEY_PERPLEXITY, "")?.isNotBlank() == true
+            
+            append("Schlüssel-Quelle:")
+            appendLine()
+            append("- Gemini: ${if (userGemini) "App-Eingabe" else "Build-Konfiguration"}")
+            appendLine()
+            append("- Perplexity: ${if (userPerplexity) "App-Eingabe" else "Build-Konfiguration"}")
+            
+            appendLine()
+            appendLine()
+            append("💡 Kosten-Optimierung:")
+            appendLine()
+            append("- Gemini reicht für alle Hauptfunktionen aus")
+            appendLine()
+            append("- Perplexity ist optional für erweiterte Web-Suche")
+            
+            if (geminiKey.isBlank() || geminiKey.startsWith("demo_")) {
                 appendLine()
                 appendLine()
-                append("Bitte Gemini API-Schlüssel unter Einstellungen → API-Schlüssel eingeben.")
+                append("⚠️ Gemini API-Schlüssel unter Einstellungen → API-Schlüssel eingeben.")
             }
         }
     }

@@ -69,28 +69,27 @@ class AiProviderRepositoryImpl(
         taskType: TaskType,
         hasImage: Boolean
     ): com.example.fitapp.domain.entities.AiProvider {
+        
+        // Nutze den neuen ModelOptimizer für intelligente Auswahl
+        val selection = com.example.fitapp.infrastructure.providers.ModelOptimizer.selectOptimalModel(taskType, hasImage)
+        
         val perplexityAvailable = isProviderAvailable(
             com.example.fitapp.domain.entities.AiProvider.Perplexity
         )
 
-        return when {
-            // Multimodal tasks always require Gemini's vision support
-            hasImage -> com.example.fitapp.domain.entities.AiProvider.Gemini
-
-            // Structured fitness plans favour Gemini for longer responses
-            taskType == TaskType.TRAINING_PLAN -> com.example.fitapp.domain.entities.AiProvider.Gemini
-
-            // Route lightweight tasks to Perplexity when available
-            taskType == TaskType.SHOPPING_LIST_PARSING && perplexityAvailable ->
-                com.example.fitapp.domain.entities.AiProvider.Perplexity
-            taskType == TaskType.RECIPE_GENERATION && perplexityAvailable ->
-                com.example.fitapp.domain.entities.AiProvider.Perplexity
-
-            // Other text-only tasks prefer Perplexity for web-informed responses when available
-            !hasImage && perplexityAvailable -> com.example.fitapp.domain.entities.AiProvider.Perplexity
-
-            // Fallback to Gemini in all other cases or when Perplexity is unavailable
-            else -> com.example.fitapp.domain.entities.AiProvider.Gemini
+        return when (selection.provider) {
+            com.example.fitapp.infrastructure.providers.OptimalProvider.GEMINI -> 
+                com.example.fitapp.domain.entities.AiProvider.Gemini
+            
+            com.example.fitapp.infrastructure.providers.OptimalProvider.PERPLEXITY -> {
+                if (perplexityAvailable) {
+                    com.example.fitapp.domain.entities.AiProvider.Perplexity
+                } else {
+                    // Fallback zu Gemini wenn Perplexity nicht verfügbar
+                    android.util.Log.w("AiRepository", "Perplexity nicht verfügbar für $taskType, Fallback zu Gemini")
+                    com.example.fitapp.domain.entities.AiProvider.Gemini
+                }
+            }
         }
     }
     

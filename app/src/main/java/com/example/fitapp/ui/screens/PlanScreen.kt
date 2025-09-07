@@ -132,6 +132,7 @@ fun PlanScreen(contentPadding: PaddingValues, navController: NavController? = nu
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .padding(contentPadding)
                 .padding(16.dp)
         ) {
         Text("12-Wochen-Trainingsplan", style = MaterialTheme.typography.titleLarge)
