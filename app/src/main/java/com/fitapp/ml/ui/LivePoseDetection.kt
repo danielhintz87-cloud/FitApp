@@ -24,7 +24,7 @@ import com.fitapp.ml.blazepose.BlazePoseMediaPipe
 import com.fitapp.ml.blazepose.BlazePoseResult
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.guava.await
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors

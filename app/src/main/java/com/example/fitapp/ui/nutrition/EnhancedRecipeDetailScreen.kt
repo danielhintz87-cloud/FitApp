@@ -348,7 +348,7 @@ private fun RecipeQuickStats(recipe: SavedRecipeEntity) {
                     value = difficulty,
                     color = when (difficulty.lowercase()) {
                         "einfach" -> Color.Green
-                        "mittel" -> Color.Orange
+                        "mittel" -> Color(0xFFFFA500) // Orange replacement
                         "schwer" -> Color.Red
                         else -> MaterialTheme.colorScheme.primary
                     }

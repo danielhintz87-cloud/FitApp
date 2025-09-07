@@ -390,12 +390,6 @@ class WorkoutExecutionManager @Inject constructor(
         )
     }
 
-    private fun calculateActualRest(): Long {
-        val now = System.currentTimeMillis() / 1000
-        val lastEnd = lastSetEndTime ?: return 0
-        return now - lastEnd
-    }
-
     private fun getCurrentUserId(): String = "current_user" // Platzhalter für UserSessionProvider
 
     /**

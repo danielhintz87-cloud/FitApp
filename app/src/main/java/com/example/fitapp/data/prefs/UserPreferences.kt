@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.first
  */
 interface UserPreferences {
     suspend fun clearWorkoutPreferences()
-    suspend fun clearNutritionPreferences()
+    suspend fun clearNutritionPreferences() 
     suspend fun clearUserPreferences()
     suspend fun clearAchievementPreferences()
     suspend fun clearAllPreferences()

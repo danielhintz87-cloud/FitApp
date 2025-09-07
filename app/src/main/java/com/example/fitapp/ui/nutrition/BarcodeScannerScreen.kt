@@ -59,15 +59,15 @@ fun BarcodeScannerScreen(
                 // First try local database
                 var foodItem = repo.getFoodItemByBarcode(barcode)?.let { entity ->
                     FoodItem(
-                        id = entity.id,
+                        id = entity.id.toLongOrNull() ?: 0L,
                         name = entity.name,
-                        brand = entity.brand ?: "",
+                        brand = entity.brands ?: "",
                         barcode = entity.barcode ?: "",
-                        caloriesPer100g = entity.caloriesPer100g,
-                        proteinPer100g = entity.proteinPer100g,
-                        carbsPer100g = entity.carbsPer100g,
-                        fatPer100g = entity.fatPer100g,
-                        category = entity.category ?: "Unbekannt",
+                        caloriesPer100g = entity.calories.toFloat(),
+                        proteinPer100g = entity.protein,
+                        carbsPer100g = entity.carbs,
+                        fatPer100g = entity.fat,
+                        category = entity.categories ?: "Unbekannt",
                         source = "Local Database"
                     )
                 }
@@ -83,14 +83,11 @@ fun BarcodeScannerScreen(
                     // Convert to entity and save to local database if from online source
                     if (foodItem.source != "Local Database") {
                         val entity = FoodItemEntity(
-                            name = foodItem.name,
-                            brand = foodItem.brand.takeIf { it.isNotBlank() },
-                            barcode = foodItem.barcode.takeIf { it.isNotBlank() },
-                            caloriesPer100g = foodItem.caloriesPer100g,
-                            proteinPer100g = foodItem.proteinPer100g,
-                            carbsPer100g = foodItem.carbsPer100g,
-                            fatPer100g = foodItem.fatPer100g,
-                            category = foodItem.category.takeIf { it != "Unbekannt" }
+                            name = name,
+                            calories = calories.toIntOrNull() ?: 0,
+                            carbs = carbs.toFloatOrNull() ?: 0f,
+                            protein = protein.toFloatOrNull() ?: 0f,
+                            fat = fat.toFloatOrNull() ?: 0f
                         )
                         repo.addFoodItem(entity)
                         onFoodItemFound(entity)

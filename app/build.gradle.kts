@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
     alias(libs.plugins.protobuf)
 }
 
@@ -22,6 +23,15 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        
+        // BuildConfig fields for API keys
+        buildConfigField("String", "GEMINI_API_KEY", "\"\"")
+        buildConfigField("String", "PERPLEXITY_API_KEY", "\"\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
+        compose = true
     }
 
     buildTypes {
@@ -163,6 +173,11 @@ dependencies {
 
     // WorkManager - KORREKTE DOT NOTATION!
     implementation(libs.work.runtime.ktx)
+
+    // Hilt Dependency Injection
+    implementation(libs.hilt.android)
+    implementation(libs.hilt.navigation.compose)
+    ksp(libs.hilt.android.compiler)
 
     // Desugaring - KORREKTE DOT NOTATION!
     coreLibraryDesugaring(libs.desugar.jdk.libs)

@@ -37,8 +37,23 @@ interface RecipeDao {
     """)
     fun historyFlow(): Flow<List<RecipeEntity>>
 
-    @Query("SELECT * FROM recipes WHERE id = :id")
+    @Query("SELECT r.* FROM recipes r WHERE id = :id")
     suspend fun getRecipe(id: String): RecipeEntity?
+    
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun addToFavorites(entity: RecipeFavoriteEntity)
+    
+    @Query("DELETE FROM recipe_favorites WHERE recipeId = :recipeId AND category = :category")
+    suspend fun removeFromFavoriteCategory(recipeId: String, category: String)
+    
+    @Query("DELETE FROM recipe_favorites WHERE recipeId = :recipeId")
+    suspend fun removeFromAllFavoriteCategories(recipeId: String)
+    
+    @Query("SELECT * FROM recipe_favorites")
+    suspend fun getAllFavoriteCategories(): List<RecipeFavoriteEntity>
+    
+    @Query("SELECT recipeId FROM recipe_favorites WHERE category = :category")
+    suspend fun getFavoriteRecipesByCategory(category: String): List<String>
 }
 
 @Dao
@@ -127,6 +142,12 @@ interface SavedRecipeDao {
 
     @Query("SELECT * FROM saved_recipes WHERE id = :id")
     suspend fun getRecipe(id: String): SavedRecipeEntity?
+    
+    @Query("SELECT * FROM saved_recipes WHERE id = :id")
+    suspend fun getRecipeById(id: String): SavedRecipeEntity?
+
+    @Query("SELECT * FROM saved_recipes WHERE id IN (:ids)")
+    suspend fun getRecipesByIds(ids: List<String>): List<SavedRecipeEntity>
 
     @Query("UPDATE saved_recipes SET isFavorite = :favorite WHERE id = :id")
     suspend fun setFavorite(id: String, favorite: Boolean)
@@ -163,6 +184,9 @@ interface PlanDao {
 
     @Query("SELECT * FROM training_plans WHERE id = :id")
     suspend fun getPlan(id: Long): PlanEntity?
+
+    @Query("SELECT * FROM training_plans WHERE id = :id")
+    suspend fun getById(id: Long): PlanEntity?
 
     @Query("SELECT * FROM training_plans ORDER BY createdAt DESC LIMIT 1")
     suspend fun getLatestPlan(): PlanEntity?
@@ -685,6 +709,9 @@ interface WorkoutSessionDao {
 
     @Query("SELECT * FROM workout_sessions ORDER BY startTime DESC")
     fun getAllFlow(): Flow<List<WorkoutSessionEntity>>
+
+    @Query("UPDATE workout_sessions SET pauseStartTime = :pauseTime WHERE id = :sessionId")
+    suspend fun updatePauseTime(sessionId: String, pauseTime: Long)
 
     @Query("SELECT * FROM workout_sessions WHERE planId = :planId ORDER BY startTime DESC")
     suspend fun getByPlanId(planId: Long): List<WorkoutSessionEntity>

@@ -1,6 +1,7 @@
 package com.example.fitapp.ui.util
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateTopPadding
 import androidx.compose.foundation.layout.calculateBottomPadding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp

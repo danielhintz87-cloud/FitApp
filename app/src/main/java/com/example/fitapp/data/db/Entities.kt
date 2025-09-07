@@ -38,6 +38,8 @@ data class RecipeEntity(
 )
 data class RecipeFavoriteEntity(
     val recipeId: String,
+    val category: String = "general",
+    val addedAt: Long = System.currentTimeMillis() / 1000,
     val savedAt: Long = System.currentTimeMillis() / 1000
 )
 
