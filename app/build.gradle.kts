@@ -242,9 +242,9 @@ dependencies {
     // (Bereinigt) – Duplikate entfernt
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")
     testImplementation(libs.junit)
-    testImplementation(libs.coroutines_test)
+    testImplementation(libs.coroutines.test)
     testImplementation(libs.robolectric)
-    testImplementation(libs.mockito_core)
+    testImplementation(libs.mockito.core)
 }
 
 // Jacoco
