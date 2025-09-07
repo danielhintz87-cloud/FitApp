@@ -178,7 +178,6 @@ class PerplexityAiProvider(
                 }
                 content
             }
-        }
     }
     
     override suspend fun analyzeImage(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> {

@@ -449,7 +449,12 @@ data class WorkoutSessionEntity(
     val personalRecordsAchieved: Int = 0,
     val completionPercentage: Float = 0f,
     val sessionRating: Int? = null, // 1-5 stars
-    val sessionNotes: String? = null
+    val sessionNotes: String? = null,
+    
+    // Pause/Resume Functionality
+    val pauseStartTime: Long? = null,
+    val totalPauseTime: Long = 0L,
+    val actualDuration: Long? = null
 )
 
 @Entity(

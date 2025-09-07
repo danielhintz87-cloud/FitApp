@@ -58,7 +58,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SocialBadgeEntity::class,
         LeaderboardEntryEntity::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -892,6 +892,15 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE `personal_achievements` ADD COLUMN `pointsValue` INTEGER NOT NULL DEFAULT 0")
             }
         }
+
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add pause/resume functionality to workout sessions
+                db.execSQL("ALTER TABLE `workout_sessions` ADD COLUMN `pauseStartTime` INTEGER")
+                db.execSQL("ALTER TABLE `workout_sessions` ADD COLUMN `totalPauseTime` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `workout_sessions` ADD COLUMN `actualDuration` INTEGER")
+            }
+        }
         
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
@@ -901,7 +910,7 @@ abstract class AppDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): AppDatabase {
             return try {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
-                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
                     .apply {
                         // Only allow destructive migration in debug builds
                         if (com.example.fitapp.BuildConfig.DEBUG) {
