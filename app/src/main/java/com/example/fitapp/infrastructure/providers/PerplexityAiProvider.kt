@@ -103,12 +103,11 @@ class PerplexityAiProvider(
     }
     
     private suspend fun makeApiCall(apiKey: String, model: String, prompt: String): String {
-    private suspend fun makeApiCall(apiKey: String, model: String, prompt: String): String {
             val body = """
                 {
                     "model": "$model",
                     "messages": [
-                        {"role": "user", "content": ${prompt.json()}}
+                        {"role": "user", "content": "${prompt.json()}"}
                     ],
                     "temperature": 0.4,
                     "max_tokens": 4096

@@ -367,7 +367,12 @@ private fun PrivacySettingsCard() {
             Spacer(Modifier.height(16.dp))
             
             OutlinedButton(
-                onClick = { /* TODO: Open privacy policy */ },
+                onClick = { 
+                    // Open privacy policy URL in browser
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, 
+                        android.net.Uri.parse("https://developer.android.com/health-and-fitness/guides/health-connect/privacy"))
+                    navController.context.startActivity(intent)
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.Default.Policy, null)
@@ -413,7 +418,12 @@ private fun HelpInfoCard() {
             Spacer(Modifier.height(16.dp))
             
             OutlinedButton(
-                onClick = { /* TODO: Open help */ },
+                onClick = { 
+                    // Open Health Connect help documentation
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, 
+                        android.net.Uri.parse("https://developer.android.com/health-and-fitness/guides/health-connect"))
+                    navController.context.startActivity(intent)
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.AutoMirrored.Filled.HelpOutline, null)

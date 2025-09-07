@@ -87,7 +87,7 @@ class GeminiAiProvider(
             val body = """
                 {
                     "contents": [{
-                        "parts": [{"text": ${prompt.json()}}]
+                        "parts": [{"text": "${prompt.json()}"}]
                     }],
                     "generationConfig": {
                         "temperature": 0.4,
@@ -206,7 +206,7 @@ class GeminiAiProvider(
                 {
                     "contents": [{
                         "parts": [
-                            {"text": ${prompt.json()}},
+                            {"text": "${prompt.json()}"},
                             {
                                 "inline_data": {
                                     "mime_type": "image/jpeg",
@@ -223,7 +223,7 @@ class GeminiAiProvider(
             """.trimIndent().toRequestBody("application/json".toMediaType())
 
             val request = Request.Builder()
-                .url("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-8b:generateContent?key=$apiKey")
+                .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey")
                 .header("User-Agent", "fitapp/1.0")
                 .post(body)
                 .build()
