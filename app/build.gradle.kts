@@ -4,7 +4,46 @@ import org.gradle.api.tasks.Copy
 import java.time.Instant
 
 plugins {
-    alias(libs.plugins.android.application)
+    alias(ldependencies {
+    implementation(libs.tensorflow.    // Networking & JSON
+    implementation(libs.okhttp)
+    implement    // Instrumented Tests
+    androidTestImplementation(libs.android.test.junit)
+    androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(libs.room.testing)
+    androidTestImplementation(libs.android.test.core)
+        // TensorFlow Lite (Advanced ML) – vereinheitlicht, vermeidet doppelte Artefakte
+    // (Bereinigt) – Duplikate entfernt
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")
+    testImplementation(libs.junit)
+    testImplementation(libs.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.mockito.core)otlinx.serialization.json)
+
+    // Retrofit Stack (OpenFoodFacts)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.moshi)
+    implementation(libs.retrofit.logging.interceptor)
+    implementation(libs.moshi)
+    implementation(libs.moshi.kotlin)
+    ksp(libs.moshi.codegen)
+
+    // Coil (Bildvorschau)
+    implementation(libs.coil.compose)
+
+    // CameraX (Barcode and ML)
+    implementation(libs.camerax.core)
+    implementation(libs.camerax.camera2)
+    implementation(libs.camerax.lifecycle)
+    implementation(libs.camerax.view)al composeBom = platform(libs.compose.bom)
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
+
+    // Compose
+    implementation(libs.compose.ui)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.ui.tooling.preview)
+    debugImplementation(libs.compose.ui.tooling).android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose) // Compose plugin alias aus deiner libs.versions.toml
@@ -142,7 +181,7 @@ android {
 }
 
 dependencies {
-    implementation(libs.tensorflow.lite.metadata)
+    implementation(libs.tensorflow.lite_metadata)
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
@@ -150,13 +189,13 @@ dependencies {
     // Compose
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
-    implementation(libs.compose.ui.tooling.preview)
-    debugImplementation(libs.compose.ui.tooling)
+    implementation(libs.compose.ui_tooling_preview)
+    debugImplementation(libs.compose.ui_tooling)
 
     // AppCompat (Theming-Kompatibilität)
     implementation(libs.appcompat)
 
-    // Material Icons
+        // Material Icons
     implementation(libs.compose.material.icons)
 
     // Navigation (Compose)
@@ -183,12 +222,12 @@ dependencies {
 
     // Networking & JSON
     implementation(libs.okhttp)
-    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.serialization_json)
 
     // Retrofit Stack (OpenFoodFacts)
     implementation(libs.retrofit)
-    implementation(libs.retrofit.converter.moshi)
-    implementation(libs.retrofit.logging.interceptor)
+    implementation(libs.retrofit.converter_moshi)
+    implementation(libs.retrofit.logging_interceptor)
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
     ksp(libs.moshi.codegen)
@@ -205,7 +244,7 @@ dependencies {
     // MediaPipe Tasks - Pose Landmarker
     implementation("com.google.mediapipe:tasks-vision:0.10.14")
 
-    // ML Kit Barcode Scanning
+        // ML Kit Barcode Scanning
     implementation(libs.mlkit.barcode.scanning)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.10.2")
         // Entfernt ältere 1.7.3 Android Coroutines – nur Version Katalog (1.10.2) aktiv
@@ -234,10 +273,10 @@ dependencies {
         // Optionales Upgrade auf 1.3.4 möglich durch Anpassung libs.versions.toml (versions.camerax)
     // (Bereinigt) – Duplikate entfernt
     // Instrumented Tests
-    androidTestImplementation(libs.android.test.junit)
+    androidTestImplementation(libs.android.test_junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.room.testing)
-    androidTestImplementation(libs.android.test.core)
+    androidTestImplementation(libs.android.test_core)
         // TensorFlow Lite (Advanced ML) – vereinheitlicht, vermeidet doppelte Artefakte
     // (Bereinigt) – Duplikate entfernt
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")

@@ -3,7 +3,7 @@ package com.example.fitapp.infrastructure.providers
 import android.content.Context
 import android.graphics.Bitmap
 import com.example.fitapp.domain.entities.*
-import com.example.fitapp.infrastructure.repositories.AiProviderRepository
+import com.example.fitapp.domain.repositories.AiProviderRepository
 
 /**
  * Intelligenter AI-Router für funktionsbasierte Modellauswahl
