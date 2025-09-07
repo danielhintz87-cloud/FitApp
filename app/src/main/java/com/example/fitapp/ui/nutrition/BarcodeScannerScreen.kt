@@ -308,4 +308,3 @@ private fun EnhancedBarcodeScannerView(
         onClose = onClose,
         modifier = modifier
     )
-}

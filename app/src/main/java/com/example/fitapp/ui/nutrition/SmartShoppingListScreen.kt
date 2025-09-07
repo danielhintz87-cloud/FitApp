@@ -1,60 +1,18 @@
 package com.example.fitapp.ui.nutrition
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import com.example.fitapp.data.db.AppDatabase
-import com.example.fitapp.services.ShoppingListManager
-import kotlinx.coroutines.launch
-
-/**
- * Smart Shopping List Screen
- * Enhanced shopping list with sorting and organization features
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SmartShoppingListScreen(
-    onBackPressed: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val db = remember { AppDatabase.get(context) }
-    val shoppingManager = remember { ShoppingListManager(db) }
-    
-    // State
-    val shoppingItems by shoppingManager.shoppingItems.collectAsState()
-    val categorizedItems by shoppingManager.categorizedItems.collectAsState()
-    val stats = shoppingManager.getShoppingStats()
-    val currentSortingMode by shoppingManager.sortingMode.collectAsState()
-    
-    var showSortingDialog by remember { mutableStateOf(false) }
-    var newItemText by remember { mutableStateOf("") }
-    
-    // Load initial data
-    LaunchedEffect(Unit) {
-        shoppingManager.loadShoppingList()
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("🛒 Smart Einkaufsliste") },
-                navigationIcon = {
-                    IconButton(onClick = onBackPressed) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück")
-                    }
-                },
-                actions = {
+import androidx.compose.ui.unit.dp                    // Sorting toggle
                     IconButton(
                         onClick = { showSortingDialog = true }
                     ) {
@@ -62,98 +20,97 @@ fun SmartShoppingListScreen(
                             Icons.Filled.Sort,
                             contentDescription = "Sortierung ändern"
                         )
-                    }
-                    
-                    IconButton(
-                        onClick = {
-                            scope.launch {
-                                shoppingManager.clearCompletedItems()
-                            }
-                        }
-                    ) {
-                        Icon(
-                            Icons.Filled.Clear,
-                            contentDescription = "Erledigte entfernen"
-                        )
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-        ) {
-            OutlinedTextField(
-                value = newItemText,
-                onValueChange = { newItemText = it },
-                label = { Text("Neues Element hinzufügen") },
-                modifier = Modifier.fillMaxWidth(),
-                trailingIcon = {
-                    IconButton(
-                        onClick = {
-                            if (newItemText.isNotBlank()) {
-                                scope.launch {
-                                    shoppingManager.addItem(newItemText, "Sonstiges")
-                                    newItemText = ""
-                                }
-                            }
-                        }
-                    ) {
-                        Icon(Icons.Filled.Add, contentDescription = "Hinzufügen")
-                    }
-                }
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            LazyColumn {
-                items(shoppingItems) { item ->
-                    // Simplified item display
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = false,
-                                onCheckedChange = { }
-                            )
-                            
-                            Spacer(modifier = Modifier.width(12.dp))
-                            
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = "Shopping Item",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                            
-                            IconButton(onClick = { }) {
-                                Icon(
-                                    Icons.Filled.Delete,
-                                    contentDescription = "Löschen",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
-                    }
+                    }s.Icons
+import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.example.fitapp.data.db.AppDatabase
+import com.example.fitapp.data.db.ShoppingCategoryEntity
+import com.example.fitapp.services.ShoppingListManager
+import com.example.fitapp.services.CookingModeManager
+import com.example.fitapp.services.VoiceInputManager
+import com.example.fitapp.services.VoiceInputResult
+import com.example.fitapp.services.ShoppingListSorter
+import com.example.fitapp.ui.components.*
+import kotlinx.coroutines.launch
+
+/**
+ * New Enhanced Shopping List Screen
+ * Implements the comprehensive shopping list management system as specified
+ */
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SmartShoppingListScreen(
+    padding: PaddingValues = PaddingValues(0.dp),
+    onBackPressed: (() -> Unit)? = null
+) {
+    val context = LocalContext.current
+    val db = remember { AppDatabase.get(context) }
+    val scope = rememberCoroutineScope()
+    
+    // Shopping list manager
+    val shoppingManager = remember { ShoppingListManager(db) }
+    
+    // Voice input manager
+    val voiceInputManager = remember { VoiceInputManager(context) }
+    
+    // State
+    val shoppingItems by shoppingManager.shoppingItems.collectAsState()
+    val categorizedItems by shoppingManager.categorizedItems.collectAsState()
+    val stats = shoppingManager.getShoppingStats()
+    val isListeningForVoice by voiceInputManager.isListening.collectAsState()
+    val voiceInputResult by voiceInputManager.lastResult.collectAsState()
+    val currentSortingMode by shoppingManager.sortingMode.collectAsState()
+    
+    var sortBySupermarket by remember { mutableStateOf(true) }
+    var showSortingDialog by remember { mutableStateOf(false) }
+    var showAddFromRecipeDialog by remember { mutableStateOf(false) }
+    var showEditQuantityDialog by remember { mutableStateOf(false) }
+    var selectedItemId by remember { mutableStateOf<String?>(null) }
+    
+    // Load initial data
+    LaunchedEffect(Unit) {
+        // Initialize categories if needed
+        initializeDefaultCategories(db)
+        shoppingManager.loadShoppingList()
+        voiceInputManager.initialize()
+    }
+    
+    // Handle voice input results
+    LaunchedEffect(voiceInputResult) {
+        when (val result = voiceInputResult) {
+            is VoiceInputResult.Success -> {
+                // Add all recognized items to shopping list
+                result.shoppingItems.forEach { voiceItem ->
+                    val ingredient = CookingModeManager.Ingredient(
+                        name = voiceItem.name,
+                        quantity = voiceItem.quantity,
+                        unit = voiceItem.unit
+                    )
+                    shoppingManager.addIngredient(ingredient, "Voice Input")
                 }
             }
+            is VoiceInputResult.Error -> {
+                // Error handling could be expanded here
+            }
+            else -> { /* Handle partial results or null */ }
         }
     }
-}
+    
+    // Release voice resources on dispose
+    DisposableEffect(Unit) {
+        onDispose {
+            voiceInputManager.release()
+        }
+    }
 
     Scaffold(
         topBar = {
