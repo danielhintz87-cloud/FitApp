@@ -223,7 +223,7 @@ class BudgetTierOptimizer(private val context: Context) {
             geminiSpent = flashSpent + flashLiteSpent,
             geminiRemaining = (MONTHLY_GEMINI_BUDGET - (flashSpent + flashLiteSpent)).coerceAtLeast(0.0),
             perplexitySpent = perplexitySpent,
-            perplexityRemaining = (MONTHLY_PERPLEXITY_BUDGET - perplexitySpent).coerceAtLeast(0.0),
+            perplexityBudgetRemaining = (MONTHLY_PERPLEXITY_BUDGET - perplexitySpent).coerceAtLeast(0.0),
             
             totalSpent = flashSpent + flashLiteSpent + perplexitySpent,
             totalRemaining = (TOTAL_MONTHLY_BUDGET - (flashSpent + flashLiteSpent + perplexitySpent)).coerceAtLeast(0.0)
@@ -347,7 +347,7 @@ data class BudgetStatus(
     val geminiSpent: Double,
     val geminiRemaining: Double,
     val perplexitySpent: Double,
-    val perplexityRemaining: Double,
+    val perplexityBudgetRemaining: Double,
     val totalSpent: Double,
     val totalRemaining: Double
 )

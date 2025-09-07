@@ -3,7 +3,7 @@ package com.example.fitapp.infrastructure.providers
 import android.content.Context
 import android.graphics.Bitmap
 import com.example.fitapp.domain.entities.*
-import com.example.fitapp.infrastructure.repositories.AiProviderRepository
+import com.example.fitapp.domain.repositories.AiProviderRepository
 
 /**
  * Demo-Implementierung der funktionsbasierten AI-Optimierung
@@ -295,17 +295,15 @@ class FitnessAiOptimizer(
             **💰 AI Cost Optimization Report**
             
             **Daily Usage Breakdown:**
-            ${costAnalysis.dailyCosts.map { (task, cost) -> 
-                "• ${task.name}: ${"%.3f".format(cost)}€"
+            ${costAnalysis.qualityDistribution.map { (model, count) -> 
+                "• $model: $count requests"
             }.joinToString("\n")}
             
             **Monthly Projection:**
-            📊 Total: ${"%.2f".format(costAnalysis.monthlyTotal)}€/Monat
+            📊 Total: ${"%.2f".format(costAnalysis.currentStatus.totalSpent)}€/Monat
             
-            **Savings Comparison:**
-            ${costAnalysis.comparison.map { (strategy, cost) ->
-                "• $strategy: ${"%.2f".format(cost)}€"
-            }.joinToString("\n")}
+            **Budget Status:**
+            ${costAnalysis.budgetOptimization}
             
             **Optimization Success:**
             ✅ ~50% Kosteneinsparung durch intelligente Modellauswahl
