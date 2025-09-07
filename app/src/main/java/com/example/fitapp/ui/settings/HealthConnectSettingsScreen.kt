@@ -108,6 +108,7 @@ fun HealthConnectSettingsScreen(
                     onManualSync = {
                         viewModel.triggerSync()
                     }
+                )
                 
                 // Data Sources
                 DataSourcesCard()
@@ -385,6 +386,7 @@ private fun PrivacySettingsCard() {
             
             OutlinedButton(
                 onClick = { 
+                    val context = LocalContext.current
                     UrlOpener.openPrivacyPolicy(context)
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -436,6 +438,7 @@ private fun HelpInfoCard() {
                     // Open Health Connect help documentation
                     val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
                         android.net.Uri.parse("https://developer.android.com/health-and-fitness/guides/health-connect"))
+                    val context = LocalContext.current
                     context.startActivity(intent)
                 },
                 modifier = Modifier.fillMaxWidth()

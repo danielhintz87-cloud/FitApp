@@ -39,16 +39,6 @@ import com.example.fitapp.domain.entities.TaskType
  * Cost Efficiency: ~$4.30/month for substantial app usage
  * Quality: Maintains 95%+ accuracy for fitness-specific tasks
  */
- * - 95% functionality at 4-25x lower cost than premium models
- * 
- * Primary use cases:
- * ✓ Personalized workout plan generation
- * ✓ Nutrition recommendations and macro calculations  
- * ✓ Exercise form analysis and corrections
- * ✓ Progress tracking and adaptation suggestions
- * ✓ Motivational coaching messages
- * ✓ Multimodal image analysis (food photos, form videos)
- */
 class GeminiAiProvider(
     private val context: Context,
     private val httpClient: OkHttpClient
