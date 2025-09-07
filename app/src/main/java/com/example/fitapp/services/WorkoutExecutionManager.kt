@@ -16,27 +16,41 @@ import kotlin.math.min
  * Comprehensive Workout Execution Manager
  * Handles workout flow, set tracking, rest periods, and performance analytics
  */
-class WorkoutExecutionManager(
+class WorkoutExecutionManager @Inject constructor(
     private val database: AppDatabase,
-    private val smartRestTimer: SmartRestTimer
+    private val audioManager: AudioManager,
+    private val aiCoach: PersonalTrainingAI,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) {
     companion object {
         private const val TAG = "WorkoutExecutionManager"
     }
 
-    private val scope = CoroutineScope(Dispatchers.Main)
-    private var currentSetStartTime: Long? = null
-    private var lastSetEndTime: Long? = null
-    
-    // Flow states for reactive UI
+    // UI State flows
     private val _workoutFlow = MutableStateFlow<WorkoutExecutionFlow?>(null)
     val workoutFlow: StateFlow<WorkoutExecutionFlow?> = _workoutFlow.asStateFlow()
-    
+
     private val _currentStep = MutableStateFlow<WorkoutStep?>(null)
     val currentStep: StateFlow<WorkoutStep?> = _currentStep.asStateFlow()
-    
+
     private val _isInWorkout = MutableStateFlow(false)
     val isInWorkout: StateFlow<Boolean> = _isInWorkout.asStateFlow()
+
+    private val _restTimeRemaining = MutableStateFlow(0L)
+    val restTimeRemaining: StateFlow<Long> = _restTimeRemaining.asStateFlow()
+
+    // Timing state
+    private var workoutStartTime: Long = 0L
+    private var currentExerciseStartTime: Long = 0L
+    private var currentSetStartTime: Long? = null
+    private var restStartTime: Long? = null
+    private var lastSetEndTime: Long? = null
+    private var pauseStartTime: Long? = null
+    private var totalPauseTime: Long = 0L
+    
+    // Performance tracking
+    private val exerciseTimings = mutableMapOf<String, MutableList<Long>>()
+    private val restTimings = mutableMapOf<String, MutableList<Long>>()
 
     data class WorkoutStep(
         val exercise: ExerciseStep,
@@ -94,6 +108,10 @@ class WorkoutExecutionManager(
     ): WorkoutExecutionFlow {
         val sessionId = UUID.randomUUID().toString()
         val startTime = System.currentTimeMillis() / 1000
+        
+        // Initialize timing
+        workoutStartTime = System.currentTimeMillis()
+        currentExerciseStartTime = workoutStartTime
         
         // Create workout session in database
         val session = WorkoutSessionEntity(
@@ -179,6 +197,103 @@ class WorkoutExecutionManager(
     }
 
     /**
+     * Start a set - record precise timing
+     */
+    fun startSet() {
+        currentSetStartTime = System.currentTimeMillis()
+        
+        val currentStepValue = _currentStep.value ?: return
+        val exerciseName = currentStepValue.exercise.name
+        
+        StructuredLogger.info(
+            StructuredLogger.LogCategory.USER_ACTION,
+            TAG,
+            "Started set for exercise: $exerciseName"
+        )
+    }
+    
+    /**
+     * Start rest period - record rest timing
+     */
+    fun startRest(durationSeconds: Int) {
+        restStartTime = System.currentTimeMillis()
+        _restTimeRemaining.value = durationSeconds.toLong()
+        
+        // Start countdown timer
+        // TODO: Implement proper countdown timer with coroutines
+    }
+    
+    /**
+     * Get actual rest time in seconds
+     */
+    private fun calculateActualRest(): Long {
+        val restStart = restStartTime ?: return 0L
+        val lastSetEnd = lastSetEndTime ?: return 0L
+        return (System.currentTimeMillis() / 1000) - lastSetEnd
+    }
+    
+    /**
+     * Calculate total exercise time including all sets and rest
+     */
+    private fun calculateExerciseTime(exerciseName: String): Long {
+        val timings = exerciseTimings[exerciseName] ?: return 0L
+        return timings.sum()
+    }
+    
+    /**
+     * Calculate average rest time for an exercise
+     */
+    private fun calculateAverageRestTime(exerciseName: String): Long {
+        val timings = restTimings[exerciseName]
+        return if (timings.isNullOrEmpty()) 0L else timings.average().toLong()
+    }
+    
+    /**
+     * Pause the workout - track pause time
+     */
+    suspend fun pauseWorkout() {
+        pauseStartTime = System.currentTimeMillis()
+        
+        // Save pause state to database
+        val currentFlow = _workoutFlow.value ?: return
+        database.workoutSessionDao().updatePauseTime(
+            currentFlow.sessionId,
+            System.currentTimeMillis() / 1000
+        )
+        
+        StructuredLogger.info(
+            StructuredLogger.LogCategory.USER_ACTION,
+            TAG,
+            "Workout paused"
+        )
+    }
+    
+    /**
+     * Resume the workout - calculate total pause time
+     */
+    suspend fun resumeWorkout() {
+        val pauseStart = pauseStartTime ?: return
+        val pauseDuration = System.currentTimeMillis() - pauseStart
+        totalPauseTime += pauseDuration
+        pauseStartTime = null
+        
+        StructuredLogger.info(
+            StructuredLogger.LogCategory.USER_ACTION,
+            TAG,
+            "Workout resumed after ${pauseDuration / 1000}s pause"
+        )
+    }
+    
+    /**
+     * Get actual workout duration (excluding pause time)
+     */
+    fun getActualWorkoutDuration(): Long {
+        return if (workoutStartTime > 0) {
+            (System.currentTimeMillis() - workoutStartTime - totalPauseTime) / 1000
+        } else 0L
+    }
+
+    /**
      * Log a completed set with performance data
      */
     suspend fun logSet(
@@ -206,11 +321,23 @@ class WorkoutExecutionManager(
         
         val updatedStep = currentStepValue.copy(sets = updatedSets)
         _currentStep.value = updatedStep
-    val now = System.currentTimeMillis() / 1000
-    val actualSetDuration = currentSetStartTime?.let { now - it } ?: 60L
-    lastSetEndTime = now
         
-        // Save performance to database
+        val now = System.currentTimeMillis()
+        val nowSeconds = now / 1000
+        val actualSetDuration = currentSetStartTime?.let { (now - it) / 1000 } ?: 60L
+        lastSetEndTime = nowSeconds
+        
+        // Track exercise timing
+        val exerciseName = currentStepValue.exercise.name
+        exerciseTimings.getOrPut(exerciseName) { mutableListOf() }.add(actualSetDuration)
+        
+        // Track rest timing if this isn't the first set
+        if (restStartTime != null) {
+            val actualRestTime = calculateActualRest()
+            restTimings.getOrPut(exerciseName) { mutableListOf() }.add(actualRestTime)
+        }
+        
+        // Save performance to database with actual timings
         val performance = WorkoutPerformanceEntity(
             exerciseId = currentStepValue.exercise.name,
             sessionId = currentFlow.sessionId,
@@ -284,23 +411,26 @@ class WorkoutExecutionManager(
     suspend fun finishWorkout(): WorkoutSummary {
         val currentFlow = _workoutFlow.value ?: throw IllegalStateException("No active workout")
         val endTime = System.currentTimeMillis() / 1000
+        val actualDuration = getActualWorkoutDuration()
         
-        // Update session in database
+        // Update session in database with accurate timing
         val session = database.workoutSessionDao().getById(currentFlow.sessionId)
         session?.let { s ->
             val updatedSession = s.copy(
                 endTime = endTime,
                 completionPercentage = 100f,
                 totalVolume = calculateTotalVolume(currentFlow),
-                personalRecordsAchieved = currentFlow.personalRecords
+                personalRecordsAchieved = currentFlow.personalRecords,
+                actualDuration = actualDuration,
+                totalPauseTime = totalPauseTime / 1000 // Convert to seconds
             )
             database.workoutSessionDao().update(updatedSession)
         }
         
-        // Calculate summary
+        // Calculate summary with real timing data
         val summary = WorkoutSummary(
             sessionId = currentFlow.sessionId,
-            duration = endTime - currentFlow.startTime,
+            duration = actualDuration, // Use actual duration without pause time
             totalVolume = calculateTotalVolume(currentFlow),
             exercisesCompleted = currentFlow.completedExercises.size,
             personalRecords = currentFlow.personalRecords,

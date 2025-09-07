@@ -36,6 +36,8 @@ import com.example.fitapp.ui.nutrition.RecipeEditScreen
 import com.example.fitapp.ui.screens.PlanScreen
 import com.example.fitapp.ui.screens.ProgressScreen
 import com.example.fitapp.ui.screens.TodayScreen
+import com.example.fitapp.ui.screens.EnhancedTrainingHubScreen
+import com.example.fitapp.ui.screens.EnhancedNutritionHubScreen
 import com.example.fitapp.ui.screens.EquipmentSelectionScreen
 import com.example.fitapp.ui.screens.TodayTrainingScreen
 import com.example.fitapp.ui.screens.DailyWorkoutScreen
@@ -57,7 +59,8 @@ import com.example.fitapp.domain.entities.HIITWorkout
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
-data class Destination(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+// Simplified navigation structure - no more bottom navigation
+// Main destinations are managed through drawer only
 
 @OptIn(ExperimentalMaterial3Api::class)
 @ExperimentalGetImage
@@ -68,13 +71,25 @@ fun MainScaffold() {
     val scope = rememberCoroutineScope()
     val ctx = LocalContext.current
     var showOverflowMenu by remember { mutableStateOf(false) }
-
-    val destinations = listOf(
-        Destination("plan", "Plan", Icons.Filled.Timeline),
-        Destination("today", "Heute", Icons.Filled.Today),
-        Destination("nutrition", "Rezepte", Icons.Filled.Fastfood),
-        Destination("progress", "Progress", Icons.Filled.Insights)
-    )
+    
+    // Get current route for title updates
+    val navBackStackEntry by nav.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    
+    // Dynamic title based on current screen
+    val currentTitle = when {
+        currentRoute?.startsWith("today") == true -> "Heute"
+        currentRoute?.startsWith("plan") == true -> "Training & Pläne"
+        currentRoute?.startsWith("nutrition") == true || currentRoute?.startsWith("recipe") == true || currentRoute?.startsWith("cooking") == true -> "Ernährung"
+        currentRoute?.startsWith("progress") == true || currentRoute?.startsWith("enhanced_analytics") == true -> "Fortschritt"
+        currentRoute?.startsWith("weight") == true || currentRoute?.startsWith("bmi") == true -> "Gesundheit"
+        currentRoute?.startsWith("food") == true -> "Ernährungstagebuch"
+        currentRoute?.startsWith("shopping") == true -> "Einkaufsliste"
+        currentRoute?.startsWith("ai_personal_trainer") == true -> "KI Personal Trainer"
+        currentRoute?.startsWith("hiit") == true -> "HIIT Training"
+        currentRoute?.startsWith("apikeys") == true || currentRoute?.contains("settings") == true -> "Einstellungen"
+        else -> "FitApp"
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -84,161 +99,118 @@ fun MainScaffold() {
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(bottom = 80.dp) // Extra padding for navigation bar
+                        .padding(bottom = 16.dp)
                 ) {
+                    // Header with app name
                     Text(
-                        "Navigation", 
-                        style = MaterialTheme.typography.titleMedium, 
+                        "FitApp", 
+                        style = MaterialTheme.typography.headlineSmall, 
                         modifier = Modifier
                             .statusBarsPadding()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(horizontal = 16.dp, vertical = 16.dp),
+                        color = MaterialTheme.colorScheme.primary
                     )
-                
-                // AI Features Section
-                Text(
-                    text = "KI-Funktionen", 
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-                NavigationDrawerItem(
-                    label = { Text("KI Personal Trainer") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("ai_personal_trainer") },
-                    icon = { Icon(Icons.Filled.Psychology, contentDescription = null) }
-                )
-                NavigationDrawerItem(
-                    label = { Text("KI Rezept Generator") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("nutrition") },
-                    icon = { Icon(Icons.Filled.Fastfood, contentDescription = null) }
-                )
-                NavigationDrawerItem(
-                    label = { Text("KI Trainingspläne") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("plan") },
-                    icon = { Icon(Icons.Filled.Timeline, contentDescription = null) }
-                )
-                
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                
-                // Health & Fitness Section
-                Text(
-                    text = "Gesundheit & Fitness", 
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-                NavigationDrawerItem(
-                    label = { Text("BMI Rechner") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("bmi_calculator") },
-                    icon = { Icon(Icons.Filled.Calculate, contentDescription = null) }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Abnehmprogramm") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("weight_loss_program") },
-                    icon = { Icon(Icons.Filled.Flag, contentDescription = null) }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Fortschritts-Analyse") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("enhanced_analytics") },
-                    icon = { Icon(Icons.Filled.Insights, contentDescription = null) }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Gewichtsverfolgung") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("weight_tracking") },
-                    icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null) }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Social Challenges") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("social_challenges") },
-                    icon = { Icon(Icons.Filled.EmojiEvents, contentDescription = null) }
-                )
-                
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                
-                // Tools Section
-                Text(
-                    text = "Werkzeuge", 
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-                NavigationDrawerItem(
-                    label = { Text("Einkaufsliste") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("shopping_list") },
-                    icon = { Icon(Icons.Filled.ShoppingCart, contentDescription = null) }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Lebensmittel Scanner") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("foodscan") },
-                    icon = { Icon(Icons.Filled.PhotoCamera, contentDescription = null) }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Ernährungstagebuch") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("food_diary") },
-                    icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null) }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Rezepte (Neu)") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("enhanced_recipes") },
-                    icon = { Icon(Icons.Filled.Restaurant, contentDescription = null) }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Gespeicherte Rezepte") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("saved_recipes") },
-                    icon = { Icon(Icons.Filled.Bookmark, contentDescription = null) }
-                )
-                
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                
-                // Settings Section
-                Text(
-                    text = "Einstellungen", 
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-                NavigationDrawerItem(
-                    label = { Text("API-Schlüssel Konfiguration") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("apikeys") },
-                    icon = { Icon(Icons.Filled.Key, contentDescription = null) }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Benachrichtigungen") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("notification_settings") },
-                    icon = { Icon(Icons.Filled.Notifications, contentDescription = null) }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Health Connect") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("health_connect_settings") },
-                    icon = { Icon(Icons.Filled.HealthAndSafety, contentDescription = null) }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Cloud-Synchronisation") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("cloud_sync_settings") },
-                    icon = { Icon(Icons.Filled.Cloud, contentDescription = null) }
-                )
-                NavigationDrawerItem(
-                    label = { Text("KI Protokolle") }, 
-                    selected = false, 
-                    onClick = { scope.launch { drawerState.close() }; nav.navigate("logs") },
-                    icon = { Icon(Icons.Filled.History, contentDescription = null) }
-                )
+                    
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    
+                    // Main Features - Primary Navigation
+                    NavigationDrawerItem(
+                        label = { Text("🏠 Dashboard") }, 
+                        selected = currentRoute == "today", 
+                        onClick = { scope.launch { drawerState.close() }; nav.navigate("today") },
+                        icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("🎯 Training & Pläne") }, 
+                        selected = currentRoute?.startsWith("plan") == true || currentRoute?.startsWith("ai_personal_trainer") == true, 
+                        onClick = { scope.launch { drawerState.close() }; nav.navigate("plan") },
+                        icon = { Icon(Icons.Filled.FitnessCenter, contentDescription = null) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("🍽️ Ernährung & Rezepte") }, 
+                        selected = currentRoute?.startsWith("nutrition") == true || currentRoute?.startsWith("recipe") == true || currentRoute?.startsWith("enhanced_recipes") == true, 
+                        onClick = { scope.launch { drawerState.close() }; nav.navigate("nutrition") },
+                        icon = { Icon(Icons.Filled.Restaurant, contentDescription = null) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("📊 Fortschritt & Analytics") }, 
+                        selected = currentRoute?.startsWith("progress") == true || currentRoute?.startsWith("enhanced_analytics") == true, 
+                        onClick = { scope.launch { drawerState.close() }; nav.navigate("enhanced_analytics") },
+                        icon = { Icon(Icons.Filled.Insights, contentDescription = null) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                    
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+                    
+                    // Quick Access Tools
+                    Text(
+                        text = "Schnellzugriff", 
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("📱 Lebensmittel Scanner") }, 
+                        selected = false, 
+                        onClick = { scope.launch { drawerState.close() }; nav.navigate("foodscan") },
+                        icon = { Icon(Icons.Filled.PhotoCamera, contentDescription = null) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("🛒 Einkaufsliste") }, 
+                        selected = false, 
+                        onClick = { scope.launch { drawerState.close() }; nav.navigate("shopping_list") },
+                        icon = { Icon(Icons.Filled.ShoppingCart, contentDescription = null) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("📖 Ernährungstagebuch") }, 
+                        selected = currentRoute?.startsWith("food_diary") == true, 
+                        onClick = { scope.launch { drawerState.close() }; nav.navigate("food_diary") },
+                        icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("⚖️ Gewichtsverfolgung") }, 
+                        selected = currentRoute?.startsWith("weight_tracking") == true, 
+                        onClick = { scope.launch { drawerState.close() }; nav.navigate("weight_tracking") },
+                        icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                    )
+                    
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+                    
+                    // Settings & Configuration
+                    Text(
+                        text = "Einstellungen", 
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("🔧 App-Einstellungen") }, 
+                        selected = currentRoute?.startsWith("apikeys") == true, 
+                        onClick = { scope.launch { drawerState.close() }; nav.navigate("apikeys") },
+                        icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("🔔 Benachrichtigungen") }, 
+                        selected = false, 
+                        onClick = { scope.launch { drawerState.close() }; nav.navigate("notification_settings") },
+                        icon = { Icon(Icons.Filled.Notifications, contentDescription = null) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("☁️ Cloud Sync") }, 
+                        selected = false, 
+                        onClick = { scope.launch { drawerState.close() }; nav.navigate("cloud_sync_settings") },
+                        icon = { Icon(Icons.Filled.Cloud, contentDescription = null) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                    )
                 }
             }
         }
@@ -247,13 +219,39 @@ fun MainScaffold() {
             modifier = Modifier.fillMaxSize(),
             topBar = {
                 TopAppBar(
-                    title = { Text("FitApp") },
+                    title = { Text(currentTitle) },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Filled.Menu, contentDescription = "Menü")
                         }
                     },
                     actions = {
+                        // Context-sensitive quick actions based on current screen
+                        when {
+                            currentRoute?.startsWith("nutrition") == true || currentRoute?.startsWith("recipe") == true -> {
+                                IconButton(onClick = { nav.navigate("enhanced_recipes") }) {
+                                    Icon(Icons.Filled.Restaurant, contentDescription = "Alle Rezepte")
+                                }
+                                IconButton(onClick = { nav.navigate("shopping_list") }) {
+                                    Icon(Icons.Filled.ShoppingCart, contentDescription = "Einkaufsliste")
+                                }
+                            }
+                            currentRoute?.startsWith("plan") == true || currentRoute?.startsWith("today") == true -> {
+                                IconButton(onClick = { nav.navigate("ai_personal_trainer") }) {
+                                    Icon(Icons.Filled.Psychology, contentDescription = "KI Trainer")
+                                }
+                                IconButton(onClick = { nav.navigate("hiit_builder") }) {
+                                    Icon(Icons.Filled.Timer, contentDescription = "HIIT Builder")
+                                }
+                            }
+                            else -> {
+                                IconButton(onClick = { nav.navigate("food_search") }) {
+                                    Icon(Icons.Filled.Search, contentDescription = "Lebensmittel suchen")
+                                }
+                            }
+                        }
+                        
+                        // Settings dropdown
                         IconButton(onClick = { showOverflowMenu = true }) {
                             Icon(Icons.Filled.MoreVert, contentDescription = "Mehr Optionen")
                         }
@@ -262,7 +260,7 @@ fun MainScaffold() {
                             onDismissRequest = { showOverflowMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Quick Settings") },
+                                text = { Text("Einstellungen") },
                                 onClick = {
                                     showOverflowMenu = false
                                     nav.navigate("apikeys")
@@ -272,17 +270,17 @@ fun MainScaffold() {
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Food Search") },
+                                text = { Text("Health Connect") },
                                 onClick = {
                                     showOverflowMenu = false
-                                    nav.navigate("food_search")
+                                    nav.navigate("health_connect_settings")
                                 },
                                 leadingIcon = {
-                                    Icon(Icons.Filled.Search, contentDescription = null)
+                                    Icon(Icons.Filled.HealthAndSafety, contentDescription = null)
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Help & Support") },
+                                text = { Text("Hilfe & Support") },
                                 onClick = {
                                     showOverflowMenu = false
                                     nav.navigate("help")
@@ -292,7 +290,7 @@ fun MainScaffold() {
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("About") },
+                                text = { Text("Über die App") },
                                 onClick = {
                                     showOverflowMenu = false
                                     nav.navigate("about")
@@ -304,43 +302,11 @@ fun MainScaffold() {
                         }
                     }
                 )
-            },
-            bottomBar = {
-                val currentRoute = nav.currentBackStackEntryAsState().value?.destination?.route
-                val isFullscreenMode = currentRoute?.let { route ->
-                    route.startsWith("cooking_mode") || route.startsWith("training_execution")
-                } ?: false
-                
-                if (!isFullscreenMode) {
-                    NavigationBar(modifier = Modifier.navigationBarsPadding()) {
-                        destinations.forEach { dest ->
-                            NavigationBarItem(
-                                selected = currentRoute == dest.route,
-                                onClick = {
-                                    nav.navigate(dest.route) {
-                                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
-                                icon = { Icon(dest.icon, dest.label) },
-                                label = { Text(dest.label) }
-                            )
-                        }
-                    }
-                }
             }
+            // REMOVED: Bottom Navigation Bar - Navigation is now purely drawer-based
         ) { padding ->
-            NavHost(navController = nav, startDestination = "plan", modifier = Modifier.fillMaxSize()) {
-                composable("plan") {
-                    PlanScreen(
-                        contentPadding = padding,
-                        onNavigateToApiKeys = { nav.navigate("apikeys") },
-                        onNavigateToBmi = { nav.navigate("bmi_calculator") },
-                        onNavigateToWeightProgram = { nav.navigate("weight_loss_program") },
-                        onNavigateToEquipment = { nav.navigate("equipment") }
-                    )
-                }
+            NavHost(navController = nav, startDestination = "today", modifier = Modifier.fillMaxSize()) {
+                // Main Dashboard - Starting point
                 composable("today") {
                     TodayScreen(
                         contentPadding = padding,
@@ -349,13 +315,24 @@ fun MainScaffold() {
                         onNavigateToHiitBuilder = { nav.navigate("hiit_builder") }
                     )
                 }
-                composable("nutrition") {
-                    NutritionScreen(
-                        onNavigateToApiKeys = { nav.navigate("apikeys") },
-                        onNavigateToCookingMode = { id -> nav.navigate("cooking_mode/$id") },
+                
+                // Training & Plans Section
+                composable("plan") {
+                    EnhancedTrainingHubScreen(
+                        navController = nav,
                         contentPadding = padding
                     )
                 }
+                
+                // Nutrition & Recipes Section  
+                composable("nutrition") {
+                    EnhancedNutritionHubScreen(
+                        navController = nav,
+                        contentPadding = padding
+                    )
+                }
+                
+                // Progress & Analytics
                 composable("progress") { ProgressScreen(padding) }
                 composable("foodscan") {
                     FoodScanScreen(padding)

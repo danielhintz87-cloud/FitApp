@@ -70,6 +70,14 @@ fun EnhancedTrainingExecutionScreen(
     // New Pro-Feature Services
     val videoManager = remember { VideoManager(context) }
     val smartRestTimer = remember { SmartRestTimer(context) }
+    
+    // Initialize audio system
+    LaunchedEffect(Unit) {
+        val audioInitialized = smartRestTimer.initializeAudio()
+        if (audioInitialized) {
+            smartRestTimer.configureAudio(speechRate = 1.0f, pitch = 1.0f)
+        }
+    }
     val voiceCommandManager = remember { VoiceCommandManager(context) }
     
     // Freeletics-style Adaptive Training Engine
@@ -93,6 +101,14 @@ fun EnhancedTrainingExecutionScreen(
     // Initialize voice commands
     LaunchedEffect(Unit) {
         voiceCommandManager.initialize()
+    }
+    
+    // Release audio resources when leaving
+    DisposableEffect(Unit) {
+        onDispose {
+            smartRestTimer.release()
+            voiceCommandManager.release()
+        }
     }
     
     // Handle voice commands

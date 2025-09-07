@@ -1,17 +1,27 @@
 package com.example.fitapp.ui.nutrition
 
 import androidx.camera.core.ExperimentalGetImage
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.FoodItemEntity
+import com.example.fitapp.data.nutrition.FoodItem
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.ui.components.BarcodeScannerView
+import com.example.fitapp.ui.nutrition.barcode.FoodDatabaseLookup
 import kotlinx.coroutines.launch
 
 @ExperimentalGetImage
@@ -24,37 +34,95 @@ fun BarcodeScannerScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val repo = remember { NutritionRepository(AppDatabase.get(context)) }
+    val foodLookup = remember { FoodDatabaseLookup() }
     
     var scannedBarcode by remember { mutableStateOf<String?>(null) }
-    var foundFoodItem by remember { mutableStateOf<FoodItemEntity?>(null) }
+    var foundFoodItem by remember { mutableStateOf<FoodItem?>(null) }
     var isSearching by remember { mutableStateOf(false) }
     var showManualEntry by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var searchAttempts by remember { mutableStateOf(0) }
     
+    // Enhanced barcode scanning with multiple attempts
+    fun handleBarcodeScanned(barcode: String) {
+        if (scannedBarcode == barcode && searchAttempts >= 3) {
+            return // Avoid infinite retry loops
+        }
+        
+        scannedBarcode = barcode
+        isSearching = true
+        errorMessage = null
+        searchAttempts++
+        
+        scope.launch {
+            try {
+                // First try local database
+                var foodItem = repo.getFoodItemByBarcode(barcode)?.let { entity ->
+                    FoodItem(
+                        id = entity.id,
+                        name = entity.name,
+                        brand = entity.brand ?: "",
+                        barcode = entity.barcode ?: "",
+                        caloriesPer100g = entity.caloriesPer100g,
+                        proteinPer100g = entity.proteinPer100g,
+                        carbsPer100g = entity.carbsPer100g,
+                        fatPer100g = entity.fatPer100g,
+                        category = entity.category ?: "Unbekannt",
+                        source = "Local Database"
+                    )
+                }
+                
+                // If not found locally, search online
+                if (foodItem == null) {
+                    foodItem = foodLookup.lookupByBarcode(barcode)
+                }
+                
+                if (foodItem != null) {
+                    foundFoodItem = foodItem
+                    
+                    // Convert to entity and save to local database if from online source
+                    if (foodItem.source != "Local Database") {
+                        val entity = FoodItemEntity(
+                            name = foodItem.name,
+                            brand = foodItem.brand.takeIf { it.isNotBlank() },
+                            barcode = foodItem.barcode.takeIf { it.isNotBlank() },
+                            caloriesPer100g = foodItem.caloriesPer100g,
+                            proteinPer100g = foodItem.proteinPer100g,
+                            carbsPer100g = foodItem.carbsPer100g,
+                            fatPer100g = foodItem.fatPer100g,
+                            category = foodItem.category.takeIf { it != "Unbekannt" }
+                        )
+                        repo.addFoodItem(entity)
+                        onFoodItemFound(entity)
+                    } else {
+                        // Use existing entity
+                        val entity = repo.getFoodItemByBarcode(barcode)!!
+                        onFoodItemFound(entity)
+                    }
+                } else {
+                    // Product not found, show manual entry option
+                    showManualEntry = true
+                    errorMessage = "Produkt nicht gefunden. Möchten Sie es manuell hinzufügen?"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Fehler beim Suchen: ${e.message}"
+                if (searchAttempts < 3) {
+                    // Allow retry
+                    showManualEntry = false
+                } else {
+                    showManualEntry = true
+                }
+            } finally {
+                isSearching = false
+            }
+        }
+    }
+
     when {
         scannedBarcode == null -> {
-            // Show barcode scanner
-            BarcodeScannerView(
-                onBarcodeDetected = { barcode ->
-                    scannedBarcode = barcode
-                    isSearching = true
-                    scope.launch {
-                        try {
-                            val foodItem = repo.getFoodItemByBarcode(barcode)
-                            if (foodItem != null) {
-                                foundFoodItem = foodItem
-                                onFoodItemFound(foodItem)
-                            } else {
-                                // Barcode not found in database, show manual entry
-                                showManualEntry = true
-                            }
-                        } catch (e: Exception) {
-                            // Handle error
-                            showManualEntry = true
-                        } finally {
-                            isSearching = false
-                        }
-                    }
-                },
+            // Show enhanced barcode scanner
+            EnhancedBarcodeScannerView(
+                onBarcodeDetected = ::handleBarcodeScanned,
                 onClose = onBackPressed,
                 modifier = Modifier.fillMaxSize()
             )
@@ -206,10 +274,10 @@ private fun BarcodeNotFoundScreen(
                         val foodItem = FoodItemEntity(
                             name = name.trim(),
                             barcode = barcode,
-                            calories = calories.toIntOrNull() ?: 0,
-                            carbs = carbs.toFloatOrNull() ?: 0f,
-                            protein = protein.toFloatOrNull() ?: 0f,
-                            fat = fat.toFloatOrNull() ?: 0f
+                            caloriesPer100g = calories.toFloatOrNull() ?: 0f,
+                            carbsPer100g = carbs.toFloatOrNull() ?: 0f,
+                            proteinPer100g = protein.toFloatOrNull() ?: 0f,
+                            fatPer100g = fat.toFloatOrNull() ?: 0f
                         )
                         onFoodItemCreated(foodItem)
                     }
@@ -223,3 +291,20 @@ private fun BarcodeNotFoundScreen(
         }
     }
 }
+
+/**
+ * Enhanced Barcode Scanner View with ML Kit integration
+ */
+@Composable
+private fun EnhancedBarcodeScannerView(
+    onBarcodeDetected: (String) -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // For now, use the existing BarcodeScannerView
+    // TODO: Implement CameraX + ML Kit integration here
+    BarcodeScannerView(
+        onBarcodeDetected = onBarcodeDetected,
+        onClose = onClose,
+        modifier = modifier
+    )

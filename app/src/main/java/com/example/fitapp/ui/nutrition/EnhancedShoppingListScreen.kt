@@ -17,7 +17,10 @@ import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.ShoppingCategoryEntity
 import com.example.fitapp.data.db.ShoppingItemEntity
 import com.example.fitapp.ai.AppAi
+import com.example.fitapp.services.ShoppingListManager
+import com.example.fitapp.ui.components.AutoCompleteTextField
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,6 +34,7 @@ fun EnhancedShoppingListScreen(
 ) {
     val ctx = LocalContext.current
     val db = remember { AppDatabase.get(ctx) }
+    val shoppingManager = remember { ShoppingListManager(db) }
     val scope = rememberCoroutineScope()
     
     var newItemName by remember { mutableStateOf("") }
@@ -39,6 +43,22 @@ fun EnhancedShoppingListScreen(
     var sortBySupermarket by remember { mutableStateOf(false) }
     var isListeningForVoice by remember { mutableStateOf(false) }
     var voiceInput by remember { mutableStateOf("") }
+    
+    // AutoComplete state
+    var autoCompleteInput by remember { mutableStateOf("") }
+    val autoCompleteSuggestions by shoppingManager.autoCompleteSuggestions.collectAsState()
+    
+    // Debounced search for autocomplete
+    LaunchedEffect(autoCompleteInput) {
+        if (autoCompleteInput.length >= 2) {
+            delay(300) // Debounce search
+            scope.launch {
+                shoppingManager.getAutoCompleteSuggestions(autoCompleteInput)
+            }
+        } else {
+            shoppingManager.clearAutoCompleteSuggestions()
+        }
+    }
     
     // Voice recognition launcher
     val voiceLauncher = rememberLauncherForActivityResult(
@@ -238,7 +258,78 @@ fun EnhancedShoppingListScreen(
             Spacer(Modifier.height(8.dp))
         }
         
-        // Voice input result
+        // Quick Add Section with AutoComplete
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "Artikel hinzufügen",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                
+                AutoCompleteTextField(
+                    value = autoCompleteInput,
+                    onValueChange = { autoCompleteInput = it },
+                    suggestions = autoCompleteSuggestions,
+                    onSuggestionSelected = { suggestion ->
+                        scope.launch {
+                            shoppingManager.addItemFromSuggestion(suggestion)
+                            autoCompleteInput = ""
+                        }
+                    },
+                    label = "Produkt eingeben",
+                    placeholder = "z.B. Milch, Äpfel, Brot...",
+                    leadingIcon = {
+                        Icon(Icons.Filled.ShoppingCart, contentDescription = null)
+                    },
+                    trailingIcon = {
+                        if (autoCompleteInput.isNotEmpty()) {
+                            IconButton(
+                                onClick = {
+                                    scope.launch {
+                                        if (autoCompleteInput.isNotBlank()) {
+                                            // Add as manual item
+                                            val category = categorizeItem(autoCompleteInput)
+                                            db.shoppingDao().insert(
+                                                ShoppingItemEntity(
+                                                    name = autoCompleteInput,
+                                                    quantity = null,
+                                                    unit = null,
+                                                    category = category
+                                                )
+                                            )
+                                            // Record usage for learning
+                                            shoppingManager.recordItemUsage(autoCompleteInput)
+                                            autoCompleteInput = ""
+                                        }
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Filled.Add, contentDescription = "Hinzufügen")
+                            }
+                        }
+                    }
+                )
+                
+                if (autoCompleteSuggestions.isNotEmpty()) {
+                    Text(
+                        "💡 ${autoCompleteSuggestions.size} intelligente Vorschläge verfügbar",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+        }
         if (voiceInput.isNotBlank()) {
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -385,25 +476,47 @@ fun EnhancedShoppingListScreen(
         }
     }
     
-    // Add Item Dialog
+    // Add Item Dialog with AutoComplete
     if (showAddDialog) {
         AlertDialog(
-            onDismissRequest = { showAddDialog = false },
+            onDismissRequest = { 
+                showAddDialog = false
+                newItemName = ""
+                newItemQuantity = ""
+            },
             title = { Text("Artikel hinzufügen") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AutoCompleteTextField(
                         value = newItemName,
                         onValueChange = { newItemName = it },
-                        label = { Text("Artikel") },
-                        modifier = Modifier.fillMaxWidth()
+                        suggestions = autoCompleteSuggestions,
+                        onSuggestionSelected = { suggestion ->
+                            newItemName = suggestion.text
+                            // Auto-dismiss suggestions after selection
+                            scope.launch {
+                                delay(100)
+                                shoppingManager.clearAutoCompleteSuggestions()
+                            }
+                        },
+                        label = "Artikel",
+                        placeholder = "Produktname eingeben..."
                     )
+                    
                     OutlinedTextField(
                         value = newItemQuantity,
                         onValueChange = { newItemQuantity = it },
                         label = { Text("Menge (optional)") },
+                        placeholder = { Text("z.B. 2 kg, 500g, 1 Liter") },
                         modifier = Modifier.fillMaxWidth()
                     )
+                    
+                    if (newItemName.length >= 2) {
+                        LaunchedEffect(newItemName) {
+                            delay(300)
+                            shoppingManager.getAutoCompleteSuggestions(newItemName)
+                        }
+                    }
                 }
             },
             confirmButton = {
@@ -420,6 +533,8 @@ fun EnhancedShoppingListScreen(
                                         category = category
                                     )
                                 )
+                                // Record usage for learning
+                                shoppingManager.recordItemUsage(newItemName)
                                 newItemName = ""
                                 newItemQuantity = ""
                                 showAddDialog = false
@@ -431,7 +546,13 @@ fun EnhancedShoppingListScreen(
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showAddDialog = false }) {
+                OutlinedButton(
+                    onClick = { 
+                        showAddDialog = false
+                        newItemName = ""
+                        newItemQuantity = ""
+                    }
+                ) {
                     Text("Abbrechen")
                 }
             }

@@ -1,7 +1,26 @@
 package com.example.fitapp.ui.nutrition
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp                    // Sorting toggle
+                    IconButton(
+                        onClick = { showSortingDialog = true }
+                    ) {
+                        Icon(
+                            Icons.Filled.Sort,
+                            contentDescription = "Sortierung ändern"
+                        )
+                    }s.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -16,6 +35,9 @@ import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.ShoppingCategoryEntity
 import com.example.fitapp.services.ShoppingListManager
 import com.example.fitapp.services.CookingModeManager
+import com.example.fitapp.services.VoiceInputManager
+import com.example.fitapp.services.VoiceInputResult
+import com.example.fitapp.services.ShoppingListSorter
 import com.example.fitapp.ui.components.*
 import kotlinx.coroutines.launch
 
@@ -37,12 +59,19 @@ fun SmartShoppingListScreen(
     // Shopping list manager
     val shoppingManager = remember { ShoppingListManager(db) }
     
+    // Voice input manager
+    val voiceInputManager = remember { VoiceInputManager(context) }
+    
     // State
     val shoppingItems by shoppingManager.shoppingItems.collectAsState()
     val categorizedItems by shoppingManager.categorizedItems.collectAsState()
     val stats = shoppingManager.getShoppingStats()
+    val isListeningForVoice by voiceInputManager.isListening.collectAsState()
+    val voiceInputResult by voiceInputManager.lastResult.collectAsState()
+    val currentSortingMode by shoppingManager.sortingMode.collectAsState()
     
     var sortBySupermarket by remember { mutableStateOf(true) }
+    var showSortingDialog by remember { mutableStateOf(false) }
     var showAddFromRecipeDialog by remember { mutableStateOf(false) }
     var showEditQuantityDialog by remember { mutableStateOf(false) }
     var selectedItemId by remember { mutableStateOf<String?>(null) }
@@ -51,6 +80,36 @@ fun SmartShoppingListScreen(
     LaunchedEffect(Unit) {
         // Initialize categories if needed
         initializeDefaultCategories(db)
+        shoppingManager.loadShoppingList()
+        voiceInputManager.initialize()
+    }
+    
+    // Handle voice input results
+    LaunchedEffect(voiceInputResult) {
+        when (val result = voiceInputResult) {
+            is VoiceInputResult.Success -> {
+                // Add all recognized items to shopping list
+                result.shoppingItems.forEach { voiceItem ->
+                    val ingredient = CookingModeManager.Ingredient(
+                        name = voiceItem.name,
+                        quantity = voiceItem.quantity,
+                        unit = voiceItem.unit
+                    )
+                    shoppingManager.addIngredient(ingredient, "Voice Input")
+                }
+            }
+            is VoiceInputResult.Error -> {
+                // Error handling could be expanded here
+            }
+            else -> { /* Handle partial results or null */ }
+        }
+    }
+    
+    // Release voice resources on dispose
+    DisposableEffect(Unit) {
+        onDispose {
+            voiceInputManager.release()
+        }
     }
 
     Scaffold(
@@ -135,9 +194,16 @@ fun SmartShoppingListScreen(
                     }
                 },
                 onVoiceInput = {
-                    // Voice Input Stub: Später SpeechRecognizer Integration
-                    // Aktuell nur Platzhalter Snackbar
-                    // (Für echte Implementierung: Coroutine + CallbackFlow über RecognitionListener)
+                    // Start voice recognition for shopping list
+                    scope.launch {
+                        if (!isListeningForVoice) {
+                            voiceInputManager.startListeningForShoppingItems().collect { result ->
+                                // Results are handled in LaunchedEffect above
+                            }
+                        } else {
+                            voiceInputManager.stopListening()
+                        }
+                    }
                 },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
@@ -150,11 +216,7 @@ fun SmartShoppingListScreen(
                     onAddFirst = { showAddFromRecipeDialog = true }
                 )
             } else {
-                val displayItems = if (sortBySupermarket) {
-                    shoppingManager.groupIngredientsByCategory()
-                } else {
-                    shoppingItems.groupBy { if (it.isPurchased) "Erledigt" else "Offen" }
-                }
+                val displayItems = shoppingManager.groupIngredientsByCategory()
                 
                 ShoppingListGroupedView(
                     categorizedItems = displayItems,
@@ -209,6 +271,18 @@ fun SmartShoppingListScreen(
                     showEditQuantityDialog = false
                     selectedItemId = null
                 }
+            )
+        }
+        
+        // Sorting Dialog
+        if (showSortingDialog) {
+            SortingModeDialog(
+                currentMode = currentSortingMode,
+                onModeSelected = { newMode ->
+                    shoppingManager.changeSortingMode(newMode)
+                    showSortingDialog = false
+                },
+                onDismiss = { showSortingDialog = false }
             )
         }
     }
@@ -475,5 +549,84 @@ private suspend fun initializeDefaultCategories(db: AppDatabase) {
         } catch (e: Exception) {
             // Category might already exist
         }
+    }
+}
+
+/**
+ * Sorting Mode Selection Dialog
+ */
+@Composable
+private fun SortingModeDialog(
+    currentMode: ShoppingListSorter.SortingMode,
+    onModeSelected: (ShoppingListSorter.SortingMode) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Sortierung wählen") },
+        text = {
+            Column {
+                ShoppingListSorter.SortingMode.values().forEach { mode ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onModeSelected(mode) }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = currentMode == mode,
+                            onClick = { onModeSelected(mode) }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = getSortingModeTitle(mode),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = getSortingModeDescription(mode),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Schließen")
+            }
+        }
+    )
+}
+
+/**
+ * Get human-readable title for sorting mode
+ */
+private fun getSortingModeTitle(mode: ShoppingListSorter.SortingMode): String {
+    return when (mode) {
+        ShoppingListSorter.SortingMode.SUPERMARKET_LAYOUT -> "🏪 Supermarkt-Layout"
+        ShoppingListSorter.SortingMode.ALPHABETICAL -> "🔤 Alphabetisch"
+        ShoppingListSorter.SortingMode.CATEGORY_ALPHABETICAL -> "📂 Kategorien A-Z"
+        ShoppingListSorter.SortingMode.PRIORITY -> "⭐ Nach Priorität"
+        ShoppingListSorter.SortingMode.RECENTLY_ADDED -> "🕒 Zuletzt hinzugefügt"
+        ShoppingListSorter.SortingMode.STATUS -> "✅ Nach Status"
+    }
+}
+
+/**
+ * Get description for sorting mode
+ */
+private fun getSortingModeDescription(mode: ShoppingListSorter.SortingMode): String {
+    return when (mode) {
+        ShoppingListSorter.SortingMode.SUPERMARKET_LAYOUT -> "Wie im deutschen Supermarkt angeordnet"
+        ShoppingListSorter.SortingMode.ALPHABETICAL -> "Alle Artikel von A bis Z"
+        ShoppingListSorter.SortingMode.CATEGORY_ALPHABETICAL -> "Kategorien alphabetisch sortiert"
+        ShoppingListSorter.SortingMode.PRIORITY -> "Dringende Artikel zuerst"
+        ShoppingListSorter.SortingMode.RECENTLY_ADDED -> "Neueste Artikel zuerst"
+        ShoppingListSorter.SortingMode.STATUS -> "Gekauft und nicht gekauft getrennt"
     }
 }

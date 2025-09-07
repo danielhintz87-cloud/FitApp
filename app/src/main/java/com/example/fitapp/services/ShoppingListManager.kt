@@ -10,7 +10,7 @@ import kotlin.math.abs
 
 /**
  * Smart Shopping List Manager
- * Handles ingredient management, smart merging, and category grouping
+ * Handles ingredient management, smart merging, category grouping, and AutoComplete
  */
 class ShoppingListManager(
     private val database: AppDatabase
@@ -21,12 +21,23 @@ class ShoppingListManager(
 
     private val scope = CoroutineScope(Dispatchers.Main)
     
+    // AutoComplete engine for intelligent suggestions
+    private val autoCompleteEngine = ShoppingAutoCompleteEngine()
+    
     // Flow states for reactive UI
     private val _shoppingItems = MutableStateFlow<List<ShoppingListItem>>(emptyList())
     val shoppingItems: StateFlow<List<ShoppingListItem>> = _shoppingItems.asStateFlow()
     
     private val _categorizedItems = MutableStateFlow<Map<String, List<ShoppingListItem>>>(emptyMap())
     val categorizedItems: StateFlow<Map<String, List<ShoppingListItem>>> = _categorizedItems.asStateFlow()
+    
+    // AutoComplete suggestions state
+    private val _autoCompleteSuggestions = MutableStateFlow<List<AutoCompleteSuggestion>>(emptyList())
+    val autoCompleteSuggestions: StateFlow<List<AutoCompleteSuggestion>> = _autoCompleteSuggestions.asStateFlow()
+    
+    // Current sorting mode
+    private val _sortingMode = MutableStateFlow(ShoppingListSorter.SortingMode.SUPERMARKET_LAYOUT)
+    val sortingMode: StateFlow<ShoppingListSorter.SortingMode> = _sortingMode.asStateFlow()
 
     data class ShoppingListItem(
         val id: String,
@@ -194,8 +205,22 @@ class ShoppingListManager(
      */
     fun groupIngredientsByCategory(): Map<String, List<ShoppingListItem>> {
         val currentItems = _shoppingItems.value
-        return currentItems.groupBy { it.category }
-            .toSortedMap(compareBy { getSupermarketOrder(it) })
+        return ShoppingListSorter.sortItems(currentItems, _sortingMode.value)
+    }
+    
+    /**
+     * Change sorting mode and update categorized items
+     */
+    fun changeSortingMode(newMode: ShoppingListSorter.SortingMode) {
+        _sortingMode.value = newMode
+        updateCategorizedItems()
+    }
+    
+    /**
+     * Update categorized items based on current sorting mode
+     */
+    private fun updateCategorizedItems() {
+        _categorizedItems.value = groupIngredientsByCategory()
     }
 
     /**
@@ -238,8 +263,70 @@ class ShoppingListManager(
     }
 
     /**
-     * Get shopping statistics
+     * Get AutoComplete suggestions based on input text
      */
+    suspend fun getAutoCompleteSuggestions(input: String): List<AutoCompleteSuggestion> {
+        if (input.length < 2) {
+            _autoCompleteSuggestions.value = emptyList()
+            return emptyList()
+        }
+        
+        // Get recent items from shopping list for learning
+        val recentItems = _shoppingItems.value.map { it.name }.distinct()
+        
+        // Get suggestions from the autocomplete engine
+        val suggestions = autoCompleteEngine.getSuggestions(input, recentItems)
+        
+        _autoCompleteSuggestions.value = suggestions
+        return suggestions
+    }
+    
+    /**
+     * Record usage of an item for learning
+     */
+    suspend fun recordItemUsage(itemName: String) {
+        autoCompleteEngine.recordUsage(itemName)
+        
+        StructuredLogger.info(
+            StructuredLogger.LogCategory.NUTRITION,
+            TAG,
+            "Recorded usage for item: $itemName"
+        )
+    }
+    
+    /**
+     * Add item from AutoComplete suggestion
+     */
+    suspend fun addItemFromSuggestion(
+        suggestion: AutoCompleteSuggestion,
+        addedFrom: String = "Manual",
+        priority: Priority = Priority.NORMAL
+    ) {
+        // Record the usage for learning
+        recordItemUsage(suggestion.text)
+        
+        // Create ingredient from suggestion
+        val ingredient = CookingModeManager.Ingredient(
+            name = suggestion.text,
+            quantity = "1",
+            unit = "Stück"
+        )
+        
+        addIngredient(ingredient, addedFrom, priority)
+        
+        StructuredLogger.info(
+            StructuredLogger.LogCategory.NUTRITION,
+            TAG,
+            "Added item from AutoComplete: ${suggestion.text}"
+        )
+    }
+    
+    /**
+     * Clear AutoComplete suggestions
+     */
+    fun clearAutoCompleteSuggestions() {
+        _autoCompleteSuggestions.value = emptyList()
+    }
     fun getShoppingStats(): ShoppingStats {
         val items = _shoppingItems.value
         val totalItems = items.size
@@ -282,7 +369,7 @@ class ShoppingListManager(
         }
         
         _shoppingItems.value = shoppingItems
-        _categorizedItems.value = groupIngredientsByCategory()
+        updateCategorizedItems()
     }
     
     private suspend fun refreshShoppingItems() {
@@ -365,40 +452,7 @@ class ShoppingListManager(
     }
     
     private fun categorizeIngredient(name: String): String {
-        val normalized = normalizeIngredientName(name)
-        
-        return when {
-            // Obst & Gemüse
-            listOf("apfel", "banane", "orange", "tomate", "zwiebel", "kartoffel", "mohrrube", "paprika", 
-                   "salat", "gurke", "zucchini", "aubergine", "brokkoli", "blumenkohl", "spinat", "radieschen")
-                .any { normalized.contains(it) } -> "Obst & Gemüse"
-            
-            // Fleisch & Fisch
-            listOf("huhn", "schwein", "rind", "hack", "wurst", "schinken", "lachs", "thunfisch", "garnele")
-                .any { normalized.contains(it) } -> "Fleisch & Fisch"
-            
-            // Milchprodukte
-            listOf("milch", "butter", "kase", "joghurt", "quark", "sahne", "frischkase", "mozzarella")
-                .any { normalized.contains(it) } -> "Milchprodukte"
-            
-            // Getreide & Backwaren
-            listOf("brot", "mehl", "reis", "nudeln", "pasta", "getreide", "haferflocken", "muesli")
-                .any { normalized.contains(it) } -> "Getreide & Backwaren"
-            
-            // Gewürze & Kräuter
-            listOf("salz", "pfeffer", "paprika", "kraut", "basilikum", "oregano", "thymian", "petersilie", "gewurz")
-                .any { normalized.contains(it) } -> "Gewürze & Kräuter"
-            
-            // Getränke
-            listOf("wasser", "saft", "limonade", "bier", "wein", "kaffee", "tee", "cola")
-                .any { normalized.contains(it) } -> "Getränke"
-            
-            // Tiefkühl
-            listOf("tiefkuhl", "frozen", "tk", "gefror")
-                .any { normalized.contains(it) } -> "Tiefkühl"
-            
-            else -> "Sonstiges"
-        }
+        return ShoppingListSorter.categorizeIngredient(name)
     }
     
     private fun normalizeUnit(unit: String): String {
@@ -479,20 +533,6 @@ class ShoppingListManager(
             result2 in 0.1..999.0 && result1 !in 0.1..999.0 -> unit2
             result1 <= result2 -> unit1 // Prefer smaller units when both are reasonable
             else -> unit2
-        }
-    }
-    
-    private fun getSupermarketOrder(category: String): Int {
-        return when (category) {
-            "Obst & Gemüse" -> 1
-            "Fleisch & Fisch" -> 2
-            "Milchprodukte" -> 3
-            "Getreide & Backwaren" -> 4
-            "Tiefkühl" -> 5
-            "Getränke" -> 6
-            "Gewürze & Kräuter" -> 7
-            "Sonstiges" -> 8
-            else -> 9
         }
     }
     

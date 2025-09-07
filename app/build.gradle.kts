@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.protobuf)
 }
 
 android {
@@ -99,6 +100,9 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.activity.ktx)
 
+    // Browser - KORREKTE DOT NOTATION!
+    implementation(libs.browser)
+
     // Lifecycle/Coroutines - KORREKTE DOT NOTATION!
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
@@ -106,6 +110,8 @@ dependencies {
     // DataStore - KORREKTE DOT NOTATION!
     implementation(libs.datastore.preferences)
     implementation(libs.datastore.core)
+    implementation(libs.datastore.proto)
+    implementation(libs.protobuf.kotlin.lite)
 
     // Room - KORREKTE DOT NOTATION!
     implementation(libs.room.runtime)
@@ -166,6 +172,8 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.robolectric)
     testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.mockito.inline)
     
     androidTestImplementation(libs.android.test.junit)
     androidTestImplementation(libs.espresso.core)
@@ -173,4 +181,24 @@ dependencies {
     androidTestImplementation(libs.android.test.core)
     
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")
+}
+
+// Protobuf configuration
+protobuf {
+    protoc {
+        artifact = libs.protobuf.protoc.get().toString()
+    }
+
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                register("java") {
+                    option("lite")
+                }
+                register("kotlin") {
+                    option("lite")
+                }
+            }
+        }
+    }
 }

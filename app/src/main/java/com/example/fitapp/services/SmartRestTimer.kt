@@ -20,12 +20,21 @@ class SmartRestTimer(private val context: Context) {
         private const val MAX_REST_SECONDS = 300
     }
     
+    private val audioPlayer = RestTimerAudioPlayer(context)
+    
     private var timerJob: Job? = null
     private val _timerState = MutableStateFlow<RestTimerState>(RestTimerState.IDLE)
     val timerState: StateFlow<RestTimerState> = _timerState.asStateFlow()
     
     private val _restSuggestions = MutableStateFlow<RestSuggestion?>(null)
     val restSuggestions: StateFlow<RestSuggestion?> = _restSuggestions.asStateFlow()
+    
+    /**
+     * Initialize audio system for coaching
+     */
+    suspend fun initializeAudio(): Boolean {
+        return audioPlayer.initialize()
+    }
     
     /**
      * Start adaptive rest timer based on exercise intensity and user metrics
@@ -214,13 +223,7 @@ class SmartRestTimer(private val context: Context) {
      */
     private fun playAudioCue(cueType: String) {
         try {
-            // Integration point for TTS or audio system
-            StructuredLogger.debug(
-                StructuredLogger.LogCategory.USER_ACTION,
-                TAG,
-                "Audio cue: $cueType"
-            )
-            // Audio Playback Stub – später durch ExoPlayer oder TTS ersetzen
+            audioPlayer.playAudioCue(cueType)
         } catch (e: Exception) {
             StructuredLogger.error(
                 StructuredLogger.LogCategory.USER_ACTION,
@@ -229,6 +232,21 @@ class SmartRestTimer(private val context: Context) {
                 exception = e
             )
         }
+    }
+    
+    /**
+     * Play coaching message during rest
+     */
+    fun playCoachingMessage(message: String) {
+        audioPlayer.playCoachingMessage(message)
+    }
+    
+    /**
+     * Configure audio settings
+     */
+    fun configureAudio(speechRate: Float = 1.0f, pitch: Float = 1.0f) {
+        audioPlayer.setSpeechRate(speechRate)
+        audioPlayer.setPitch(pitch)
     }
     
     /**
@@ -266,7 +284,31 @@ class SmartRestTimer(private val context: Context) {
      */
     fun skipRest() {
         timerJob?.cancel()
+        audioPlayer.playAudioCue("rest_skipped")
         _timerState.value = RestTimerState.COMPLETED(_restSuggestions.value?.nextSetRecommendation)
+    }
+    
+    /**
+     * Extend rest time by additional seconds
+     */
+    suspend fun extendRest(additionalSeconds: Int) {
+        val currentState = _timerState.value
+        if (currentState is RestTimerState.RUNNING) {
+            val newTotal = currentState.remaining + additionalSeconds
+            audioPlayer.playAudioCue("rest_extended")
+            
+            // Continue timer with extended time
+            timerJob?.cancel()
+            startTimer(currentState.remaining + additionalSeconds, _restSuggestions.value!!)
+        }
+    }
+    
+    /**
+     * Release audio resources
+     */
+    fun release() {
+        timerJob?.cancel()
+        audioPlayer.release()
     }
 }
 

@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package com.example.fitapp.data.prefs;
+
+option java_package = "com.example.fitapp.data.prefs";
+option java_multiple_files = true;
+
+// User preferences stored in DataStore
+message UserPreferencesProto {
+  // Equipment preferences
+  repeated string selected_equipment = 1;
+  
+  // Workout preferences
+  bool notifications_enabled = 2;
+  int32 default_rest_time_seconds = 3;
+  bool sound_enabled = 4;
+  bool vibration_enabled = 5;
+  
+  // Nutrition preferences
+  int32 daily_calorie_goal = 6;
+  double daily_water_goal_liters = 7;
+  bool nutrition_reminders_enabled = 8;
+  
+  // User profile
+  string user_name = 9;
+  int32 age = 10;
+  double weight_kg = 11;
+  double height_cm = 12;
+  
+  // Achievement preferences
+  bool achievement_notifications_enabled = 13;
+  
+  // App preferences
+  string theme_mode = 14; // "light", "dark", "system"
+  string language = 15;
+  
+  // Last sync timestamps (for Health Connect, etc.)
+  int64 last_health_connect_sync_millis = 16;
+  int64 last_cloud_sync_millis = 17;
+  
+  // Migration info
+  int32 preferences_version = 18;
+  bool migrated_from_shared_prefs = 19;
+}

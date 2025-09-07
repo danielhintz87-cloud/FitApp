@@ -7,7 +7,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.Help
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.co            OutlinedButton(
+                onClick = { 
+                    UrlOpener.openFeatureHelp(context, "health_connect")
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.AutoMirrored.Filled.HelpOutline, null)
+                Spacer(Modifier.width(8.dp))
+                Text("Weitere Informationen")
+            }l.icons.automirrored.filled.HelpOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,41 +26,39 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.network.healthconnect.HealthConnectManager
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import android.content.Context
-import com.example.fitapp.data.prefs.UserPreferencesFactory
+import androidx.health.connect.client.PermissionController
+import com.example.fitapp.data.prefs.UserPreferencesRepository
 import com.example.fitapp.services.HealthConnectSyncWorker
+import com.example.fitapp.util.UrlOpener
 import kotlinx.coroutines.launch
-import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import javax.inject.Inject
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HealthConnectSettingsScreen(
-    contentPadding: PaddingValues = PaddingValues(0.dp)
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    viewModel: HealthConnectSettingsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val healthConnectManager = remember { HealthConnectManager(context) }
     
-    var isAvailable by remember { mutableStateOf(false) }
-    var hasPermissions by remember { mutableStateOf(false) }
-    var syncEnabled by remember { mutableStateOf(false) }
-    var lastSyncTime by remember { mutableStateOf<String?>(null) }
-    var syncStatus by remember { mutableStateOf("Nicht synchronisiert") }
+    val uiState by viewModel.uiState.collectAsState()
+    
+    // Permission launcher using PermissionController contract
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = PermissionController.createRequestPermissionResultContract()
+    ) { granted ->
+        scope.launch {
+            viewModel.onPermissionsResult(granted)
+        }
+    }
     
     LaunchedEffect(Unit) {
-        isAvailable = healthConnectManager.isAvailable()
-        hasPermissions = healthConnectManager.hasPermissions()
-        // Load last sync from preferences (DataStore fallback)
-        lastSyncTime = loadLastSync(context)
-    }
-
-    // Permission launcher
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { results ->
-        hasPermissions = results.values.all { it }
+        viewModel.loadHealthConnectStatus()
     }
     
     Scaffold(
@@ -59,7 +66,7 @@ fun HealthConnectSettingsScreen(
             TopAppBar(
                 title = { Text("Health Connect") },
                 navigationIcon = {
-                    IconButton(onClick = { /* TODO: Falls Navigation benötigt, Callback hinzufügen */ }) {
+                    IconButton(onClick = { viewModel.onNavigateBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück")
                     }
                 }
@@ -77,32 +84,30 @@ fun HealthConnectSettingsScreen(
         ) {
             // Health Connect Status
             HealthConnectStatusCard(
-                isAvailable = isAvailable,
-                hasPermissions = hasPermissions,
+                isAvailable = uiState.isAvailable,
+                hasPermissions = uiState.hasPermissions,
                 onRequestPermissions = {
-                    scope.launch {
-                        // Use the permission controller directly 
+                    if (uiState.isAvailable) {
+                        viewModel.requestPermissions()
                         val permissionController = healthConnectManager.getPermissionController()
                         if (permissionController != null) {
-                            // Request all required permissions
                             permissionLauncher.launch(
-                                com.example.fitapp.network.healthconnect.HealthConnectManager.REQUIRED_PERMISSIONS
-                                    .map { it.toString() }
-                                    .toTypedArray()
+                                HealthConnectManager.REQUIRED_PERMISSIONS
                             )
                         }
                     }
                 }
             )
             
-            if (isAvailable && hasPermissions) {
+            if (uiState.isAvailable && uiState.hasPermissions) {
                 // Sync Settings
                 HealthConnectSyncCard(
-                    syncEnabled = syncEnabled,
-                    lastSyncTime = lastSyncTime,
-                    syncStatus = syncStatus,
+                    syncEnabled = uiState.syncEnabled,
+                    lastSyncTime = uiState.lastSyncTime,
+                    syncStatus = uiState.syncStatus,
+                    isSyncing = uiState.isSyncing,
                     onSyncEnabledChange = { enabled ->
-                        syncEnabled = enabled
+                        viewModel.toggleSyncEnabled(enabled)
                         if (enabled) {
                             HealthConnectSyncWorker.schedulePeriodicSync(context)
                         } else {
@@ -110,20 +115,8 @@ fun HealthConnectSettingsScreen(
                         }
                     },
                     onManualSync = {
-                        scope.launch {
-                            syncStatus = "Synchronisiere..."
-                            try {
-                                HealthConnectSyncWorker.triggerImmediateSync(context)
-                                val syncTime = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
-                                lastSyncTime = syncTime
-                                saveLastSync(context, syncTime)
-                                syncStatus = "Erfolgreich synchronisiert"
-                            } catch (e: Exception) {
-                                syncStatus = "Synchronisation fehlgeschlagen"
-                            }
-                        }
+                        viewModel.triggerSync()
                     }
-                )
                 
                 // Data Sources
                 DataSourcesCard()
@@ -134,20 +127,44 @@ fun HealthConnectSettingsScreen(
             
             // Help & Info
             HelpInfoCard()
+            
+            // Error handling
+            uiState.error?.let { error ->
+                LaunchedEffect(error) {
+                    // Show error message
+                    kotlinx.coroutines.delay(3000)
+                    viewModel.clearError()
+                }
+                
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Error,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
         }
     }
 }
 
-private suspend fun saveLastSync(context: Context, value: String) {
-    // Kurzer einfacher SP Fallback bis eigener DataStore Key modelliert ist
-    val prefs = context.getSharedPreferences("health_connect_prefs", Context.MODE_PRIVATE)
-    prefs.edit().putString("last_sync", value).apply()
-}
-
-private fun loadLastSync(context: Context): String {
-    val prefs = context.getSharedPreferences("health_connect_prefs", Context.MODE_PRIVATE)
-    return prefs.getString("last_sync", "Noch nie") ?: "Noch nie"
-}
+// Helper functions removed - now using DataStore via ViewModel
 
 @Composable
 private fun HealthConnectStatusCard(
@@ -211,6 +228,7 @@ private fun HealthConnectSyncCard(
     syncEnabled: Boolean,
     lastSyncTime: String?,
     syncStatus: String,
+    isSyncing: Boolean = false,
     onSyncEnabledChange: (Boolean) -> Unit,
     onManualSync: () -> Unit
 ) {
@@ -285,10 +303,20 @@ private fun HealthConnectSyncCard(
                     )
                 }
                 
-                Button(onClick = onManualSync) {
-                    Icon(Icons.Default.Refresh, null)
+                Button(
+                    onClick = onManualSync,
+                    enabled = !isSyncing
+                ) {
+                    if (isSyncing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(Icons.Default.Refresh, null)
+                    }
                     Spacer(Modifier.width(8.dp))
-                    Text("Jetzt synchronisieren")
+                    Text(if (isSyncing) "Synchronisiere..." else "Jetzt synchronisieren")
                 }
             }
         }
@@ -366,10 +394,7 @@ private fun PrivacySettingsCard() {
             
             OutlinedButton(
                 onClick = { 
-                    // Open privacy policy URL in browser
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
-                        android.net.Uri.parse("https://developer.android.com/health-and-fitness/guides/health-connect/privacy"))
-                    context.startActivity(intent)
+                    UrlOpener.openPrivacyPolicy(context)
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
