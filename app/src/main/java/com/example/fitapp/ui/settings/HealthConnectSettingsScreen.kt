@@ -7,16 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.Help
-import androidx.co            OutlinedButton(
-                onClick = { 
-                    UrlOpener.openFeatureHelp(context, "health_connect")
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.AutoMirrored.Filled.HelpOutline, null)
-                Spacer(Modifier.width(8.dp))
-                Text("Weitere Informationen")
-            }l.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
