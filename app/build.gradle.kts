@@ -139,7 +139,7 @@ dependencies {
     // Hilt Dependency Injection
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
-    ksp(libs.hilt.android.compiler)
+    ksp(libs.hilt.compiler)
 
     // Desugaring
     coreLibraryDesugaring(libs.desugar.jdk.libs)
