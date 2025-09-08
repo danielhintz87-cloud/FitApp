@@ -49,12 +49,12 @@ tensorflow-lite-support = "0.5.0"
 onnxruntime = "1.22.0"
 
 # Wear OS
-wear-compose = "1.4.0"
-wear-compose-foundation = "1.4.0"
-wear-compose-navigation = "1.4.0"
+wear-compose = "1.5.0"
+wear-compose-foundation = "1.5.0"
+wear-compose-navigation = "1.5.0"
 wear-complications = "1.2.0"
-play-services-wearable = "18.1.0"
-horologist = "0.6.12"
+play-services-wearable = "19.0.0"
+horologist = "0.7.15"
 
 # KSP (Compatible with Kotlin 2.0.20)
 ksp = "2.0.20-1.0.25"
