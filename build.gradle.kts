@@ -7,7 +7,7 @@ plugins {
     id("io.gitlab.arturbosch.detekt") version "1.23.6" apply false
     id("org.jlleitschuh.gradle.ktlint") version "12.1.1" apply false
     // Modern versioning from Git tags
-    id("pl.allegro.tech.build.axion-release") version "1.18.12"
+    id("pl.allegro.tech.build.axion-release") version "1.20.1"
 }
 
 // Modern versioning configuration using Git tags and semantic versioning

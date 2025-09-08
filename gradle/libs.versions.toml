@@ -7,7 +7,7 @@ agp = "8.13.0"
 serialization = "1.7.3"
 
 # Versioning
-axion-release = "1.18.12"
+axion-release = "1.20.1"
 
 # Compose
 compose-bom = "2025.08.01"
