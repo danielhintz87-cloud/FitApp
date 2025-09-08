@@ -24,6 +24,13 @@ build/
 outputs/
 local.properties
 
+# Gradle Cache & Locks
+.gradle/*/checksums/
+.gradle/*/fileHashes/
+.gradle/*/executionHistory/
+.gradle/buildOutputCleanup/
+.gradle/workspace-id.txt*
+
 # Android Artefakte
 *.apk
 *.aab
