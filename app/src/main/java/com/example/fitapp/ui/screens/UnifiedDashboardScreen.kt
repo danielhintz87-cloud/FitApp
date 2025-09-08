@@ -796,8 +796,8 @@ private fun AchievementProgressShowcase(
 private fun AchievementMiniCard(
     achievement: com.example.fitapp.data.db.PersonalAchievementEntity
 ) {
-    val progress = if (achievement.targetValue > 0) {
-        (achievement.currentValue / achievement.targetValue).coerceAtMost(1.0)
+    val progress = if ((achievement.targetValue ?: 0.0) > 0.0) {
+        (achievement.currentValue / (achievement.targetValue ?: 1.0)).coerceAtMost(1.0)
     } else 0.0
     
     Card(
