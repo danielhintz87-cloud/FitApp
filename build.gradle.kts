@@ -29,12 +29,3 @@ scmVersion {
 // Make version available to subprojects
 project.version = scmVersion.version
 
-// Global dependency resolution strategy for JavaPoet compatibility
-allprojects {
-    configurations.all {
-        resolutionStrategy {
-            force("com.squareup:javapoet:1.12.1")
-        }
-    }
-}
-
