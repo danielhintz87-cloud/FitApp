@@ -23,7 +23,9 @@ interface IUserPreferences {
  * DataStore-based implementation of UserPreferences
  * Provides type-safe, async preference storage with reactive updates
  */
-class UserPreferencesDataStoreImpl(
+import javax.inject.Inject
+
+class UserPreferencesDataStoreImpl @Inject constructor(
     private val repository: UserPreferencesRepository
 ) : IUserPreferences {
     
