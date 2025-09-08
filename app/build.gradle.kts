@@ -139,7 +139,10 @@ dependencies {
     // Hilt Dependency Injection
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
-    ksp(libs.hilt.android.compiler)
+    ksp(libs.hilt.compiler)
+
+    // Explicitly add JavaPoet for Hilt compatibility
+    implementation(libs.javapoet)
 
     // Desugaring
     coreLibraryDesugaring(libs.desugar.jdk.libs)
@@ -150,6 +153,13 @@ dependencies {
     debugImplementation(libs.bundles.debug)
     
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")
+}
+
+// Force JavaPoet version for Hilt compatibility
+configurations.all {
+    resolutionStrategy {
+        force("com.squareup:javapoet:1.12.1")
+    }
 }
 
 // Protobuf configuration

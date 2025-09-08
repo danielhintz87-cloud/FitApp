@@ -60,7 +60,8 @@ horologist = "0.6.12"
 ksp = "2.0.20-1.0.25"
 
 # Hilt Dependency Injection
-hilt = "2.51.1"
+hilt = "2.53"
+javapoet = "1.12.1"
 
 # Testing
 junit = "4.13.2"
@@ -161,8 +162,11 @@ desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref 
 
 # Hilt Dependency Injection
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
-hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
+hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version = "1.2.0" }
+
+# JavaPoet
+javapoet = { module = "com.squareup:javapoet", version.ref = "javapoet" }
 
 # Testing
 junit = { module = "junit:junit", version.ref = "junit" }
