@@ -839,7 +839,7 @@ private fun AchievementMiniCard(
             Spacer(Modifier.height(4.dp))
             
             Text(
-                "${achievement.currentValue.toInt()}/${achievement.targetValue.toInt()}",
+                "${achievement.currentValue.toInt()}/${(achievement.targetValue ?: 0.0).toInt()}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
