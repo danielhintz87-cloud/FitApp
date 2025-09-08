@@ -176,7 +176,7 @@ class PerplexityAiProvider(
                         "Error parsing response: ${e.message}"
                     }
                 }
-                content
+                return content
             }
     }
     

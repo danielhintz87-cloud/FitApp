@@ -16,11 +16,9 @@ import kotlin.math.min
  * Comprehensive Workout Execution Manager
  * Handles workout flow, set tracking, rest periods, and performance analytics
  */
-class WorkoutExecutionManager @Inject constructor(
+class WorkoutExecutionManager(
     private val database: AppDatabase,
-    private val audioManager: AudioManager,
-    private val aiCoach: PersonalTrainingAI,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val smartRestTimer: SmartRestTimer
 ) {
     companion object {
         private const val TAG = "WorkoutExecutionManager"

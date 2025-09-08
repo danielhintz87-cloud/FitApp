@@ -372,7 +372,7 @@ class ShoppingAutoCompleteEngine {
                 recentlyUsed.addAll(it)
             }
         } catch (e: Exception) {
-            StructuredLogger.error(TAG, "Failed to import usage data", exception = e)
+            StructuredLogger.error(StructuredLogger.LogCategory.SYSTEM, TAG, "Failed to import usage data", exception = e)
         }
     }
 }

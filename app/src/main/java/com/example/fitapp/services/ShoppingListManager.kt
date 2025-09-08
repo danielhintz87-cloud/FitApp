@@ -285,7 +285,7 @@ class ShoppingListManager(
      * Record usage of an item for learning
      */
     suspend fun recordItemUsage(itemName: String) {
-        autoCompleteEngine.recordUsage(itemName)
+        autoCompleteEngine.recordItemUsage(itemName)
         
         StructuredLogger.info(
             StructuredLogger.LogCategory.NUTRITION,

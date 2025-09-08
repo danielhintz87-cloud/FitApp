@@ -85,9 +85,10 @@ fun ProfessionalCookingScreen(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
             // Top Bar with cooking controls
             CookingTopBar(
                 recipe = recipe,
@@ -153,6 +154,7 @@ fun ProfessionalCookingScreen(
                     contentDescription = "AI Assistent"
                 )
             }
+        }
         }
     }
     
@@ -323,6 +325,8 @@ private fun CookingModeContent(
     cookingManager: CookingModeManager,
     onFinishCooking: () -> Unit
 ) {
+    val scope = rememberCoroutineScope()
+    
     if (cookingFlow == null || currentStep == null) {
         // Loading state
         Box(
@@ -364,7 +368,7 @@ private fun CookingModeContent(
             isLastStep = cookingFlow.currentStepIndex == cookingFlow.steps.size - 1,
             onPrevious = { cookingManager.navigateToPreviousStep() },
             onNext = { cookingManager.navigateToNextStep() },
-            onMarkComplete = { cookingManager.markStepComplete() },
+            onMarkComplete = { scope.launch { cookingManager.markStepComplete() } },
             onFinish = onFinishCooking
         )
         
