@@ -400,6 +400,7 @@ private fun PrivacySettingsCard(context: android.content.Context) {
 
 @Composable
 private fun HelpInfoCard() {
+    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)

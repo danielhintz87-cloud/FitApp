@@ -974,6 +974,7 @@ private data class WorkflowItem(
     val steps: List<String>
 )
 
+@Composable
 private fun generateSmartInsights(calorieProgress: Float, streakCount: Int): List<AIInsight> {
     val insights = mutableListOf<AIInsight>()
     

@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.first
 /**
  * Interface for user preferences operations
  */
-interface IUserPreferences {
+interface UserPreferencesService {
     suspend fun clearWorkoutPreferences()
     suspend fun clearNutritionPreferences() 
     suspend fun clearUserPreferences()
@@ -20,12 +20,12 @@ interface IUserPreferences {
 }
 
 /**
- * DataStore-based implementation of UserPreferences
+ * DataStore-based implementation of UserPreferencesService
  * Provides type-safe, async preference storage with reactive updates
  */
 class UserPreferencesDataStoreImpl(
     private val repository: UserPreferencesRepository
-) : IUserPreferences {
+) : UserPreferencesService {
     
     override suspend fun clearWorkoutPreferences() {
         repository.clearWorkoutPreferences()
@@ -57,12 +57,12 @@ class UserPreferencesDataStoreImpl(
 }
 
 /**
- * Simple implementation of UserPreferences using SharedPreferences
+ * Simple implementation of UserPreferencesService using SharedPreferences
  * DEPRECATED: Use UserPreferencesDataStoreImpl instead
  * Kept for backward compatibility during migration
  */
 @Deprecated("Use UserPreferencesDataStoreImpl instead")
-class UserPreferencesImpl(private val context: Context) : IUserPreferences {
+class UserPreferencesLegacyImpl(private val context: Context) : UserPreferencesService {
     
     private fun getSharedPrefs(): SharedPreferences {
         return context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)

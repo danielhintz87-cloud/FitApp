@@ -15,7 +15,7 @@ import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.PlanRequest
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
-import com.example.fitapp.data.prefs.IUserPreferences
+import com.example.fitapp.data.prefs.UserPreferencesService
 import com.example.fitapp.data.prefs.UserPreferencesLegacy
 import kotlinx.coroutines.launch
 import com.example.fitapp.ui.util.applyContentPadding

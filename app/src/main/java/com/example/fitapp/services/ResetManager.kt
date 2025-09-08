@@ -5,7 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.example.fitapp.data.db.AppDatabase
-import com.example.fitapp.data.prefs.IUserPreferences
+import com.example.fitapp.data.prefs.UserPreferencesService
 import com.example.fitapp.util.StructuredLogger
 import android.content.Context
 
@@ -64,7 +64,7 @@ data class SelectiveResetOptions(
 class ResetManager(
     private val context: Context,
     private val database: AppDatabase,
-    private val userPreferences: IUserPreferences
+    private val userPreferences: UserPreferencesService
 ) {
     companion object {
         private const val TAG = "ResetManager"
