@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.map
  * Jetpack DataStore basierte Implementierung für UserPreferences.
  * Migriert sukzessive von SharedPreferences (Legacy) auf DataStore.
  */
-class UserDataStore(private val context: Context) : UserPreferences {
+class UserDataStore(private val context: Context) : IUserPreferences {
     private val Context.dataStore by preferencesDataStore(name = "user_prefs")
 
     private object Keys {
@@ -52,7 +52,7 @@ class UserDataStore(private val context: Context) : UserPreferences {
  * Factory Methode um sukzessive Migration zu erleichtern: versucht DataStore, fällt auf Legacy zurück
  */
 object UserPreferencesFactory {
-    fun create(context: Context, preferDataStore: Boolean = true): UserPreferences {
+    fun create(context: Context, preferDataStore: Boolean = true): IUserPreferences {
         return if (preferDataStore) UserDataStore(context) else UserPreferencesImpl(context)
     }
 }

@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.example.fitapp.ai.AppAi
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.TodayWorkoutEntity
-import com.example.fitapp.data.prefs.UserPreferences
+import com.example.fitapp.data.prefs.IUserPreferences
 import com.example.fitapp.data.prefs.UserPreferencesLegacy
 import com.example.fitapp.data.repo.PersonalMotivationRepository
 import com.example.fitapp.services.PersonalAchievementManager

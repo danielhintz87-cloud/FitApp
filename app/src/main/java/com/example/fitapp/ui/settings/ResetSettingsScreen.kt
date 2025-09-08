@@ -15,7 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.data.db.AppDatabase
-import com.example.fitapp.data.prefs.UserPreferences
+import com.example.fitapp.data.prefs.IUserPreferences
 import com.example.fitapp.services.ResetManager
 import com.example.fitapp.services.ResetType
 import kotlinx.coroutines.launch
@@ -32,7 +32,7 @@ fun ResetSettingsScreen(
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.get(context) }
-    val userPrefs = remember { com.example.fitapp.data.prefs.UserPreferencesImpl(context) }
+    val userPrefs = remember { com.example.fitapp.data.prefs.UserPreferencesImpl(context) as IUserPreferences }
     val resetManager = remember { ResetManager(context, db, userPrefs) }
     val scope = rememberCoroutineScope()
     
