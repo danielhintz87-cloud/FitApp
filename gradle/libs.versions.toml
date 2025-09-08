@@ -22,7 +22,7 @@ room = "2.7.2"
 work = "2.10.3"
 appcompat = "1.7.0"
 desugar = "2.0.4"
-datastore = "1.1.1"
+datastore = "1.1.7"
 protobuf = "4.28.2"
 browser = "1.8.0"
 
