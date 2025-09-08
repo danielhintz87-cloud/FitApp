@@ -72,6 +72,18 @@ fun MainScaffold() {
     val ctx = LocalContext.current
     var showOverflowMenu by remember { mutableStateOf(false) }
     
+    // 🚀 User Experience Management
+    val userExperienceManager = remember { com.example.fitapp.services.UserExperienceManager.getInstance(ctx) }
+    val userExperienceState by userExperienceManager.userExperienceState.collectAsState()
+    
+    // Determine start destination based on user experience
+    val startDestination = remember(userExperienceState) {
+        when {
+            !userExperienceState.hasCompletedOnboarding -> "onboarding"
+            else -> "unified_dashboard"
+        }
+    }
+    
     // Get current route for title updates
     val navBackStackEntry by nav.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -113,9 +125,20 @@ fun MainScaffold() {
                     
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     
+                    // 🚀 NEW: Revolutionary Unified Dashboard
+                    NavigationDrawerItem(
+                        label = { Text("🚀 Unified Dashboard") }, 
+                        selected = currentRoute == "unified_dashboard", 
+                        onClick = { scope.launch { drawerState.close() }; nav.navigate("unified_dashboard") },
+                        icon = { Icon(Icons.Filled.AutoAwesome, contentDescription = null) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                    
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                    
                     // Main Features - Primary Navigation
                     NavigationDrawerItem(
-                        label = { Text("🏠 Dashboard") }, 
+                        label = { Text("🏠 Dashboard (Classic)") }, 
                         selected = currentRoute == "today", 
                         onClick = { scope.launch { drawerState.close() }; nav.navigate("today") },
                         icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
@@ -305,8 +328,45 @@ fun MainScaffold() {
             }
             // REMOVED: Bottom Navigation Bar - Navigation is now purely drawer-based
         ) { padding ->
-            NavHost(navController = nav, startDestination = "today", modifier = Modifier.fillMaxSize()) {
-                // Main Dashboard - Starting point
+            NavHost(navController = nav, startDestination = startDestination, modifier = Modifier.fillMaxSize()) {
+                // 🚀 Smart Onboarding Experience
+                composable("onboarding") {
+                    com.example.fitapp.ui.onboarding.SmartOnboardingScreen(
+                        onOnboardingComplete = {
+                            userExperienceManager.completeOnboarding()
+                            nav.navigate("unified_dashboard") {
+                                popUpTo("onboarding") { inclusive = true }
+                            }
+                        }
+                    )
+                }
+                
+                // 🚀 UNIFIED DASHBOARD - Revolutionary Experience
+                composable("unified_dashboard") {
+                    com.example.fitapp.ui.screens.UnifiedDashboardScreen(
+                        contentPadding = padding,
+                        onNavigateToFeature = { feature ->
+                            // Track feature discovery
+                            userExperienceManager.markFeatureDiscovered(feature)
+                            
+                            when (feature) {
+                                "nutrition" -> nav.navigate("nutrition")
+                                "bmi_calculator" -> nav.navigate("bmi_calculator")
+                                "fasting" -> nav.navigate("fasting")
+                                "ai_personal_trainer" -> nav.navigate("ai_personal_trainer")
+                                "barcode_scanner" -> nav.navigate("barcode_scanner")
+                                "recipes" -> nav.navigate("recipes_enhanced")
+                                "today_training" -> nav.navigate("todaytraining")
+                                "enhanced_analytics" -> nav.navigate("enhanced_analytics")
+                                "progress" -> nav.navigate("progress")
+                                "health_sync" -> nav.navigate("health_connect_settings")
+                                else -> nav.navigate(feature)
+                            }
+                        }
+                    )
+                }
+                
+                // Legacy Today Screen - Still available
                 composable("today") {
                     TodayScreen(
                         contentPadding = padding,
@@ -567,6 +627,29 @@ fun MainScaffold() {
                 composable("weight_loss_program") { WeightLossProgramScreen(onBack = { nav.popBackStack() }) }
                 composable("ai_personal_trainer") {
                     AIPersonalTrainerScreen(onBack = { nav.popBackStack() })
+                }
+                
+                // 🚀 Additional routes for Unified Dashboard features
+                composable("fasting") {
+                    com.example.fitapp.ui.fasting.FastingScreen()
+                }
+                composable("barcode_scanner") {
+                    com.example.fitapp.ui.nutrition.BarcodeScannerScreen(
+                        contentPadding = padding,
+                        onBackPressed = { nav.popBackStack() },
+                        onFoodItemFound = { foodItem ->
+                            // Navigate to food details or add to diary
+                            nav.popBackStack()
+                        }
+                    )
+                }
+                composable("recipes_enhanced") {
+                    EnhancedRecipeListScreen(
+                        onBackPressed = { nav.popBackStack() },
+                        onRecipeClick = { recipe -> nav.navigate("recipe_detail/${recipe.id}") },
+                        onCookRecipe = { recipe -> nav.navigate("cooking_mode/${recipe.id}") },
+                        onCreateRecipe = { nav.navigate("recipe_edit") }
+                    )
                 }
 
             }

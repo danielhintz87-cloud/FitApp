@@ -175,6 +175,99 @@ mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "
 mockito-inline = { module = "org.mockito:mockito-inline", version.ref = "mockito" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
+[bundles]
+# Core Android Bundles
+core = [
+    "kotlin-stdlib",
+    "kotlinx-coroutines-android",
+    "appcompat",
+    "lifecycle-runtime-ktx",
+    "activity-ktx"
+]
+
+# Compose Bundle
+compose = [
+    "compose-ui",
+    "compose-material3", 
+    "compose-ui-tooling-preview",
+    "compose-material-icons",
+    "activity-compose",
+    "navigation-compose"
+]
+
+# Room Database Bundle
+room = [
+    "room-runtime",
+    "room-ktx",
+    "room-paging"
+]
+
+# DataStore Bundle
+data-storage = [
+    "datastore-preferences",
+    "datastore-core", 
+    "datastore-proto"
+]
+
+# Networking Bundle
+networking = [
+    "okhttp",
+    "retrofit",
+    "retrofit-converter-moshi",
+    "retrofit-logging-interceptor",
+    "moshi",
+    "moshi-kotlin"
+]
+
+# ML/AI Bundle
+ml = [
+    "tensorflow-lite",
+    "tensorflow-lite-support", 
+    "tensorflow-lite-metadata",
+    "onnxruntime-android",
+    "mlkit-barcode-scanning"
+]
+
+# Camera Bundle
+camera = [
+    "camerax-core",
+    "camerax-camera2", 
+    "camerax-lifecycle",
+    "camerax-view"
+]
+
+# Wear OS Bundle
+wear = [
+    "wear-compose-material",
+    "wear-compose-foundation",
+    "wear-compose-navigation", 
+    "wear-complications",
+    "play-services-wearable"
+]
+
+# Test Bundle
+test = [
+    "junit",
+    "mockito-core",
+    "mockito-kotlin", 
+    "mockito-inline",
+    "coroutines-test",
+    "robolectric",
+    "room-testing"
+]
+
+# Android Test Bundle  
+android-test = [
+    "android-test-junit",
+    "android-test-core",
+    "espresso-core"
+]
+
+# Debug Bundle
+debug = [
+    "compose-ui-tooling"
+]
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

@@ -86,87 +86,54 @@ dependencies {
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
-    // Compose - KORREKTE DOT NOTATION!
-    implementation(libs.compose.ui)
-    implementation(libs.compose.material3)
-    implementation(libs.compose.ui.tooling.preview)
-    debugImplementation(libs.compose.ui.tooling)
-
-    // AppCompat
-    implementation(libs.appcompat)
-
-    // Material Icons - KORREKTE DOT NOTATION!
-    implementation(libs.compose.material.icons)
-
-    // Navigation - KORREKTE DOT NOTATION!
-    implementation(libs.navigation.compose)
-
-    // Activity - KORREKTE DOT NOTATION!
-    implementation(libs.activity.compose)
-    implementation(libs.activity.ktx)
-
-    // Browser - KORREKTE DOT NOTATION!
-    implementation(libs.browser)
-
-    // Lifecycle/Coroutines - KORREKTE DOT NOTATION!
-    implementation(libs.lifecycle.runtime.ktx)
-    implementation(libs.kotlinx.coroutines.android)
-
-    // DataStore - KORREKTE DOT NOTATION!
-    implementation(libs.datastore.preferences)
-    implementation(libs.datastore.core)
-    implementation(libs.datastore.proto)
-    implementation(libs.protobuf.kotlin.lite)
-
-    // Room - KORREKTE DOT NOTATION!
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    implementation(libs.room.paging)
+    // Core Android Bundle
+    implementation(libs.bundles.core)
+    
+    // Compose Bundle
+    implementation(libs.bundles.compose)
+    
+    // Room Database Bundle
+    implementation(libs.bundles.room)
     ksp(libs.room.compiler)
 
-    // Networking & JSON - KORREKTE DOT NOTATION!
-    implementation(libs.okhttp)
+    // Networking Bundle  
+    implementation(libs.bundles.networking)
+
+    // DataStore - KORREKTE DOT NOTATION!
+    // DataStore Bundle
+    implementation(libs.bundles.data.storage)
+    implementation(libs.protobuf.kotlin.lite)
+
+    // Serialization
     implementation(libs.kotlinx.serialization.json)
 
-    // Retrofit Stack - KORREKTE DOT NOTATION!
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.converter.moshi)
-    implementation(libs.retrofit.logging.interceptor)
-    implementation(libs.moshi)
-    implementation(libs.moshi.kotlin)
+    // Networking Bundle (includes Retrofit & Moshi)
+    implementation(libs.bundles.networking)
     ksp(libs.moshi.codegen)
 
     // Coil - KORREKTE DOT NOTATION!
     implementation(libs.coil.compose)
 
-    // CameraX - KORREKTE DOT NOTATION!
-    implementation(libs.camerax.core)
-    implementation(libs.camerax.camera2)
-    implementation(libs.camerax.lifecycle)
-    implementation(libs.camerax.view)
+    // CameraX Bundle
+    implementation(libs.bundles.camera)
 
     // MediaPipe
     implementation("com.google.mediapipe:tasks-vision:0.10.14")
 
-    // ML Kit - KORREKTE DOT NOTATION!
-    implementation(libs.mlkit.barcode.scanning)
+    // Browser Support
+    implementation(libs.browser)
 
-    // TensorFlow Lite - KORREKTE DOT NOTATION!
-    implementation(libs.tensorflow.lite)
-    implementation(libs.tensorflow.lite.support)
-    implementation(libs.tensorflow.lite.metadata)
+    // ML Bundle
+    implementation(libs.bundles.ml)
     implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0")
 
-    // ONNX Runtime
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.22.0")
-
-    // Health Connect - KORREKTE DOT NOTATION!
+    // Health Connect
     implementation(libs.health.connect.client)
 
-    // Wearable Data Layer - KORREKTE DOT NOTATION!
+    // Wearable Data Layer
     implementation(libs.play.services.wearable)
 
-    // WorkManager - KORREKTE DOT NOTATION!
+    // WorkManager
     implementation(libs.work.runtime.ktx)
 
     // Hilt Dependency Injection
@@ -174,21 +141,13 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.android.compiler)
 
-    // Desugaring - KORREKTE DOT NOTATION!
+    // Desugaring
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
-    // Testing
-    testImplementation(libs.junit)
-    testImplementation(libs.coroutines.test)
-    testImplementation(libs.robolectric)
-    testImplementation(libs.mockito.core)
-    testImplementation(libs.mockito.kotlin)
-    testImplementation(libs.mockito.inline)
-    
-    androidTestImplementation(libs.android.test.junit)
-    androidTestImplementation(libs.espresso.core)
-    androidTestImplementation(libs.room.testing)
-    androidTestImplementation(libs.android.test.core)
+    // Test Bundles
+    testImplementation(libs.bundles.test)
+    androidTestImplementation(libs.bundles.android.test)
+    debugImplementation(libs.bundles.debug)
     
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")
 }
