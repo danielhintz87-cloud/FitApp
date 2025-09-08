@@ -15,11 +15,11 @@ compose-compiler = "1.6.11" # compatible with Kotlin 2.0.20
 
 # AndroidX / Core
 navigation = "2.8.2"
-activity = "1.9.2"
-lifecycle = "2.8.6"
+activity = "1.10.1"
+lifecycle = "2.9.3"
 coroutines = "1.10.2"
 room = "2.7.2"
-work = "2.9.1"
+work = "2.10.3"
 appcompat = "1.7.0"
 desugar = "2.0.4"
 datastore = "1.1.1"
