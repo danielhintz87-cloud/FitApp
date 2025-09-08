@@ -60,7 +60,7 @@ horologist = "0.6.12"
 ksp = "2.0.20-1.0.25"
 
 # Hilt Dependency Injection
-hilt = "2.51.1"
+hilt = "2.57.1"
 
 # Testing
 junit = "4.13.2"
