@@ -1,8 +1,6 @@
 package com.example.fitapp.di
 
 import android.content.Context
-import com.example.fitapp.data.prefs.UserPreferences
-import com.example.fitapp.data.prefs.UserPreferencesDataStoreImpl
 import com.example.fitapp.data.prefs.UserPreferencesRepository
 import dagger.Module
 import dagger.Provides
@@ -24,13 +22,5 @@ object DataStoreModule {
         @ApplicationContext context: Context
     ): UserPreferencesRepository {
         return UserPreferencesRepository(context)
-    }
-    
-    @Provides
-    @Singleton
-    fun provideUserPreferences(
-        repository: UserPreferencesRepository
-    ): UserPreferences {
-        return UserPreferencesDataStoreImpl(repository)
     }
 }

@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import com.example.fitapp.data.prefs.IUserPreferences
+import com.example.fitapp.data.prefs.UserPreferencesService
 import com.example.fitapp.data.prefs.UserPreferencesLegacy
 
 @OptIn(ExperimentalMaterial3Api::class)

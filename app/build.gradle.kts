@@ -164,9 +164,7 @@ protobuf {
                 register("java") {
                     option("lite")
                 }
-                register("kotlin") {
-                    option("lite")
-                }
+                // Remove kotlin generation to avoid duplicate symbols
             }
         }
     }
