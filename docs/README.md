@@ -1,4 +1,27 @@
-# 📊 FitApp Dokumentation
+# � FitApp Dokumentation
+
+Organisierte Dokumentation für das FitApp-Projekt.
+
+## 📁 Aktuelle Struktur
+
+### `/implementation/` - Implementierungsdetails
+- `AUTOCOMPLETE_IMPLEMENTATION_COMPLETE.md` - Autocomplete-Feature Implementation
+- `DATASTORE_MIGRATION_SUMMARY.md` - DataStore Migration Details
+
+### `/status/` - Projekt-Status & Build-Reports  
+- `BUILD_ERRORS_FIXED_FINAL.md` - Build-Fehler Korrekturen
+- `BUILD_FIX_SUMMARY.md` - Build-Fix Übersicht
+- `IMPLEMENTATION_STATUS_FINAL.md` - Finaler Implementierungsstatus
+- `COMPLETE_COOKING_IMPLEMENTATION.md` - Cooking-Features Status
+- `COOKING_FUNCTIONALITY_STATUS.md` - Cooking-Funktionalität
+- `SHOPPING_LIST_SORTING_COMPLETE.md` - Shopping-List Features
+
+### `/features/` - Feature-spezifische Dokumentation
+- `NAVIGATION_ANALYSIS.md` - Navigation-System Analyse
+- `NAVIGATION_REDESIGN_COMPLETE.md` - Navigation Redesign
+
+### `/archive/` - Archivierte Dokumentation
+Ältere oder obsolete Dokumentationsdateien
 
 ## 🗂️ Dokumentationsstruktur
 
