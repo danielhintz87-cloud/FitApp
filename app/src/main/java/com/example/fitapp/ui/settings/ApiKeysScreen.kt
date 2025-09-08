@@ -3,21 +3,25 @@ package com.example.fitapp.ui.settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.data.prefs.ApiKeys
+import kotlinx.coroutines.launch
 
 @Composable
 fun ApiKeysScreen(contentPadding: PaddingValues) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     
     var geminiKey by remember { mutableStateOf(ApiKeys.getGeminiKey(context)) }
     var perplexityKey by remember { mutableStateOf(ApiKeys.getPerplexityKey(context)) }
@@ -181,6 +185,68 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+
+        // API Health Check Button
+        Card {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Verbindungstest",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                var testing by remember { mutableStateOf(false) }
+                var testResult by remember { mutableStateOf<String?>(null) }
+                
+                Button(
+                    onClick = {
+                        testing = true
+                        scope.launch {
+                            try {
+                                val healthChecker = com.example.fitapp.debug.ApiHealthChecker
+                                val report = healthChecker.checkAllApiConnections(context)
+                                testResult = healthChecker.generateDetailedReport(context, report)
+                            } catch (e: Exception) {
+                                testResult = "❌ Fehler beim Test: ${e.message}"
+                            } finally {
+                                testing = false
+                            }
+                        }
+                    },
+                    enabled = !testing,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (testing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Teste Verbindungen...")
+                    } else {
+                        Text("🔍 API-Verbindungen testen")
+                    }
+                }
+                
+                testResult?.let { result ->
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        SelectionContainer {
+                            Text(
+                                text = result,
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                    }
+                }
             }
         }
 
