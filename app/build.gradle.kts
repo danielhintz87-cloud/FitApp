@@ -151,7 +151,7 @@ dependencies {
     implementation(libs.camerax.view)
 
     // MediaPipe
-    implementation("com.google.mediapipe:tasks-vision:0.10.14")
+    implementation("com.google.mediapipe:tasks-vision:0.20230731")
 
     // ML Kit - KORREKTE DOT NOTATION!
     implementation(libs.mlkit.barcode.scanning)
