@@ -14,7 +14,7 @@ compose-bom = "2025.08.01"
 compose-compiler = "1.6.11" # compatible with Kotlin 2.0.20
 
 # AndroidX / Core
-navigation = "2.8.2"
+navigation = "2.9.3"
 activity = "1.9.2"
 lifecycle = "2.8.6"
 coroutines = "1.10.2"
