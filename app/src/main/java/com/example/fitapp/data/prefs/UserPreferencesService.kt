@@ -1,129 +1,69 @@
 package com.example.fitapp.data.prefs
 
 import android.content.Context
-import android.content.SharedPreferences
-import kotlinx.coroutines.flow.first
-
-/**
- * Interface for user preferences operations
- */
-interface UserPreferencesService {
-    suspend fun clearWorkoutPreferences()
-    suspend fun clearNutritionPreferences() 
-    suspend fun clearUserPreferences()
-    suspend fun clearAchievementPreferences()
-    suspend fun clearAllPreferences()
-    
-    // Equipment functions
-    suspend fun getSelectedEquipment(): Set<String>
-    suspend fun saveSelectedEquipment(equipment: Set<String>)
-}
-
-/**
- * DataStore-based implementation of UserPreferencesService
- * Provides type-safe, async preference storage with reactive updates
- */
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
+import javax.inject.Singleton
 
-class UserPreferencesDataStoreImpl @Inject constructor(
-    private val repository: UserPreferencesRepository
-) : UserPreferencesService {
-    
-    override suspend fun clearWorkoutPreferences() {
-        repository.clearWorkoutPreferences()
-    }
-    
-    override suspend fun clearNutritionPreferences() {
-        repository.clearNutritionPreferences()
-    }
-    
-    override suspend fun clearUserPreferences() {
-        repository.clearUserPreferences()
-    }
-    
-    override suspend fun clearAchievementPreferences() {
-        repository.clearAchievementPreferences()
-    }
-    
-    override suspend fun clearAllPreferences() {
-        repository.clearAllPreferences()
-    }
-    
-    override suspend fun getSelectedEquipment(): Set<String> {
-        return repository.selectedEquipment.first()
-    }
-    
-    override suspend fun saveSelectedEquipment(equipment: Set<String>) {
-        repository.updateSelectedEquipment(equipment)
-    }
-}
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
 
-/**
- * Simple implementation of UserPreferencesService using SharedPreferences
- * DEPRECATED: Use UserPreferencesDataStoreImpl instead
- * Kept for backward compatibility during migration
- */
-@Deprecated("Use UserPreferencesDataStoreImpl instead")
-class UserPreferencesLegacyImpl(private val context: Context) : UserPreferencesService {
-    
-    private fun getSharedPrefs(): SharedPreferences {
-        return context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-    }
-    
-    override suspend fun clearWorkoutPreferences() {
-        // Clear workout-related preferences
-        getSharedPrefs().edit().clear().apply()
-    }
-    
-    override suspend fun clearNutritionPreferences() {
-        // Clear nutrition-related preferences
-        getSharedPrefs().edit().clear().apply()
-    }
-    
-    override suspend fun clearUserPreferences() {
-        // Clear user-related preferences
-        getSharedPrefs().edit().clear().apply()
-    }
-    
-    override suspend fun clearAchievementPreferences() {
-        // Clear achievement-related preferences
-        getSharedPrefs().edit().clear().apply()
-    }
-    
-    override suspend fun clearAllPreferences() {
-        getSharedPrefs().edit().clear().apply()
-    }
-    
-    override suspend fun getSelectedEquipment(): Set<String> {
-        val stored = getSharedPrefs().getString("selected_equipment", "") ?: ""
-        return if (stored.isBlank()) emptySet() else stored.split(",").filter { it.isNotBlank() }.toSet()
-    }
-    
-    override suspend fun saveSelectedEquipment(equipment: Set<String>) {
-        getSharedPrefs().edit().putString("selected_equipment", equipment.joinToString(",")).apply()
-    }
-}
+@Singleton
+class UserPreferencesService @Inject constructor(
+    private val context: Context
+) {
+    private val dataStore = context.dataStore
 
-/**
- * Legacy helper for storing and retrieving user preferences from SharedPreferences
- * DEPRECATED: Use UserPreferencesRepository instead
- * Kept for backward compatibility during migration
- */
-@Deprecated("Use UserPreferencesRepository instead")
-object UserPreferencesLegacy {
-    private const val PREFS_NAME = "user_preferences"
-    private const val KEY_SELECTED_EQUIPMENT = "selected_equipment"
-
-    private fun getPrefs(context: Context): SharedPreferences {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    companion object {
+        val API_KEY_GEMINI = stringPreferencesKey("api_key_gemini")
+        val API_KEY_PERPLEXITY = stringPreferencesKey("api_key_perplexity")
+        val FIRST_LAUNCH = booleanPreferencesKey("first_launch")
+        val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
     }
 
-    fun saveSelectedEquipment(context: Context, equipment: List<String>) {
-        getPrefs(context).edit().putString(KEY_SELECTED_EQUIPMENT, equipment.joinToString(",")).apply()
+    val apiKeyGemini: Flow<String?> = dataStore.data.map { preferences ->
+        preferences[API_KEY_GEMINI]
     }
 
-    fun getSelectedEquipment(context: Context): List<String> {
-        val stored = getPrefs(context).getString(KEY_SELECTED_EQUIPMENT, "") ?: ""
-        return if (stored.isBlank()) emptyList() else stored.split(",").filter { it.isNotBlank() }
+    val apiKeyPerplexity: Flow<String?> = dataStore.data.map { preferences ->
+        preferences[API_KEY_PERPLEXITY]
+    }
+
+    val isFirstLaunch: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[FIRST_LAUNCH] ?: true
+    }
+
+    val isOnboardingCompleted: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[ONBOARDING_COMPLETED] ?: false
+    }
+
+    suspend fun setApiKeyGemini(apiKey: String) {
+        dataStore.edit { preferences ->
+            preferences[API_KEY_GEMINI] = apiKey
+        }
+    }
+
+    suspend fun setApiKeyPerplexity(apiKey: String) {
+        dataStore.edit { preferences ->
+            preferences[API_KEY_PERPLEXITY] = apiKey
+        }
+    }
+
+    suspend fun setFirstLaunch(isFirst: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[FIRST_LAUNCH] = isFirst
+        }
+    }
+
+    suspend fun setOnboardingCompleted(completed: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[ONBOARDING_COMPLETED] = completed
+        }
     }
 }
