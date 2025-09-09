@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -71,7 +72,7 @@ fun EnhancedTrainingHubScreen(
                     TrainingAction("Krafttraining", Icons.Filled.FitnessCenter) { 
                         navController.navigate("plan") 
                     },
-                    TrainingAction("Cardio", Icons.Filled.DirectionsRun) { 
+                    TrainingAction("Cardio", Icons.AutoMirrored.Filled.DirectionsRun) { 
                         navController.navigate("daily_workout/Ausdauer/30") 
                     }
                 )
@@ -87,7 +88,7 @@ fun EnhancedTrainingHubScreen(
                     TrainingAction("Fortschritts-Analytics", Icons.Filled.Insights) { 
                         navController.navigate("enhanced_analytics") 
                     },
-                    TrainingAction("Gewichtsverfolgung", Icons.Filled.TrendingUp) { 
+                    TrainingAction("Gewichtsverfolgung", Icons.AutoMirrored.Filled.TrendingUp) { 
                         navController.navigate("weight_tracking") 
                     },
                     TrainingAction("BMI Rechner", Icons.Filled.Calculate) { 
@@ -264,7 +265,7 @@ private fun QuickStatsRow(navController: NavController) {
                     onClick = { navController.navigate("enhanced_analytics") }
                 )
                 QuickStatItem(
-                    icon = Icons.Filled.TrendingUp,
+                    icon = Icons.AutoMirrored.Filled.TrendingUp,
                     label = "Streak",
                     value = "0",
                     onClick = { navController.navigate("weight_tracking") }

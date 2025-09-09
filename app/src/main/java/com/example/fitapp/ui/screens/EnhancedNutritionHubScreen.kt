@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -66,7 +67,7 @@ fun EnhancedNutritionHubScreen(
                 title = "📱 Ernährungstracking",
                 description = "Verfolge deine tägliche Nahrungsaufnahme",
                 actions = listOf(
-                    NutritionAction("Ernährungstagebuch", Icons.Filled.MenuBook) { 
+                    NutritionAction("Ernährungstagebuch", Icons.AutoMirrored.Filled.MenuBook) { 
                         navController.navigate("food_diary") 
                     },
                     NutritionAction("Lebensmittel Scanner", Icons.Filled.PhotoCamera) { 
@@ -168,7 +169,7 @@ private fun NutritionHeroCard(
                     onClick = onOpenDiary,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Filled.MenuBook, contentDescription = null)
+                    Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text("Tagebuch")
                 }

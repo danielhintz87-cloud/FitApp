@@ -34,7 +34,7 @@ class PlanViewModel @Inject constructor(
     }
     
     suspend fun getEquipmentList(): List<String> {
-        return userPreferencesRepository.selectedEquipment.first()
+        return userPreferencesRepository.selectedEquipment.first().toList()
     }
     
     fun clearEquipment() {

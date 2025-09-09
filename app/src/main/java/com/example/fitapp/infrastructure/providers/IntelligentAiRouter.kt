@@ -43,7 +43,6 @@ class IntelligentAiRouter(
                     android.util.Log.w("AiRouter", "Perplexity Budget erreicht, Fallback zu Gemini")
                     geminiProvider.generateTextWithTaskType(prompt, TaskType.SIMPLE_TEXT_COACHING)
                 }
-                }
             }
         }
         

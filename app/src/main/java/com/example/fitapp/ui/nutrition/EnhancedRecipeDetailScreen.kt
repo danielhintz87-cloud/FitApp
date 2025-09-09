@@ -339,10 +339,10 @@ private fun RecipeQuickStats(recipe: SavedRecipeEntity) {
             recipe.difficulty?.let { difficulty ->
                 QuickStatItem(
                     icon = when (difficulty.lowercase()) {
-                        "einfach" -> Icons.Filled.TrendingFlat
-                        "mittel" -> Icons.Filled.TrendingUp
+                        "einfach" -> Icons.AutoMirrored.Filled.TrendingFlat
+                        "mittel" -> Icons.AutoMirrored.Filled.TrendingUp
                         "schwer" -> Icons.Filled.Whatshot
-                        else -> Icons.Filled.TrendingUp
+                        else -> Icons.AutoMirrored.Filled.TrendingUp
                     },
                     label = "Schwierigkeit",
                     value = difficulty,

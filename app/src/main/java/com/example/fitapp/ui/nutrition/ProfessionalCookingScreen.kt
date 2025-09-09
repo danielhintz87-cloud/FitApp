@@ -506,7 +506,7 @@ private fun RecipeOverviewCard(recipe: SavedRecipeEntity) {
                 
                 recipe.difficulty?.let { difficulty ->
                     QuickStat(
-                        icon = Icons.Filled.TrendingUp,
+                        icon = Icons.AutoMirrored.Filled.TrendingUp,
                         label = "Schwierigkeit",
                         value = difficulty
                     )
