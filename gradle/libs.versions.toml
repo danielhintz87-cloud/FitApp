@@ -59,8 +59,8 @@ horologist = "0.6.12"
 # KSP (Compatible with Kotlin 2.0.20)
 ksp = "2.0.20-1.0.25"
 
-# Hilt Dependency Injection
-hilt = "2.44"
+# Hilt Dependency Injection - Compatible with Kotlin 2.0
+hilt = "2.48"
 
 # Testing
 junit = "4.13.2"
