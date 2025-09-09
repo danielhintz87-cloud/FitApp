@@ -14,8 +14,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.prefs.UserPreferencesService
+import com.example.fitapp.data.prefs.UserPreferencesDataStoreImpl
+import com.example.fitapp.data.prefs.UserPreferencesRepository
 import com.example.fitapp.services.ResetManager
 import com.example.fitapp.services.ResetType
 import kotlinx.coroutines.launch
@@ -28,11 +31,16 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResetSettingsScreen(
-    onBackPressed: () -> Unit
+    onBackPressed: () -> Unit,
+    viewModel: ResetSettingsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.get(context) }
-    val userPrefs = remember { com.example.fitapp.data.prefs.UserPreferencesLegacyImpl(context) as UserPreferencesService }
+    
+    // Create a DataStore-based service implementation using Hilt-injected repository
+    val userPrefs = remember { 
+        UserPreferencesDataStoreImpl(viewModel.userPreferencesRepository) as UserPreferencesService 
+    }
     val resetManager = remember { ResetManager(context, db, userPrefs) }
     val scope = rememberCoroutineScope()
     

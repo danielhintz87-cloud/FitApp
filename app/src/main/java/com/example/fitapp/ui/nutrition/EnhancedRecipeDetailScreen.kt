@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -86,7 +87,7 @@ fun EnhancedRecipeDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                     }
                 },
                 actions = {
@@ -338,10 +339,10 @@ private fun RecipeQuickStats(recipe: SavedRecipeEntity) {
             recipe.difficulty?.let { difficulty ->
                 QuickStatItem(
                     icon = when (difficulty.lowercase()) {
-                        "einfach" -> Icons.Filled.TrendingFlat
-                        "mittel" -> Icons.Filled.TrendingUp
+                        "einfach" -> Icons.AutoMirrored.Filled.TrendingFlat
+                        "mittel" -> Icons.AutoMirrored.Filled.TrendingUp
                         "schwer" -> Icons.Filled.Whatshot
-                        else -> Icons.Filled.TrendingUp
+                        else -> Icons.AutoMirrored.Filled.TrendingUp
                     },
                     label = "Schwierigkeit",
                     value = difficulty,

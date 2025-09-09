@@ -49,10 +49,12 @@ class UserDataStore(private val context: Context) : UserPreferencesService {
 }
 
 /**
- * Factory Methode um sukzessive Migration zu erleichtern: versucht DataStore, fällt auf Legacy zurück
+ * Factory Method for migration assistance: now always uses DataStore
+ * @deprecated Use UserPreferencesRepository with Dependency Injection instead
  */
+@Deprecated("Use UserPreferencesRepository with Dependency Injection instead")
 object UserPreferencesFactory {
     fun create(context: Context, preferDataStore: Boolean = true): UserPreferencesService {
-        return if (preferDataStore) UserDataStore(context) else UserPreferencesLegacyImpl(context)
+        return UserDataStore(context)
     }
 }

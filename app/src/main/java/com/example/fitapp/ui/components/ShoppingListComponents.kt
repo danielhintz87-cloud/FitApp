@@ -458,7 +458,7 @@ private fun AddItemDialog(
                             readOnly = true,
                             label = { Text("Einheit") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                            modifier = Modifier.menuAnchor()
+                            modifier = Modifier.menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = true)
                         )
                         
                         ExposedDropdownMenu(

@@ -250,6 +250,10 @@ class UserPreferencesRepository(private val context: Context) {
         }
     }
     
+    suspend fun resetAll() {
+        clearAllPreferences()
+    }
+    
     suspend fun clearWorkoutPreferences() {
         dataStore.updateData { prefs ->
             prefs.toBuilder()
