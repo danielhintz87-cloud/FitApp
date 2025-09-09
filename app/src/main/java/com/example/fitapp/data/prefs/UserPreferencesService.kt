@@ -66,4 +66,27 @@ class UserPreferencesService @Inject constructor(
             preferences[ONBOARDING_COMPLETED] = completed
         }
     }
+
+    // Legacy compatibility methods for ResetManager
+    suspend fun clearWorkoutPreferences() {
+        // For compatibility - no specific workout preferences to clear
+    }
+
+    suspend fun clearNutritionPreferences() {
+        // For compatibility - no specific nutrition preferences to clear
+    }
+
+    suspend fun clearUserPreferences() {
+        // For compatibility - no specific user preferences to clear
+    }
+
+    suspend fun clearAchievementPreferences() {
+        // For compatibility - no specific achievement preferences to clear
+    }
+
+    suspend fun clearAllPreferences() {
+        dataStore.edit { preferences ->
+            preferences.clear()
+        }
+    }
 }

@@ -10,17 +10,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.fitapp.data.db.AppDatabase
-import com.example.fitapp.data.prefs.UserPreferencesService
-import com.example.fitapp.data.prefs.UserPreferencesDataStoreImpl
-import com.example.fitapp.data.prefs.UserPreferencesRepository
-import com.example.fitapp.services.ResetManager
-import com.example.fitapp.services.ResetType
+import com.example.fitapp.settings.ResetSettingsViewModel
 import kotlinx.coroutines.launch
 
 /**
@@ -34,23 +27,11 @@ fun ResetSettingsScreen(
     onBackPressed: () -> Unit,
     viewModel: ResetSettingsViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val db = remember { AppDatabase.get(context) }
-    
-    // Create a DataStore-based service implementation using Hilt-injected repository
-    val userPrefs = remember { 
-        UserPreferencesDataStoreImpl(viewModel.userPreferencesRepository) as UserPreferencesService 
-    }
-    val resetManager = remember { ResetManager(context, db, userPrefs) }
     val scope = rememberCoroutineScope()
-    
-    // State for reset operations
-    val resetProgress by resetManager.resetProgress.collectAsState()
     var showResetDialog by remember { mutableStateOf(false) }
-    var selectedResetType by remember { mutableStateOf<ResetType?>(null) }
+    var selectedResetAction by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
-    var resetResult by remember { mutableStateOf<Map<String, Any>?>(null) }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -63,393 +44,250 @@ fun ResetSettingsScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Zurück"
+                        )
                     }
                 }
             )
         }
-    ) { padding ->
+    ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
+                .padding(paddingValues)
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                ResetSectionHeader(
-                    title = "Daten-Verwaltung",
-                    subtitle = "Verwalte deine App-Daten und setze verschiedene Bereiche zurück"
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "⚠️ Daten Reset Optionen",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Diese Aktionen können nicht rückgängig gemacht werden. Bitte mit Vorsicht verwenden.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
             }
-            
+
             item {
                 ResetOptionCard(
-                    title = "Trainings-Daten",
-                    description = "Lösche alle Trainingseinheiten, Leistungsdaten und Progressions-Verfolgung",
-                    icon = Icons.Filled.FitnessCenter,
-                    warningLevel = WarningLevel.MEDIUM,
+                    title = "Training zurücksetzen",
+                    description = "Löscht alle Trainings-Einstellungen",
+                    icon = Icons.Default.FitnessCenter,
                     onClick = {
-                        selectedResetType = ResetType.WORKOUT_DATA
+                        selectedResetAction = "workout"
                         showResetDialog = true
-                    }
+                    },
+                    isLoading = isLoading
                 )
             }
-            
+
             item {
                 ResetOptionCard(
-                    title = "Ernährungs-Daten",
-                    description = "Lösche alle Mahlzeiten-Logs, Rezepte und Koch-Sessions",
-                    icon = Icons.Filled.Restaurant,
-                    warningLevel = WarningLevel.MEDIUM,
+                    title = "Ernährung zurücksetzen",
+                    description = "Löscht alle Ernährungs-Einstellungen",
+                    icon = Icons.Default.Restaurant,
                     onClick = {
-                        selectedResetType = ResetType.NUTRITION_DATA
+                        selectedResetAction = "nutrition"
                         showResetDialog = true
-                    }
+                    },
+                    isLoading = isLoading
                 )
             }
-            
+
             item {
                 ResetOptionCard(
-                    title = "Benutzer-Profil",
-                    description = "Lösche Gewichtsdaten, BMI-Verlauf und persönliche Einstellungen",
-                    icon = Icons.Filled.Person,
-                    warningLevel = WarningLevel.MEDIUM,
+                    title = "Benutzer zurücksetzen",
+                    description = "Löscht alle Benutzer-Einstellungen",
+                    icon = Icons.Default.Person,
                     onClick = {
-                        selectedResetType = ResetType.USER_PROFILE
+                        selectedResetAction = "user"
                         showResetDialog = true
-                    }
+                    },
+                    isLoading = isLoading
                 )
             }
-            
+
             item {
                 ResetOptionCard(
-                    title = "Erfolge & Streaks",
-                    description = "Setze alle Erfolge, Streaks und persönliche Rekorde zurück",
-                    icon = Icons.Filled.EmojiEvents,
-                    warningLevel = WarningLevel.MEDIUM,
+                    title = "Erfolge zurücksetzen",
+                    description = "Löscht alle Erfolgs-Einstellungen",
+                    icon = Icons.Default.EmojiEvents,
                     onClick = {
-                        selectedResetType = ResetType.ACHIEVEMENTS
+                        selectedResetAction = "achievements"
                         showResetDialog = true
-                    }
+                    },
+                    isLoading = isLoading
                 )
             }
-            
+
             item {
                 ResetOptionCard(
-                    title = "Einkaufsliste",
-                    description = "Lösche alle Einkaufsartikel und setze Kategorien zurück",
-                    icon = Icons.Filled.ShoppingCart,
-                    warningLevel = WarningLevel.LOW,
+                    title = "Alles zurücksetzen",
+                    description = "Löscht ALLE Einstellungen (nicht empfohlen)",
+                    icon = Icons.Default.DeleteSweep,
                     onClick = {
-                        selectedResetType = ResetType.SHOPPING_LIST
+                        selectedResetAction = "all"
                         showResetDialog = true
-                    }
-                )
-            }
-            
-            item {
-                HorizontalDivider()
-            }
-            
-            item {
-                ResetSectionHeader(
-                    title = "⚠️ Vollständiger Reset",
-                    subtitle = "ACHTUNG: Diese Option löscht ALLE Daten unwiderruflich"
-                )
-            }
-            
-            item {
-                ResetOptionCard(
-                    title = "Kompletter App-Reset",
-                    description = "Lösche ALLE Daten und setze die App in den Werkszustand zurück",
-                    icon = Icons.Filled.RestartAlt,
-                    warningLevel = WarningLevel.CRITICAL,
-                    onClick = {
-                        selectedResetType = ResetType.COMPLETE_RESET
-                        showResetDialog = true
-                    }
+                    },
+                    isLoading = isLoading,
+                    isDestructive = true
                 )
             }
         }
     }
 
-    // Reset Progress Dialog
-    resetProgress?.let { progress ->
-        ResetProgressDialog(
-            progress = progress,
-            onDismiss = {
-                if (progress.isCompleted || progress.hasError) {
-                    resetManager.clearResetProgress()
-                }
-            }
-        )
-    }
-
-    // Reset Confirmation Dialog
-    if (showResetDialog && selectedResetType != null) {
-        ResetConfirmationDialog(
-            resetType = selectedResetType!!,
-            confirmationMessage = resetManager.getResetConfirmationMessage(selectedResetType!!),
-            onConfirm = {
-                scope.launch {
-                    when (selectedResetType!!) {
-                        ResetType.WORKOUT_DATA -> resetManager.resetWorkoutData()
-                        ResetType.NUTRITION_DATA -> resetManager.resetNutritionData()
-                        ResetType.USER_PROFILE -> resetManager.resetUserProfile()
-                        ResetType.ACHIEVEMENTS -> resetManager.resetAchievements()
-                        ResetType.SHOPPING_LIST -> resetManager.resetShoppingList()
-                        ResetType.COMPLETE_RESET -> resetManager.performCompleteReset()
-                        else -> { /* Handle other types */ }
-                    }
-                }
+    // Confirmation Dialog
+    if (showResetDialog && selectedResetAction != null) {
+        AlertDialog(
+            onDismissRequest = { 
                 showResetDialog = false
-                selectedResetType = null
+                selectedResetAction = null
             },
-            onDismiss = {
-                showResetDialog = false
-                selectedResetType = null
+            title = {
+                Text("Reset bestätigen")
+            },
+            text = {
+                Text("Sind Sie sicher, dass Sie diese Daten zurücksetzen möchten? Diese Aktion kann nicht rückgängig gemacht werden.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            isLoading = true
+                            try {
+                                when (selectedResetAction) {
+                                    "workout" -> viewModel.clearWorkout()
+                                    "nutrition" -> viewModel.clearNutrition()
+                                    "user" -> viewModel.clearUser()
+                                    "achievements" -> viewModel.clearAchievements()
+                                    "all" -> viewModel.clearAll()
+                                }
+                            } finally {
+                                isLoading = false
+                                showResetDialog = false
+                                selectedResetAction = null
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Reset durchführen")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showResetDialog = false
+                        selectedResetAction = null
+                    }
+                ) {
+                    Text("Abbrechen")
+                }
             }
         )
     }
 }
 
 @Composable
-private fun ResetSectionHeader(
-    title: String,
-    subtitle: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Text(
-            title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            subtitle,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.outline
-        )
-    }
-}
-
-@Composable
-private fun ResetOptionCard(
+fun ResetOptionCard(
     title: String,
     description: String,
     icon: ImageVector,
-    warningLevel: WarningLevel,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    isLoading: Boolean = false,
+    isDestructive: Boolean = false
 ) {
-    val containerColor = when (warningLevel) {
-        WarningLevel.LOW -> MaterialTheme.colorScheme.surfaceVariant
-        WarningLevel.MEDIUM -> MaterialTheme.colorScheme.tertiaryContainer
-        WarningLevel.CRITICAL -> MaterialTheme.colorScheme.errorContainer
-    }
-    
-    val contentColor = when (warningLevel) {
-        WarningLevel.LOW -> MaterialTheme.colorScheme.onSurfaceVariant
-        WarningLevel.MEDIUM -> MaterialTheme.colorScheme.onTertiaryContainer
-        WarningLevel.CRITICAL -> MaterialTheme.colorScheme.onErrorContainer
-    }
-    
     Card(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = containerColor
+            containerColor = if (isDestructive) {
+                MaterialTheme.colorScheme.errorContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
         )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = contentColor,
-                modifier = Modifier.size(32.dp)
-            )
-            
-            Spacer(Modifier.width(16.dp))
-            
-            Column(
-                modifier = Modifier.weight(1f)
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = contentColor
-                )
-                Text(
-                    description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = contentColor.copy(alpha = 0.8f)
-                )
-            }
-            
-            Icon(
-                Icons.Filled.ChevronRight,
-                contentDescription = null,
-                tint = contentColor.copy(alpha = 0.6f)
-            )
-        }
-    }
-}
-
-@Composable
-private fun ResetConfirmationDialog(
-    resetType: ResetType,
-    confirmationMessage: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                if (resetType == ResetType.COMPLETE_RESET) {
-                    Icons.Filled.Warning
-                } else {
-                    Icons.Filled.Delete
-                },
-                contentDescription = null,
-                tint = if (resetType == ResetType.COMPLETE_RESET) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.primary
-                }
-            )
-        },
-        title = {
-            Text(
-                if (resetType == ResetType.COMPLETE_RESET) {
-                    "⚠️ VOLLSTÄNDIGER RESET ⚠️"
-                } else {
-                    "Daten löschen?"
-                }
-            )
-        },
-        text = {
-            Text(
-                confirmationMessage,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (resetType == ResetType.COMPLETE_RESET) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = if (isDestructive) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.primary
                     }
                 )
-            ) {
-                Text(
-                    if (resetType == ResetType.COMPLETE_RESET) {
-                        "ALLES LÖSCHEN"
-                    } else {
-                        "Löschen"
-                    }
-                )
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text("Abbrechen")
-            }
-        }
-    )
-}
-
-@Composable
-private fun ResetProgressDialog(
-    progress: ResetManager.ResetProgress,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = if (progress.isCompleted || progress.hasError) onDismiss else { {} },
-        icon = {
-            if (progress.isCompleted) {
-                Icon(
-                    Icons.Filled.CheckCircle,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            } else if (progress.hasError) {
-                Icon(
-                    Icons.Filled.Error,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
-            } else {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        },
-        title = {
-            Text(
-                when {
-                    progress.isCompleted -> "Abgeschlossen"
-                    progress.hasError -> "Fehler"
-                    else -> progress.operation
-                }
-            )
-        },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                if (progress.hasError) {
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        progress.errorMessage ?: "Unbekannter Fehler",
+                        title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        description,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Button(
+                onClick = onClick,
+                enabled = !isLoading,
+                modifier = Modifier.fillMaxWidth(),
+                colors = if (isDestructive) {
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
                     )
                 } else {
-                    Text(
-                        progress.currentStep,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    
-                    if (!progress.isCompleted) {
-                        LinearProgressIndicator(
-                            progress = { progress.progress },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
-                        Text(
-                            "${(progress.progress * 100).toInt()}%",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                    ButtonDefaults.buttonColors()
                 }
-            }
-        },
-        confirmButton = {
-            if (progress.isCompleted || progress.hasError) {
-                Button(onClick = onDismiss) {
-                    Text("OK")
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(if (isDestructive) "⚠️ Reset" else "Reset")
                 }
             }
         }
-    )
-}
-
-private enum class WarningLevel {
-    LOW, MEDIUM, CRITICAL
+    }
 }

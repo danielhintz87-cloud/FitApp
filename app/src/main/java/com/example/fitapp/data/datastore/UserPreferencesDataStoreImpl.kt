@@ -3,7 +3,6 @@ package com.example.fitapp.data.datastore
 import android.content.Context
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.remove
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -34,7 +33,7 @@ class UserPreferencesDataStoreImpl @Inject constructor(
     override suspend fun clearWorkoutPreferences() {
         ds.edit { prefs -> 
             WORKOUT_KEYS.forEach { key -> 
-                prefs.remove(key) 
+                prefs -= key 
             } 
         }
     }
@@ -42,7 +41,7 @@ class UserPreferencesDataStoreImpl @Inject constructor(
     override suspend fun clearNutritionPreferences() {
         ds.edit { prefs -> 
             NUTRITION_KEYS.forEach { key -> 
-                prefs.remove(key) 
+                prefs -= key 
             } 
         }
     }
@@ -50,7 +49,7 @@ class UserPreferencesDataStoreImpl @Inject constructor(
     override suspend fun clearUserPreferences() {
         ds.edit { prefs -> 
             USER_KEYS.forEach { key -> 
-                prefs.remove(key) 
+                prefs -= key 
             } 
         }
     }
@@ -58,7 +57,7 @@ class UserPreferencesDataStoreImpl @Inject constructor(
     override suspend fun clearAchievementPreferences() {
         ds.edit { prefs -> 
             ACHIEVEMENT_KEYS.forEach { key -> 
-                prefs.remove(key) 
+                prefs -= key 
             } 
         }
     }
