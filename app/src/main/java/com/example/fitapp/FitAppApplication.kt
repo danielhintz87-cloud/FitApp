@@ -1,10 +1,12 @@
 package com.example.fitapp
 
 import android.app.Application
+import android.util.Log
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 @HiltAndroidApp
 class FitAppApplication : Application() {
@@ -14,7 +16,51 @@ class FitAppApplication : Application() {
     
     override fun onCreate() {
         super.onCreate()
-        // Keep Application onCreate minimal to avoid startup crashes
-        // Complex initialization should be done lazily when needed
+        
+        // Basic logging - safe to run at startup
+        Log.d("FitApp", "Application initialized")
+        
+        // Initialize notification channels immediately as they're needed for the app to function
+        try {
+            initializeNotificationChannels()
+        } catch (e: Exception) {
+            Log.e("FitApp", "Failed to initialize notification channels", e)
+        }
+        
+        // Schedule background initialization for complex operations
+        // This prevents blocking the main thread and causing startup crashes
+        scheduleBackgroundInitialization()
+    }
+    
+    private fun initializeNotificationChannels() {
+        // Import here to avoid class loading issues at startup
+        val notificationManager = try {
+            Class.forName("com.example.fitapp.services.SmartNotificationManager")
+                .getDeclaredMethod("createNotificationChannels", Application::class.java)
+            // If class exists, call the method reflectively to avoid hard dependency
+            val method = Class.forName("com.example.fitapp.services.SmartNotificationManager")
+                .getDeclaredMethod("createNotificationChannels", Application::class.java)
+            method.invoke(null, this)
+        } catch (e: Exception) {
+            Log.w("FitApp", "SmartNotificationManager not available during startup", e)
+        }
+    }
+    
+    private fun scheduleBackgroundInitialization() {
+        // Schedule complex initialization in background to avoid startup crashes
+        // This includes WorkManager scheduling, DataStore migration, etc.
+        applicationScope.launch {
+            try {
+                initializeBackgroundServices()
+            } catch (e: Exception) {
+                Log.e("FitApp", "Background initialization failed", e)
+            }
+        }
+    }
+    
+    private suspend fun initializeBackgroundServices() {
+        // This method will be implemented when the dependent services are available
+        // For now, keep it empty to prevent class loading issues
+        Log.d("FitApp", "Background services initialization deferred")
     }
 }
