@@ -2,7 +2,6 @@ package com.example.fitapp
 
 import android.app.Application
 import android.util.Log
-import androidx.lifecycle.lifecycleScope
 import com.example.fitapp.data.prefs.UserPreferencesRepository
 import com.example.fitapp.ui.nutrition.EnhancedCookingValidator
 import com.example.fitapp.services.SmartNotificationManager
@@ -11,7 +10,9 @@ import com.example.fitapp.services.DigitalCoachWorker
 import com.example.fitapp.services.NutritionReminderWorker
 import com.example.fitapp.services.WaterReminderWorker
 import dagger.hilt.android.HiltAndroidApp
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,6 +22,9 @@ class FitAppApplication : Application() {
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
     
+    // Application-level coroutine scope with SupervisorJob for safe background operations
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    
     override fun onCreate() {
         super.onCreate()
         Log.d("FitApp", "Application initialized")
@@ -29,7 +33,7 @@ class FitAppApplication : Application() {
         SmartNotificationManager.createNotificationChannels(this)
         
         // Migrate SharedPreferences to DataStore
-        GlobalScope.launch {
+        applicationScope.launch {
             try {
                 val migrated = userPreferencesRepository.migrateFromSharedPreferences()
                 if (migrated) {

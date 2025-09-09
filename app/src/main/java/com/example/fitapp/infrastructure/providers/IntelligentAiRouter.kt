@@ -64,11 +64,7 @@ class IntelligentAiRouter(
         
         android.util.Log.d("AiRouter", "Budget Vision: $taskType → ${selection.reason} (${selection.qualityLevel})")
         
-        val result = if (geminiProvider is GeminiAiProvider) {
-            geminiProvider.analyzeImageWithTaskType(prompt, bitmap, taskType)
-        } else {
-            geminiProvider.analyzeImage(prompt, bitmap)
-        }
+        val result = geminiProvider.analyzeImageWithTaskType(prompt, bitmap, taskType)
         
         // Track usage für Budget Management
         if (result.isSuccess) {
