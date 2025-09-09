@@ -144,6 +144,18 @@
 -keep public class com.example.fitapp.FitAppApplication { *; }
 -keep public class **Hilt_FitAppApplication { *; }
 
+# --- Missing R8 Rules (Generated) ---
+-dontwarn com.example.fitapp.Hilt_FitAppApplication
+-dontwarn javax.lang.model.SourceVersion
+-dontwarn javax.lang.model.element.Element
+-dontwarn javax.lang.model.element.ElementKind
+-dontwarn javax.lang.model.element.Modifier
+-dontwarn javax.lang.model.type.TypeMirror
+-dontwarn javax.lang.model.type.TypeVisitor
+-dontwarn javax.lang.model.util.SimpleTypeVisitor8
+-dontwarn org.tensorflow.lite.gpu.GpuDelegateFactory$Options$GpuBackend
+-dontwarn org.tensorflow.lite.gpu.GpuDelegateFactory$Options
+
 # --- Enum Classes (Preserve) ---
 -keepclassmembers enum * {
     public static **[] values();
