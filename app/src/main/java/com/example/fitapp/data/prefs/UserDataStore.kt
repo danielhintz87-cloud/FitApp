@@ -10,10 +10,25 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
+ * Interface for user preferences service with clear methods
+ */
+interface UserPreferencesServiceInterface {
+    suspend fun clearWorkoutPreferences()
+    suspend fun clearNutritionPreferences()
+    suspend fun clearUserPreferences()
+    suspend fun clearAchievementPreferences()
+    suspend fun clearAllPreferences()
+    suspend fun getSelectedEquipment(): Set<String>
+    suspend fun saveSelectedEquipment(equipment: Set<String>)
+}
+
+/**
  * Jetpack DataStore basierte Implementierung für UserPreferences.
  * Migriert sukzessive von SharedPreferences (Legacy) auf DataStore.
  */
-class UserDataStore(private val context: Context) : UserPreferencesService {
+class UserDataStore(
+    private val context: Context
+) : UserPreferencesServiceInterface {
     private val Context.dataStore by preferencesDataStore(name = "user_prefs")
 
     private object Keys {
@@ -54,7 +69,7 @@ class UserDataStore(private val context: Context) : UserPreferencesService {
  */
 @Deprecated("Use UserPreferencesRepository with Dependency Injection instead")
 object UserPreferencesFactory {
-    fun create(context: Context, preferDataStore: Boolean = true): UserPreferencesService {
+    fun create(context: Context, preferDataStore: Boolean = true): UserPreferencesServiceInterface {
         return UserDataStore(context)
     }
 }

@@ -1,7 +1,10 @@
 package com.example.fitapp.di
 
 import android.content.Context
+import com.example.fitapp.data.datastore.UserPreferencesDataStore
+import com.example.fitapp.data.datastore.UserPreferencesDataStoreImpl
 import com.example.fitapp.data.prefs.UserPreferencesRepository
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -14,11 +17,19 @@ import javax.inject.Singleton
  */
 @Module
 @InstallIn(SingletonComponent::class)
-class DataStoreModule {
+abstract class DataStoreModule {
 
-    @Provides
+    @Binds
     @Singleton
-    fun provideUserPreferencesRepository(
-        @ApplicationContext context: Context
-    ): UserPreferencesRepository = UserPreferencesRepository(context)
+    abstract fun bindUserPreferencesDataStore(
+        impl: UserPreferencesDataStoreImpl
+    ): UserPreferencesDataStore
+
+    companion object {
+        @Provides
+        @Singleton
+        fun provideUserPreferencesRepository(
+            @ApplicationContext context: Context
+        ): UserPreferencesRepository = UserPreferencesRepository(context)
+    }
 }
