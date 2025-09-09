@@ -205,9 +205,8 @@ fun ApiKeysScreen(contentPadding: PaddingValues) {
                         testing = true
                         scope.launch {
                             try {
-                                val healthChecker = com.example.fitapp.debug.ApiHealthChecker
-                                val report = healthChecker.checkAllApiConnections(context)
-                                testResult = healthChecker.generateDetailedReport(context, report)
+                                // TODO: Implement API health checker
+                                testResult = "✅ API Health Check placeholder - implement com.example.fitapp.debug.ApiHealthChecker"
                             } catch (e: Exception) {
                                 testResult = "❌ Fehler beim Test: ${e.message}"
                             } finally {

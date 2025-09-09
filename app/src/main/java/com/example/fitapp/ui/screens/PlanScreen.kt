@@ -12,11 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.PlanRequest
 import com.example.fitapp.data.db.AppDatabase
-import com.example.fitapp.data.prefs.IUserPreferences
-import com.example.fitapp.data.prefs.UserPreferencesLegacy
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.ui.components.AiKeyGate
 import com.example.fitapp.ui.util.applyContentPadding
@@ -36,7 +35,8 @@ fun PlanScreen(
     onNavigateToApiKeys: (() -> Unit)? = null,
     onNavigateToBmi: (() -> Unit)? = null,
     onNavigateToWeightProgram: (() -> Unit)? = null,
-    onNavigateToEquipment: (() -> Unit)? = null
+    onNavigateToEquipment: (() -> Unit)? = null,
+    viewModel: PlanViewModel = hiltViewModel()
 ) {
     val ctx = LocalContext.current
     val scope = rememberSafeCoroutineScope()
@@ -66,7 +66,7 @@ fun PlanScreen(
     
     // Load saved equipment initially
     LaunchedEffect(Unit) {
-        val savedEquipment = UserPreferencesLegacy.getSelectedEquipment(ctx)
+        val savedEquipment = viewModel.getEquipmentList()
         if (savedEquipment.isNotEmpty()) {
             equipment = savedEquipment.joinToString(", ")
         }
@@ -77,14 +77,19 @@ fun PlanScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                val savedEquipment = UserPreferencesLegacy.getSelectedEquipment(ctx)
-                if (savedEquipment.isNotEmpty()) {
-                    equipment = savedEquipment.joinToString(", ")
-                }
+                viewModel.refreshEquipment()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    
+    // Observe equipment changes from ViewModel
+    val selectedEquipmentSet by viewModel.selectedEquipment.collectAsState()
+    LaunchedEffect(selectedEquipmentSet) {
+        if (selectedEquipmentSet.isNotEmpty()) {
+            equipment = selectedEquipmentSet.joinToString(", ")
+        }
     }
     
     // Dropdown states
@@ -374,9 +379,9 @@ fun PlanScreen(
                                 "❌ Bitte wählen Sie ein Trainingsziel aus."
                             }
                             else -> {
-                                // Get the most current equipment selection from UserPreferences
+                                // Get the most current equipment selection from ViewModel
                                 val savedEquipment = try {
-                                    UserPreferencesLegacy.getSelectedEquipment(ctx)
+                                    viewModel.getEquipmentList()
                                 } catch (e: Exception) {
                                     android.util.Log.w("PlanScreen", "Failed to load equipment preferences", e)
                                     emptyList()
@@ -481,7 +486,7 @@ fun PlanScreen(
                 equipment = ""
                 result = ""
                 saveStatus = ""
-                UserPreferencesLegacy.saveSelectedEquipment(ctx, emptyList())
+                viewModel.clearEquipment()
             },
             modifier = Modifier
                 .fillMaxWidth()

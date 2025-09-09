@@ -118,9 +118,43 @@
     <fields>;
 }
 
+# --- Hilt Dependency Injection (Critical for Runtime) ---
+-keep class dagger.hilt.** { *; }
+-keep class javax.inject.** { *; }
+-keep class * extends dagger.hilt.android.internal.managers.ApplicationComponentManager { *; }
+-keep class **_HiltModules { *; }
+-keep class **_HiltModules$* { *; }
+-keep class **_Provide* { *; }
+-keep class **_Factory { *; }
+-keep class **_MembersInjector { *; }
+-keep class **Hilt* { *; }
+-keep @dagger.hilt.android.HiltAndroidApp class * { *; }
+-keep @dagger.hilt.android.AndroidEntryPoint class * { *; }
+-keep @dagger.Module class * { *; }
+-keep @dagger.Provides class * { *; }
+-keep @javax.inject.Inject class * { *; }
+-keepclassmembers class * {
+    @javax.inject.Inject <init>(...);
+    @javax.inject.Inject <fields>;
+    @javax.inject.Inject <methods>;
+}
+
 # --- Prevent Obfuscation of Entry Points ---
 -keep public class com.example.fitapp.MainActivity { *; }
 -keep public class com.example.fitapp.FitAppApplication { *; }
+-keep public class **Hilt_FitAppApplication { *; }
+
+# --- Missing R8 Rules (Generated) ---
+-dontwarn com.example.fitapp.Hilt_FitAppApplication
+-dontwarn javax.lang.model.SourceVersion
+-dontwarn javax.lang.model.element.Element
+-dontwarn javax.lang.model.element.ElementKind
+-dontwarn javax.lang.model.element.Modifier
+-dontwarn javax.lang.model.type.TypeMirror
+-dontwarn javax.lang.model.type.TypeVisitor
+-dontwarn javax.lang.model.util.SimpleTypeVisitor8
+-dontwarn org.tensorflow.lite.gpu.GpuDelegateFactory$Options$GpuBackend
+-dontwarn org.tensorflow.lite.gpu.GpuDelegateFactory$Options
 
 # --- Enum Classes (Preserve) ---
 -keepclassmembers enum * {

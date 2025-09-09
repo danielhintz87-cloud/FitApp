@@ -11,12 +11,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.PlanRequest
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
-import com.example.fitapp.data.prefs.IUserPreferences
-import com.example.fitapp.data.prefs.UserPreferencesLegacy
 import kotlinx.coroutines.launch
 import com.example.fitapp.ui.util.applyContentPadding
 import java.time.LocalDate
@@ -26,7 +25,8 @@ import java.time.LocalDate
 fun TodayTrainingScreen(
     onBackPressed: () -> Unit,
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    onNavigateToDailyWorkout: ((String, Int) -> Unit)? = null
+    onNavigateToDailyWorkout: ((String, Int) -> Unit)? = null,
+    viewModel: TodayTrainingViewModel = hiltViewModel()
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -57,7 +57,7 @@ fun TodayTrainingScreen(
             customGoal = "Angepasst: ${plan.goal}"
             customMinutes = plan.minutesPerSession.toString()
             // Load equipment from persistent storage instead of plan
-            val savedEquipment = UserPreferencesLegacy.getSelectedEquipment(ctx)
+            val savedEquipment = viewModel.getEquipmentList()
             customEquipment = if (savedEquipment.isNotEmpty()) {
                 savedEquipment.joinToString(", ")
             } else {

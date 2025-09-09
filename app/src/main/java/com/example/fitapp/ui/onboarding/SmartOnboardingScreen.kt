@@ -10,6 +10,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -139,7 +140,7 @@ fun SmartOnboardingScreen(
                             }
                         }
                     ) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
                         Text("Zurück")
                     }
@@ -155,7 +156,7 @@ fun SmartOnboardingScreen(
                     ) {
                         Text("Weiter")
                         Spacer(Modifier.width(4.dp))
-                        Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
                     }
                 } else {
                     Button(
@@ -360,7 +361,7 @@ private val onboardingPages = listOf(
             FeatureHighlight(
                 title = "Adaptive Workouts",
                 description = "Training passt sich automatisch an deine Performance an",
-                icon = Icons.Default.TrendingUp
+                icon = Icons.AutoMirrored.Filled.TrendingUp
             ),
             FeatureHighlight(
                 title = "Smart Nutrition",
@@ -466,7 +467,7 @@ private val onboardingPages = listOf(
             FeatureHighlight(
                 title = "Continuous Learning",
                 description = "Die App wird durch dein Feedback immer besser",
-                icon = Icons.Default.TrendingUp
+                icon = Icons.AutoMirrored.Filled.TrendingUp
             )
         )
     )
