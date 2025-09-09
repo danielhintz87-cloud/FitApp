@@ -61,7 +61,7 @@ data class SelectiveResetOptions(
  * Comprehensive Reset Manager
  * Handles different types of data resets with granular control
  */
-class ResetManager(
+class LegacyResetManager(
     private val context: Context,
     private val database: AppDatabase,
     private val userPreferences: UserPreferencesService

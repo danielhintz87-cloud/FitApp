@@ -2,6 +2,7 @@ package com.example.fitapp.services
 
 import android.content.Context
 import com.example.fitapp.ai.AppAi
+import com.example.fitapp.core.model.UserStats
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.PersonalMotivationRepository
 import com.example.fitapp.data.repo.NutritionRepository
@@ -406,16 +407,6 @@ data class CoachingMessage(
         )
     }
 }
-
-data class UserStats(
-    val activeStreaks: Int,
-    val longestStreak: Int,
-    val completedAchievements: Int,
-    val todayCalories: Int,
-    val calorieGoal: Int,
-    val hasCompletedWorkoutToday: Boolean,
-    val hasLoggedNutritionToday: Boolean
-)
 
 data class RecentActivity(
     val workoutDaysInWeek: Int,

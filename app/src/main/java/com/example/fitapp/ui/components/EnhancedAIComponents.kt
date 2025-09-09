@@ -410,7 +410,7 @@ fun VoiceCommandCard() {
 
 // Placeholder components for other cards
 @Composable
-fun SmartRecommendationCard(recommendation: com.example.fitapp.ai.AIRecommendation) {
+fun SmartRecommendationCard(recommendation: com.example.fitapp.domain.entities.AIRecommendation) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(recommendation.title, style = MaterialTheme.typography.titleMedium)
@@ -422,9 +422,9 @@ fun SmartRecommendationCard(recommendation: com.example.fitapp.ai.AIRecommendati
 @Composable
 fun AIQuickActionsCard() { /* Implementation */ }
 @Composable
-fun PredictiveProgressCard(progressAnalysis: com.example.fitapp.ai.ProgressAnalysis) { /* Implementation */ }
+fun PredictiveProgressCard(progressAnalysis: com.example.fitapp.domain.entities.ProgressAnalysis) { /* Implementation */ }
 @Composable
-fun AdaptiveWorkoutPlanCard(plan: com.example.fitapp.ai.WorkoutPlan) { /* Implementation */ }
+fun AdaptiveWorkoutPlanCard(plan: com.example.fitapp.domain.entities.WorkoutPlan) { /* Implementation */ }
 @Composable
 fun PerformanceOptimizerCard() { /* Implementation */ }
 @Composable

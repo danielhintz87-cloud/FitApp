@@ -1,6 +1,7 @@
 package com.example.fitapp.services
 
 import android.content.Context
+import com.example.fitapp.core.model.UserStats
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -149,16 +150,16 @@ class AdvancedMotivationAI @Inject constructor(
     
     private fun analyzeMotivationProfile(userStats: UserStats, context: ActivityContext): MotivationProfile {
         val streakMotivation = when {
-            userStats.currentStreak >= 7 -> MotivationType.STREAK_PROTECTION
-            userStats.currentStreak >= 3 -> MotivationType.MOMENTUM_BUILDING
-            userStats.currentStreak == 0 -> MotivationType.FRESH_START
+            userStats.longestStreak >= 7 -> MotivationType.STREAK_PROTECTION
+            userStats.longestStreak >= 3 -> MotivationType.MOMENTUM_BUILDING
+            userStats.longestStreak == 0 -> MotivationType.FRESH_START
             else -> MotivationType.CONSISTENCY_BUILDING
         }
         
         val progressMotivation = when {
-            userStats.weeklyProgress > 80 -> MotivationType.ACHIEVEMENT_CELEBRATION
-            userStats.weeklyProgress > 50 -> MotivationType.PROGRESS_ACCELERATION
-            userStats.weeklyProgress < 30 -> MotivationType.CHALLENGE_REFRAME
+            userStats.completedAchievements > 80 -> MotivationType.ACHIEVEMENT_CELEBRATION
+            userStats.completedAchievements > 50 -> MotivationType.PROGRESS_ACCELERATION
+            userStats.completedAchievements < 30 -> MotivationType.CHALLENGE_REFRAME
             else -> MotivationType.STEADY_PROGRESS
         }
         
@@ -179,11 +180,11 @@ class AdvancedMotivationAI @Inject constructor(
         val triggers = mutableListOf<BehavioralTrigger>()
         
         // Loss Aversion for Streaks
-        if (userStats.currentStreak > 3) {
+        if (userStats.longestStreak > 3) {
             triggers.add(BehavioralTrigger(
                 type = TriggerType.LOSS_AVERSION,
                 intensity = TriggerIntensity.STRONG,
-                message = "🔥 Dein ${userStats.currentStreak}-Tage-Streak ist wertvoll - schütze ihn!",
+                message = "🔥 Dein ${userStats.longestStreak}-Tage-Streak ist wertvoll - schütze ihn!",
                 actionPrompt = "Streak sichern"
             ))
         }
@@ -196,12 +197,12 @@ class AdvancedMotivationAI @Inject constructor(
             actionPrompt = "Zur erfolgreichen Gruppe gehören"
         ))
         
-        // Anchoring Effect
-        if (userStats.bestWeekWorkouts > userStats.currentWeekWorkouts) {
+        // Anchoring Effect - Use completedAchievements as a proxy for performance tracking
+        if (userStats.completedAchievements > 0) {
             triggers.add(BehavioralTrigger(
                 type = TriggerType.ANCHORING,
                 intensity = TriggerIntensity.MODERATE,
-                message = "📈 Deine beste Woche hatte ${userStats.bestWeekWorkouts} Workouts - das kannst du wieder schaffen!",
+                message = "📈 Du hast bereits ${userStats.completedAchievements} Erfolge erreicht - das kannst du toppen!",
                 actionPrompt = "Neuen Rekord aufstellen"
             ))
         }
@@ -284,16 +285,6 @@ class AdvancedMotivationAI @Inject constructor(
 /**
  * Supporting Data Classes
  */
-data class UserStats(
-    val currentStreak: Int = 0,
-    val weeklyProgress: Int = 0,
-    val bestWeekWorkouts: Int = 0,
-    val currentWeekWorkouts: Int = 0,
-    val hiitWorkoutsCompleted: Int = 0,
-    val strengthWorkouts: Int = 0,
-    val cardioMinutes: Int = 0,
-    val mobilitySessionsCompleted: Int = 0
-)
 
 data class ActivityContext(
     val daysSinceLastWorkout: Int = 0,
