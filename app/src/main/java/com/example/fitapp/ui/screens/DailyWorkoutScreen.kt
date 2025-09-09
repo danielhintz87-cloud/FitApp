@@ -16,11 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.fitapp.ai.AppAi
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.TodayWorkoutEntity
-import com.example.fitapp.data.prefs.UserPreferencesService
-import com.example.fitapp.data.prefs.UserPreferencesLegacy
 import com.example.fitapp.data.repo.PersonalMotivationRepository
 import com.example.fitapp.services.PersonalAchievementManager
 import com.example.fitapp.services.PersonalStreakManager
@@ -33,7 +32,8 @@ import java.time.format.DateTimeFormatter
 fun DailyWorkoutScreen(
     goal: String,
     minutes: Int,
-    onBackPressed: () -> Unit
+    onBackPressed: () -> Unit,
+    viewModel: DailyWorkoutViewModel = hiltViewModel()
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -75,7 +75,7 @@ fun DailyWorkoutScreen(
     // Generate workout on first load
     LaunchedEffect(Unit) {
         try {
-            val equipment = UserPreferencesLegacy.getSelectedEquipment(ctx)
+            val equipment = viewModel.getEquipmentList()
             val result = AppAi.generateDailyWorkoutSteps(ctx, goal, minutes, equipment)
 
             result.fold(

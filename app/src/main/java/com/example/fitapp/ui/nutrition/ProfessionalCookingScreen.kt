@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -227,7 +228,7 @@ private fun CookingTopBar(
         },
         navigationIcon = {
             IconButton(onClick = onBackPressed) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
             }
         },
         actions = {
@@ -615,7 +616,7 @@ private fun CookingProgressIndicator(
         Spacer(modifier = Modifier.height(8.dp))
         
         LinearProgressIndicator(
-            progress = currentStep.toFloat() / totalSteps,
+            progress = { currentStep.toFloat() / totalSteps },
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primary
         )
@@ -789,7 +790,7 @@ private fun CookingNavigationControls(
             enabled = canGoBack,
             modifier = Modifier.weight(1f)
         ) {
-            Icon(Icons.Filled.NavigateBefore, contentDescription = null)
+            Icon(Icons.AutoMirrored.Filled.NavigateBefore, contentDescription = null)
             Text("Zurück")
         }
         
@@ -816,7 +817,7 @@ private fun CookingNavigationControls(
                 Text("Fertig!")
             } else {
                 Text("Weiter")
-                Icon(Icons.Filled.NavigateNext, contentDescription = null)
+                Icon(Icons.AutoMirrored.Filled.NavigateNext, contentDescription = null)
             }
         }
     }

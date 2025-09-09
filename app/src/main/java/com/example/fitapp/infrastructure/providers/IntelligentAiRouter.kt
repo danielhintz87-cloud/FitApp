@@ -33,11 +33,7 @@ class IntelligentAiRouter(
         
         val result = when (selection.provider) {
             OptimalProvider.GEMINI -> {
-                if (geminiProvider is GeminiAiProvider) {
-                    geminiProvider.generateTextWithTaskType(prompt, taskType)
-                } else {
-                    geminiProvider.generateText(prompt)
-                }
+                geminiProvider.generateTextWithTaskType(prompt, taskType)
             }
             OptimalProvider.PERPLEXITY -> {
                 if (perplexityProvider?.isAvailable() == true && selection.withinBudget) {
@@ -45,11 +41,8 @@ class IntelligentAiRouter(
                 } else {
                     // Fallback zu Gemini bei Perplexity-Budget-Überschreitung
                     android.util.Log.w("AiRouter", "Perplexity Budget erreicht, Fallback zu Gemini")
-                    if (geminiProvider is GeminiAiProvider) {
-                        geminiProvider.generateTextWithTaskType(prompt, TaskType.SIMPLE_TEXT_COACHING)
-                    } else {
-                        geminiProvider.generateText(prompt)
-                    }
+                    geminiProvider.generateTextWithTaskType(prompt, TaskType.SIMPLE_TEXT_COACHING)
+                }
                 }
             }
         }

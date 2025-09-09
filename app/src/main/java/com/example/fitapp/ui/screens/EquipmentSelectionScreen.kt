@@ -13,22 +13,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import com.example.fitapp.data.prefs.UserPreferencesService
-import com.example.fitapp.data.prefs.UserPreferencesLegacy
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EquipmentSelectionScreen(
     @Suppress("UNUSED_PARAMETER") selectedEquipment: List<String>,
     onEquipmentChanged: (List<String>) -> Unit,
-    onBackPressed: () -> Unit
+    onBackPressed: () -> Unit,
+    viewModel: EquipmentSelectionViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     
-    // Load current equipment selection
-    var currentSelection by remember { 
-        mutableStateOf(UserPreferencesLegacy.getSelectedEquipment(context).toSet()) 
-    }
+    // Get current equipment selection from ViewModel
+    val currentSelection by viewModel.selectedEquipment.collectAsState()
     
     val equipmentOptions = listOf(
         "Hanteln",
@@ -57,7 +55,6 @@ fun EquipmentSelectionScreen(
     // Save selection when it changes
     LaunchedEffect(currentSelection) {
         val selectionList = currentSelection.toList()
-        UserPreferencesLegacy.saveSelectedEquipment(context, selectionList)
         onEquipmentChanged(selectionList)
     }
 
@@ -102,11 +99,12 @@ fun EquipmentSelectionScreen(
                             .toggleable(
                                 value = currentSelection.contains(equipment),
                                 onValueChange = { isSelected ->
-                                    currentSelection = if (isSelected) {
+                                    val newSelection = if (isSelected) {
                                         currentSelection + equipment
                                     } else {
                                         currentSelection - equipment
                                     }
+                                    viewModel.updateSelection(newSelection)
                                 },
                                 role = Role.Checkbox
                             ),
