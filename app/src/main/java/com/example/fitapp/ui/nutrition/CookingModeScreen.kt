@@ -120,7 +120,7 @@ fun CookingModeScreen(
             )
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = { (currentStep + 1).toFloat() / steps.size.toFloat() },
+                progress = { if (steps.isNotEmpty()) (currentStep + 1).toFloat() / steps.size.toFloat() else 0f },
                 modifier = Modifier.fillMaxWidth()
             )
         }

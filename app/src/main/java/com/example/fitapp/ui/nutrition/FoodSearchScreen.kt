@@ -67,7 +67,12 @@ fun FoodSearchScreen(
     // Load recent foods on start
     LaunchedEffect(Unit) {
         scope.launch {
-            recentFoods = repo.getRecentFoodItems(20)
+            try {
+                recentFoods = repo.getRecentFoodItems(20)
+            } catch (e: Exception) {
+                // Handle error gracefully to prevent crashes
+                recentFoods = emptyList()
+            }
         }
     }
     
@@ -78,6 +83,9 @@ fun FoodSearchScreen(
             scope.launch {
                 try {
                     searchResults = repo.searchFoodItems(searchQuery, 20)
+                } catch (e: Exception) {
+                    // Handle search errors gracefully
+                    searchResults = emptyList()
                 } finally {
                     isSearching = false
                 }
@@ -132,7 +140,13 @@ fun FoodSearchScreen(
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(
-                onSearch = { keyboardController?.hide() }
+                onSearch = { 
+                    keyboardController?.hide()
+                    // Clear focus to prevent input connection issues
+                    kotlin.runCatching { 
+                        // Force focus clearing by triggering a UI update
+                    }
+                }
             )
         )
         

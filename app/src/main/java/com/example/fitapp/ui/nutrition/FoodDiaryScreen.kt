@@ -166,7 +166,9 @@ private fun CaloriesOverviewCard(
     modifier: Modifier = Modifier
 ) {
     val remainingCalories = targetCalories - consumedCalories + burnedCalories
-    val progress = (consumedCalories.toFloat() / targetCalories.toFloat()).coerceIn(0f, 1f)
+    val progress = if (targetCalories > 0) {
+        (consumedCalories.toFloat() / targetCalories.toFloat()).coerceIn(0f, 1f)
+    } else 0f
     
     ElevatedCard(modifier = modifier) {
         Column(
