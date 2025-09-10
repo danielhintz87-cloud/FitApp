@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    id("org.jetbrains.kotlin.kapt")
     alias(libs.plugins.hilt)
     alias(libs.plugins.protobuf)
 }
@@ -81,6 +82,10 @@ android {
     }
 }
 
+kapt {
+    correctErrorTypes = true
+}
+
 dependencies {
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
@@ -139,7 +144,7 @@ dependencies {
     // Hilt Dependency Injection
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
-    ksp(libs.hilt.compiler)
+    kapt(libs.hilt.compiler)
 
     // Desugaring
     coreLibraryDesugaring(libs.desugar.jdk.libs)
