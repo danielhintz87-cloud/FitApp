@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.RectF
 import android.util.Log
+import com.example.fitapp.ml.MLResourceManager
+import com.example.fitapp.ml.MLResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.tensorflow.lite.Interpreter
@@ -21,6 +23,8 @@ import kotlin.math.min
  * 
  * Lädt das vortrainierte MoveNet Thunder Modell und führt Pose-Estimation durch.
  * Optimiert für mobile Geräte mit effizienter Speicherverwaltung.
+ * 
+ * Now integrated with MLResourceManager for improved resource management.
  */
 class MoveNetTFLite private constructor(private val context: Context) {
     
@@ -29,6 +33,7 @@ class MoveNetTFLite private constructor(private val context: Context) {
         private const val MODEL_PATH = "models/tflite/movenet_thunder.tflite"
         private const val INPUT_SIZE = 256
         private const val CONFIDENCE_THRESHOLD = 0.3f
+        private const val INTERPRETER_KEY = "movenet_thunder"
         
         @Volatile
         private var INSTANCE: MoveNetTFLite? = null
@@ -40,7 +45,7 @@ class MoveNetTFLite private constructor(private val context: Context) {
         }
     }
     
-    private var interpreter: Interpreter? = null
+    private val resourceManager = MLResourceManager.getInstance()
     private var isInitialized = false
     
     private val imageProcessor = ImageProcessor.Builder()
@@ -49,7 +54,7 @@ class MoveNetTFLite private constructor(private val context: Context) {
         .build()
     
     /**
-     * Initialisiert das MoveNet Modell
+     * Initialisiert das MoveNet Modell mit MLResourceManager
      */
     suspend fun initialize(): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -67,10 +72,13 @@ class MoveNetTFLite private constructor(private val context: Context) {
                     setUseXNNPACK(true) // CPU-Optimierung
                 }
                 
-                interpreter = Interpreter(modelByteBuffer, options)
+                val interpreter = Interpreter(modelByteBuffer, options)
+                
+                // Register interpreter with resource manager
+                resourceManager.registerInterpreter(INTERPRETER_KEY, interpreter)
                 isInitialized = true
                 
-                Log.i(TAG, "MoveNet model loaded successfully")
+                Log.i(TAG, "MoveNet model loaded successfully with resource manager")
                 true
                 
             } catch (e: Exception) {
@@ -86,56 +94,135 @@ class MoveNetTFLite private constructor(private val context: Context) {
     }
     
     /**
-     * Führt Pose-Estimation auf dem gegebenen Bitmap durch
+     * Führt Pose-Estimation auf dem gegebenen Bitmap durch mit verbesserter Fehlerbehandlung
      */
-    suspend fun detectPose(bitmap: Bitmap): Pose? = withContext(Dispatchers.Default) {
+    suspend fun detectPose(bitmap: Bitmap): MLResult<Pose?> = withContext(Dispatchers.Default) {
         if (!isInitialized) {
             Log.w(TAG, "Model not initialized")
-            return@withContext null
+            return@withContext MLResult.error(
+                IllegalStateException("Model not initialized"), 
+                fallbackAvailable = false
+            )
+        }
+        
+        // Use bitmap from resource manager if possible
+        val workingBitmap = resourceManager.borrowBitmap(
+            INPUT_SIZE, INPUT_SIZE, Bitmap.Config.ARGB_8888
+        ) ?: run {
+            Log.w(TAG, "Could not borrow bitmap from pool, using direct processing")
+            null
         }
         
         try {
             // Preprocessing
-            val tensorImage = TensorImage.fromBitmap(bitmap)
-            val processedImage = imageProcessor.process(tensorImage)
-            
-            val keypoints = if (interpreter != null) {
-                // Real model inference
-                runModelInference(processedImage, bitmap.width, bitmap.height)
+            val processedBitmap = if (bitmap.width != INPUT_SIZE || bitmap.height != INPUT_SIZE) {
+                Bitmap.createScaledBitmap(bitmap, INPUT_SIZE, INPUT_SIZE, true)
             } else {
-                // Simulation mode - generate realistic test data
-                generateSimulatedKeypoints(bitmap.width, bitmap.height)
+                bitmap
             }
             
-            // Filter keypoints by confidence
-            val validKeypoints = keypoints.filter { it.score >= CONFIDENCE_THRESHOLD }
+            val tensorImage = TensorImage.fromBitmap(processedBitmap)
+            val processedImage = imageProcessor.process(tensorImage)
             
-            if (validKeypoints.isNotEmpty()) {
-                val boundingBox = calculateBoundingBox(validKeypoints)
-                val averageScore = validKeypoints.map { it.score }.average().toFloat()
-                
-                Pose(
-                    keypoints = validKeypoints,
-                    boundingBox = boundingBox,
-                    score = averageScore
-                )
-            } else {
-                null
+            // Use resource manager for safe interpreter access
+            val result = resourceManager.useInterpreter(INTERPRETER_KEY) { interpreter ->
+                // Real model inference
+                runModelInference(interpreter, processedImage, bitmap.width, bitmap.height)
+            }
+            
+            // Clean up scaled bitmap if created
+            if (processedBitmap !== bitmap) {
+                processedBitmap.recycle()
+            }
+            
+            when (result) {
+                is MLResult.Success -> {
+                    val keypoints = result.data
+                    if (keypoints.isNotEmpty()) {
+                        // Filter keypoints by confidence
+                        val validKeypoints = keypoints.filter { it.score >= CONFIDENCE_THRESHOLD }
+                        
+                        if (validKeypoints.isNotEmpty()) {
+                            val boundingBox = calculateBoundingBox(validKeypoints)
+                            val averageScore = validKeypoints.map { it.score }.average().toFloat()
+                            
+                            val pose = Pose(
+                                keypoints = validKeypoints,
+                                boundingBox = boundingBox,
+                                score = averageScore
+                            )
+                            MLResult.success(pose)
+                        } else {
+                            MLResult.success(null)
+                        }
+                    } else {
+                        // Fallback to simulation if real model fails
+                        val simulatedKeypoints = generateSimulatedKeypoints(bitmap.width, bitmap.height)
+                        val validKeypoints = simulatedKeypoints.filter { it.score >= CONFIDENCE_THRESHOLD }
+                        
+                        if (validKeypoints.isNotEmpty()) {
+                            val boundingBox = calculateBoundingBox(validKeypoints)
+                            val averageScore = validKeypoints.map { it.score }.average().toFloat()
+                            
+                            val pose = Pose(
+                                keypoints = validKeypoints,
+                                boundingBox = boundingBox,
+                                score = averageScore
+                            )
+                            MLResult.degraded(
+                                exception = RuntimeException("Using simulation fallback"),
+                                degradedResult = pose,
+                                message = "Real model unavailable, using simulation"
+                            )
+                        } else {
+                            MLResult.success(null)
+                        }
+                    }
+                }
+                is MLResult.Error -> {
+                    if (result.fallbackAvailable) {
+                        // Use simulation as fallback
+                        val simulatedKeypoints = generateSimulatedKeypoints(bitmap.width, bitmap.height)
+                        val validKeypoints = simulatedKeypoints.filter { it.score >= CONFIDENCE_THRESHOLD }
+                        
+                        if (validKeypoints.isNotEmpty()) {
+                            val boundingBox = calculateBoundingBox(validKeypoints)
+                            val averageScore = validKeypoints.map { it.score }.average().toFloat()
+                            
+                            val pose = Pose(
+                                keypoints = validKeypoints,
+                                boundingBox = boundingBox,
+                                score = averageScore
+                            )
+                            MLResult.degraded(
+                                exception = result.exception,
+                                degradedResult = pose,
+                                message = "Using simulation fallback due to error"
+                            )
+                        } else {
+                            result
+                        }
+                    } else {
+                        result
+                    }
+                }
+                is MLResult.Degraded -> result
             }
             
         } catch (e: Exception) {
             Log.e(TAG, "Error during pose detection", e)
-            null
+            MLResult.error(e, fallbackAvailable = true)
+        } finally {
+            // Return bitmap to pool
+            workingBitmap?.let { resourceManager.returnBitmap(it) }
         }
     }
     
     /**
      * Führt echte Modell-Inferenz durch
      */
-    private fun runModelInference(tensorImage: TensorImage, originalWidth: Int, originalHeight: Int): List<Keypoint> {
-        val interpreter = this.interpreter ?: return emptyList()
-        
-        try {
+    private fun runModelInference(interpreter: Interpreter, tensorImage: TensorImage, originalWidth: Int, originalHeight: Int): List<Keypoint> {
+        return try {
             // Input vorbereiten
             val inputBuffer = tensorImage.buffer
             
@@ -162,11 +249,11 @@ class MoveNetTFLite private constructor(private val context: Context) {
                 )
             }
             
-            return keypoints
+            keypoints
             
         } catch (e: Exception) {
             Log.e(TAG, "Error running model inference", e)
-            return emptyList()
+            emptyList()
         }
     }
     
@@ -242,12 +329,14 @@ class MoveNetTFLite private constructor(private val context: Context) {
     }
     
     /**
-     * Cleanup-Methode
+     * Cleanup-Methode mit Resource Manager Integration
      */
-    fun cleanup() {
-        interpreter?.close()
-        interpreter = null
+    suspend fun cleanup() {
+        Log.i(TAG, "Cleaning up MoveNet resources")
+        
+        // Resource manager handles interpreter cleanup
         isInitialized = false
+        
         Log.i(TAG, "MoveNet cleaned up")
     }
 }
