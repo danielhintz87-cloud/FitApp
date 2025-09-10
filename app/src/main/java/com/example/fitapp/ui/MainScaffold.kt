@@ -91,15 +91,10 @@ fun MainScaffold() {
     
     // Dynamic title based on current screen
     val currentTitle = when {
-        currentRoute?.startsWith("today") == true -> "Heute"
-        currentRoute?.startsWith("plan") == true -> "Training & Pläne"
-        currentRoute?.startsWith("nutrition") == true || currentRoute?.startsWith("recipe") == true || currentRoute?.startsWith("cooking") == true -> "Ernährung"
-        currentRoute?.startsWith("progress") == true || currentRoute?.startsWith("enhanced_analytics") == true -> "Fortschritt"
-        currentRoute?.startsWith("weight") == true || currentRoute?.startsWith("bmi") == true -> "Gesundheit"
-        currentRoute?.startsWith("food") == true -> "Ernährungstagebuch"
-        currentRoute?.startsWith("shopping") == true -> "Einkaufsliste"
-        currentRoute?.startsWith("ai_personal_trainer") == true -> "KI Personal Trainer"
-        currentRoute?.startsWith("hiit") == true -> "HIIT Training"
+        currentRoute?.startsWith("today") == true || currentRoute?.startsWith("unified_dashboard") == true -> "Dashboard"
+        currentRoute?.startsWith("plan") == true || currentRoute?.startsWith("ai_personal_trainer") == true || currentRoute?.startsWith("hiit") == true -> "Training & Pläne"
+        currentRoute?.startsWith("nutrition") == true || currentRoute?.startsWith("recipe") == true || currentRoute?.startsWith("cooking") == true || currentRoute?.startsWith("food") == true || currentRoute?.startsWith("shopping") == true -> "Ernährung & Rezepte"
+        currentRoute?.startsWith("progress") == true || currentRoute?.startsWith("enhanced_analytics") == true || currentRoute?.startsWith("weight") == true || currentRoute?.startsWith("bmi") == true -> "Fortschritt & Analytics"
         currentRoute?.startsWith("apikeys") == true || currentRoute?.contains("settings") == true -> "Einstellungen"
         else -> "FitApp"
     }
@@ -126,22 +121,11 @@ fun MainScaffold() {
                     
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     
-                    // 🚀 NEW: Revolutionary Unified Dashboard
+                    // Main Dashboard - Consolidated
                     NavigationDrawerItem(
-                        label = { Text("🚀 Unified Dashboard") }, 
-                        selected = currentRoute == "unified_dashboard", 
+                        label = { Text("🏠 Dashboard") }, 
+                        selected = currentRoute == "unified_dashboard" || currentRoute == "today", 
                         onClick = { scope.launch { drawerState.close() }; nav.navigate("unified_dashboard") },
-                        icon = { Icon(Icons.Filled.AutoAwesome, contentDescription = null) },
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                    )
-                    
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-                    
-                    // Main Features - Primary Navigation
-                    NavigationDrawerItem(
-                        label = { Text("🏠 Dashboard (Classic)") }, 
-                        selected = currentRoute == "today", 
-                        onClick = { scope.launch { drawerState.close() }; nav.navigate("today") },
                         icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                     )
@@ -169,71 +153,13 @@ fun MainScaffold() {
                     
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
                     
-                    // Quick Access Tools
-                    Text(
-                        text = "Schnellzugriff", 
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
+                    // Settings - Consolidated
                     NavigationDrawerItem(
-                        label = { Text("📱 Lebensmittel Scanner") }, 
-                        selected = false, 
-                        onClick = { scope.launch { drawerState.close() }; nav.navigate("foodscan") },
-                        icon = { Icon(Icons.Filled.PhotoCamera, contentDescription = null) },
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("🛒 Einkaufsliste") }, 
-                        selected = false, 
-                        onClick = { scope.launch { drawerState.close() }; nav.navigate("shopping_list") },
-                        icon = { Icon(Icons.Filled.ShoppingCart, contentDescription = null) },
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("📖 Ernährungstagebuch") }, 
-                        selected = currentRoute?.startsWith("food_diary") == true, 
-                        onClick = { scope.launch { drawerState.close() }; nav.navigate("food_diary") },
-                        icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null) },
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("⚖️ Gewichtsverfolgung") }, 
-                        selected = currentRoute?.startsWith("weight_tracking") == true, 
-                        onClick = { scope.launch { drawerState.close() }; nav.navigate("weight_tracking") },
-                        icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null) },
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
-                    )
-                    
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
-                    
-                    // Settings & Configuration
-                    Text(
-                        text = "Einstellungen", 
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("🔧 App-Einstellungen") }, 
-                        selected = currentRoute?.startsWith("apikeys") == true, 
+                        label = { Text("⚙️ Einstellungen") }, 
+                        selected = currentRoute?.startsWith("apikeys") == true || currentRoute?.contains("settings") == true, 
                         onClick = { scope.launch { drawerState.close() }; nav.navigate("apikeys") },
                         icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("🔔 Benachrichtigungen") }, 
-                        selected = false, 
-                        onClick = { scope.launch { drawerState.close() }; nav.navigate("notification_settings") },
-                        icon = { Icon(Icons.Filled.Notifications, contentDescription = null) },
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("☁️ Cloud Sync") }, 
-                        selected = false, 
-                        onClick = { scope.launch { drawerState.close() }; nav.navigate("cloud_sync_settings") },
-                        icon = { Icon(Icons.Filled.Cloud, contentDescription = null) },
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                     )
                 }
             }
