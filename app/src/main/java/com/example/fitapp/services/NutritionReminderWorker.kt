@@ -62,7 +62,7 @@ class NutritionReminderWorker(
             
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 "$WORK_NAME-$mealType",
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.REPLACE,
                 workRequest
             )
         }
