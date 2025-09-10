@@ -322,7 +322,10 @@ fun MainScaffold() {
                 // Progress & Analytics
                 composable("progress") { ProgressScreen(padding) }
                 composable("foodscan") {
-                    FoodScanScreen(padding)
+                    FoodScanScreen(
+                        contentPadding = padding,
+                        onNavigateToApiKeys = { nav.navigate("apikeys") }
+                    )
                 }
                 composable("logs") {
                     AiLogsScreen(padding)

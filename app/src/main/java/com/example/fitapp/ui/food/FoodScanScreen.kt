@@ -26,6 +26,7 @@ import com.example.fitapp.ai.CaloriesEstimate
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.ui.components.BudgetBar
+import com.example.fitapp.ui.components.AiKeyGate
 import com.example.fitapp.util.BitmapUtils
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -35,7 +36,8 @@ import java.time.ZoneId
 @Composable
 fun FoodScanScreen(
     contentPadding: PaddingValues,
-    onLogged: () -> Unit = {}
+    onLogged: () -> Unit = {},
+    onNavigateToApiKeys: (() -> Unit)? = null
 ) {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
@@ -69,14 +71,18 @@ fun FoodScanScreen(
         if (granted) camera.launch(null)
     }
 
-    Column(
-        modifier = Modifier
-            .padding(contentPadding)
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    AiKeyGate(
+        onNavigateToApiKeys = { onNavigateToApiKeys?.invoke() },
+        requireBothProviders = false // Only Gemini is required for food scanning
+    ) { isEnabled ->
+        Column(
+            modifier = Modifier
+                .padding(contentPadding)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         Text("Food Scan", style = MaterialTheme.typography.titleLarge)
 
         // Daily Goal Display - Show training plan derived calories instead of manual input
@@ -131,8 +137,8 @@ fun FoodScanScreen(
         BudgetBar(consumed = consumed, target = target)
         
         // Auto-analyze when image is captured/picked
-        LaunchedEffect(picked, captured) {
-            if ((picked != null || captured != null) && !loading && estimate == null) {
+        LaunchedEffect(picked, captured, isEnabled) {
+            if ((picked != null || captured != null) && !loading && estimate == null && isEnabled) {
                 loading = true
                 analysisAttempts++
                 try {
@@ -193,22 +199,28 @@ fun FoodScanScreen(
         }
         
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = {
-                picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-            }) {
+            Button(
+                onClick = {
+                    picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                },
+                enabled = isEnabled
+            ) {
                 Text("Foto wählen")
             }
-            Button(onClick = {
-                if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                    camera.launch(null)
-                } else {
-                    permissionLauncher.launch(Manifest.permission.CAMERA)
-                }
-            }) {
+            Button(
+                onClick = {
+                    if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                        camera.launch(null)
+                    } else {
+                        permissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
+                },
+                enabled = isEnabled
+            ) {
                 Text("Foto aufnehmen")
             }
             // Only show manual re-analyze button if analysis failed or was incorrect
-            if ((picked != null || captured != null) && estimate != null) {
+            if ((picked != null || captured != null) && estimate != null && isEnabled) {
                 OutlinedButton(
                     enabled = !loading,
                     onClick = {
@@ -298,7 +310,7 @@ fun FoodScanScreen(
                                 }
                             }
                         },
-                        enabled = manualFoodDescription.isNotBlank() && !isEstimatingManualCalories,
+                        enabled = manualFoodDescription.isNotBlank() && !isEstimatingManualCalories && isEnabled,
                         modifier = Modifier.weight(1f)
                     ) {
                         if (isEstimatingManualCalories) {
@@ -424,6 +436,7 @@ fun FoodScanScreen(
             }
         }
         Spacer(Modifier.height(96.dp))
+        }
     }
     
     // Confirmation Dialog
