@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.SavedRecipeEntity
+import com.example.fitapp.data.prefs.UserPreferencesRepository
 import com.example.fitapp.services.*
 import com.example.fitapp.ui.components.*
 import com.example.fitapp.ui.screens.*
@@ -33,12 +34,13 @@ fun IntegratedExperienceScreen(
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.get(context) }
+    val preferencesRepository = remember { UserPreferencesRepository(context) }
     val scope = rememberCoroutineScope()
     
     // Initialize all managers
     val workoutManager = remember { WorkoutExecutionManager(db, SmartRestTimer(context)) }
     val cookingManager = remember { CookingModeManager(db) }
-    val shoppingManager = remember { ShoppingListManager(db) }
+    val shoppingManager = remember { ShoppingListManager(db, preferencesRepository) }
     
     // UI State
     var selectedDemo by remember { mutableStateOf<DemoType?>(null) }

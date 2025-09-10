@@ -20,6 +20,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.SavedRecipeEntity
+import com.example.fitapp.data.prefs.UserPreferencesRepository
 import com.example.fitapp.services.CookingModeManager
 import com.example.fitapp.services.ShoppingListManager
 import com.example.fitapp.ui.components.*
@@ -39,11 +40,12 @@ fun EnhancedCookingModeScreen(
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.get(context) }
+    val preferencesRepository = remember { UserPreferencesRepository(context) }
     val scope = rememberCoroutineScope()
     
     // Cooking mode state
     val cookingManager = remember { CookingModeManager(db) }
-    val shoppingManager = remember { ShoppingListManager(db) }
+    val shoppingManager = remember { ShoppingListManager(db, preferencesRepository) }
     
     val cookingFlow by cookingManager.cookingFlow.collectAsState()
     val currentStep by cookingManager.currentStep.collectAsState()
