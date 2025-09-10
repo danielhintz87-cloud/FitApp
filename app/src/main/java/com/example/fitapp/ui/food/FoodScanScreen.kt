@@ -142,7 +142,7 @@ fun FoodScanScreen(
                 loading = true
                 analysisAttempts++
                 try {
-                    val prompt = "Analysiere dieses Bild und identifiziere das Essen. Prüfe zuerst ob es sich um echtes, essbares Essen handelt. Wenn ja, schätze die Kalorien. Wenn nein, antworte mit 'KEIN_ESSEN_ERKANNT'."
+                    val prompt = "Analysiere dieses Bild detailliert und identifiziere das Essen: 1) Erkenne alle sichtbaren Lebensmittel und Portionsgrößen 2) Schätze realistische Kalorien basierend auf typischen Portionen 3) Gib eine detaillierte Beschreibung mit Zubereitungsart 4) Falls kein Essen sichtbar ist, antworte mit 'KEIN_ESSEN_ERKANNT'. Beispiel: '200g gegrilltes Hähnchen, 150g Reis, gemischter Salat - ca. 450 kcal'"
                     
                     estimate = when {
                         captured != null -> {
@@ -228,7 +228,7 @@ fun FoodScanScreen(
                         analysisAttempts++
                         scope.launch {
                             try {
-                                val prompt = "Analysiere dieses Bild nochmals genauer und identifiziere das Essen. Prüfe zuerst ob es sich um echtes, essbares Essen handelt."
+                                val prompt = "Analysiere dieses Bild nochmals sehr genau für eine präzisere Erkennung: 1) Identifiziere alle Lebensmittel im Detail 2) Schätze Portionsgrößen realistisch 3) Berücksichtige Zubereitungsart (gebraten, gekocht, etc.) 4) Gib konkrete Kalorienschätzung mit Begründung. Fokussiere auf Genauigkeit und Details der sichtbaren Nahrungsmittel."
                                 
                                 estimate = when {
                                     captured != null -> {
