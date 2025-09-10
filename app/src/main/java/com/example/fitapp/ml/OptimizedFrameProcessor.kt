@@ -225,7 +225,7 @@ class OptimizedFrameProcessor(
             val workingBitmap = resourceManager.borrowBitmap(
                 processedBitmap.width,
                 processedBitmap.height,
-                processedBitmap.config
+                processedBitmap.config ?: Bitmap.Config.ARGB_8888
             ) ?: processedBitmap
             
             try {

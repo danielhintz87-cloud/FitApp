@@ -70,7 +70,7 @@ sealed class MLResult<out T> {
     /**
      * Get the data if successful, or return default value
      */
-    fun getOrDefault(default: T): T = when (this) {
+    fun getOrDefault(default: @UnsafeVariance T): @UnsafeVariance T = when (this) {
         is Success -> data
         is Degraded -> degradedResult ?: default
         is Error -> default

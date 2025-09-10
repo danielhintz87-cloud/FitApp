@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.delay
 import com.example.fitapp.data.db.AppDatabase
+import com.example.fitapp.ml.MLResult
 import com.example.fitapp.services.SetData
 import com.example.fitapp.util.StructuredLogger
 import com.example.fitapp.domain.entities.PlateauDetectionResult
@@ -47,7 +48,14 @@ class AdvancedAICoach(private val context: Context, private val poseFrameProvide
             val bmp = provider.currentFrame()
             if (bmp != null) {
                 val result = advancedMLModels.analyzePoseFromFrameOptimized(bmp)
-                emit(result)
+                when (result) {
+                    is MLResult.Success -> emit(result.data)
+                    is MLResult.Degraded -> result.degradedResult?.let { emit(it) }
+                    is MLResult.Error -> {
+                        // Optionally emit an empty result or handle the error
+                        emit(PoseAnalysisResult.empty())
+                    }
+                }
             }
             delay(intervalMs)
         }
@@ -70,7 +78,14 @@ class AdvancedAICoach(private val context: Context, private val poseFrameProvide
         val movementBuffer = ArrayDeque<MovementData>()
         while (true) {
             val bmp = provider.currentFrame()
-            val pose = if (bmp != null) advancedMLModels.analyzePoseFromFrameOptimized(bmp) else PoseAnalysisResult.empty()
+            val poseResult = if (bmp != null) advancedMLModels.analyzePoseFromFrameOptimized(bmp) else MLResult.success(PoseAnalysisResult.empty())
+            
+            val pose = when (poseResult) {
+                is MLResult.Success -> poseResult.data
+                is MLResult.Degraded -> poseResult.degradedResult ?: PoseAnalysisResult.empty()
+                is MLResult.Error -> PoseAnalysisResult.empty()
+            }
+            
             // synthetische MovementData für repQuality (bis echte Sensorpipeline angebunden ist)
             val fake = MovementData(
                 accelerometer = Triple(Math.random().toFloat(), Math.random().toFloat(), Math.random().toFloat()),
