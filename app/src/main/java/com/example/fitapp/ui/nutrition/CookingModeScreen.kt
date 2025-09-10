@@ -19,6 +19,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.SavedRecipeEntity
 import com.example.fitapp.data.repo.NutritionRepository
+import com.example.fitapp.services.CookingModeManager
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import android.app.Activity
@@ -35,12 +36,18 @@ fun CookingModeScreen(
     val ctx = LocalContext.current
     val db = remember { AppDatabase.get(ctx) }
     val repo = remember { NutritionRepository(db) }
+    val cookingManager = remember { CookingModeManager(db) }
     val scope = rememberCoroutineScope()
     
+    // Enhanced cooking mode with timer support
     var currentStep by remember { mutableIntStateOf(0) }
     var showIngredients by remember { mutableStateOf(false) }
     var showFinishDialog by remember { mutableStateOf(false) }
     var keepScreenOn by remember { mutableStateOf(true) }
+    
+    // Timer states
+    val stepTimers by cookingManager.stepTimers.collectAsState()
+    val currentTimer = stepTimers[currentStep]
     
     // Parse recipe steps from markdown
     val steps = remember(recipe.markdown) {
@@ -150,6 +157,24 @@ fun CookingModeScreen(
                         steps[currentStep],
                         style = MaterialTheme.typography.bodyLarge,
                         lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.4
+                    )
+                    
+                    // Timer Section for Current Step
+                    Spacer(Modifier.height(24.dp))
+                    TimerSection(
+                        currentStep = currentStep,
+                        currentTimer = currentTimer,
+                        stepText = steps[currentStep],
+                        onStartTimer = { duration ->
+                            scope.launch {
+                                cookingManager.startStepTimer(currentStep, duration, "Schritt ${currentStep + 1} Timer")
+                            }
+                        },
+                        onToggleTimer = {
+                            scope.launch {
+                                cookingManager.toggleStepTimer(currentStep)
+                            }
+                        }
                     )
                 }
             }
@@ -313,51 +338,52 @@ fun CookingModeScreen(
     
     // Finish Cooking Dialog
     if (showFinishDialog) {
-        AlertDialog(
-            onDismissRequest = { showFinishDialog = false },
-            title = { Text("Kochen abgeschlossen") },
-            text = { 
-                Column {
-                    Text("Möchten Sie das Rezept zu Ihrem Ernährungstagebuch hinzufügen?")
-                    Spacer(Modifier.height(8.dp))
-                    recipe.calories?.let {
-                        Text("Kalorien: $it kcal", style = MaterialTheme.typography.bodyMedium)
+        RecipeToDiaryDialog(
+            recipe = recipe,
+            onDismiss = { showFinishDialog = false },
+            onConfirm = { servings, weightInGrams ->
+                scope.launch {
+                    // Mark recipe as cooked
+                    db.savedRecipeDao().markAsCooked(recipe.id)
+                    
+                    // Add recipe to diary with enhanced support
+                    val mealEntry = MealEntryEntity(
+                        foodItemId = null,
+                        recipeId = recipe.id,
+                        date = LocalDate.now().toString(),
+                        mealType = "dinner", // Default, could be made selectable
+                        quantityGrams = weightInGrams ?: 0f,
+                        servings = servings,
+                        notes = "Gekocht am ${LocalDate.now()}"
+                    )
+                    
+                    db.mealEntryDao().insert(mealEntry)
+                    
+                    // Also log in intake for compatibility
+                    recipe.calories?.let { kcal ->
+                        val adjustedCalories = if (servings != null) {
+                            (kcal * servings).toInt()
+                        } else if (weightInGrams != null) {
+                            // Assume recipe calories are per 100g if weight is specified
+                            ((kcal * weightInGrams) / 100f).toInt()
+                        } else {
+                            kcal
+                        }
+                        
+                        repo.logIntake(adjustedCalories, "Gekocht: ${recipe.title}", "RECIPE", recipe.id)
+                        repo.adjustDailyGoal(LocalDate.now())
                     }
+                    
+                    showFinishDialog = false
+                    onFinishCooking()
                 }
             },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        scope.launch {
-                            // Mark recipe as cooked
-                            db.savedRecipeDao().markAsCooked(recipe.id)
-                            
-                            // Add to nutrition log
-                            recipe.calories?.let { kcal ->
-                                repo.logIntake(kcal, "Gekocht: ${recipe.title}", "RECIPE", recipe.id)
-                                repo.adjustDailyGoal(LocalDate.now())
-                            }
-                            
-                            showFinishDialog = false
-                            onFinishCooking()
-                        }
-                    }
-                ) {
-                    Text("Ja, hinzufügen")
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = {
-                        scope.launch {
-                            // Just mark as cooked without adding to nutrition log
-                            db.savedRecipeDao().markAsCooked(recipe.id)
-                            showFinishDialog = false
-                            onFinishCooking()
-                        }
-                    }
-                ) {
-                    Text("Nur als gekocht markieren")
+            onSkip = {
+                scope.launch {
+                    // Just mark as cooked without adding to nutrition log
+                    db.savedRecipeDao().markAsCooked(recipe.id)
+                    showFinishDialog = false
+                    onFinishCooking()
                 }
             }
         )
@@ -478,6 +504,159 @@ private fun categorizeIngredient(ingredient: String): String {
 }
 
 @Composable
+private fun TimerSection(
+    currentStep: Int,
+    currentTimer: CookingModeManager.StepTimer?,
+    stepText: String,
+    onStartTimer: (Int) -> Unit,
+    onToggleTimer: () -> Unit
+) {
+    // Extract timer duration from step text
+    val timerMatch = remember(stepText) {
+        Regex("(\\d+)\\s*(min|minuten|sek|sekunden)", RegexOption.IGNORE_CASE).find(stepText)
+    }
+    
+    val suggestedDuration = timerMatch?.let { match ->
+        val value = match.groupValues[1].toIntOrNull() ?: 0
+        val unit = match.groupValues[2].lowercase()
+        when {
+            unit.startsWith("min") -> value * 60 // minutes to seconds
+            unit.startsWith("sek") -> value // seconds
+            else -> value * 60 // default to minutes
+        }
+    }
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (currentTimer?.isActive == true) 
+                MaterialTheme.colorScheme.primaryContainer 
+            else 
+                MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Filled.Timer,
+                    contentDescription = "Timer",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    "Schritt-Timer",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                if (currentTimer?.isActive == true) {
+                    // Show running indicator
+                    Text(
+                        "AKTIV",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            
+            Spacer(Modifier.height(12.dp))
+            
+            // Timer display
+            currentTimer?.let { timer ->
+                Text(
+                    formatTime(timer.remainingTime),
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (timer.remainingTime <= 10) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                )
+                
+                Spacer(Modifier.height(12.dp))
+                
+                // Timer controls
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onToggleTimer,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            if (timer.isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
+                            contentDescription = if (timer.isPaused) "Fortsetzen" else "Pausieren"
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(if (timer.isPaused) "Fortsetzen" else "Pausieren")
+                    }
+                }
+            } ?: run {
+                // No active timer - show start options
+                suggestedDuration?.let { duration ->
+                    Text(
+                        "Empfohlene Zeit: ${formatTime(duration)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    Spacer(Modifier.height(12.dp))
+                    
+                    Button(
+                        onClick = { onStartTimer(duration) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text("Timer starten (${formatTime(duration)})")
+                    }
+                } ?: run {
+                    // Manual timer input
+                    Text(
+                        "Manueller Timer",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    Spacer(Modifier.height(8.dp))
+                    
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Quick timer buttons
+                        OutlinedButton(onClick = { onStartTimer(60) }) { // 1 minute
+                            Text("1 Min")
+                        }
+                        OutlinedButton(onClick = { onStartTimer(300) }) { // 5 minutes
+                            Text("5 Min")
+                        }
+                        OutlinedButton(onClick = { onStartTimer(600) }) { // 10 minutes
+                            Text("10 Min")
+                        }
+                        OutlinedButton(onClick = { onStartTimer(1200) }) { // 20 minutes
+                            Text("20 Min")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatTime(seconds: Int): String {
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+    return if (minutes > 0) {
+        "%d:%02d".format(minutes, remainingSeconds)
+    } else {
+        "%ds".format(remainingSeconds)
+    }
+}
+
+@Composable
 fun CookingModeFromId(
     recipeId: String,
     onBackPressed: () -> Unit,
@@ -512,4 +691,161 @@ fun CookingModeFromId(
             }
         }
     }
+}
+
+@Composable
+private fun RecipeToDiaryDialog(
+    recipe: SavedRecipeEntity,
+    onDismiss: () -> Unit,
+    onConfirm: (servings: Float?, weightInGrams: Float?) -> Unit,
+    onSkip: () -> Unit
+) {
+    var selectedMode by remember { mutableStateOf("servings") } // "servings" or "weight"
+    var servingsText by remember { mutableStateOf(recipe.servings?.toString() ?: "1") }
+    var weightText by remember { mutableStateOf("") }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Zum Tagebuch hinzufügen") },
+        text = {
+            Column {
+                Text("Wie möchten Sie das Rezept zu Ihrem Ernährungstagebuch hinzufügen?")
+                
+                Spacer(Modifier.height(16.dp))
+                
+                // Mode selection
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        onClick = { selectedMode = "servings" },
+                        label = { Text("Portionen") },
+                        selected = selectedMode == "servings",
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterChip(
+                        onClick = { selectedMode = "weight" },
+                        label = { Text("Gewicht") },
+                        selected = selectedMode == "weight",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                
+                Spacer(Modifier.height(16.dp))
+                
+                // Input based on selected mode
+                when (selectedMode) {
+                    "servings" -> {
+                        OutlinedTextField(
+                            value = servingsText,
+                            onValueChange = { servingsText = it },
+                            label = { Text("Anzahl Portionen") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        
+                        recipe.servings?.let { defaultServings ->
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Standard: $defaultServings Portionen",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    "weight" -> {
+                        OutlinedTextField(
+                            value = weightText,
+                            onValueChange = { weightText = it },
+                            label = { Text("Gewicht in Gramm") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Geben Sie das tatsächliche Gewicht der verzehrten Menge ein",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                
+                Spacer(Modifier.height(16.dp))
+                
+                // Nutrition preview
+                recipe.calories?.let { calories ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                "Geschätzte Nährwerte:",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            
+                            val multiplier = when (selectedMode) {
+                                "servings" -> servingsText.toFloatOrNull() ?: 1f
+                                "weight" -> (weightText.toFloatOrNull() ?: 100f) / 100f
+                                else -> 1f
+                            }
+                            
+                            Text("Kalorien: ${(calories * multiplier).toInt()} kcal")
+                            
+                            recipe.protein?.let {
+                                Text("Protein: ${"%.1f".format(it * multiplier)} g")
+                            }
+                            recipe.carbs?.let {
+                                Text("Kohlenhydrate: ${"%.1f".format(it * multiplier)} g")
+                            }
+                            recipe.fat?.let {
+                                Text("Fett: ${"%.1f".format(it * multiplier)} g")
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    when (selectedMode) {
+                        "servings" -> {
+                            val servings = servingsText.toFloatOrNull()
+                            if (servings != null && servings > 0) {
+                                onConfirm(servings, null)
+                            }
+                        }
+                        "weight" -> {
+                            val weight = weightText.toFloatOrNull()
+                            if (weight != null && weight > 0) {
+                                onConfirm(null, weight)
+                            }
+                        }
+                    }
+                },
+                enabled = when (selectedMode) {
+                    "servings" -> servingsText.toFloatOrNull()?.let { it > 0 } ?: false
+                    "weight" -> weightText.toFloatOrNull()?.let { it > 0 } ?: false
+                    else -> false
+                }
+            ) {
+                Text("Hinzufügen")
+            }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = onSkip) {
+                    Text("Überspringen")
+                }
+                Spacer(Modifier.width(8.dp))
+                TextButton(onClick = onDismiss) {
+                    Text("Abbrechen")
+                }
+            }
+        }
+    )
 }

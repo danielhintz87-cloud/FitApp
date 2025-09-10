@@ -56,9 +56,20 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ChallengeParticipationEntity::class,
         ChallengeProgressLogEntity::class,
         SocialBadgeEntity::class,
-        LeaderboardEntryEntity::class
+        LeaderboardEntryEntity::class,
+        // YAZIO-style Recipe and Meal Management
+        MealEntity::class,
+        RecipeIngredientEntity::class,
+        RecipeStepEntity::class,
+        GroceryListEntity::class,
+        GroceryItemEntity::class,
+        RecipeAnalyticsEntity::class,
+        RecipeRatingEntity::class,
+        ProFeatureEntity::class,
+        RecipeCollectionEntity::class,
+        RecipeCollectionItemEntity::class
     ],
-    version = 15,
+    version = 17,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -106,6 +117,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun challengeProgressLogDao(): ChallengeProgressLogDao
     abstract fun socialBadgeDao(): SocialBadgeDao
     abstract fun leaderboardEntryDao(): LeaderboardEntryDao
+    // YAZIO-style Recipe and Meal Management DAOs
+    abstract fun mealDao(): MealDao
+    abstract fun groceryDao(): GroceryDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -893,12 +907,334 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATION_14_15 = object : Migration(14, 15) {
+        val MIGRATION_15_16 = object : Migration(15, 16) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // Add pause/resume functionality to workout sessions
-                db.execSQL("ALTER TABLE `workout_sessions` ADD COLUMN `pauseStartTime` INTEGER")
-                db.execSQL("ALTER TABLE `workout_sessions` ADD COLUMN `totalPauseTime` INTEGER NOT NULL DEFAULT 0")
-                db.execSQL("ALTER TABLE `workout_sessions` ADD COLUMN `actualDuration` INTEGER")
+                // Enhance recipes table with YAZIO features
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `recipes_new` (
+                        `id` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `description` TEXT NOT NULL,
+                        `markdown` TEXT NOT NULL,
+                        `imageUrl` TEXT,
+                        `prepTime` INTEGER,
+                        `cookTime` INTEGER,
+                        `servings` INTEGER,
+                        `difficulty` TEXT,
+                        `categories` TEXT,
+                        `calories` INTEGER,
+                        `protein` REAL,
+                        `carbs` REAL,
+                        `fat` REAL,
+                        `fiber` REAL,
+                        `sugar` REAL,
+                        `sodium` REAL,
+                        `createdAt` INTEGER NOT NULL,
+                        `isOfficial` INTEGER NOT NULL DEFAULT 0,
+                        `rating` REAL NOT NULL DEFAULT 0.0,
+                        `ratingCount` INTEGER NOT NULL DEFAULT 0,
+                        `isLocalOnly` INTEGER NOT NULL DEFAULT 1,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Copy existing data
+                db.execSQL("""
+                    INSERT INTO recipes_new (id, title, description, markdown, imageUrl, calories, createdAt)
+                    SELECT id, title, '', markdown, imageUrl, calories, createdAt FROM recipes
+                """.trimIndent())
+                
+                // Drop old table and rename new table
+                db.execSQL("DROP TABLE recipes")
+                db.execSQL("ALTER TABLE recipes_new RENAME TO recipes")
+                
+                // Create YAZIO-style meals table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `meals` (
+                        `id` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `description` TEXT,
+                        `mealType` TEXT NOT NULL,
+                        `foods` TEXT NOT NULL,
+                        `totalCalories` INTEGER NOT NULL,
+                        `totalProtein` REAL NOT NULL,
+                        `totalCarbs` REAL NOT NULL,
+                        `totalFat` REAL NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `lastUsedAt` INTEGER,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Create recipe ingredients table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `recipe_ingredients` (
+                        `id` TEXT NOT NULL,
+                        `recipeId` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `amount` REAL NOT NULL,
+                        `unit` TEXT NOT NULL,
+                        `ingredientOrder` INTEGER NOT NULL,
+                        `isOptional` INTEGER NOT NULL DEFAULT 0,
+                        `preparationNote` TEXT,
+                        `category` TEXT,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`recipeId`) REFERENCES `recipes`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                
+                // Create recipe steps table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `recipe_steps` (
+                        `id` TEXT NOT NULL,
+                        `recipeId` TEXT NOT NULL,
+                        `stepOrder` INTEGER NOT NULL,
+                        `instruction` TEXT NOT NULL,
+                        `estimatedTimeMinutes` INTEGER,
+                        `temperature` TEXT,
+                        `timerName` TEXT,
+                        `timerDurationSeconds` INTEGER,
+                        `imageUrl` TEXT,
+                        `tips` TEXT,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`recipeId`) REFERENCES `recipes`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                
+                // Create enhanced grocery lists table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `grocery_lists` (
+                        `id` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `description` TEXT,
+                        `isActive` INTEGER NOT NULL DEFAULT 1,
+                        `isDefault` INTEGER NOT NULL DEFAULT 0,
+                        `createdAt` INTEGER NOT NULL,
+                        `lastModifiedAt` INTEGER NOT NULL,
+                        `completedAt` INTEGER,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Create grocery items table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `grocery_items` (
+                        `id` TEXT NOT NULL,
+                        `listId` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `quantity` REAL,
+                        `unit` TEXT,
+                        `category` TEXT NOT NULL,
+                        `checked` INTEGER NOT NULL DEFAULT 0,
+                        `fromRecipeId` TEXT,
+                        `fromRecipeName` TEXT,
+                        `estimatedPrice` REAL,
+                        `notes` TEXT,
+                        `addedAt` INTEGER NOT NULL,
+                        `checkedAt` INTEGER,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`listId`) REFERENCES `grocery_lists`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                
+                // Create recipe analytics table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `recipe_analytics` (
+                        `id` TEXT NOT NULL,
+                        `recipeId` TEXT NOT NULL,
+                        `eventType` TEXT NOT NULL,
+                        `timestamp` INTEGER NOT NULL,
+                        `sessionId` TEXT,
+                        `metadata` TEXT,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`recipeId`) REFERENCES `recipes`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                
+                // Create recipe ratings table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `recipe_ratings` (
+                        `id` TEXT NOT NULL,
+                        `recipeId` TEXT NOT NULL,
+                        `rating` REAL NOT NULL,
+                        `comment` TEXT,
+                        `userId` TEXT,
+                        `createdAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`recipeId`) REFERENCES `recipes`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                
+                // Create PRO feature access table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `pro_feature_access` (
+                        `featureName` TEXT NOT NULL,
+                        `isUnlocked` INTEGER NOT NULL DEFAULT 0,
+                        `unlockedAt` INTEGER,
+                        `lastChecked` INTEGER NOT NULL,
+                        `usageCount` INTEGER NOT NULL DEFAULT 0,
+                        `maxUsage` INTEGER,
+                        PRIMARY KEY(`featureName`)
+                    )
+                """.trimIndent())
+                
+                // Create recipe collections table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `recipe_collections` (
+                        `id` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `description` TEXT,
+                        `imageUrl` TEXT,
+                        `isOfficial` INTEGER NOT NULL DEFAULT 0,
+                        `isPremium` INTEGER NOT NULL DEFAULT 0,
+                        `sortOrder` INTEGER NOT NULL DEFAULT 0,
+                        `createdAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                
+                // Create recipe collection items table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `recipe_collection_items` (
+                        `id` TEXT NOT NULL,
+                        `collectionId` TEXT NOT NULL,
+                        `recipeId` TEXT NOT NULL,
+                        `sortOrder` INTEGER NOT NULL DEFAULT 0,
+                        `addedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`collectionId`) REFERENCES `recipe_collections`(`id`) ON DELETE CASCADE,
+                        FOREIGN KEY(`recipeId`) REFERENCES `recipes`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                
+                // Update shopping_list_categories with new fields
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `shopping_list_categories_new` (
+                        `name` TEXT NOT NULL,
+                        `order` INTEGER NOT NULL,
+                        `iconName` TEXT,
+                        `colorHex` TEXT,
+                        PRIMARY KEY(`name`)
+                    )
+                """.trimIndent())
+                
+                db.execSQL("""
+                    INSERT INTO shopping_list_categories_new (name, `order`)
+                    SELECT name, `order` FROM shopping_list_categories
+                """.trimIndent())
+                
+                db.execSQL("DROP TABLE shopping_list_categories")
+                db.execSQL("ALTER TABLE shopping_list_categories_new RENAME TO shopping_list_categories")
+                
+                // Add all the necessary indices
+                addYazioIndices(db)
+            }
+            
+            private fun addYazioIndices(db: SupportSQLiteDatabase) {
+                val indices = listOf(
+                    // Recipe indices
+                    "CREATE INDEX IF NOT EXISTS `index_recipes_difficulty` ON `recipes` (`difficulty`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipes_prepTime` ON `recipes` (`prepTime`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipes_cookTime` ON `recipes` (`cookTime`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipes_createdAt` ON `recipes` (`createdAt`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipes_calories` ON `recipes` (`calories`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipes_title` ON `recipes` (`title`)",
+                    
+                    // Meal indices
+                    "CREATE INDEX IF NOT EXISTS `index_meals_name` ON `meals` (`name`)",
+                    "CREATE INDEX IF NOT EXISTS `index_meals_mealType` ON `meals` (`mealType`)",
+                    "CREATE INDEX IF NOT EXISTS `index_meals_createdAt` ON `meals` (`createdAt`)",
+                    
+                    // Recipe ingredients indices
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_ingredients_recipeId` ON `recipe_ingredients` (`recipeId`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_ingredients_ingredientOrder` ON `recipe_ingredients` (`ingredientOrder`)",
+                    
+                    // Recipe steps indices
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_steps_recipeId` ON `recipe_steps` (`recipeId`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_steps_stepOrder` ON `recipe_steps` (`stepOrder`)",
+                    
+                    // Grocery lists indices
+                    "CREATE INDEX IF NOT EXISTS `index_grocery_lists_name` ON `grocery_lists` (`name`)",
+                    "CREATE INDEX IF NOT EXISTS `index_grocery_lists_createdAt` ON `grocery_lists` (`createdAt`)",
+                    "CREATE INDEX IF NOT EXISTS `index_grocery_lists_isActive` ON `grocery_lists` (`isActive`)",
+                    
+                    // Grocery items indices
+                    "CREATE INDEX IF NOT EXISTS `index_grocery_items_listId` ON `grocery_items` (`listId`)",
+                    "CREATE INDEX IF NOT EXISTS `index_grocery_items_category` ON `grocery_items` (`category`)",
+                    "CREATE INDEX IF NOT EXISTS `index_grocery_items_checked` ON `grocery_items` (`checked`)",
+                    "CREATE INDEX IF NOT EXISTS `index_grocery_items_fromRecipeId` ON `grocery_items` (`fromRecipeId`)",
+                    
+                    // Recipe analytics indices
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_analytics_recipeId` ON `recipe_analytics` (`recipeId`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_analytics_eventType` ON `recipe_analytics` (`eventType`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_analytics_timestamp` ON `recipe_analytics` (`timestamp`)",
+                    
+                    // Recipe ratings indices
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_ratings_recipeId` ON `recipe_ratings` (`recipeId`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_ratings_rating` ON `recipe_ratings` (`rating`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_ratings_createdAt` ON `recipe_ratings` (`createdAt`)",
+                    
+                    // PRO feature indices
+                    "CREATE INDEX IF NOT EXISTS `index_pro_feature_access_featureName` ON `pro_feature_access` (`featureName`)",
+                    "CREATE INDEX IF NOT EXISTS `index_pro_feature_access_isUnlocked` ON `pro_feature_access` (`isUnlocked`)",
+                    "CREATE INDEX IF NOT EXISTS `index_pro_feature_access_lastChecked` ON `pro_feature_access` (`lastChecked`)",
+                    
+                    // Recipe collections indices
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_collections_name` ON `recipe_collections` (`name`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_collections_isOfficial` ON `recipe_collections` (`isOfficial`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_collections_createdAt` ON `recipe_collections` (`createdAt`)",
+                    
+                    // Recipe collection items indices
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_collection_items_collectionId` ON `recipe_collection_items` (`collectionId`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_collection_items_recipeId` ON `recipe_collection_items` (`recipeId`)",
+                    "CREATE INDEX IF NOT EXISTS `index_recipe_collection_items_sortOrder` ON `recipe_collection_items` (`sortOrder`)"
+                )
+                
+                indices.forEach { indexSql ->
+                    try {
+                        db.execSQL(indexSql)
+                    } catch (e: Exception) {
+                        android.util.Log.w("Migration", "Failed to create index: $indexSql", e)
+                    }
+                }
+            }
+        }
+        
+        val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add recipe support to meal_entries for recipe-to-diary functionality
+                
+                // Create new meal_entries table with recipe support
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `meal_entries_new` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `foodItemId` TEXT,
+                        `recipeId` TEXT,
+                        `date` TEXT NOT NULL,
+                        `mealType` TEXT NOT NULL,
+                        `quantityGrams` REAL NOT NULL,
+                        `servings` REAL,
+                        `notes` TEXT
+                    )
+                """)
+                
+                // Copy existing data (all existing entries are food items)
+                db.execSQL("""
+                    INSERT INTO meal_entries_new (id, foodItemId, recipeId, date, mealType, quantityGrams, servings, notes)
+                    SELECT id, foodItemId, NULL, date, mealType, quantityGrams, NULL, notes
+                    FROM meal_entries
+                """)
+                
+                // Drop old table and rename new one
+                db.execSQL("DROP TABLE meal_entries")
+                db.execSQL("ALTER TABLE meal_entries_new RENAME TO meal_entries")
+                
+                // Recreate indices
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_meal_entries_foodItemId` ON `meal_entries` (`foodItemId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_meal_entries_date` ON `meal_entries` (`date`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_meal_entries_mealType` ON `meal_entries` (`mealType`)")
+                
+                android.util.Log.i("Migration", "Successfully migrated meal_entries to support recipes")
             }
         }
         
@@ -910,7 +1246,7 @@ abstract class AppDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): AppDatabase {
             return try {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
-                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17)
                     .apply {
                         // Only allow destructive migration in debug builds
                         if (com.example.fitapp.BuildConfig.DEBUG) {

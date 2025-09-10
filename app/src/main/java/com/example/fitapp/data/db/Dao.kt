@@ -54,6 +54,127 @@ interface RecipeDao {
     
     @Query("SELECT recipeId FROM recipe_favorites WHERE category = :category")
     suspend fun getFavoriteRecipesByCategory(category: String): List<String>
+    
+    // Enhanced recipe search and filtering (YAZIO-style)
+    @Query("""
+        SELECT * FROM recipes 
+        WHERE (:searchQuery IS NULL OR title LIKE '%' || :searchQuery || '%' 
+               OR description LIKE '%' || :searchQuery || '%')
+        AND (:difficulty IS NULL OR difficulty = :difficulty)
+        AND (:maxPrepTime IS NULL OR prepTime <= :maxPrepTime)
+        AND (:maxCookTime IS NULL OR cookTime <= :maxCookTime)
+        AND (:maxCalories IS NULL OR calories <= :maxCalories)
+        AND (:isOfficial IS NULL OR isOfficial = :isOfficial)
+        ORDER BY 
+            CASE :sortBy 
+                WHEN 'name' THEN title
+                WHEN 'difficulty' THEN difficulty
+                WHEN 'prepTime' THEN CAST(prepTime AS TEXT)
+                WHEN 'calories' THEN CAST(calories AS TEXT)
+                ELSE CAST(createdAt AS TEXT)
+            END
+    """)
+    suspend fun searchRecipesFiltered(
+        searchQuery: String? = null,
+        difficulty: String? = null,
+        maxPrepTime: Int? = null,
+        maxCookTime: Int? = null,
+        maxCalories: Int? = null,
+        isOfficial: Boolean? = null,
+        sortBy: String = "createdAt"
+    ): List<RecipeEntity>
+    
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertRecipeIngredient(ingredient: RecipeIngredientEntity)
+    
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertRecipeStep(step: RecipeStepEntity)
+    
+    @Query("SELECT * FROM recipe_ingredients WHERE recipeId = :recipeId ORDER BY ingredientOrder")
+    suspend fun getRecipeIngredients(recipeId: String): List<RecipeIngredientEntity>
+    
+    @Query("SELECT * FROM recipe_steps WHERE recipeId = :recipeId ORDER BY stepOrder")
+    suspend fun getRecipeSteps(recipeId: String): List<RecipeStepEntity>
+    
+    @Query("DELETE FROM recipe_ingredients WHERE recipeId = :recipeId")
+    suspend fun deleteRecipeIngredients(recipeId: String)
+    
+    @Query("DELETE FROM recipe_steps WHERE recipeId = :recipeId")
+    suspend fun deleteRecipeSteps(recipeId: String)
+}
+
+// YAZIO-style Meal Management DAO
+@Dao
+interface MealDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMeal(meal: MealEntity)
+    
+    @Update
+    suspend fun updateMeal(meal: MealEntity)
+    
+    @Query("DELETE FROM meals WHERE id = :id")
+    suspend fun deleteMeal(id: String)
+    
+    @Query("SELECT * FROM meals WHERE id = :id")
+    suspend fun getMeal(id: String): MealEntity?
+    
+    @Query("SELECT * FROM meals WHERE mealType = :mealType ORDER BY lastUsedAt DESC, createdAt DESC")
+    fun getMealsByType(mealType: String): Flow<List<MealEntity>>
+    
+    @Query("SELECT * FROM meals ORDER BY lastUsedAt DESC, createdAt DESC")
+    fun getAllMeals(): Flow<List<MealEntity>>
+    
+    @Query("UPDATE meals SET lastUsedAt = :timestamp WHERE id = :id")
+    suspend fun updateLastUsed(id: String, timestamp: Long = System.currentTimeMillis() / 1000)
+}
+
+// Smart Grocery Lists DAO (YAZIO-style)
+@Dao 
+interface GroceryDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertGroceryList(list: GroceryListEntity)
+    
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertGroceryItem(item: GroceryItemEntity)
+    
+    @Update
+    suspend fun updateGroceryList(list: GroceryListEntity)
+    
+    @Update
+    suspend fun updateGroceryItem(item: GroceryItemEntity)
+    
+    @Query("DELETE FROM grocery_lists WHERE id = :id")
+    suspend fun deleteGroceryList(id: String)
+    
+    @Query("DELETE FROM grocery_items WHERE id = :id")
+    suspend fun deleteGroceryItem(id: String)
+    
+    @Query("SELECT * FROM grocery_lists WHERE isActive = 1 ORDER BY isDefault DESC, createdAt DESC")
+    fun getActiveLists(): Flow<List<GroceryListEntity>>
+    
+    @Query("SELECT * FROM grocery_items WHERE listId = :listId ORDER BY category, name")
+    fun getListItems(listId: String): Flow<List<GroceryItemEntity>>
+    
+    @Query("""
+        SELECT * FROM grocery_items 
+        WHERE listId = :listId AND category = :category 
+        ORDER BY checked ASC, name ASC
+    """)
+    suspend fun getItemsByCategory(listId: String, category: String): List<GroceryItemEntity>
+    
+    @Query("SELECT DISTINCT category FROM grocery_items WHERE listId = :listId ORDER BY category")
+    suspend fun getListCategories(listId: String): List<String>
+    
+    // Smart quantity merging for recipes
+    @Query("""
+        SELECT * FROM grocery_items 
+        WHERE listId = :listId AND name = :itemName AND unit = :unit
+        ORDER BY addedAt DESC
+    """)
+    suspend fun findSimilarItems(listId: String, itemName: String, unit: String): List<GroceryItemEntity>
+    
+    @Query("UPDATE grocery_items SET checked = :checked, checkedAt = :timestamp WHERE id = :id")
+    suspend fun updateItemChecked(id: String, checked: Boolean, timestamp: Long = System.currentTimeMillis() / 1000)
 }
 
 @Dao
@@ -473,6 +594,69 @@ interface MealEntryDao {
 
     @Query("DELETE FROM meal_entries")
     suspend fun deleteAll()
+    
+    // Recipe-specific queries for diary entries
+    @Query("SELECT * FROM meal_entries WHERE recipeId = :recipeId ORDER BY id DESC LIMIT 10")
+    suspend fun getRecentRecipeEntries(recipeId: String): List<MealEntryEntity>
+    
+    @Query("SELECT * FROM meal_entries WHERE recipeId IS NOT NULL AND date = :date ORDER BY id")
+    suspend fun getRecipeEntriesForDate(date: String): List<MealEntryEntity>
+    
+    @Query("SELECT * FROM meal_entries WHERE foodItemId IS NOT NULL AND date = :date ORDER BY id")
+    suspend fun getFoodEntriesForDate(date: String): List<MealEntryEntity>
+    
+    // Enhanced nutrition calculation supporting both food items and recipes
+    @Query("""
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN foodItemId IS NOT NULL THEN 
+                    (quantityGrams / 100.0) * (SELECT COALESCE(calories, 0) FROM food_items WHERE id = foodItemId)
+                WHEN recipeId IS NOT NULL THEN 
+                    COALESCE(servings, 1.0) * (SELECT COALESCE(calories, 0) FROM recipes WHERE id = recipeId)
+                ELSE 0
+            END
+        ), 0) FROM meal_entries WHERE date = :date
+    """)
+    suspend fun getTotalCaloriesForDateEnhanced(date: String): Float
+    
+    @Query("""
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN foodItemId IS NOT NULL THEN 
+                    (quantityGrams / 100.0) * (SELECT COALESCE(protein, 0) FROM food_items WHERE id = foodItemId)
+                WHEN recipeId IS NOT NULL THEN 
+                    COALESCE(servings, 1.0) * (SELECT COALESCE(protein, 0) FROM recipes WHERE id = recipeId)
+                ELSE 0
+            END
+        ), 0) FROM meal_entries WHERE date = :date
+    """)
+    suspend fun getTotalProteinForDateEnhanced(date: String): Float
+    
+    @Query("""
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN foodItemId IS NOT NULL THEN 
+                    (quantityGrams / 100.0) * (SELECT COALESCE(carbs, 0) FROM food_items WHERE id = foodItemId)
+                WHEN recipeId IS NOT NULL THEN 
+                    COALESCE(servings, 1.0) * (SELECT COALESCE(carbs, 0) FROM recipes WHERE id = recipeId)
+                ELSE 0
+            END
+        ), 0) FROM meal_entries WHERE date = :date
+    """)
+    suspend fun getTotalCarbsForDateEnhanced(date: String): Float
+    
+    @Query("""
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN foodItemId IS NOT NULL THEN 
+                    (quantityGrams / 100.0) * (SELECT COALESCE(fat, 0) FROM food_items WHERE id = foodItemId)
+                WHEN recipeId IS NOT NULL THEN 
+                    COALESCE(servings, 1.0) * (SELECT COALESCE(fat, 0) FROM recipes WHERE id = recipeId)
+                ELSE 0
+            END
+        ), 0) FROM meal_entries WHERE date = :date
+    """)
+    suspend fun getTotalFatForDateEnhanced(date: String): Float
 }
 
 @Dao

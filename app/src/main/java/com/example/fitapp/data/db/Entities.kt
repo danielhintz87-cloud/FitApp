@@ -11,16 +11,35 @@ import java.time.LocalDate
     indices = [
         Index(value = ["createdAt"], name = "index_recipes_createdAt"),
         Index(value = ["calories"], name = "index_recipes_calories"), 
-        Index(value = ["title"], name = "index_recipes_title")
+        Index(value = ["title"], name = "index_recipes_title"),
+        Index(value = ["difficulty"], name = "index_recipes_difficulty"),
+        Index(value = ["prepTime"], name = "index_recipes_prepTime"),
+        Index(value = ["cookTime"], name = "index_recipes_cookTime")
     ]
 )
 data class RecipeEntity(
     @PrimaryKey val id: String,
     val title: String,
+    val description: String,
     val markdown: String,
-    val calories: Int?,
     val imageUrl: String?,
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val prepTime: Int?, // in minutes
+    val cookTime: Int?, // in minutes
+    val servings: Int?,
+    val difficulty: String?, // "easy", "medium", "hard"
+    val categories: String?, // JSON array as string
+    val calories: Int?,
+    val protein: Float?,
+    val carbs: Float?,
+    val fat: Float?,
+    val fiber: Float?,
+    val sugar: Float?,
+    val sodium: Float?,
+    val createdAt: Long = System.currentTimeMillis() / 1000,
+    val isOfficial: Boolean = false, // true for YAZIO official recipes (PRO feature)
+    val rating: Float = 0f, // average 5-star rating
+    val ratingCount: Int = 0,
+    val isLocalOnly: Boolean = true // for potential cloud sync
 )
 
 @Entity(
@@ -114,6 +133,86 @@ data class PlanEntity(
     val createdAt: Long = System.currentTimeMillis() / 1000
 )
 
+// YAZIO-style Meals for quick food combinations (no detailed cooking instructions)
+@Entity(
+    tableName = "meals",
+    indices = [
+        Index(value = ["name"]),
+        Index(value = ["mealType"]),
+        Index(value = ["createdAt"])
+    ]
+)
+data class MealEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val name: String,
+    val description: String?,
+    val mealType: String, // "breakfast", "lunch", "dinner", "snack"
+    val foods: String, // JSON array of food items with quantities
+    val totalCalories: Int,
+    val totalProtein: Float,
+    val totalCarbs: Float,
+    val totalFat: Float,
+    val createdAt: Long = System.currentTimeMillis() / 1000,
+    val lastUsedAt: Long? = null
+)
+
+// Recipe ingredients with detailed portions and measurements
+@Entity(
+    tableName = "recipe_ingredients",
+    foreignKeys = [
+        ForeignKey(
+            entity = RecipeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["recipeId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["recipeId"]),
+        Index(value = ["ingredientOrder"])
+    ]
+)
+data class RecipeIngredientEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val recipeId: String,
+    val name: String,
+    val amount: Float,
+    val unit: String, // "g", "ml", "cups", "tbsp", "pieces", etc.
+    val ingredientOrder: Int,
+    val isOptional: Boolean = false,
+    val preparationNote: String? = null, // "diced", "chopped", "grated", etc.
+    val category: String? = null // "protein", "vegetables", "spices", etc.
+)
+
+// Recipe cooking steps with detailed instructions
+@Entity(
+    tableName = "recipe_steps",
+    foreignKeys = [
+        ForeignKey(
+            entity = RecipeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["recipeId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["recipeId"]),
+        Index(value = ["stepOrder"])
+    ]
+)
+data class RecipeStepEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val recipeId: String,
+    val stepOrder: Int,
+    val instruction: String,
+    val estimatedTimeMinutes: Int? = null,
+    val temperature: String? = null, // "180°C", "medium heat", etc.
+    val timerName: String? = null, // for automatic timer creation
+    val timerDurationSeconds: Int? = null,
+    val imageUrl: String? = null,
+    val tips: String? = null // additional tips for this step
+)
+
 @Entity(tableName = "saved_recipes")
 data class SavedRecipeEntity(
     @PrimaryKey val id: String,
@@ -131,10 +230,65 @@ data class SavedRecipeEntity(
     val lastCookedAt: Long? = null
 )
 
+// Enhanced Grocery Lists (YAZIO-style smart grocery management)
+@Entity(
+    tableName = "grocery_lists", 
+    indices = [
+        Index(value = ["name"]),
+        Index(value = ["createdAt"]),
+        Index(value = ["isActive"])
+    ]
+)
+data class GroceryListEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val name: String,
+    val description: String? = null,
+    val isActive: Boolean = true,
+    val isDefault: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis() / 1000,
+    val lastModifiedAt: Long = System.currentTimeMillis() / 1000,
+    val completedAt: Long? = null
+)
+
+@Entity(
+    tableName = "grocery_items",
+    foreignKeys = [
+        ForeignKey(
+            entity = GroceryListEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["listId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["listId"]),
+        Index(value = ["category"]),
+        Index(value = ["checked"]),
+        Index(value = ["fromRecipeId"])
+    ]
+)
+data class GroceryItemEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val listId: String,
+    val name: String,
+    val quantity: Float? = null,
+    val unit: String? = null,
+    val category: String, // Store layout categories: "Obst & Gemüse", "Fleisch & Fisch", "Milchprodukte", etc.
+    val checked: Boolean = false,
+    val fromRecipeId: String? = null, // Track which recipe added this item
+    val fromRecipeName: String? = null,
+    val estimatedPrice: Float? = null, // for budget tracking
+    val notes: String? = null,
+    val addedAt: Long = System.currentTimeMillis() / 1000,
+    val checkedAt: Long? = null
+)
+
 @Entity(tableName = "shopping_list_categories")
 data class ShoppingCategoryEntity(
     @PrimaryKey val name: String,
-    val order: Int // for supermarket sorting
+    val order: Int, // for supermarket sorting
+    val iconName: String? = null, // Material icon name
+    val colorHex: String? = null // for visual categorization
 )
 
 @Entity(
@@ -284,10 +438,12 @@ data class FoodItemEntity(
 )
 data class MealEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val foodItemId: String,
+    val foodItemId: String?,    // For individual food items
+    val recipeId: String? = null, // For recipes (either foodItemId OR recipeId should be set)
     val date: String,           // ISO-Date (yyyy-MM-dd)
     val mealType: String,       // breakfast, lunch, dinner, snack
-    val quantityGrams: Float,   // Consumed amount in grams
+    val quantityGrams: Float,   // Consumed amount in grams for food items
+    val servings: Float? = null, // Number of servings for recipes (e.g., 0.5, 1.0, 2.0)
     val notes: String? = null
 )
 
@@ -716,6 +872,125 @@ data class SyncConflictEntity(
 )
 
 // Social Challenge Entities for Freeletics-style gamification
+
+// Recipe Analytics (YAZIO-style usage tracking)
+@Entity(
+    tableName = "recipe_analytics",
+    foreignKeys = [
+        ForeignKey(
+            entity = RecipeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["recipeId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["recipeId"]),
+        Index(value = ["eventType"]),
+        Index(value = ["timestamp"])
+    ]
+)
+data class RecipeAnalyticsEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val recipeId: String,
+    val eventType: String, // "view", "cooking_started", "cooking_completed", "added_to_favorites", "added_to_grocery_list"
+    val timestamp: Long = System.currentTimeMillis() / 1000,
+    val sessionId: String? = null, // for cooking sessions
+    val metadata: String? = null // JSON for additional data like completion percentage
+)
+
+@Entity(
+    tableName = "recipe_ratings",
+    foreignKeys = [
+        ForeignKey(
+            entity = RecipeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["recipeId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["recipeId"]),
+        Index(value = ["rating"]),
+        Index(value = ["createdAt"])
+    ]
+)
+data class RecipeRatingEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val recipeId: String,
+    val rating: Float, // 1.0 to 5.0
+    val comment: String? = null,
+    val userId: String? = null, // if user accounts are implemented
+    val createdAt: Long = System.currentTimeMillis() / 1000
+)
+
+// PRO Feature Access Control
+@Entity(
+    tableName = "pro_feature_access",
+    indices = [
+        Index(value = ["featureName"]),
+        Index(value = ["isUnlocked"]),
+        Index(value = ["lastChecked"])
+    ]
+)
+data class ProFeatureEntity(
+    @PrimaryKey val featureName: String, // "access_official_recipe_database", "advanced_recipe_filters", etc.
+    val isUnlocked: Boolean = false,
+    val unlockedAt: Long? = null,
+    val lastChecked: Long = System.currentTimeMillis() / 1000,
+    val usageCount: Int = 0,
+    val maxUsage: Int? = null // for trial features
+)
+
+// Recipe Collections/Categories (YAZIO-style organization)
+@Entity(
+    tableName = "recipe_collections",
+    indices = [
+        Index(value = ["name"]),
+        Index(value = ["isOfficial"]),
+        Index(value = ["createdAt"])
+    ]
+)
+data class RecipeCollectionEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val name: String,
+    val description: String? = null,
+    val imageUrl: String? = null,
+    val isOfficial: Boolean = false, // true for YAZIO curated collections
+    val isPremium: Boolean = false, // requires PRO subscription
+    val sortOrder: Int = 0,
+    val createdAt: Long = System.currentTimeMillis() / 1000
+)
+
+@Entity(
+    tableName = "recipe_collection_items",
+    foreignKeys = [
+        ForeignKey(
+            entity = RecipeCollectionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["collectionId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = RecipeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["recipeId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["collectionId"]),
+        Index(value = ["recipeId"]),
+        Index(value = ["sortOrder"])
+    ]
+)
+data class RecipeCollectionItemEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val collectionId: String,
+    val recipeId: String,
+    val sortOrder: Int = 0,
+    val addedAt: Long = System.currentTimeMillis() / 1000
+)
 
 @Entity(
     tableName = "social_challenges",
