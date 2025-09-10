@@ -2,6 +2,7 @@ package com.example.fitapp.ui.nutrition
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
@@ -20,6 +21,7 @@ import com.example.fitapp.data.db.ShoppingItemEntity
 import com.example.fitapp.ai.AppAi
 import com.example.fitapp.services.ShoppingListManager
 import com.example.fitapp.services.ShoppingListSorter
+import com.example.fitapp.services.ShoppingAutoCompleteEngine
 import com.example.fitapp.data.prefs.UserPreferencesRepository
 import com.example.fitapp.ui.components.AutoCompleteTextField
 import kotlinx.coroutines.launch
@@ -139,6 +141,13 @@ fun EnhancedShoppingListScreen(
     }
     
     val items by shoppingManager.shoppingItems.collectAsState()
+    
+    // Show smart suggestions when list is empty
+    var showSmartSuggestions by remember { mutableStateOf(true) }
+    
+    LaunchedEffect(items.size) {
+        showSmartSuggestions = items.isEmpty()
+    }
     
     // Initialize default categories if needed
     LaunchedEffect(Unit) {
@@ -353,6 +362,68 @@ fun EnhancedShoppingListScreen(
                 }
             }
         }
+        
+        // Smart Suggestions (when list is empty)
+        if (showSmartSuggestions && items.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "💡 Beliebte Artikel schnell hinzufügen",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    
+                    val commonItems = listOf("Milch", "Brot", "Eier", "Butter", "Äpfel", "Bananen")
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp)
+                    ) {
+                        items(commonItems) { itemName ->
+                            SuggestionChip(
+                                onClick = {
+                                    scope.launch {
+                                        val category = categorizeItem(itemName)
+                                        db.shoppingDao().insert(
+                                            ShoppingItemEntity(
+                                                name = itemName,
+                                                quantity = null,
+                                                unit = null,
+                                                category = category
+                                            )
+                                        )
+                                        shoppingManager.recordItemUsage(itemName)
+                                    }
+                                },
+                                label = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        getItemIcon(itemName)?.let { icon ->
+                                            Icon(
+                                                imageVector = icon,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(Modifier.width(4.dp))
+                                        }
+                                        Text(
+                                            itemName,
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+        
         if (voiceInput.isNotBlank()) {
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),

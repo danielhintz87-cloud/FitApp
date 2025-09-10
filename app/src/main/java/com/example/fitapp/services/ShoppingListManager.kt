@@ -97,6 +97,12 @@ class ShoppingListManager(
                 }
             }
         }
+        
+        // Load autocomplete usage data (could be enhanced to save to preferences/database)
+        scope.launch {
+            // For now, autocomplete data is kept in memory
+            // In a real app, you'd load this from SharedPreferences or database
+        }
     }
 
     /**
@@ -325,8 +331,10 @@ class ShoppingListManager(
      */
     suspend fun getAutoCompleteSuggestions(input: String): List<AutoCompleteSuggestion> {
         if (input.length < 2) {
-            _autoCompleteSuggestions.value = emptyList()
-            return emptyList()
+            // Show frequent suggestions when no input
+            val suggestions = autoCompleteEngine.getSuggestions("", emptyList())
+            _autoCompleteSuggestions.value = suggestions
+            return suggestions
         }
         
         // Get recent items from shopping list for learning
@@ -337,6 +345,21 @@ class ShoppingListManager(
         
         _autoCompleteSuggestions.value = suggestions
         return suggestions
+    }
+    
+    /**
+     * Get smart suggestions based on shopping patterns
+     */
+    suspend fun getSmartSuggestions(limit: Int = 6): List<AutoCompleteSuggestion> {
+        // Get recent items from shopping list
+        val recentItems = _shoppingItems.value
+            .filter { !it.isPurchased } // Only unpurchased items
+            .map { it.name }.distinct()
+        
+        // Get frequent suggestions (this will show most used items)
+        val suggestions = autoCompleteEngine.getSuggestions("", recentItems)
+        
+        return suggestions.take(limit)
     }
     
     /**
