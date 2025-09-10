@@ -438,10 +438,12 @@ data class FoodItemEntity(
 )
 data class MealEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val foodItemId: String,
+    val foodItemId: String?,    // For individual food items
+    val recipeId: String? = null, // For recipes (either foodItemId OR recipeId should be set)
     val date: String,           // ISO-Date (yyyy-MM-dd)
     val mealType: String,       // breakfast, lunch, dinner, snack
-    val quantityGrams: Float,   // Consumed amount in grams
+    val quantityGrams: Float,   // Consumed amount in grams for food items
+    val servings: Float? = null, // Number of servings for recipes (e.g., 0.5, 1.0, 2.0)
     val notes: String? = null
 )
 

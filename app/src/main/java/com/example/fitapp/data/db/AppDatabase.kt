@@ -69,7 +69,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         RecipeCollectionEntity::class,
         RecipeCollectionItemEntity::class
     ],
-    version = 16,
+    version = 17,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -1200,6 +1200,44 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
         
+        val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add recipe support to meal_entries for recipe-to-diary functionality
+                
+                // Create new meal_entries table with recipe support
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `meal_entries_new` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `foodItemId` TEXT,
+                        `recipeId` TEXT,
+                        `date` TEXT NOT NULL,
+                        `mealType` TEXT NOT NULL,
+                        `quantityGrams` REAL NOT NULL,
+                        `servings` REAL,
+                        `notes` TEXT
+                    )
+                """)
+                
+                // Copy existing data (all existing entries are food items)
+                db.execSQL("""
+                    INSERT INTO meal_entries_new (id, foodItemId, recipeId, date, mealType, quantityGrams, servings, notes)
+                    SELECT id, foodItemId, NULL, date, mealType, quantityGrams, NULL, notes
+                    FROM meal_entries
+                """)
+                
+                // Drop old table and rename new one
+                db.execSQL("DROP TABLE meal_entries")
+                db.execSQL("ALTER TABLE meal_entries_new RENAME TO meal_entries")
+                
+                // Recreate indices
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_meal_entries_foodItemId` ON `meal_entries` (`foodItemId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_meal_entries_date` ON `meal_entries` (`date`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_meal_entries_mealType` ON `meal_entries` (`mealType`)")
+                
+                android.util.Log.i("Migration", "Successfully migrated meal_entries to support recipes")
+            }
+        }
+        
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: buildDatabase(context)
@@ -1208,7 +1246,7 @@ abstract class AppDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): AppDatabase {
             return try {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
-                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17)
                     .apply {
                         // Only allow destructive migration in debug builds
                         if (com.example.fitapp.BuildConfig.DEBUG) {

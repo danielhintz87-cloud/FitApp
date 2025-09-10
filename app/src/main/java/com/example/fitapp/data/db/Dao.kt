@@ -594,6 +594,69 @@ interface MealEntryDao {
 
     @Query("DELETE FROM meal_entries")
     suspend fun deleteAll()
+    
+    // Recipe-specific queries for diary entries
+    @Query("SELECT * FROM meal_entries WHERE recipeId = :recipeId ORDER BY id DESC LIMIT 10")
+    suspend fun getRecentRecipeEntries(recipeId: String): List<MealEntryEntity>
+    
+    @Query("SELECT * FROM meal_entries WHERE recipeId IS NOT NULL AND date = :date ORDER BY id")
+    suspend fun getRecipeEntriesForDate(date: String): List<MealEntryEntity>
+    
+    @Query("SELECT * FROM meal_entries WHERE foodItemId IS NOT NULL AND date = :date ORDER BY id")
+    suspend fun getFoodEntriesForDate(date: String): List<MealEntryEntity>
+    
+    // Enhanced nutrition calculation supporting both food items and recipes
+    @Query("""
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN foodItemId IS NOT NULL THEN 
+                    (quantityGrams / 100.0) * (SELECT COALESCE(calories, 0) FROM food_items WHERE id = foodItemId)
+                WHEN recipeId IS NOT NULL THEN 
+                    COALESCE(servings, 1.0) * (SELECT COALESCE(calories, 0) FROM recipes WHERE id = recipeId)
+                ELSE 0
+            END
+        ), 0) FROM meal_entries WHERE date = :date
+    """)
+    suspend fun getTotalCaloriesForDateEnhanced(date: String): Float
+    
+    @Query("""
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN foodItemId IS NOT NULL THEN 
+                    (quantityGrams / 100.0) * (SELECT COALESCE(protein, 0) FROM food_items WHERE id = foodItemId)
+                WHEN recipeId IS NOT NULL THEN 
+                    COALESCE(servings, 1.0) * (SELECT COALESCE(protein, 0) FROM recipes WHERE id = recipeId)
+                ELSE 0
+            END
+        ), 0) FROM meal_entries WHERE date = :date
+    """)
+    suspend fun getTotalProteinForDateEnhanced(date: String): Float
+    
+    @Query("""
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN foodItemId IS NOT NULL THEN 
+                    (quantityGrams / 100.0) * (SELECT COALESCE(carbs, 0) FROM food_items WHERE id = foodItemId)
+                WHEN recipeId IS NOT NULL THEN 
+                    COALESCE(servings, 1.0) * (SELECT COALESCE(carbs, 0) FROM recipes WHERE id = recipeId)
+                ELSE 0
+            END
+        ), 0) FROM meal_entries WHERE date = :date
+    """)
+    suspend fun getTotalCarbsForDateEnhanced(date: String): Float
+    
+    @Query("""
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN foodItemId IS NOT NULL THEN 
+                    (quantityGrams / 100.0) * (SELECT COALESCE(fat, 0) FROM food_items WHERE id = foodItemId)
+                WHEN recipeId IS NOT NULL THEN 
+                    COALESCE(servings, 1.0) * (SELECT COALESCE(fat, 0) FROM recipes WHERE id = recipeId)
+                ELSE 0
+            END
+        ), 0) FROM meal_entries WHERE date = :date
+    """)
+    suspend fun getTotalFatForDateEnhanced(date: String): Float
 }
 
 @Dao
