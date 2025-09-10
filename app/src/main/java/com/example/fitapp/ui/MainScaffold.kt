@@ -30,6 +30,7 @@ import com.example.fitapp.ui.nutrition.FoodSearchScreen
 import com.example.fitapp.ui.nutrition.NutritionAnalyticsScreen
 import com.example.fitapp.ui.nutrition.NutritionScreen
 import com.example.fitapp.ui.nutrition.SavedRecipesScreen
+import com.example.fitapp.ui.nutrition.RecipeGenerationScreen
 import com.example.fitapp.ui.nutrition.EnhancedRecipeListScreen
 import com.example.fitapp.ui.nutrition.RecipeDetailScreen
 import com.example.fitapp.ui.nutrition.RecipeEditScreen
@@ -426,6 +427,16 @@ fun MainScaffold() {
                             nav.navigate("cooking_mode/${recipe.id}")
                         },
                         
+                    )
+                }
+                composable("recipe_generation") {
+                    RecipeGenerationScreen(
+                        onBackPressed = { nav.popBackStack() },
+                        onNavigateToApiKeys = { nav.navigate("apikeys") },
+                        onNavigateToCookingMode = { recipeId ->
+                            nav.navigate("cooking_mode/$recipeId")
+                        },
+                        contentPadding = padding
                     )
                 }
                 composable("enhanced_recipes") {

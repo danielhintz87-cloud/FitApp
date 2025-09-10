@@ -55,7 +55,7 @@ fun EnhancedNutritionHubScreen(
                         navController.navigate("saved_recipes") 
                     },
                     NutritionAction("KI Rezept Generator", Icons.Filled.AutoAwesome) { 
-                        navController.navigate("nutrition") 
+                        navController.navigate("recipe_generation") 
                     }
                 )
             )
