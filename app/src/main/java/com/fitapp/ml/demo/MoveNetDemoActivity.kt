@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.example.fitapp.ml.MLResult
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -76,7 +77,10 @@ private fun MoveNetDemoContent() {
     
     DisposableEffect(Unit) {
         onDispose {
-            moveNet.cleanup()
+            // Launch cleanup in a coroutine since it's now a suspend function
+            kotlinx.coroutines.runBlocking {
+                moveNet.cleanup()
+            }
         }
     }
     
@@ -124,7 +128,12 @@ private fun MoveNetDemoContent() {
                             coroutineScope.launch {
                                 isProcessing = true
                                 try {
-                                    detectedPose = moveNet.detectPose(bitmap)
+                                    val result = moveNet.detectPose(bitmap)
+                                    detectedPose = when (result) {
+                                        is MLResult.Success -> result.data
+                                        is MLResult.Degraded -> result.degradedResult
+                                        is MLResult.Error -> null
+                                    }
                                 } finally {
                                     isProcessing = false
                                 }
