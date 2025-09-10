@@ -566,7 +566,10 @@ fun MainScaffold() {
                 }
                 composable("weight_loss_program") { WeightLossProgramScreen(onBack = { nav.popBackStack() }) }
                 composable("ai_personal_trainer") {
-                    AIPersonalTrainerScreen(onBack = { nav.popBackStack() })
+                    AIPersonalTrainerScreen(
+                        onBack = { nav.popBackStack() },
+                        onNavigateToApiKeys = { nav.navigate("apikeys") }
+                    )
                 }
                 
                 // 🚀 Additional routes for Unified Dashboard features

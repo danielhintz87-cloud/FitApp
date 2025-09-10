@@ -20,12 +20,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.getPersonalizedRecommendations
+import com.example.fitapp.data.prefs.ApiKeys
 import com.example.fitapp.domain.entities.*
 import kotlinx.coroutines.launch
 
 data class AIPersonalTrainerUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
+    val isApiKeyError: Boolean = false,
     val dailySummary: String = "Lade deine personalisierte Zusammenfassung...",
     val recommendations: List<AIRecommendation> = emptyList(),
     val workoutPlan: WorkoutPlan? = null,
@@ -38,6 +40,7 @@ data class AIPersonalTrainerUiState(
 @Composable
 fun AIPersonalTrainerScreen(
     onBack: (() -> Unit)? = null,
+    onNavigateToApiKeys: (() -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val context = LocalContext.current
@@ -87,15 +90,25 @@ fun AIPersonalTrainerScreen(
                         motivation = response.motivation
                     )
                 }.onFailure { error ->
+                    val isApiKeyError = !ApiKeys.isPrimaryProviderAvailable(context) ||
+                            error.message?.contains("API-Schlüssel", ignoreCase = true) == true ||
+                            error.message?.contains("Key", ignoreCase = true) == true
+                    
                     uiState = uiState.copy(
                         isLoading = false,
-                        error = error.message
+                        error = error.message,
+                        isApiKeyError = isApiKeyError
                     )
                 }
             } catch (e: Exception) {
+                val isApiKeyError = !ApiKeys.isPrimaryProviderAvailable(context) ||
+                        e.message?.contains("API-Schlüssel", ignoreCase = true) == true ||
+                        e.message?.contains("Key", ignoreCase = true) == true
+                
                 uiState = uiState.copy(
                     isLoading = false,
-                    error = e.message
+                    error = e.message,
+                    isApiKeyError = isApiKeyError
                 )
             }
         }
@@ -157,33 +170,44 @@ fun AIPersonalTrainerScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Error,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(64.dp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Fehler beim Laden",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = uiState.error ?: "Unbekannter Fehler",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = {
-                            // Retry loading
-                            uiState = uiState.copy(isLoading = true, error = null)
+                if (uiState.isApiKeyError) {
+                    // Special handling for API key errors
+                    ApiKeyErrorDisplay(
+                        onNavigateToApiKeys = onNavigateToApiKeys,
+                        onRetry = {
+                            uiState = uiState.copy(isLoading = true, error = null, isApiKeyError = false)
                         }
+                    )
+                } else {
+                    // Generic error display
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Erneut versuchen")
+                        Icon(
+                            imageVector = Icons.Default.Error,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Fehler beim Laden",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = uiState.error ?: "Unbekannter Fehler",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = {
+                                // Retry loading
+                                uiState = uiState.copy(isLoading = true, error = null, isApiKeyError = false)
+                            }
+                        ) {
+                            Text("Erneut versuchen")
+                        }
                     }
                 }
             }
@@ -690,5 +714,110 @@ fun QuickActionsCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun ApiKeyErrorDisplay(
+    onNavigateToApiKeys: (() -> Unit)?,
+    onRetry: () -> Unit
+) {
+    val context = LocalContext.current
+    
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(24.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Key,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(64.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text(
+            text = "API-Schlüssel erforderlich",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = "Für die AI Personal Trainer Features wird ein gültiger Gemini API-Schlüssel benötigt.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Show current configuration status
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "Aktueller Status:",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = ApiKeys.getConfigurationStatus(context),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Action buttons
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onRetry,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Erneut prüfen")
+            }
+            
+            Button(
+                onClick = { onNavigateToApiKeys?.invoke() },
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("API-Schlüssel")
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Help text
+        Text(
+            text = "💡 Tipp: Gemini API-Schlüssel erhalten Sie kostenlos bei aistudio.google.com",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
 }
