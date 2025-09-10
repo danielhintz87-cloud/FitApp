@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.example.fitapp.data.db.*
+import com.example.fitapp.data.prefs.UserPreferencesRepository
 import com.example.fitapp.util.StructuredLogger
 import kotlin.math.abs
 
@@ -13,7 +14,8 @@ import kotlin.math.abs
  * Handles ingredient management, smart merging, category grouping, and AutoComplete
  */
 class ShoppingListManager(
-    private val database: AppDatabase
+    private val database: AppDatabase,
+    private val preferencesRepository: UserPreferencesRepository
 ) {
     companion object {
         private const val TAG = "ShoppingListManager"
@@ -57,9 +59,49 @@ class ShoppingListManager(
     }
 
     init {
-        // Load shopping items on initialization
+        // Load shopping items on initialization and observe changes
         scope.launch {
-            loadShoppingItems()
+            database.shoppingDao().itemsFlow().collect { dbItems ->
+                val shoppingItems = dbItems.map { dbItem ->
+                    ShoppingListItem(
+                        id = dbItem.id.toString(),
+                        name = dbItem.name,
+                        quantity = parseQuantity(dbItem.quantity ?: "1"),
+                        unit = dbItem.unit ?: "Stück",
+                        category = dbItem.category ?: "Sonstiges",
+                        isPurchased = dbItem.checked,
+                        addedFrom = dbItem.fromRecipeId ?: "Manual",
+                        priority = Priority.NORMAL // Could be enhanced to store priority in DB
+                    )
+                }
+                
+                _shoppingItems.value = shoppingItems
+                updateCategorizedItems()
+            }
+        }
+        
+        // Load saved sorting mode from preferences
+        scope.launch {
+            preferencesRepository.userPreferences.collect { prefs ->
+                val sortingModeStr = prefs.shoppingListSortingMode
+                if (sortingModeStr.isNotEmpty()) {
+                    try {
+                        val savedMode = ShoppingListSorter.SortingMode.valueOf(sortingModeStr)
+                        if (_sortingMode.value != savedMode) {
+                            _sortingMode.value = savedMode
+                            updateCategorizedItems()
+                        }
+                    } catch (e: IllegalArgumentException) {
+                        // Invalid mode, keep default
+                    }
+                }
+            }
+        }
+        
+        // Load autocomplete usage data (could be enhanced to save to preferences/database)
+        scope.launch {
+            // For now, autocomplete data is kept in memory
+            // In a real app, you'd load this from SharedPreferences or database
         }
     }
 
@@ -171,12 +213,29 @@ class ShoppingListManager(
      */
     suspend fun clearCompletedItems() {
         database.shoppingDao().deleteCheckedItems()
-        refreshShoppingItems()
         
         StructuredLogger.info(
             StructuredLogger.LogCategory.NUTRITION,
             TAG,
             "Cleared all completed items from shopping list"
+        )
+    }
+    
+    /**
+     * Clear all items from shopping list
+     */
+    suspend fun clearAllItems() {
+        scope.launch {
+            val allItems = database.shoppingDao().itemsFlow().first()
+            allItems.forEach { item ->
+                database.shoppingDao().delete(item.id)
+            }
+        }
+        
+        StructuredLogger.info(
+            StructuredLogger.LogCategory.NUTRITION,
+            TAG,
+            "Cleared entire shopping list"
         )
     }
 
@@ -214,6 +273,11 @@ class ShoppingListManager(
     fun changeSortingMode(newMode: ShoppingListSorter.SortingMode) {
         _sortingMode.value = newMode
         updateCategorizedItems()
+        
+        // Save to preferences
+        scope.launch {
+            preferencesRepository.updateShoppingListPreferences(newMode.name)
+        }
     }
     
     /**
@@ -267,8 +331,10 @@ class ShoppingListManager(
      */
     suspend fun getAutoCompleteSuggestions(input: String): List<AutoCompleteSuggestion> {
         if (input.length < 2) {
-            _autoCompleteSuggestions.value = emptyList()
-            return emptyList()
+            // Show frequent suggestions when no input
+            val suggestions = autoCompleteEngine.getSuggestions("", emptyList())
+            _autoCompleteSuggestions.value = suggestions
+            return suggestions
         }
         
         // Get recent items from shopping list for learning
@@ -279,6 +345,21 @@ class ShoppingListManager(
         
         _autoCompleteSuggestions.value = suggestions
         return suggestions
+    }
+    
+    /**
+     * Get smart suggestions based on shopping patterns
+     */
+    suspend fun getSmartSuggestions(limit: Int = 6): List<AutoCompleteSuggestion> {
+        // Get recent items from shopping list
+        val recentItems = _shoppingItems.value
+            .filter { !it.isPurchased } // Only unpurchased items
+            .map { it.name }.distinct()
+        
+        // Get frequent suggestions (this will show most used items)
+        val suggestions = autoCompleteEngine.getSuggestions("", recentItems)
+        
+        return suggestions.take(limit)
     }
     
     /**

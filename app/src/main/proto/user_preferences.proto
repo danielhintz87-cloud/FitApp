@@ -38,6 +38,9 @@ message UserPreferencesProto {
   int64 last_health_connect_sync_millis = 16;
   int64 last_cloud_sync_millis = 17;
   
+  // Shopping list preferences
+  string shopping_list_sorting_mode = 20; // "SUPERMARKET_LAYOUT", "ALPHABETICAL", etc.
+  
   // Migration info
   int32 preferences_version = 18;
   bool migrated_from_shared_prefs = 19;

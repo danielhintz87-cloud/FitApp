@@ -31,6 +31,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.SavedRecipeEntity
+import com.example.fitapp.data.prefs.UserPreferencesRepository
 import com.example.fitapp.services.RecipeFavoritesManager
 import com.example.fitapp.services.SimilarRecipesEngine
 import com.example.fitapp.services.ShoppingListManager
@@ -50,9 +51,10 @@ fun EnhancedRecipeDetailScreen(
 ) {
     val context = LocalContext.current
     val database = remember { AppDatabase.get(context) }
+    val preferencesRepository = remember { UserPreferencesRepository(context) }
     val favoritesManager = remember { RecipeFavoritesManager(database) }
     val similarRecipesEngine = remember { SimilarRecipesEngine(context, database) }
-    val shoppingManager = remember { ShoppingListManager(database) }
+    val shoppingManager = remember { ShoppingListManager(database, preferencesRepository) }
     val scope = rememberCoroutineScope()
     
     // State

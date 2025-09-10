@@ -28,6 +28,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.SavedRecipeEntity
+import com.example.fitapp.data.prefs.UserPreferencesRepository
 import com.example.fitapp.services.CookingModeManager
 import com.example.fitapp.services.ShoppingListManager
 import com.example.fitapp.services.SimilarRecipesEngine
@@ -46,8 +47,9 @@ fun ProfessionalCookingScreen(
 ) {
     val context = LocalContext.current
     val database = remember { AppDatabase.get(context) }
+    val preferencesRepository = remember { UserPreferencesRepository(context) }
     val cookingManager = remember { CookingModeManager(database) }
-    val shoppingManager = remember { ShoppingListManager(database) }
+    val shoppingManager = remember { ShoppingListManager(database, preferencesRepository) }
     val similarRecipesEngine = remember { SimilarRecipesEngine(context, database) }
     val scope = rememberCoroutineScope()
     

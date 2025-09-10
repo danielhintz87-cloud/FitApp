@@ -2,7 +2,9 @@ package com.example.fitapp.ui.nutrition
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
@@ -18,6 +20,9 @@ import com.example.fitapp.data.db.ShoppingCategoryEntity
 import com.example.fitapp.data.db.ShoppingItemEntity
 import com.example.fitapp.ai.AppAi
 import com.example.fitapp.services.ShoppingListManager
+import com.example.fitapp.services.ShoppingListSorter
+import com.example.fitapp.services.ShoppingAutoCompleteEngine
+import com.example.fitapp.data.prefs.UserPreferencesRepository
 import com.example.fitapp.ui.components.AutoCompleteTextField
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -34,19 +39,24 @@ fun EnhancedShoppingListScreen(
 ) {
     val ctx = LocalContext.current
     val db = remember { AppDatabase.get(ctx) }
-    val shoppingManager = remember { ShoppingListManager(db) }
+    val preferencesRepository = remember { UserPreferencesRepository(ctx) }
+    val shoppingManager = remember { ShoppingListManager(db, preferencesRepository) }
     val scope = rememberCoroutineScope()
     
     var newItemName by remember { mutableStateOf("") }
     var newItemQuantity by remember { mutableStateOf("") }
     var showAddDialog by remember { mutableStateOf(false) }
-    var sortBySupermarket by remember { mutableStateOf(false) }
     var isListeningForVoice by remember { mutableStateOf(false) }
     var voiceInput by remember { mutableStateOf("") }
+    var showSortingDialog by remember { mutableStateOf(false) }
     
     // AutoComplete state
     var autoCompleteInput by remember { mutableStateOf("") }
     val autoCompleteSuggestions by shoppingManager.autoCompleteSuggestions.collectAsState()
+    
+    // Use ShoppingListManager's reactive state
+    val currentSortingMode by shoppingManager.sortingMode.collectAsState()
+    val categorizedItems by shoppingManager.categorizedItems.collectAsState()
     
     // Debounced search for autocomplete
     LaunchedEffect(autoCompleteInput) {
@@ -130,23 +140,21 @@ fun EnhancedShoppingListScreen(
         }
     }
     
-    val items by if (sortBySupermarket) {
-        db.shoppingDao().itemsFlow().collectAsState(initial = emptyList())
-    } else {
-        db.shoppingDao().itemsFlowByDate().collectAsState(initial = emptyList())
+    val items by shoppingManager.shoppingItems.collectAsState()
+    
+    // Show smart suggestions when list is empty
+    var showSmartSuggestions by remember { mutableStateOf(true) }
+    
+    LaunchedEffect(items.size) {
+        showSmartSuggestions = items.isEmpty()
     }
     
     // Initialize default categories if needed
     LaunchedEffect(Unit) {
         initializeDefaultCategories(db)
     }
-    
-    val categorizedItems = if (sortBySupermarket) {
-        items.groupBy { it.category ?: "Sonstiges" }
-            .toSortedMap(compareBy { getSupermarketOrder(it) })
-    } else {
-        items.groupBy { if (it.checked) "Erledigt" else "Offen" }
-    }
+
+    // Remove the manual categorization - use manager's categorizedItems instead
 
     Column(Modifier.fillMaxSize()) {
         // Top App Bar for better navigation
@@ -159,10 +167,22 @@ fun EnhancedShoppingListScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { sortBySupermarket = !sortBySupermarket }) {
+                    IconButton(onClick = { showSortingDialog = true }) {
                         Icon(
-                            if (sortBySupermarket) Icons.Filled.Store else Icons.AutoMirrored.Filled.List,
+                            Icons.Filled.Sort,
                             contentDescription = "Sortierung"
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                shoppingManager.clearAllItems()
+                            }
+                        }
+                    ) {
+                        Icon(
+                            Icons.Filled.DeleteSweep,
+                            contentDescription = "Alle löschen"
                         )
                     }
                     IconButton(
@@ -203,10 +223,22 @@ fun EnhancedShoppingListScreen(
                         style = MaterialTheme.typography.titleLarge
                     )
                     Row {
-                        IconButton(onClick = { sortBySupermarket = !sortBySupermarket }) {
+                        IconButton(onClick = { showSortingDialog = true }) {
                             Icon(
-                                if (sortBySupermarket) Icons.Filled.Store else Icons.AutoMirrored.Filled.List,
+                                Icons.Filled.Sort,
                                 contentDescription = "Sortierung"
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    shoppingManager.clearAllItems()
+                                }
+                            }
+                        ) {
+                            Icon(
+                                Icons.Filled.DeleteSweep,
+                                contentDescription = "Alle löschen"
                             )
                         }
                         IconButton(
@@ -330,6 +362,68 @@ fun EnhancedShoppingListScreen(
                 }
             }
         }
+        
+        // Smart Suggestions (when list is empty)
+        if (showSmartSuggestions && items.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "💡 Beliebte Artikel schnell hinzufügen",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    
+                    val commonItems = listOf("Milch", "Brot", "Eier", "Butter", "Äpfel", "Bananen")
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp)
+                    ) {
+                        items(commonItems) { itemName ->
+                            SuggestionChip(
+                                onClick = {
+                                    scope.launch {
+                                        val category = categorizeItem(itemName)
+                                        db.shoppingDao().insert(
+                                            ShoppingItemEntity(
+                                                name = itemName,
+                                                quantity = null,
+                                                unit = null,
+                                                category = category
+                                            )
+                                        )
+                                        shoppingManager.recordItemUsage(itemName)
+                                    }
+                                },
+                                label = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        getItemIcon(itemName)?.let { icon ->
+                                            Icon(
+                                                imageVector = icon,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(Modifier.width(4.dp))
+                                        }
+                                        Text(
+                                            itemName,
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+        
         if (voiceInput.isNotBlank()) {
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -379,13 +473,13 @@ fun EnhancedShoppingListScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    if (sortBySupermarket) Icons.Filled.Store else Icons.AutoMirrored.Filled.List,
+                    getSortModeIcon(currentSortingMode),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    if (sortBySupermarket) "Sortiert nach Supermarkt-Layout" else "Sortiert nach Status",
+                    getSortModeDescription(currentSortingMode),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -421,12 +515,12 @@ fun EnhancedShoppingListScreen(
                         item = item,
                         onCheckedChange = { checked ->
                             scope.launch {
-                                db.shoppingDao().setChecked(item.id, checked)
+                                shoppingManager.markIngredientAsPurchased(item.id, checked)
                             }
                         },
                         onDelete = {
                             scope.launch {
-                                db.shoppingDao().delete(item.id)
+                                shoppingManager.removeIngredient(item.id)
                             }
                         }
                     )
@@ -474,6 +568,65 @@ fun EnhancedShoppingListScreen(
                 }
             }
         }
+    }
+    
+    // Sorting Mode Dialog
+    if (showSortingDialog) {
+        AlertDialog(
+            onDismissRequest = { showSortingDialog = false },
+            title = { Text("Sortierung wählen") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ShoppingListSorter.SortingMode.values().forEach { mode ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    scope.launch {
+                                        shoppingManager.changeSortingMode(mode)
+                                        showSortingDialog = false
+                                    }
+                                }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = currentSortingMode == mode,
+                                onClick = {
+                                    scope.launch {
+                                        shoppingManager.changeSortingMode(mode)
+                                        showSortingDialog = false
+                                    }
+                                }
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Icon(
+                                getSortModeIcon(mode),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    getSortModeTitle(mode),
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    getSortModeDescription(mode),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSortingDialog = false }) {
+                    Text("OK")
+                }
+            }
+        )
     }
     
     // Add Item Dialog with AutoComplete
@@ -563,7 +716,7 @@ fun EnhancedShoppingListScreen(
 
 @Composable
 private fun ShoppingItemCard(
-    item: ShoppingItemEntity,
+    item: ShoppingListManager.ShoppingListItem,
     onCheckedChange: (Boolean) -> Unit,
     onDelete: () -> Unit
 ) {
@@ -577,33 +730,62 @@ private fun ShoppingItemCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(
-                checked = item.checked,
+                checked = item.isPurchased,
                 onCheckedChange = onCheckedChange
             )
             
             Spacer(Modifier.width(8.dp))
             
+            // Add food icon if available
+            getItemIcon(item.name)?.let { icon ->
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+            
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.name,
                     style = MaterialTheme.typography.bodyLarge,
-                    textDecoration = if (item.checked) TextDecoration.LineThrough else null,
-                    color = if (item.checked) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.onSurface
+                    textDecoration = if (item.isPurchased) TextDecoration.LineThrough else null,
+                    color = if (item.isPurchased) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.onSurface
                 )
                 
-                if (item.quantity != null) {
+                if (item.quantity > 0 && item.unit.isNotEmpty()) {
                     Text(
-                        text = item.quantity,
+                        text = "${item.quantity} ${item.unit}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 
-                if (item.fromRecipeId != null) {
+                if (item.addedFrom != "Manual") {
                     Text(
-                        text = "Aus Rezept",
+                        text = "Aus: ${item.addedFrom}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                // Show priority if not normal
+                if (item.priority != ShoppingListManager.Priority.NORMAL) {
+                    Text(
+                        text = when (item.priority) {
+                            ShoppingListManager.Priority.URGENT -> "🔴 Dringend"
+                            ShoppingListManager.Priority.HIGH -> "🟡 Wichtig" 
+                            ShoppingListManager.Priority.LOW -> "🔵 Niedrig"
+                            else -> ""
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = when (item.priority) {
+                            ShoppingListManager.Priority.URGENT -> MaterialTheme.colorScheme.error
+                            ShoppingListManager.Priority.HIGH -> MaterialTheme.colorScheme.primary
+                            else -> MaterialTheme.colorScheme.outline
+                        }
                     )
                 }
             }
@@ -687,5 +869,88 @@ private fun getSupermarketOrder(category: String): Int {
         "Offen" -> 1
         "Erledigt" -> 2
         else -> 999
+    }
+}
+
+private fun getSortModeIcon(mode: ShoppingListSorter.SortingMode): androidx.compose.ui.graphics.vector.ImageVector {
+    return when (mode) {
+        ShoppingListSorter.SortingMode.SUPERMARKET_LAYOUT -> Icons.Filled.Store
+        ShoppingListSorter.SortingMode.ALPHABETICAL -> Icons.AutoMirrored.Filled.List
+        ShoppingListSorter.SortingMode.CATEGORY_ALPHABETICAL -> Icons.Filled.Category
+        ShoppingListSorter.SortingMode.PRIORITY -> Icons.Filled.PriorityHigh
+        ShoppingListSorter.SortingMode.RECENTLY_ADDED -> Icons.Filled.Schedule
+        ShoppingListSorter.SortingMode.STATUS -> Icons.Filled.CheckCircle
+    }
+}
+
+private fun getSortModeTitle(mode: ShoppingListSorter.SortingMode): String {
+    return when (mode) {
+        ShoppingListSorter.SortingMode.SUPERMARKET_LAYOUT -> "Supermarkt-Layout"
+        ShoppingListSorter.SortingMode.ALPHABETICAL -> "Alphabetisch"
+        ShoppingListSorter.SortingMode.CATEGORY_ALPHABETICAL -> "Kategorien A-Z"
+        ShoppingListSorter.SortingMode.PRIORITY -> "Nach Priorität"
+        ShoppingListSorter.SortingMode.RECENTLY_ADDED -> "Zuletzt hinzugefügt"
+        ShoppingListSorter.SortingMode.STATUS -> "Nach Status"
+    }
+}
+
+private fun getSortModeDescription(mode: ShoppingListSorter.SortingMode): String {
+    return when (mode) {
+        ShoppingListSorter.SortingMode.SUPERMARKET_LAYOUT -> "Optimiert für deutschen Supermarkt-Rundgang"
+        ShoppingListSorter.SortingMode.ALPHABETICAL -> "Alle Artikel von A-Z sortiert"
+        ShoppingListSorter.SortingMode.CATEGORY_ALPHABETICAL -> "Kategorien alphabetisch, dann Artikel A-Z"
+        ShoppingListSorter.SortingMode.PRIORITY -> "Dringende Artikel zuerst"
+        ShoppingListSorter.SortingMode.RECENTLY_ADDED -> "Neueste Artikel zuerst"
+        ShoppingListSorter.SortingMode.STATUS -> "Offene und erledigte Artikel getrennt"
+    }
+}
+
+private fun getItemIcon(itemName: String): androidx.compose.ui.graphics.vector.ImageVector? {
+    val name = itemName.lowercase()
+    return when {
+        // Fruits & Vegetables
+        name.contains("apfel") || name.contains("äpfel") -> Icons.Filled.Eco
+        name.contains("banane") -> Icons.Filled.Eco
+        name.contains("tomate") -> Icons.Filled.Eco
+        name.contains("kartoffel") -> Icons.Filled.Eco
+        name.contains("zwiebel") -> Icons.Filled.Eco
+        name.contains("salat") -> Icons.Filled.Eco
+        name.contains("möhre") || name.contains("karotte") -> Icons.Filled.Eco
+        
+        // Dairy
+        name.contains("milch") -> Icons.Filled.LocalDrink
+        name.contains("käse") -> Icons.Filled.Cake
+        name.contains("butter") -> Icons.Filled.Cake
+        name.contains("joghurt") -> Icons.Filled.LocalDrink
+        
+        // Meat & Fish
+        name.contains("fleisch") || name.contains("hähnchen") || name.contains("rind") -> Icons.Filled.Restaurant
+        name.contains("fisch") || name.contains("lachs") -> Icons.Filled.Restaurant
+        name.contains("wurst") || name.contains("schinken") -> Icons.Filled.Restaurant
+        
+        // Bread & Bakery
+        name.contains("brot") || name.contains("brötchen") -> Icons.Filled.Cake
+        name.contains("toast") -> Icons.Filled.Cake
+        
+        // Beverages
+        name.contains("wasser") -> Icons.Filled.LocalDrink
+        name.contains("saft") || name.contains("cola") -> Icons.Filled.LocalDrink
+        name.contains("kaffee") -> Icons.Filled.LocalCafe
+        name.contains("tee") -> Icons.Filled.LocalCafe
+        name.contains("bier") || name.contains("wein") -> Icons.Filled.LocalBar
+        
+        // Eggs
+        name.contains("ei") || name.contains("eier") -> Icons.Filled.Circle
+        
+        // Sweets & Snacks
+        name.contains("schokolade") -> Icons.Filled.Cake
+        name.contains("süß") || name.contains("keks") -> Icons.Filled.Cake
+        
+        // Household
+        name.contains("spül") || name.contains("wasch") -> Icons.Filled.CleaningServices
+        name.contains("papier") -> Icons.Filled.Assignment
+        
+        // Default fallback
+        else -> null
     }
 }

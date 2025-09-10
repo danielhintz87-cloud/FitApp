@@ -27,6 +27,7 @@ import coil.compose.AsyncImage
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.SavedRecipeEntity
 import com.example.fitapp.data.repo.NutritionRepository
+import com.example.fitapp.data.prefs.UserPreferencesRepository
 import com.example.fitapp.services.ShoppingListManager
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -45,8 +46,9 @@ fun RecipeDetailScreen(
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.get(context) }
+    val preferencesRepository = remember { UserPreferencesRepository(context) }
     val nutritionRepo = remember { NutritionRepository(db) }
-    val shoppingManager = remember { ShoppingListManager(db) }
+    val shoppingManager = remember { ShoppingListManager(db, preferencesRepository) }
     val scope = rememberCoroutineScope()
     
     // UI State
