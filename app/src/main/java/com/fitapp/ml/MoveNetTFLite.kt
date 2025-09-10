@@ -125,8 +125,7 @@ class MoveNetTFLite private constructor(private val context: Context) {
             val processedImage = imageProcessor.process(tensorImage)
             
             // Use resource manager for safe interpreter access
-            val result = resourceManager.useInterpreter(INTERPRETER_KEY) { interpreter ->
-                // Real model inference
+            val result = resourceManager.useInterpreter<List<Keypoint>>(INTERPRETER_KEY) { interpreter ->
                 runModelInference(interpreter, processedImage, bitmap.width, bitmap.height)
             }
             

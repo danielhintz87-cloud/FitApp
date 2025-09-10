@@ -66,7 +66,7 @@ class MLResourceManager private constructor() {
     /**
      * Use an interpreter safely with automatic cleanup
      */
-    suspend fun <T> useInterpreter(key: String, block: suspend (Interpreter) -> T): MLResult<T> {
+    suspend fun <T> useInterpreter(key: String, block: (Interpreter) -> T): MLResult<T> {
         return try {
             interpreterMutex.withLock {
                 val interpreter = interpreterRegistry[key]

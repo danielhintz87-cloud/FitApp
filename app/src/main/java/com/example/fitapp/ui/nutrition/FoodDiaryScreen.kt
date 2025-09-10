@@ -67,11 +67,9 @@ fun FoodDiaryScreen(
             mealEntries = repo.getMealEntriesForDate(todayString)
             
             // Load food items for all meal entries
-            val foodItemIds = mealEntries.map { it.foodItemId }.distinct()
+            val foodItemIds = mealEntries.mapNotNull { it.foodItemId }.distinct()
             val foodItemsList = foodItemIds.mapNotNull { id ->
-                repo.getFoodItemById(id)?.let { foodItem ->
-                    foodItem
-                }
+                repo.getFoodItemById(id)
             }
             foodItems = foodItemsList.associateBy { it.id }
             

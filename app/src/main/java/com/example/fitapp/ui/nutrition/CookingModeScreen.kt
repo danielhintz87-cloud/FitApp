@@ -18,6 +18,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.SavedRecipeEntity
+import com.example.fitapp.data.db.MealEntryEntity
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.services.CookingModeManager
 import kotlinx.coroutines.launch
@@ -794,16 +795,6 @@ private fun RecipeToDiaryDialog(
                             }
                             
                             Text("Kalorien: ${(calories * multiplier).toInt()} kcal")
-                            
-                            recipe.protein?.let {
-                                Text("Protein: ${"%.1f".format(it * multiplier)} g")
-                            }
-                            recipe.carbs?.let {
-                                Text("Kohlenhydrate: ${"%.1f".format(it * multiplier)} g")
-                            }
-                            recipe.fat?.let {
-                                Text("Fett: ${"%.1f".format(it * multiplier)} g")
-                            }
                         }
                     }
                 }
