@@ -9,6 +9,13 @@ plugins {
     alias(libs.plugins.protobuf)
 }
 
+// Ensure Hilt's annotation processors see the JavaPoet version that provides
+// `ClassName.canonicalName()` to avoid runtime NoSuchMethodError during the
+// aggregation task.
+configurations.configureEach {
+    resolutionStrategy.force("com.squareup:javapoet:1.13.0")
+}
+
 android {
     namespace = "com.example.fitapp"
     compileSdk = 36
@@ -173,4 +180,8 @@ protobuf {
             }
         }
     }
+}
+
+hilt {
+    enableAggregatingTask = false
 }
