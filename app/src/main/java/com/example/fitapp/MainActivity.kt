@@ -1,8 +1,12 @@
 package com.example.fitapp
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.ExperimentalGetImage
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -10,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
@@ -27,6 +32,19 @@ class MainActivity : ComponentActivity() {
     private var isInitialized = false
     private var networkMonitor: NetworkStateMonitor? = null
     
+    // Permission launcher for POST_NOTIFICATIONS
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Notification permission granted")
+            // Schedule default reminder workers when permission is granted
+            scheduleDefaultReminders()
+        } else {
+            StructuredLogger.warning(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Notification permission denied")
+        }
+    }
+    
     @ExperimentalGetImage
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +59,9 @@ class MainActivity : ComponentActivity() {
             
             // Initialize critical services in background
             initializeCriticalServices()
+            
+            // Request notification permission for Android 13+
+            requestNotificationPermissionIfNeeded()
             
             // Initialize remaining data asynchronously
             initializeDataAsync()
@@ -66,6 +87,39 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+    
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            when (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)) {
+                PackageManager.PERMISSION_GRANTED -> {
+                    StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Notification permission already granted")
+                    // Schedule default reminders if permission already granted
+                    scheduleDefaultReminders()
+                }
+                PackageManager.PERMISSION_DENIED -> {
+                    StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Requesting notification permission")
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        } else {
+            // For Android < 13, no runtime permission needed - schedule reminders directly
+            StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "No notification permission needed for this Android version")
+            scheduleDefaultReminders()
+        }
+    }
+    
+    private fun scheduleDefaultReminders() {
+        try {
+            // Schedule water reminders by default
+            WaterReminderWorker.scheduleWaterReminders(this)
+            StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Water reminders scheduled")
+        } catch (e: Exception) {
+            StructuredLogger.error(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Failed to schedule water reminders", exception = e)
+        }
+        
+        // Note: Workout and nutrition reminders are typically scheduled when user enables them in settings
+        // Daily motivation is already scheduled in initializeCriticalServices()
     }
     
     private fun initializeCriticalServices() {

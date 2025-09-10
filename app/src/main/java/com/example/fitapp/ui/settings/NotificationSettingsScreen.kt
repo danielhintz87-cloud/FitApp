@@ -1,5 +1,10 @@
 package com.example.fitapp.ui.settings
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.example.fitapp.services.*
 import java.time.LocalTime
 
@@ -32,6 +38,33 @@ fun NotificationSettingsScreen(
     var quietHoursEnabled by remember { mutableStateOf(false) }
     var quietHoursStart by remember { mutableStateOf(LocalTime.of(22, 0)) }
     var quietHoursEnd by remember { mutableStateOf(LocalTime.of(8, 0)) }
+    
+    // Permission state
+    var hasNotificationPermission by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true // No permission needed for Android < 13
+            }
+        )
+    }
+    
+    // Permission launcher
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasNotificationPermission = isGranted
+    }
+    
+    // Helper function to check/request permission before enabling notifications
+    fun requestPermissionIfNeeded(onGranted: () -> Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            onGranted()
+        }
+    }
     
     Scaffold(
         topBar = {
@@ -62,19 +95,23 @@ fun NotificationSettingsScreen(
                 SwitchPreference(
                     title = "Workout-Erinnerungen",
                     subtitle = "Erhalte Benachrichtigungen für geplante Workouts",
-                    checked = workoutRemindersEnabled,
+                    checked = workoutRemindersEnabled && hasNotificationPermission,
                     onCheckedChange = { enabled ->
-                        workoutRemindersEnabled = enabled
                         if (enabled) {
-                            WorkoutReminderWorker.scheduleWorkoutReminder(
-                                context,
-                                "Training",
-                                workoutTime
-                            )
+                            requestPermissionIfNeeded {
+                                workoutRemindersEnabled = true
+                                WorkoutReminderWorker.scheduleWorkoutReminder(
+                                    context,
+                                    "Training",
+                                    workoutTime
+                                )
+                            }
                         } else {
+                            workoutRemindersEnabled = false
                             WorkoutReminderWorker.cancelWorkoutReminder(context, "Training")
                         }
-                    }
+                    },
+                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 )
                 
                 if (workoutRemindersEnabled) {
@@ -102,29 +139,37 @@ fun NotificationSettingsScreen(
                 SwitchPreference(
                     title = "Mahlzeit-Erinnerungen",
                     subtitle = "Erinnerungen für Frühstück, Mittagessen, Abendessen",
-                    checked = nutritionRemindersEnabled,
+                    checked = nutritionRemindersEnabled && hasNotificationPermission,
                     onCheckedChange = { enabled ->
-                        nutritionRemindersEnabled = enabled
                         if (enabled) {
-                            NutritionReminderWorker.scheduleMealReminders(context)
+                            requestPermissionIfNeeded {
+                                nutritionRemindersEnabled = true
+                                NutritionReminderWorker.scheduleMealReminders(context)
+                            }
                         } else {
+                            nutritionRemindersEnabled = false
                             NutritionReminderWorker.cancelMealReminders(context)
                         }
-                    }
+                    },
+                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 )
                 
                 SwitchPreference(
                     title = "Wasser-Erinnerungen",
                     subtitle = "Alle 2 Stunden an Wasserzufuhr erinnern",
-                    checked = waterRemindersEnabled,
+                    checked = waterRemindersEnabled && hasNotificationPermission,
                     onCheckedChange = { enabled ->
-                        waterRemindersEnabled = enabled
                         if (enabled) {
-                            WaterReminderWorker.scheduleWaterReminders(context)
+                            requestPermissionIfNeeded {
+                                waterRemindersEnabled = true
+                                WaterReminderWorker.scheduleWaterReminders(context)
+                            }
                         } else {
+                            waterRemindersEnabled = false
                             WaterReminderWorker.cancelWaterReminders(context)
                         }
-                    }
+                    },
+                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 )
             }
             
@@ -136,22 +181,27 @@ fun NotificationSettingsScreen(
                 SwitchPreference(
                     title = "Erfolg-Benachrichtigungen",
                     subtitle = "Sofortige Benachrichtigung bei neuen Erfolgen",
-                    checked = achievementNotificationsEnabled,
-                    onCheckedChange = { achievementNotificationsEnabled = it }
+                    checked = achievementNotificationsEnabled && hasNotificationPermission,
+                    onCheckedChange = { achievementNotificationsEnabled = it },
+                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 )
                 
                 SwitchPreference(
                     title = "Tägliche Motivation",
                     subtitle = "Motivierende Nachrichten jeden Morgen",
-                    checked = dailyMotivationEnabled,
+                    checked = dailyMotivationEnabled && hasNotificationPermission,
                     onCheckedChange = { enabled ->
-                        dailyMotivationEnabled = enabled
                         if (enabled) {
-                            DailyMotivationWorker.scheduleWork(context)
+                            requestPermissionIfNeeded {
+                                dailyMotivationEnabled = true
+                                DailyMotivationWorker.scheduleWork(context)
+                            }
                         } else {
+                            dailyMotivationEnabled = false
                             DailyMotivationWorker.cancelWork(context)
                         }
-                    }
+                    },
+                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 )
             }
             
@@ -191,13 +241,16 @@ fun NotificationSettingsScreen(
             ) {
                 Button(
                     onClick = {
-                        SmartNotificationManager.showWorkoutReminder(
-                            context,
-                            "Test-Training",
-                            "jetzt"
-                        )
+                        requestPermissionIfNeeded {
+                            SmartNotificationManager.showWorkoutReminder(
+                                context,
+                                "Test-Training",
+                                "jetzt"
+                            )
+                        }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = hasNotificationPermission || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
                 ) {
                     Icon(Icons.Default.Notifications, null)
                     Spacer(Modifier.width(8.dp))
@@ -208,17 +261,29 @@ fun NotificationSettingsScreen(
                 
                 Button(
                     onClick = {
-                        SmartNotificationManager.showWaterReminder(
-                            context,
-                            1200,
-                            2000
-                        )
+                        requestPermissionIfNeeded {
+                            SmartNotificationManager.showWaterReminder(
+                                context,
+                                1200,
+                                2000
+                            )
+                        }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = hasNotificationPermission || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
                 ) {
                     Icon(Icons.Default.WaterDrop, null)
                     Spacer(Modifier.width(8.dp))
                     Text("Wasser-Erinnerung testen")
+                }
+                
+                if (!hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "💡 Tipp: Aktiviere die Test-Buttons durch Tippen darauf - sie fragen nach der benötigten Berechtigung.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -265,33 +330,65 @@ private fun SwitchPreference(
     title: String,
     subtitle: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    showPermissionWarning: Boolean = false
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier.weight(1f)
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange
             )
         }
         
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
+        if (showPermissionWarning) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Benachrichtigungserlaubnis erforderlich",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+        }
     }
 }
 
