@@ -27,6 +27,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.SavedRecipeEntity
+import com.example.fitapp.ui.components.ProFeatureGate
+import com.example.fitapp.ui.components.ProFeature
+import com.example.fitapp.ui.components.ProFeatureManager
 import kotlinx.coroutines.launch
 
 /**
@@ -116,7 +119,16 @@ fun EnhancedRecipeListScreen(
                 IconButton(onClick = { showSortSheet = true }) {
                     Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sortieren")
                 }
-                IconButton(onClick = { showFilterSheet = true }) {
+                IconButton(
+                    onClick = { 
+                        if (ProFeatureManager.isFeatureAvailable(ProFeature.ADVANCED_FILTERS)) {
+                            showFilterSheet = true
+                        } else {
+                            // Show upgrade prompt
+                            showFilterSheet = true
+                        }
+                    }
+                ) {
                     Icon(Icons.Default.FilterList, contentDescription = "Filter")
                 }
                 IconButton(onClick = onCreateRecipe) {
@@ -254,6 +266,10 @@ fun EnhancedRecipeListScreen(
                             scope.launch {
                                 db.savedRecipeDao().setFavorite(recipe.id, !recipe.isFavorite)
                             }
+                        },
+                        onShareClick = {
+                            // Handle recipe sharing
+                            shareRecipe(context, recipe)
                         }
                     )
                 }
@@ -266,15 +282,25 @@ fun EnhancedRecipeListScreen(
         ModalBottomSheet(
             onDismissRequest = { showFilterSheet = false }
         ) {
-            FilterBottomSheetContent(
-                selectedCategory = selectedCategory,
-                onCategoryChange = { selectedCategory = it },
-                selectedDietType = selectedDietType,
-                onDietTypeChange = { selectedDietType = it },
-                maxPrepTime = maxPrepTime,
-                onMaxPrepTimeChange = { maxPrepTime = it },
-                onDismiss = { showFilterSheet = false }
-            )
+            ProFeatureGate(
+                isPro = ProFeatureManager.isFeatureAvailable(ProFeature.ADVANCED_FILTERS),
+                featureName = "Advanced Recipe Filters",
+                description = ProFeatureManager.getFeatureDescription(ProFeature.ADVANCED_FILTERS),
+                onUpgradeClick = { 
+                    // TODO: Navigate to upgrade screen
+                    showFilterSheet = false
+                }
+            ) {
+                FilterBottomSheetContent(
+                    selectedCategory = selectedCategory,
+                    onCategoryChange = { selectedCategory = it },
+                    selectedDietType = selectedDietType,
+                    onDietTypeChange = { selectedDietType = it },
+                    maxPrepTime = maxPrepTime,
+                    onMaxPrepTimeChange = { maxPrepTime = it },
+                    onDismiss = { showFilterSheet = false }
+                )
+            }
         }
     }
     
@@ -309,6 +335,7 @@ private fun EnhancedRecipeCard(
     onRecipeClick: () -> Unit,
     onCookClick: () -> Unit,
     onFavoriteClick: () -> Unit,
+    onShareClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -420,6 +447,22 @@ private fun EnhancedRecipeCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Details")
+                }
+                
+                // Share button with PRO gate
+                ProFeatureGate(
+                    isPro = ProFeatureManager.isFeatureAvailable(ProFeature.RECIPE_SHARING),
+                    featureName = "",
+                    description = "",
+                    onUpgradeClick = { /* Handle upgrade */ }
+                ) {
+                    IconButton(onClick = onShareClick) {
+                        Icon(
+                            Icons.Default.Share,
+                            contentDescription = "Rezept teilen",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
         }
@@ -664,4 +707,37 @@ private fun SortBottomSheetContent(
         
         Spacer(Modifier.height(16.dp))
     }
+}
+
+/**
+ * Share recipe functionality with text and potential export features
+ */
+private fun shareRecipe(context: android.content.Context, recipe: SavedRecipeEntity) {
+    val shareText = buildString {
+        appendLine("🍳 ${recipe.title}")
+        appendLine()
+        
+        // Add recipe metadata
+        recipe.servings?.let { appendLine("👥 Portionen: $it") }
+        recipe.prepTime?.let { appendLine("⏱️ Zubereitungszeit: $it min") }
+        recipe.calories?.let { appendLine("🔥 Kalorien: $it kcal") }
+        appendLine()
+        
+        // Add recipe content
+        appendLine("📝 Rezept:")
+        appendLine(recipe.markdown)
+        
+        appendLine()
+        appendLine("📱 Erstellt mit FitApp")
+    }
+    
+    val shareIntent = android.content.Intent().apply {
+        action = android.content.Intent.ACTION_SEND
+        type = "text/plain"
+        putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+        putExtra(android.content.Intent.EXTRA_SUBJECT, "Rezept: ${recipe.title}")
+    }
+    
+    val chooser = android.content.Intent.createChooser(shareIntent, "Rezept teilen")
+    context.startActivity(chooser)
 }
