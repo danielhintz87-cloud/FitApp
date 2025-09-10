@@ -207,7 +207,9 @@ class FastingManager(context: Context) {
             // Still in fasting phase
             hoursSinceStart < fastingDurationHours -> {
                 val remainingMinutes = (fastingDurationHours * 60) - minutesSinceStart
-                val progress = minutesSinceStart.toFloat() / (fastingDurationHours * 60f)
+                val progress = if (fastingDurationHours > 0) {
+                    minutesSinceStart.toFloat() / (fastingDurationHours * 60f)
+                } else 0f
                 
                 FastingState(
                     protocol = protocol,

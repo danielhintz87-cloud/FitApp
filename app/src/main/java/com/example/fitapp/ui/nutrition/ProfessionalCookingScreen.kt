@@ -607,7 +607,7 @@ private fun CookingProgressIndicator(
             )
             
             Text(
-                text = "${(currentStep.toFloat() / totalSteps * 100).toInt()}%",
+                text = "${if (totalSteps > 0) (currentStep.toFloat() / totalSteps * 100).toInt() else 0}%",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -616,7 +616,7 @@ private fun CookingProgressIndicator(
         Spacer(modifier = Modifier.height(8.dp))
         
         LinearProgressIndicator(
-            progress = { currentStep.toFloat() / totalSteps },
+            progress = { if (totalSteps > 0) currentStep.toFloat() / totalSteps else 0f },
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primary
         )

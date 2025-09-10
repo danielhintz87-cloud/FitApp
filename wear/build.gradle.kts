@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.example.fitapp.wear"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.fitapp.wear"
         minSdk = 26  // Wear OS 2.0 minimum
-        targetSdk = 34
+        targetSdk = 36
         
         // Modern versioning: automatically derived from Git tags (same as main app)
         val projectVersion = rootProject.version.toString()

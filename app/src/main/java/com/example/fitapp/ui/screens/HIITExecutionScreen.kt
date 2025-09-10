@@ -229,7 +229,12 @@ private fun WorkoutActiveScreen(
     ) {
         // Progress indicator
         LinearProgressIndicator(
-            progress = { (totalRounds * totalExercises - (totalRounds - currentRound) * totalExercises - (totalExercises - exerciseIndex)) / (totalRounds * totalExercises).toFloat() },
+            progress = { 
+                val totalWork = totalRounds * totalExercises
+                if (totalWork > 0) {
+                    (totalWork - (totalRounds - currentRound) * totalExercises - (totalExercises - exerciseIndex)) / totalWork.toFloat()
+                } else 0f
+            },
             modifier = Modifier.fillMaxWidth()
         )
         

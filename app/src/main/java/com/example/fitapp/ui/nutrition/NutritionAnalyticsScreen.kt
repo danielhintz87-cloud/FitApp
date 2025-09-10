@@ -178,9 +178,11 @@ private fun NutritionSummaryCards(data: List<DailyNutritionData>) {
     val avgProtein = data.map { it.protein }.average()
     val avgWater = data.map { it.water }.average().toInt()
     
-    val goalAchievementRate = data.count { 
-        it.calories >= (it.targetCalories * 0.9) && it.calories <= (it.targetCalories * 1.1)
-    }.toFloat() / data.size * 100f
+    val goalAchievementRate = if (data.isNotEmpty()) {
+        data.count { 
+            it.calories >= (it.targetCalories * 0.9) && it.calories <= (it.targetCalories * 1.1)
+        }.toFloat() / data.size * 100f
+    } else 0f
     
     LazyColumn(
         modifier = Modifier.height(180.dp),
@@ -357,8 +359,12 @@ private fun DailyBreakdown(data: List<DailyNutritionData>) {
 @Composable
 private fun DailyBreakdownItem(data: DailyNutritionData) {
     val formatter = DateTimeFormatter.ofPattern("dd.MM")
-    val caloriesProgress = (data.calories / data.targetCalories).coerceIn(0f, 1f)
-    val waterProgress = (data.water.toFloat() / data.targetWater).coerceIn(0f, 1f)
+    val caloriesProgress = if (data.targetCalories > 0) {
+        (data.calories / data.targetCalories).coerceIn(0f, 1f)
+    } else 0f
+    val waterProgress = if (data.targetWater > 0) {
+        (data.water.toFloat() / data.targetWater).coerceIn(0f, 1f)
+    } else 0f
     
     Column {
         Row(
