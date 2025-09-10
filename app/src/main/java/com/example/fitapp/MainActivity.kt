@@ -17,12 +17,14 @@ import com.example.fitapp.data.repo.PersonalMotivationRepository
 import com.example.fitapp.services.*
 import com.example.fitapp.ui.MainScaffold
 import com.example.fitapp.ui.theme.FitAppTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import com.example.fitapp.util.PerformanceMonitor
 import kotlinx.coroutines.withTimeout
 import com.example.fitapp.util.StructuredLogger
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private var isInitialized = false
     private var networkMonitor: NetworkStateMonitor? = null
