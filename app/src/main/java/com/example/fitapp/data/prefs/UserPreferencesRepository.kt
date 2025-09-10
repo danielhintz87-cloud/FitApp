@@ -232,6 +232,16 @@ class UserPreferencesRepository(private val context: Context) {
         }
     }
     
+    suspend fun updateShoppingListPreferences(
+        sortingMode: String? = null
+    ) {
+        dataStore.updateData { prefs ->
+            val builder = prefs.toBuilder()
+            sortingMode?.let { builder.setShoppingListSortingMode(it) }
+            builder.build()
+        }
+    }
+    
     suspend fun updateSyncTimestamps(
         lastHealthConnectSyncMillis: Long? = null,
         lastCloudSyncMillis: Long? = null
