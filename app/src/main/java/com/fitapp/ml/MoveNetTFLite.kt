@@ -211,7 +211,7 @@ class MoveNetTFLite private constructor(private val context: Context) {
             
         } catch (e: Exception) {
             Log.e(TAG, "Error during pose detection", e)
-            MLResult.error(e, fallbackAvailable = true)
+            return@withContext MLResult.error(e, fallbackAvailable = true)
         } finally {
             // Return bitmap to pool
             workingBitmap?.let { resourceManager.returnBitmap(it) }

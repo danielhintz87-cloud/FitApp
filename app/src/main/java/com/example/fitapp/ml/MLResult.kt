@@ -163,11 +163,11 @@ sealed class MLResult<out T> {
         /**
          * Create an error result
          */
-        fun error(
+        fun <T> error(
             exception: Throwable,
             fallbackAvailable: Boolean = false,
             message: String? = null
-        ): MLResult<Nothing> = Error(exception, fallbackAvailable, message)
+        ): MLResult<T> = Error(exception, fallbackAvailable, message)
         
         /**
          * Create a degraded result

@@ -362,7 +362,7 @@ class OptimizedFrameProcessor(
     /**
      * Create a flow of processing results
      */
-    fun getProcessingResults(): Flow<FrameProcessingResult> = flow {
+    fun getProcessingResults(): Flow<FrameProcessingResult> = flow<FrameProcessingResult> {
         // In a real implementation, this would emit actual results
         // For now, this is a placeholder
     }.flowOn(Dispatchers.Default)
