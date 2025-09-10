@@ -4,8 +4,16 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    id("org.jetbrains.kotlin.kapt")
     alias(libs.plugins.hilt)
     alias(libs.plugins.protobuf)
+}
+
+// Ensure Hilt's annotation processors see the JavaPoet version that provides
+// `ClassName.canonicalName()` to avoid runtime NoSuchMethodError during the
+// aggregation task.
+configurations.configureEach {
+    resolutionStrategy.force("com.squareup:javapoet:1.13.0")
 }
 
 android {
@@ -81,6 +89,10 @@ android {
     }
 }
 
+kapt {
+    correctErrorTypes = true
+}
+
 dependencies {
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
@@ -139,7 +151,7 @@ dependencies {
     // Hilt Dependency Injection
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
-    ksp(libs.hilt.compiler)
+    kapt(libs.hilt.compiler)
 
     // Desugaring
     coreLibraryDesugaring(libs.desugar.jdk.libs)
@@ -168,4 +180,8 @@ protobuf {
             }
         }
     }
+}
+
+hilt {
+    enableAggregatingTask = false
 }

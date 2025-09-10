@@ -28,6 +28,7 @@ abstract class DataStoreModule {
     companion object {
         @Provides
         @Singleton
+        @JvmStatic
         fun provideUserPreferencesRepository(
             @ApplicationContext context: Context
         ): UserPreferencesRepository = UserPreferencesRepository(context)
