@@ -31,9 +31,21 @@ class NutritionRepository(private val db: AppDatabase) {
                 RecipeEntity(
                     id = r.id,
                     title = r.title,
+                    description = "",
                     markdown = r.markdown,
+                    imageUrl = r.imageUrl,
+                    prepTime = null,
+                    cookTime = null,
+                    servings = null,
+                    difficulty = null,
+                    categories = null,
                     calories = r.calories,
-                    imageUrl = r.imageUrl
+                    protein = null,
+                    carbs = null,
+                    fat = null,
+                    fiber = null,
+                    sugar = null,
+                    sodium = null
                 )
             )
         }
@@ -52,9 +64,21 @@ class NutritionRepository(private val db: AppDatabase) {
                 RecipeEntity(
                     id = r.id,
                     title = r.title,
+                    description = "",
                     markdown = r.markdown,
+                    imageUrl = r.imageUrl,
+                    prepTime = null,
+                    cookTime = null,
+                    servings = null,
+                    difficulty = null,
+                    categories = null,
                     calories = r.calories,
-                    imageUrl = r.imageUrl
+                    protein = null,
+                    carbs = null,
+                    fat = null,
+                    fiber = null,
+                    sugar = null,
+                    sodium = null
                 )
             )
         }

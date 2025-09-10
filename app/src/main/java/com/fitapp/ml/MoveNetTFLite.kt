@@ -125,8 +125,7 @@ class MoveNetTFLite private constructor(private val context: Context) {
             val processedImage = imageProcessor.process(tensorImage)
             
             // Use resource manager for safe interpreter access
-            val result = resourceManager.useInterpreter(INTERPRETER_KEY) { interpreter ->
-                // Real model inference
+            val interpreterResult = resourceManager.useInterpreter(INTERPRETER_KEY) { interpreter ->
                 runModelInference(interpreter, processedImage, bitmap.width, bitmap.height)
             }
             
@@ -135,9 +134,9 @@ class MoveNetTFLite private constructor(private val context: Context) {
                 processedBitmap.recycle()
             }
             
-            when (result) {
+            return@withContext when (interpreterResult) {
                 is MLResult.Success -> {
-                    val keypoints = result.data
+                    val keypoints = interpreterResult.data
                     if (keypoints.isNotEmpty()) {
                         // Filter keypoints by confidence
                         val validKeypoints = keypoints.filter { it.score >= CONFIDENCE_THRESHOLD }
@@ -180,7 +179,7 @@ class MoveNetTFLite private constructor(private val context: Context) {
                     }
                 }
                 is MLResult.Error -> {
-                    if (result.fallbackAvailable) {
+                    if (interpreterResult.fallbackAvailable) {
                         // Use simulation as fallback
                         val simulatedKeypoints = generateSimulatedKeypoints(bitmap.width, bitmap.height)
                         val validKeypoints = simulatedKeypoints.filter { it.score >= CONFIDENCE_THRESHOLD }
@@ -195,18 +194,25 @@ class MoveNetTFLite private constructor(private val context: Context) {
                                 score = averageScore
                             )
                             MLResult.degraded(
-                                exception = result.exception,
+                                exception = interpreterResult.exception,
                                 degradedResult = pose,
                                 message = "Using simulation fallback due to error"
                             )
                         } else {
-                            result
+                            interpreterResult
                         }
                     } else {
-                        result
+                        interpreterResult
                     }
                 }
-                is MLResult.Degraded -> result
+                is MLResult.Degraded -> {
+                    // Convert to Pose? result
+                    MLResult.degraded(
+                        exception = interpreterResult.exception,
+                        degradedResult = null,
+                        message = interpreterResult.message
+                    )
+                }
             }
             
         } catch (e: Exception) {
