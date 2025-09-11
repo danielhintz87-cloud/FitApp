@@ -36,7 +36,7 @@ fun BarcodeScannerScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val repo = remember { NutritionRepository(AppDatabase.get(context)) }
+    val repo = remember { NutritionRepository(AppDatabase.get(context), context) }
     val foodLookup = remember { FoodDatabaseLookup() }
     
     var scannedBarcode by remember { mutableStateOf<String?>(null) }

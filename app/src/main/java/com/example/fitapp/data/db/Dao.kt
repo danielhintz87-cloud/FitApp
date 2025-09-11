@@ -366,6 +366,9 @@ interface PersonalAchievementDao {
     @Query("SELECT * FROM personal_achievements WHERE id = :id")
     suspend fun getAchievement(id: Long): PersonalAchievementEntity?
     
+    @Query("SELECT * FROM personal_achievements WHERE title = :title LIMIT 1")
+    suspend fun getAchievementByTitle(title: String): PersonalAchievementEntity?
+    
     @Query("UPDATE personal_achievements SET isCompleted = 0, completedAt = NULL, currentValue = 0.0")
     suspend fun resetAllAchievements()
     
@@ -401,6 +404,9 @@ interface PersonalStreakDao {
 
     @Query("SELECT * FROM personal_streaks WHERE id = :id")
     suspend fun getStreak(id: Long): PersonalStreakEntity?
+    
+    @Query("SELECT * FROM personal_streaks WHERE name = :name AND category = :category LIMIT 1")
+    suspend fun getStreakByNameAndCategory(name: String, category: String): PersonalStreakEntity?
     
     @Query("UPDATE personal_streaks SET currentStreak = 0, lastActivityTimestamp = NULL")
     suspend fun resetAllStreaks()

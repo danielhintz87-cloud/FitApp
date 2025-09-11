@@ -33,7 +33,7 @@ fun NutritionScreen(
     modifier: Modifier = Modifier
 ) {
     val ctx = LocalContext.current
-    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val repo = remember { NutritionRepository(AppDatabase.get(ctx), ctx) }
     val scope = rememberCoroutineScope()
 
     var tab by remember { mutableIntStateOf(0) }
@@ -155,7 +155,7 @@ private fun RecipeList(
     modifier: Modifier = Modifier
 ) {
     val ctx = LocalContext.current
-    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val repo = remember { NutritionRepository(AppDatabase.get(ctx), ctx) }
     val scope = rememberCoroutineScope()
     
     LazyColumn(

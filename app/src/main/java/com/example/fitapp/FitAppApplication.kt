@@ -59,8 +59,16 @@ class FitAppApplication : Application() {
     }
     
     private suspend fun initializeBackgroundServices() {
-        // This method will be implemented when the dependent services are available
-        // For now, keep it empty to prevent class loading issues
-        Log.d("FitApp", "Background services initialization deferred")
+        try {
+            // Initialize meal logging achievements
+            val streakManager = com.example.fitapp.services.StreakManager(this)
+            streakManager.initializeMealLoggingAchievements()
+            Log.d("FitApp", "Meal logging achievements initialized")
+        } catch (e: Exception) {
+            Log.e("FitApp", "Failed to initialize achievements", e)
+        }
+        
+        // This method will be implemented when other dependent services are available
+        Log.d("FitApp", "Background services initialization completed")
     }
 }
