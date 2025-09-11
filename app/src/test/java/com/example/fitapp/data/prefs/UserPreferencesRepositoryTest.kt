@@ -2,20 +2,20 @@ package com.example.fitapp.data.prefs
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.test.core.app.ApplicationProvider
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.junit.Assert.*
+import org.robolectric.RobolectricTestRunner
+import org.junit.runner.RunWith
+import org.robolectric.RuntimeEnvironment
 
 /**
  * Tests for DataStore migration and UserPreferencesRepository
  */
-@RunWith(AndroidJUnit4::class)
+@RunWith(RobolectricTestRunner::class)
 class UserPreferencesRepositoryTest {
     
     private lateinit var context: Context
@@ -23,7 +23,7 @@ class UserPreferencesRepositoryTest {
     
     @Before
     fun setup() {
-        context = ApplicationProvider.getApplicationContext()
+        context = RuntimeEnvironment.getApplication()
         repository = UserPreferencesRepository(context)
         
         // Clear any existing preferences
