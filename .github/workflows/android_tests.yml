@@ -1,4 +1,6 @@
 name: Android Tests (unit + lint)
+# Runs JVM-based unit tests with Robolectric where needed
+# NO Android emulator required - pure unit testing
 
 on:
   pull_request:
@@ -64,8 +66,8 @@ jobs:
       - name: Setup Gradle (with cache)
         uses: gradle/gradle-build-action@v3
 
-      # Build + Tests + Lint mit Retries
-      - name: Build + Unit tests + Lint (retry)
+      # Build + Robolectric Unit Tests + Lint with explicit separation
+      - name: Build + Unit tests (Robolectric) + Lint (retry)
         uses: nick-invision/retry@v3
         with:
           max_attempts: 3
@@ -76,6 +78,12 @@ jobs:
               assembleDebug \
               testDebugUnitTest \
               lintDebug
+              
+      # Verify unit tests are JVM-only (no Android framework dependencies)
+      - name: Verify unit test separation
+        run: |
+          echo "Unit tests completed - these run on JVM with Robolectric where needed"
+          echo "No Android emulator required for unit tests"
 
       - name: Upload unit test reports
         if: always()

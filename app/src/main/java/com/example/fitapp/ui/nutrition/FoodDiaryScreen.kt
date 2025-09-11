@@ -44,7 +44,7 @@ fun FoodDiaryScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val repo = remember { NutritionRepository(AppDatabase.get(context)) }
+    val repo = remember { NutritionRepository(AppDatabase.get(context), context) }
     val hydrationGoalUseCase = remember { HydrationGoalUseCase.create(context) }
     
     val today = remember { LocalDate.now(ZoneId.systemDefault()) }
@@ -116,6 +116,9 @@ fun FoodDiaryScreen(
                 Icon(Icons.Default.Add, contentDescription = "Add Food")
             }
         }
+        
+        // Meal Logging Streak Card
+        MealLoggingStreakCard()
         
         // Calories Overview Card
         CaloriesOverviewCard(

@@ -47,7 +47,7 @@ fun RecipeDetailScreen(
     val context = LocalContext.current
     val db = remember { AppDatabase.get(context) }
     val preferencesRepository = remember { UserPreferencesRepository(context) }
-    val nutritionRepo = remember { NutritionRepository(db) }
+    val nutritionRepo = remember { NutritionRepository(db, context) }
     val shoppingManager = remember { ShoppingListManager(db, preferencesRepository) }
     val scope = rememberCoroutineScope()
     

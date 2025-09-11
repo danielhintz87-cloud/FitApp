@@ -4,14 +4,17 @@ import android.content.Context
 import android.graphics.Bitmap
 import com.example.fitapp.data.prefs.ApiKeys
 import com.example.fitapp.domain.entities.CaloriesEstimate
+import com.example.fitapp.infrastructure.providers.api.PerplexityApiService
+import com.example.fitapp.di.IoDispatcher
 import kotlinx.coroutines.withContext
-import com.example.fitapp.core.threading.DispatcherProvider
+import kotlinx.coroutines.CoroutineDispatcher
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import com.example.fitapp.infrastructure.ai.*
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 /**
  * Perplexity AI provider implementation
  * 
@@ -30,10 +33,11 @@ import com.example.fitapp.infrastructure.ai.*
  * Usage Strategy: Reserve for dynamic, time-sensitive information
  * Uses intelligent model fallback for maximum compatibility and cost-efficiency
  */
-class PerplexityAiProvider(
-    private val context: Context,
-    private val httpClient: OkHttpClient,
-    private val dispatchers: DispatcherProvider
+@Singleton
+class PerplexityAiProvider @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val perplexityApiService: PerplexityApiService,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : AiProvider {
     private val logTag = "PerplexityProvider"
     
@@ -73,7 +77,7 @@ class PerplexityAiProvider(
     
     override fun supportsVision(): Boolean = false
     
-    override suspend fun generateText(prompt: String): Result<String> = withContext(dispatchers.io) {
+    override suspend fun generateText(prompt: String): Result<String> = withContext(ioDispatcher) {
         runCatching {
             val apiKey = ApiKeys.getPerplexityKey(context)
             if (apiKey.isBlank()) {
@@ -117,68 +121,64 @@ class PerplexityAiProvider(
                 }
             """.trimIndent().toRequestBody("application/json".toMediaType())
 
-            val request = Request.Builder()
-                .url("https://api.perplexity.ai/chat/completions")
-                .header("Authorization", "Bearer $apiKey")
-                .header("User-Agent", "fitapp/1.0")
-                .post(body)
-                .build()
-
-            httpClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    val bodyStr = response.body?.string().orEmpty()
-                    val errorMsg = when (response.code) {
-                        400 -> {
-                            if (bodyStr.contains("Invalid model")) {
-                                throw IllegalArgumentException("Modell '$model' nicht verfügbar")
-                            }
-                            "Perplexity 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen."
+            val response = perplexityApiService.createChatCompletion(
+                authorization = "Bearer $apiKey",
+                body = body
+            )
+            
+            if (!response.isSuccessful) {
+                val bodyStr = response.errorBody()?.string().orEmpty()
+                val errorMsg = when (response.code()) {
+                    400 -> {
+                        if (bodyStr.contains("Invalid model")) {
+                            throw IllegalArgumentException("Modell '$model' nicht verfügbar")
                         }
-                        401 -> "Perplexity 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen."
-                        402 -> "Perplexity 402: Guthaben aufgebraucht oder Zahlung erforderlich. Bitte prüfen Sie Ihr Perplexity-Konto."
-                        403 -> "Perplexity 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt."
-                        429 -> "Perplexity 429: Zu viele Anfragen. Bitte warten Sie ein paar Sekunden und versuchen Sie es erneut."
-                        in 500..599 -> "Perplexity ${response.code}: Server-Fehler. Bitte versuchen Sie es später erneut."
-                        else -> "Perplexity ${response.code}: ${bodyStr.take(200)}"
+                        "Perplexity 400: API-Schlüssel ungültig oder Anfrage fehlerhaft. Bitte unter Einstellungen → API-Schlüssel prüfen."
                     }
-                    val aiErr = classifyHttpError(response.code, bodyStr)
-                    android.util.Log.w(logTag, "http_error code=${response.code} model=$model aiErr=${aiErr.code} bodySnippet=${bodyStr.take(120)}")
-                    throw ClassifiedAiException(errorMsg, aiErr, response.code)
+                    401 -> "Perplexity 401: API-Schlüssel ungültig oder fehlt. Bitte unter Einstellungen → API-Schlüssel prüfen."
+                    402 -> "Perplexity 402: Guthaben aufgebraucht oder Zahlung erforderlich. Bitte prüfen Sie Ihr Perplexity-Konto."
+                    403 -> "Perplexity 403: Zugriff verweigert. Möglicherweise ist Ihr API-Schlüssel nicht für diesen Service berechtigt."
+                    429 -> "Perplexity 429: Zu viele Anfragen. Bitte warten Sie ein paar Sekunden und versuchen Sie es erneut."
+                    in 500..599 -> "Perplexity ${response.code()}: Server-Fehler. Bitte versuchen Sie es später erneut."
+                    else -> "Perplexity ${response.code()}: ${bodyStr.take(200)}"
                 }
-                
-                val responseBody = response.body
-                if (responseBody == null) {
-                    throw IllegalStateException("Perplexity: Leere Antwort vom Server erhalten")
-                }
-                
-                val txt = responseBody.string()
-                if (txt.isBlank()) {
-                    throw IllegalStateException("Perplexity: Leere Antwort vom Server erhalten")
-                }
-                
-                // Parse OpenAI-compatible response from Perplexity
-                val contentStart = txt.indexOf("\"content\":\"") + 11
-                val contentEnd = txt.indexOf("\"", contentStart)
-                val content = if (contentStart > 10 && contentEnd > contentStart) {
-                    txt.substring(contentStart, contentEnd).replace("\\\"", "\"").replace("\\n", "\n")
-                } else {
-                    // Try to parse as JSON for better error handling
-                    try {
-                        val jsonObj = JSONObject(txt)
-                        val choices = jsonObj.optJSONArray("choices")
-                        if (choices != null && choices.length() > 0) {
-                            val choice = choices.optJSONObject(0)
-                            val message = choice?.optJSONObject("message")
-                            message?.optString("content") ?: "Error parsing response"
-                        } else {
-                            "Error parsing response"
-                        }
-                    } catch (e: Exception) {
-                        "Error parsing response: ${e.message}"
-                    }
-                }
-                return content
+                val aiErr = classifyHttpError(response.code(), bodyStr)
+                android.util.Log.w(logTag, "http_error code=${response.code()} model=$model aiErr=${aiErr.code} bodySnippet=${bodyStr.take(120)}")
+                throw ClassifiedAiException(errorMsg, aiErr, response.code())
             }
+            
+            val responseBody = response.body()
+            if (responseBody == null) {
+                throw IllegalStateException("Perplexity: Leere Antwort vom Server erhalten")
+            }
+            
+            val txt = responseBody.string()
+            if (txt.isBlank()) {
+                throw IllegalStateException("Perplexity: Leere Antwort vom Server erhalten")
+            }
+            
+            // Parse OpenAI-compatible response from Perplexity
+            val contentStart = txt.indexOf("\"content\":\"") + 11
+            val contentEnd = txt.indexOf("\"", contentStart)
+            val content = if (contentStart > 10 && contentEnd > contentStart) {
+                txt.substring(contentStart, contentEnd).replace("\\\"", "\"").replace("\\n", "\n")
+            } else {
+                // Try to parse as JSON for better error handling
+                try {
+                    val jsonObj = JSONObject(txt)
+                    val choices = jsonObj.optJSONArray("choices")
+                    if (choices != null && choices.length() > 0) {
+                        val choice = choices.optJSONObject(0)
+                        val message = choice?.optJSONObject("message")
+                        message?.optString("content") ?: "Error parsing response"
+                    } else {
+                        "Error parsing response"
+                    }
+                } catch (e: Exception) {
+                    "Error parsing response: ${e.message}"
+                }
+            }
+            content
     }
     
     override suspend fun analyzeImage(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> {

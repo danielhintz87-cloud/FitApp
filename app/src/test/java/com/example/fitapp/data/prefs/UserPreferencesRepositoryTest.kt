@@ -8,10 +8,14 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.Assert.*
+import org.robolectric.RobolectricTestRunner
+import org.junit.runner.RunWith
+import org.robolectric.RuntimeEnvironment
 
 /**
  * Tests for DataStore migration and UserPreferencesRepository
  */
+@RunWith(RobolectricTestRunner::class)
 class UserPreferencesRepositoryTest {
     
     private lateinit var context: Context
@@ -19,13 +23,22 @@ class UserPreferencesRepositoryTest {
     
     @Before
     fun setup() {
-        // This test would need proper mocking for Android context
-        // For now, we'll skip the context-dependent tests
+        context = RuntimeEnvironment.getApplication()
+        repository = UserPreferencesRepository(context)
+        
+        // Clear any existing preferences
+        clearSharedPreferences()
     }
     
     @After
     fun tearDown() {
         // Cleanup if needed
+    }
+    
+    private fun clearSharedPreferences() {
+        // Clear shared preferences for testing
+        val sharedPrefs = context.getSharedPreferences("user_preferences", Context.MODE_PRIVATE)
+        sharedPrefs.edit().clear().commit()
     }
     
     @Test

@@ -20,7 +20,7 @@ class WaterReminderWorker(
             val database = AppDatabase.get(applicationContext)
             
             val today = LocalDate.now(ZoneId.systemDefault()).toString()
-            val repo = NutritionRepository(database)
+            val repo = NutritionRepository(database, applicationContext)
             val waterIntake = repo.getTotalWaterForDate(today)
             
             // Use unified hydration goal instead of hardcoded value
