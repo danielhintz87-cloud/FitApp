@@ -23,7 +23,7 @@ class DigitalCoachManager(
     private val database: AppDatabase = AppDatabase.get(context)
 ) {
     private val motivationRepo = PersonalMotivationRepository(database)
-    private val nutritionRepo = NutritionRepository(database)
+    private val nutritionRepo = NutritionRepository(database, context)
     
     companion object {
         private const val TAG = "DigitalCoachManager"

@@ -18,7 +18,7 @@ class WaterReminderWorker(
             val database = AppDatabase.get(applicationContext)
             
             val today = LocalDate.now().toString()
-            val repo = NutritionRepository(database)
+            val repo = NutritionRepository(database, applicationContext)
             val waterIntake = repo.getTotalWaterForDate(today)
             val targetIntake = 2000 // Default Ziel; könnte künftig aus Zielen stammen
             
