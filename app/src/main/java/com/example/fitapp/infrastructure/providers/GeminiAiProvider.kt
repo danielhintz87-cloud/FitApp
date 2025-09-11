@@ -92,7 +92,8 @@ class GeminiAiProvider(
             .post(body)
             .build()
 
-        httpClient.newCall(request).execute().use { response ->
+        withContext(dispatchers.io) {
+            httpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 val bodyStr = response.body?.string().orEmpty()
                 val errorMsg = when (response.code) {
@@ -118,6 +119,7 @@ class GeminiAiProvider(
             val text = part.optString("text")
             if (text.isNullOrBlank()) throw IllegalStateException("Gemini: Kein Text in der Antwort gefunden")
             text
+            }
         }
     }
     

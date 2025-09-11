@@ -1,7 +1,9 @@
 package com.example.fitapp
 
 import android.app.Application
+import android.os.StrictMode
 import android.util.Log
+import com.example.fitapp.BuildConfig
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +18,11 @@ class FitAppApplication : Application() {
     
     override fun onCreate() {
         super.onCreate()
+        
+        // Enable StrictMode for debug builds to catch NetworkOnMainThreadException
+        if (BuildConfig.DEBUG) {
+            enableStrictModeForDebugging()
+        }
         
         // Basic logging - safe to run at startup
         Log.d("FitApp", "Application initialized")
@@ -62,5 +69,31 @@ class FitAppApplication : Application() {
         // This method will be implemented when the dependent services are available
         // For now, keep it empty to prevent class loading issues
         Log.d("FitApp", "Background services initialization deferred")
+    }
+    
+    private fun enableStrictModeForDebugging() {
+        try {
+            StrictMode.setThreadPolicy(
+                StrictMode.ThreadPolicy.Builder()
+                    .detectNetwork()
+                    .detectDiskReads()
+                    .detectDiskWrites()
+                    .penaltyLog()
+                    .penaltyFlashScreen() // Visual indicator in debug
+                    .build()
+            )
+            
+            StrictMode.setVmPolicy(
+                StrictMode.VmPolicy.Builder()
+                    .detectLeakedSqlLiteObjects()
+                    .detectLeakedClosableObjects()
+                    .penaltyLog()
+                    .build()
+            )
+            
+            Log.d("FitApp", "StrictMode enabled for debug build")
+        } catch (e: Exception) {
+            Log.w("FitApp", "Failed to enable StrictMode", e)
+        }
     }
 }

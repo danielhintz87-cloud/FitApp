@@ -105,7 +105,7 @@ class PerplexityAiProvider(
         }
     }
     
-    private suspend fun makeApiCall(apiKey: String, model: String, prompt: String): String {
+    private suspend fun makeApiCall(apiKey: String, model: String, prompt: String): String = withContext(dispatchers.io) {
             val body = """
                 {
                     "model": "$model",
@@ -177,7 +177,7 @@ class PerplexityAiProvider(
                         "Error parsing response: ${e.message}"
                     }
                 }
-                return content
+                content
             }
     }
     
