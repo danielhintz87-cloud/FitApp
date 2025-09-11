@@ -45,13 +45,30 @@ class AiDiContainer private constructor(context: Context) {
         AiLogger(appContext, aiLogDao)
     }
     
-    // Providers
+    // Providers - Note: These are fallback instances for non-Hilt contexts
+    // In Hilt-managed contexts, use the injected providers from AiProviderModule
     private val geminiProvider: AiProvider by lazy {
-        GeminiAiProvider(appContext, httpClient, dispatchers)
+        // Create Retrofit services manually for non-Hilt usage
+        val geminiRetrofit = retrofit2.Retrofit.Builder()
+            .baseUrl("https://generativelanguage.googleapis.com/")
+            .client(httpClient)
+            .addConverterFactory(retrofit2.converter.moshi.MoshiConverterFactory.create())
+            .build()
+        val geminiApiService = geminiRetrofit.create(com.example.fitapp.infrastructure.providers.api.GeminiApiService::class.java)
+        
+        GeminiAiProvider(appContext, geminiApiService, dispatchers.io)
     }
     
     private val perplexityProvider: AiProvider by lazy {
-        PerplexityAiProvider(appContext, httpClient, dispatchers)
+        // Create Retrofit services manually for non-Hilt usage
+        val perplexityRetrofit = retrofit2.Retrofit.Builder()
+            .baseUrl("https://api.perplexity.ai/")
+            .client(httpClient)
+            .addConverterFactory(retrofit2.converter.moshi.MoshiConverterFactory.create())
+            .build()
+        val perplexityApiService = perplexityRetrofit.create(com.example.fitapp.infrastructure.providers.api.PerplexityApiService::class.java)
+        
+        PerplexityAiProvider(appContext, perplexityApiService, dispatchers.io)
     }
     
     private val providers: Map<com.example.fitapp.domain.entities.AiProvider, AiProvider> by lazy {
