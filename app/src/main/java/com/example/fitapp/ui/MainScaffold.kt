@@ -601,7 +601,10 @@ fun MainScaffold() {
                 ) {
                     AIPersonalTrainerScreen(
                         onBack = { nav.popBackStack() },
-                        onNavigateToApiKeys = { nav.navigate("apikeys") }
+                        onNavigateToApiKeys = { nav.navigate("apikeys") },
+                        onNavigateToWorkout = { nav.navigate("todaytraining") },
+                        onNavigateToNutrition = { nav.navigate("nutrition") },
+                        onNavigateToProgress = { nav.navigate("enhanced_analytics") }
                     )
                 }
                 composable("feedback",
