@@ -1,12 +1,13 @@
 package com.example.fitapp.ai.ui
 
-import com.example.fitapp.infrastructure.ai.AiErrors
+import com.example.fitapp.infrastructure.ai.AiError
 
-fun AiErrors.toUiState(): AiUiState.Error = when (this) {
-    is AiErrors.KeyInvalid -> AiUiState.Error(AiErrorType.KeyInvalid, message)
-    is AiErrors.KeyMissing -> AiUiState.Error(AiErrorType.KeyMissing, message)
-    is AiErrors.Network -> AiUiState.Error(AiErrorType.Network, message)
-    is AiErrors.RateLimit -> AiUiState.Error(AiErrorType.RateLimit, message)
-    is AiErrors.ProviderUnavailable -> AiUiState.Error(AiErrorType.ProviderUnavailable, message)
-    is AiErrors.Unknown -> AiUiState.Error(AiErrorType.Unknown, message)
+fun AiError.toUiState(): AiUiState.Error = when (this) {
+    is AiError.Auth -> AiUiState.Error(AiErrorType.KeyInvalid, this.code)
+    is AiError.Network -> AiUiState.Error(AiErrorType.Network, this.code)
+    is AiError.RateLimit -> AiUiState.Error(AiErrorType.RateLimit, this.code)
+    is AiError.Quota -> AiUiState.Error(AiErrorType.RateLimit, this.code)
+    is AiError.Server -> AiUiState.Error(AiErrorType.ProviderUnavailable, this.code)
+    is AiError.InvalidRequest -> AiUiState.Error(AiErrorType.Unknown, this.code)
+    is AiError.Unknown -> AiUiState.Error(AiErrorType.Unknown, this.code)
 }
