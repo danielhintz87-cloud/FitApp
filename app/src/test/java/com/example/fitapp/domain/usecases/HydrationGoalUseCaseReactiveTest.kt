@@ -34,7 +34,7 @@ class HydrationGoalUseCaseReactiveTest {
     @Before
     fun setup() {
         MockitoAnnotations.openMocks(this)
-        hydrationGoalUseCase = HydrationGoalUseCase(nutritionRepository, userPreferencesRepository)
+        hydrationGoalUseCase = HydrationGoalUseCase(nutritionRepository, userPreferencesRepository, null)
     }
 
     @Test

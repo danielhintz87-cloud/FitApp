@@ -35,6 +35,11 @@ import java.time.ZoneId
  * All methods are thread-safe and can be called from any coroutine context.
  * Suspend functions respect the caller's dispatcher.
  * 
+ * ## Worker Integration
+ * When hydration goals are updated, the WaterReminderWorker is automatically
+ * rescheduled to ensure reminders use the latest goals. This provides a
+ * seamless experience where all water tracking features stay synchronized.
+ * 
  * ## Integration Guide
  * 
  * ### Basic Usage
@@ -70,6 +75,7 @@ import java.time.ZoneId
  * hydrationGoalUseCase.updateDefaultHydrationGoalMl(2500)
  * 
  * // This will trigger reactive updates in all observing UI components
+ * // and reschedule water reminders to use the new goal
  * ```
  * 
  * ### WorkManager Integration
@@ -93,10 +99,12 @@ import java.time.ZoneId
  * @see com.example.fitapp.data.prefs.UserPreferencesRepository
  * @see com.example.fitapp.data.db.DailyGoalEntity
  * @see com.example.fitapp.data.prefs.UserPreferencesProto
+ * @see com.example.fitapp.services.WaterReminderWorker
  */
 class HydrationGoalUseCase(
     private val nutritionRepository: NutritionRepository,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val context: Context? = null // Optional for worker rescheduling
 ) {
     
 
@@ -183,6 +191,9 @@ class HydrationGoalUseCase(
      * Updates the default hydration goal in user preferences.
      * This will be the fallback for dates without specific daily goals.
      * 
+     * Also triggers a reschedule of water reminders to ensure they use
+     * the updated goal for future notifications.
+     * 
      * @param goalMl The new default hydration goal in milliliters
      */
     suspend fun updateDefaultHydrationGoalMl(goalMl: Int) {
@@ -190,6 +201,19 @@ class HydrationGoalUseCase(
         userPreferencesRepository.updateNutritionPreferences(
             dailyWaterGoalLiters = goalLiters
         )
+        
+        // Reschedule reminders to use the new goal
+        context?.let { ctx ->
+            try {
+                // Import here to avoid dependency issues in tests
+                val workerClass = Class.forName("com.example.fitapp.services.WaterReminderWorker")
+                val rescheduleMethod = workerClass.getDeclaredMethod("rescheduleOnGoalChange", Context::class.java)
+                rescheduleMethod.invoke(null, ctx)
+            } catch (e: Exception) {
+                // Gracefully handle if worker class is not available (e.g., in tests)
+                android.util.Log.d("HydrationGoalUseCase", "Worker reschedule skipped: ${e.message}")
+            }
+        }
     }
     
     companion object {
@@ -204,17 +228,22 @@ class HydrationGoalUseCase(
          * with standard configurations.
          * 
          * @param context Application or activity context
+         * @param enableWorkerIntegration Whether to enable automatic worker rescheduling (default: true)
          * @return Configured HydrationGoalUseCase instance ready for use
          * 
          * @see com.example.fitapp.data.db.AppDatabase.get
          * @see com.example.fitapp.data.repo.NutritionRepository
          * @see com.example.fitapp.data.prefs.UserPreferencesRepository
          */
-        fun create(context: Context): HydrationGoalUseCase {
+        fun create(context: Context, enableWorkerIntegration: Boolean = true): HydrationGoalUseCase {
             val database = AppDatabase.get(context)
             val nutritionRepository = NutritionRepository(database)
             val userPreferencesRepository = UserPreferencesRepository(context)
-            return HydrationGoalUseCase(nutritionRepository, userPreferencesRepository)
+            return HydrationGoalUseCase(
+                nutritionRepository = nutritionRepository,
+                userPreferencesRepository = userPreferencesRepository,
+                context = if (enableWorkerIntegration) context else null
+            )
         }
     }
 }

@@ -42,6 +42,15 @@ class WaterReminderWorker(
     companion object {
         private const val WORK_NAME = "water_reminder_work"
         
+        /**
+         * Schedules water reminders to run periodically.
+         * 
+         * This method integrates with HydrationGoalUseCase to ensure reminders
+         * are based on the latest unified hydration goals, providing a consistent
+         * user experience across all water tracking features.
+         * 
+         * @param context Application context for WorkManager
+         */
         fun scheduleWaterReminders(context: Context) {
             val constraints = Constraints.Builder()
                 // No network requirement for water reminders
@@ -59,6 +68,22 @@ class WaterReminderWorker(
                 ExistingPeriodicWorkPolicy.REPLACE,
                 workRequest
             )
+        }
+        
+        /**
+         * Reschedules water reminders when hydration goals change.
+         * 
+         * This ensures that the reminder system stays synchronized with
+         * the user's current hydration preferences and daily goals.
+         * Call this method whenever hydration goals are updated.
+         * 
+         * @param context Application context for WorkManager
+         */
+        fun rescheduleOnGoalChange(context: Context) {
+            // Cancel existing work and reschedule with updated goals
+            // This ensures the next reminder uses the latest goal
+            cancelWaterReminders(context)
+            scheduleWaterReminders(context)
         }
         
         fun cancelWaterReminders(context: Context) {
