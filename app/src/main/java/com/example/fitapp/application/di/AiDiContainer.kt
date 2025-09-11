@@ -11,6 +11,8 @@ import com.example.fitapp.infrastructure.providers.AiProvider
 import com.example.fitapp.infrastructure.providers.GeminiAiProvider
 import com.example.fitapp.infrastructure.providers.PerplexityAiProvider
 import com.example.fitapp.infrastructure.repositories.AiProviderRepositoryImpl
+import com.example.fitapp.core.threading.DispatcherProvider
+import com.example.fitapp.core.threading.DefaultDispatcherProvider
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -23,6 +25,10 @@ class AiDiContainer private constructor(context: Context) {
     private val appContext = context.applicationContext
     
     // Infrastructure
+    private val dispatchers: DispatcherProvider by lazy {
+        DefaultDispatcherProvider()
+    }
+    
     private val httpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .callTimeout(60, TimeUnit.SECONDS)
@@ -41,11 +47,11 @@ class AiDiContainer private constructor(context: Context) {
     
     // Providers
     private val geminiProvider: AiProvider by lazy {
-        GeminiAiProvider(appContext, httpClient)
+        GeminiAiProvider(appContext, httpClient, dispatchers)
     }
     
     private val perplexityProvider: AiProvider by lazy {
-        PerplexityAiProvider(appContext, httpClient)
+        PerplexityAiProvider(appContext, httpClient, dispatchers)
     }
     
     private val providers: Map<com.example.fitapp.domain.entities.AiProvider, AiProvider> by lazy {

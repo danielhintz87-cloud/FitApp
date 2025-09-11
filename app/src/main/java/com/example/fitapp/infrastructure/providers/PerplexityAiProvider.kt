@@ -4,8 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import com.example.fitapp.data.prefs.ApiKeys
 import com.example.fitapp.domain.entities.CaloriesEstimate
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.example.fitapp.core.threading.DispatcherProvider
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -32,7 +32,8 @@ import com.example.fitapp.infrastructure.ai.*
  */
 class PerplexityAiProvider(
     private val context: Context,
-    private val httpClient: OkHttpClient
+    private val httpClient: OkHttpClient,
+    private val dispatchers: DispatcherProvider
 ) : AiProvider {
     private val logTag = "PerplexityProvider"
     
@@ -72,7 +73,7 @@ class PerplexityAiProvider(
     
     override fun supportsVision(): Boolean = false
     
-    override suspend fun generateText(prompt: String): Result<String> = withContext(Dispatchers.IO) {
+    override suspend fun generateText(prompt: String): Result<String> = withContext(dispatchers.io) {
         runCatching {
             val apiKey = ApiKeys.getPerplexityKey(context)
             if (apiKey.isBlank()) {
