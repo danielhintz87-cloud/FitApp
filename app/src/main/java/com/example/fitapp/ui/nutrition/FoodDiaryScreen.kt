@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import java.time.ZoneId
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,7 +47,7 @@ fun FoodDiaryScreen(
     val repo = remember { NutritionRepository(AppDatabase.get(context)) }
     val hydrationGoalUseCase = remember { HydrationGoalUseCase.create(context) }
     
-    val today = remember { LocalDate.now() }
+    val today = remember { LocalDate.now(ZoneId.systemDefault()) }
     val todayString = today.toString()
     
     var goal by remember { mutableStateOf<DailyGoalEntity?>(null) }
@@ -58,7 +59,9 @@ fun FoodDiaryScreen(
     var totalProtein by remember { mutableFloatStateOf(0f) }
     var totalFat by remember { mutableFloatStateOf(0f) }
     var totalWater by remember { mutableIntStateOf(0) }
-    var hydrationGoal by remember { mutableIntStateOf(2000) } // Default, will be updated
+    
+    // Use reactive flow for hydration goal - updates automatically when goal changes
+    val hydrationGoal by hydrationGoalUseCase.getHydrationGoalMlFlow(today).collectAsState(initial = 2000)
     
     // Load data
     LaunchedEffect(todayString) {
@@ -83,8 +86,7 @@ fun FoodDiaryScreen(
             totalFat = repo.getTotalFatForDate(todayString)
             totalWater = repo.getTotalWaterForDate(todayString)
             
-            // Get unified hydration goal
-            hydrationGoal = hydrationGoalUseCase.getHydrationGoalMl(today)
+            // Note: hydrationGoal is now automatically updated via reactive flow
         }
     }
     

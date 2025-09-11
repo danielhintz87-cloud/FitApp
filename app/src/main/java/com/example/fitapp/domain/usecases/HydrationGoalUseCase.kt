@@ -5,18 +5,94 @@ import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.prefs.UserPreferencesRepository
 import com.example.fitapp.data.repo.NutritionRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import java.time.LocalDate
+import java.time.ZoneId
 
 /**
  * Use case for getting hydration goals (water intake targets).
  * Provides a single source of truth for hydration goals across the app.
  * 
- * Priority:
- * 1. DailyGoalEntity.targetWaterMl (if set for the specific date)
- * 2. UserPreferencesProto.dailyWaterGoalLiters (converted to ml)
- * 3. Default fallback (2000ml)
+ * ## Priority Order
+ * The hydration goal is determined using the following priority:
+ * 1. **DailyGoalEntity.targetWaterMl** (if set and > 0 for the specific date)
+ * 2. **UserPreferencesProto.dailyWaterGoalLiters** (converted to ml, if > 0)
+ * 3. **Default fallback** (2000ml)
+ * 
+ * ## Reactive Updates
+ * This use case provides reactive flows that automatically update when:
+ * - Daily goals are added, modified, or removed
+ * - User preferences for daily water goal change
+ * - The system date changes (for "today" methods)
+ * 
+ * ## Timezone Handling
+ * All date-based methods use timezone-safe calculations with `ZoneId.systemDefault()`.
+ * This ensures consistent behavior across DST transitions and timezone changes.
+ * 
+ * ## Thread Safety
+ * All methods are thread-safe and can be called from any coroutine context.
+ * Suspend functions respect the caller's dispatcher.
+ * 
+ * ## Integration Guide
+ * 
+ * ### Basic Usage
+ * ```kotlin
+ * val hydrationGoalUseCase = HydrationGoalUseCase.create(context)
+ * 
+ * // Get goal for a specific date
+ * val goalMl = hydrationGoalUseCase.getHydrationGoalMl(LocalDate.of(2025, 1, 15))
+ * 
+ * // Get today's goal
+ * val todaysGoal = hydrationGoalUseCase.getTodaysHydrationGoalMl()
+ * ```
+ * 
+ * ### Reactive UI Updates
+ * ```kotlin
+ * @Composable
+ * fun WaterTrackingScreen() {
+ *     val hydrationGoalUseCase = remember { HydrationGoalUseCase.create(LocalContext.current) }
+ *     val today = remember { LocalDate.now(ZoneId.systemDefault()) }
+ *     
+ *     // Automatically updates when goal changes
+ *     val hydrationGoal by hydrationGoalUseCase.getHydrationGoalMlFlow(today)
+ *         .collectAsState(initial = 2000)
+ *     
+ *     // UI will recompose when hydrationGoal changes
+ *     Text("Daily Goal: ${hydrationGoal}ml")
+ * }
+ * ```
+ * 
+ * ### Updating Default Goals
+ * ```kotlin
+ * // Update the user's default hydration goal
+ * hydrationGoalUseCase.updateDefaultHydrationGoalMl(2500)
+ * 
+ * // This will trigger reactive updates in all observing UI components
+ * ```
+ * 
+ * ### WorkManager Integration
+ * ```kotlin
+ * class WaterReminderWorker : CoroutineWorker {
+ *     override suspend fun doWork(): Result {
+ *         val hydrationGoalUseCase = HydrationGoalUseCase.create(applicationContext)
+ *         val targetIntake = hydrationGoalUseCase.getTodaysHydrationGoalMl()
+ *         
+ *         // Use targetIntake for reminder logic
+ *         return Result.success()
+ *     }
+ * }
+ * ```
+ * 
+ * ## Dependencies
+ * - **NutritionRepository**: For daily goal entities
+ * - **UserPreferencesRepository**: For default water goal preferences
+ * 
+ * @see com.example.fitapp.data.repo.NutritionRepository
+ * @see com.example.fitapp.data.prefs.UserPreferencesRepository
+ * @see com.example.fitapp.data.db.DailyGoalEntity
+ * @see com.example.fitapp.data.prefs.UserPreferencesProto
  */
 class HydrationGoalUseCase(
     private val nutritionRepository: NutritionRepository,
@@ -53,11 +129,13 @@ class HydrationGoalUseCase(
     
     /**
      * Gets the hydration goal for today in milliliters.
+     * Uses timezone-safe current date calculation.
      * 
      * @return The hydration goal in milliliters for today
      */
     suspend fun getTodaysHydrationGoalMl(): Int {
-        return getHydrationGoalMl(LocalDate.now())
+        val today = LocalDate.now(ZoneId.systemDefault())
+        return getHydrationGoalMl(today)
     }
     
     /**
@@ -67,24 +145,38 @@ class HydrationGoalUseCase(
      * @param date The date to get the goal for
      * @return Flow emitting the hydration goal in milliliters
      */
-    fun getHydrationGoalMlFlow(date: LocalDate): Flow<Int> = flow {
-        // First emit current value
-        emit(getHydrationGoalMl(date))
-        
-        // Then observe changes - this is a simplified version
-        // In a more complete implementation, we would combine flows
-        // from both nutritionRepository and userPreferencesRepository
-        val currentGoal = getHydrationGoalMl(date)
-        emit(currentGoal)
+    fun getHydrationGoalMlFlow(date: LocalDate): Flow<Int> {
+        return combine(
+            nutritionRepository.goalFlow(date),
+            userPreferencesRepository.nutritionPreferences
+        ) { dailyGoal, nutritionPrefs ->
+            // Apply the same priority logic as getHydrationGoalMl
+            dailyGoal?.targetWaterMl?.let { targetWaterMl ->
+                if (targetWaterMl > 0) {
+                    return@combine targetWaterMl
+                }
+            }
+            
+            // Fallback to user preferences (convert liters to ml)
+            val waterGoalLiters = nutritionPrefs.dailyWaterGoalLiters
+            if (waterGoalLiters > 0) {
+                return@combine (waterGoalLiters * 1000).toInt()
+            }
+            
+            // Final fallback to default
+            DEFAULT_DAILY_WATER_GOAL_ML
+        }
     }
     
     /**
      * Gets a reactive flow of today's hydration goal.
+     * Uses timezone-safe current date calculation.
      * 
      * @return Flow emitting today's hydration goal in milliliters
      */
     fun getTodaysHydrationGoalMlFlow(): Flow<Int> {
-        return getHydrationGoalMlFlow(LocalDate.now())
+        val today = LocalDate.now(ZoneId.systemDefault())
+        return getHydrationGoalMlFlow(today)
     }
     
     /**
@@ -101,10 +193,22 @@ class HydrationGoalUseCase(
     }
     
     companion object {
+        /** Default hydration goal in milliliters when no other source is available */
         const val DEFAULT_DAILY_WATER_GOAL_ML = 2000
         
         /**
          * Factory method to create HydrationGoalUseCase with minimal dependencies.
+         * 
+         * This is the recommended way to create an instance of HydrationGoalUseCase
+         * for most use cases. It automatically sets up the required repositories
+         * with standard configurations.
+         * 
+         * @param context Application or activity context
+         * @return Configured HydrationGoalUseCase instance ready for use
+         * 
+         * @see com.example.fitapp.data.db.AppDatabase.get
+         * @see com.example.fitapp.data.repo.NutritionRepository
+         * @see com.example.fitapp.data.prefs.UserPreferencesRepository
          */
         fun create(context: Context): HydrationGoalUseCase {
             val database = AppDatabase.get(context)

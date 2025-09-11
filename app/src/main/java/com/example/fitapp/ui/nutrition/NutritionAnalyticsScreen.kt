@@ -26,6 +26,7 @@ import com.example.fitapp.domain.usecases.HydrationGoalUseCase
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.math.PI
 import kotlin.math.cos
@@ -51,7 +52,7 @@ fun NutritionAnalyticsScreen(
         scope.launch {
             isLoading = true
             try {
-                val endDate = LocalDate.now()
+                val endDate = LocalDate.now(ZoneId.systemDefault())
                 val startDate = when (selectedPeriod) {
                     "week" -> endDate.minusDays(6)
                     "month" -> endDate.minusDays(29)

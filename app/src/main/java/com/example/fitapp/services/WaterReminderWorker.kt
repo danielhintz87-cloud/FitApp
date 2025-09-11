@@ -7,6 +7,7 @@ import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.domain.usecases.HydrationGoalUseCase
 import com.example.fitapp.services.SmartNotificationManager
 import java.time.LocalDate
+import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 
 class WaterReminderWorker(
@@ -18,7 +19,7 @@ class WaterReminderWorker(
         return try {
             val database = AppDatabase.get(applicationContext)
             
-            val today = LocalDate.now().toString()
+            val today = LocalDate.now(ZoneId.systemDefault()).toString()
             val repo = NutritionRepository(database)
             val waterIntake = repo.getTotalWaterForDate(today)
             
