@@ -9,13 +9,17 @@ import com.example.fitapp.ai.CaloriesEstimate
 import com.example.fitapp.ai.RecipeRequest
 import com.example.fitapp.ai.UiRecipe
 import com.example.fitapp.data.db.*
+import com.example.fitapp.services.StreakManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import java.time.LocalDate
 import java.time.ZoneId
 
-class NutritionRepository(private val db: AppDatabase) {
+class NutritionRepository(private val db: AppDatabase, private val context: Context? = null) {
+    private val streakManager: StreakManager? by lazy {
+        context?.let { StreakManager(it, db) }
+    }
     fun favorites(): Flow<List<RecipeEntity>> = db.recipeDao().favoritesFlow()
     fun history(): Flow<List<RecipeEntity>> = db.recipeDao().historyFlow()
 
@@ -479,7 +483,20 @@ class NutritionRepository(private val db: AppDatabase) {
     fun allFoodItemsFlow() = db.foodItemDao().allFoodItemsFlow()
     
     // Meal entry methods
-    suspend fun addMealEntry(mealEntry: MealEntryEntity) = db.mealEntryDao().insert(mealEntry)
+    suspend fun addMealEntry(mealEntry: MealEntryEntity): Long {
+        val id = db.mealEntryDao().insert(mealEntry)
+        
+        // Update meal logging streak
+        try {
+            val mealDate = LocalDate.parse(mealEntry.date)
+            streakManager?.onMealLogged(mealDate)
+        } catch (e: Exception) {
+            // Log error but don't fail the meal entry insertion
+            android.util.Log.w("NutritionRepository", "Failed to update meal logging streak", e)
+        }
+        
+        return id
+    }
     suspend fun updateMealEntry(mealEntry: MealEntryEntity) = db.mealEntryDao().update(mealEntry)
     suspend fun deleteMealEntry(id: Long) = db.mealEntryDao().delete(id)
     suspend fun getMealEntriesForDate(date: String) = db.mealEntryDao().getByDate(date)

@@ -23,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
+import com.example.fitapp.R
 import com.example.fitapp.ui.AiLogsScreen
 import com.example.fitapp.ui.food.FoodScanScreen
 import com.example.fitapp.ui.nutrition.CookingModeScreen
@@ -126,31 +127,31 @@ fun MainScaffold() {
                     
                     // Main Dashboard - Consolidated
                     NavigationDrawerItem(
-                        label = { Text("🏠 Dashboard") }, 
+                        label = { Text("🏠 ${ctx.getString(R.string.dashboard)}") }, 
                         selected = currentRoute == "unified_dashboard" || currentRoute == "today", 
                         onClick = { scope.launch { drawerState.close() }; nav.navigate("unified_dashboard") },
-                        icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.Dashboard, contentDescription = ctx.getString(R.string.icon_dashboard)) },
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                     )
                     NavigationDrawerItem(
-                        label = { Text("🎯 Training & Pläne") }, 
+                        label = { Text("🎯 ${ctx.getString(R.string.training_plans)}") }, 
                         selected = currentRoute?.startsWith("plan") == true || currentRoute?.startsWith("ai_personal_trainer") == true, 
                         onClick = { scope.launch { drawerState.close() }; nav.navigate("plan") },
-                        icon = { Icon(Icons.Filled.FitnessCenter, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.FitnessCenter, contentDescription = ctx.getString(R.string.icon_fitness_center)) },
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                     )
                     NavigationDrawerItem(
-                        label = { Text("🍽️ Ernährung & Rezepte") }, 
+                        label = { Text("🍽️ ${ctx.getString(R.string.nutrition_recipes)}") }, 
                         selected = currentRoute?.startsWith("nutrition") == true || currentRoute?.startsWith("recipe") == true || currentRoute?.startsWith("enhanced_recipes") == true, 
                         onClick = { scope.launch { drawerState.close() }; nav.navigate("nutrition") },
-                        icon = { Icon(Icons.Filled.Restaurant, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.Restaurant, contentDescription = ctx.getString(R.string.icon_restaurant)) },
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                     )
                     NavigationDrawerItem(
-                        label = { Text("📊 Fortschritt & Analytics") }, 
+                        label = { Text("📊 ${ctx.getString(R.string.progress_analytics)}") }, 
                         selected = currentRoute?.startsWith("progress") == true || currentRoute?.startsWith("enhanced_analytics") == true, 
                         onClick = { scope.launch { drawerState.close() }; nav.navigate("enhanced_analytics") },
-                        icon = { Icon(Icons.Filled.Insights, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.Insights, contentDescription = ctx.getString(R.string.icon_insights)) },
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                     )
                     
@@ -169,10 +170,10 @@ fun MainScaffold() {
                     
                     // Settings - Consolidated
                     NavigationDrawerItem(
-                        label = { Text("⚙️ Einstellungen") }, 
+                        label = { Text("⚙️ ${ctx.getString(R.string.settings)}") }, 
                         selected = currentRoute?.startsWith("apikeys") == true || currentRoute?.contains("settings") == true, 
                         onClick = { scope.launch { drawerState.close() }; nav.navigate("apikeys") },
-                        icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.Settings, contentDescription = ctx.getString(R.string.settings)) },
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                     )
                 }
@@ -186,7 +187,7 @@ fun MainScaffold() {
                     title = { Text(currentTitle) },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Filled.Menu, contentDescription = "Menü")
+                            Icon(Icons.Filled.Menu, contentDescription = ctx.getString(R.string.menu))
                         }
                     },
                     actions = {
@@ -194,23 +195,23 @@ fun MainScaffold() {
                         when {
                             currentRoute?.startsWith("nutrition") == true || currentRoute?.startsWith("recipe") == true -> {
                                 IconButton(onClick = { nav.navigate("enhanced_recipes") }) {
-                                    Icon(Icons.Filled.Restaurant, contentDescription = "Alle Rezepte")
+                                    Icon(Icons.Filled.Restaurant, contentDescription = ctx.getString(R.string.all_recipes))
                                 }
                                 IconButton(onClick = { nav.navigate("shopping_list") }) {
-                                    Icon(Icons.Filled.ShoppingCart, contentDescription = "Einkaufsliste")
+                                    Icon(Icons.Filled.ShoppingCart, contentDescription = ctx.getString(R.string.shopping_list))
                                 }
                             }
                             currentRoute?.startsWith("plan") == true || currentRoute?.startsWith("today") == true -> {
                                 IconButton(onClick = { nav.navigate("ai_personal_trainer") }) {
-                                    Icon(Icons.Filled.Psychology, contentDescription = "KI Trainer")
+                                    Icon(Icons.Filled.Psychology, contentDescription = ctx.getString(R.string.ai_trainer))
                                 }
                                 IconButton(onClick = { nav.navigate("hiit_builder") }) {
-                                    Icon(Icons.Filled.Timer, contentDescription = "HIIT Builder")
+                                    Icon(Icons.Filled.Timer, contentDescription = ctx.getString(R.string.hiit_builder))
                                 }
                             }
                             else -> {
                                 IconButton(onClick = { nav.navigate("food_search") }) {
-                                    Icon(Icons.Filled.Search, contentDescription = "Lebensmittel suchen")
+                                    Icon(Icons.Filled.Search, contentDescription = ctx.getString(R.string.search_food))
                                 }
                                 IconButton(onClick = { nav.navigate("quick_actions") }) {
                                     Icon(Icons.Filled.Bolt, contentDescription = "Schnellaktionen")
@@ -220,14 +221,14 @@ fun MainScaffold() {
                         
                         // Settings dropdown
                         IconButton(onClick = { showOverflowMenu = true }) {
-                            Icon(Icons.Filled.MoreVert, contentDescription = "Mehr Optionen")
+                            Icon(Icons.Filled.MoreVert, contentDescription = ctx.getString(R.string.more_options))
                         }
                         DropdownMenu(
                             expanded = showOverflowMenu,
                             onDismissRequest = { showOverflowMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Einstellungen") },
+                                text = { Text(ctx.getString(R.string.settings)) },
                                 onClick = {
                                     showOverflowMenu = false
                                     nav.navigate("apikeys")
@@ -237,7 +238,7 @@ fun MainScaffold() {
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Health Connect") },
+                                text = { Text(ctx.getString(R.string.health_connect)) },
                                 onClick = {
                                     showOverflowMenu = false
                                     nav.navigate("health_connect_settings")
@@ -247,7 +248,7 @@ fun MainScaffold() {
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Hilfe & Support") },
+                                text = { Text(ctx.getString(R.string.help_support)) },
                                 onClick = {
                                     showOverflowMenu = false
                                     nav.navigate("help")
@@ -267,7 +268,7 @@ fun MainScaffold() {
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Über die App") },
+                                text = { Text(ctx.getString(R.string.about_app)) },
                                 onClick = {
                                     showOverflowMenu = false
                                     nav.navigate("about")
@@ -604,7 +605,10 @@ fun MainScaffold() {
                         onNavigateToApiKeys = { nav.navigate("apikeys") },
                         onNavigateToWorkout = { nav.navigate("todaytraining") },
                         onNavigateToNutrition = { nav.navigate("nutrition") },
-                        onNavigateToProgress = { nav.navigate("enhanced_analytics") }
+                        onNavigateToProgress = { nav.navigate("enhanced_analytics") },
+                        onNavigateToHiitBuilder = { nav.navigate("hiit_builder") },
+                        onNavigateToAnalytics = { nav.navigate("enhanced_analytics") },
+                        onNavigateToRecipeGeneration = { nav.navigate("recipe_generation") }
                     )
                 }
                 composable("feedback",

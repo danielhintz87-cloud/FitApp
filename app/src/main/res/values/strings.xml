@@ -78,4 +78,55 @@
     <string name="deep_link_error_title">Navigation Fehler</string>
     <string name="deep_link_error_message">Die angeforderte Seite konnte nicht gefunden werden.</string>
     <string name="deep_link_error_action">Zur Startseite</string>
+
+    <!-- Navigation and Common UI -->
+    <string name="menu">Menü</string>
+    <string name="dashboard">Dashboard</string>
+    <string name="back">Zurück</string>
+    <string name="settings">Einstellungen</string>
+    <string name="help_support">Hilfe &amp; Support</string>
+    <string name="about_app">Über die App</string>
+    <string name="more_options">Mehr Optionen</string>
+    
+    <!-- AI Personal Trainer -->
+    <string name="ai_personal_trainer">AI Personal Trainer</string>
+    <string name="generate_workout">Workout generieren</string>
+    <string name="nutrition_advice">Ernährungsberatung</string>
+    <string name="analyze_progress">Fortschritt analysieren</string>
+    <string name="start_workout">Workout starten</string>
+    <string name="view_full_plan">Vollständigen Plan anzeigen</string>
+    <string name="quick_actions">Schnellaktionen</string>
+    <string name="workout">Workout</string>
+    <string name="nutrition">Ernährung</string>
+    <string name="analysis">Analyse</string>
+    
+    <!-- Training and Plans -->
+    <string name="training_plans">Training &amp; Pläne</string>
+    <string name="hiit_builder">HIIT Builder</string>
+    <string name="ai_trainer">KI Trainer</string>
+    
+    <!-- Nutrition and Recipes -->
+    <string name="nutrition_recipes">Ernährung &amp; Rezepte</string>
+    <string name="all_recipes">Alle Rezepte</string>
+    <string name="shopping_list">Einkaufsliste</string>
+    <string name="search_food">Lebensmittel suchen</string>
+    
+    <!-- Progress and Analytics -->
+    <string name="progress_analytics">Fortschritt &amp; Analytics</string>
+    <string name="enhanced_analytics">Erweiterte Analytics</string>
+    
+    <!-- Health Connect -->
+    <string name="health_connect">Health Connect</string>
+    
+    <!-- Content Descriptions for Accessibility -->
+    <string name="icon_ai_trainer">KI Trainer Symbol</string>
+    <string name="icon_fitness_center">Fitness Center Symbol</string>
+    <string name="icon_restaurant">Restaurant Symbol</string>
+    <string name="icon_analytics">Analytics Symbol</string>
+    <string name="icon_dashboard">Dashboard Symbol</string>
+    <string name="icon_insights">Insights Symbol</string>
+    <string name="icon_health_safety">Gesundheit und Sicherheit Symbol</string>
+    <string name="icon_timer">Timer Symbol</string>
+    <string name="icon_psychology">Psychologie Symbol</string>
+    <string name="icon_shopping_cart">Einkaufswagen Symbol</string>
 </resources>

@@ -27,7 +27,7 @@ class MLResultTest {
     fun `Error should contain exception and fallback info`() {
         // Given
         val exception = RuntimeException("test error")
-        val result = MLResult.Error(exception, fallbackAvailable = true, message = "test message")
+        val result = MLResult.error<String>(exception, fallbackAvailable = true, message = "test message")
         
         // Then
         assertFalse(result.isSuccess)
@@ -36,8 +36,8 @@ class MLResultTest {
         assertNull(result.getOrNull())
         assertEquals("default", result.getOrDefault("default"))
         assertEquals(exception, result.getExceptionOrNull())
-        assertTrue(result.fallbackAvailable)
-        assertEquals("test message", result.message)
+        assertTrue((result as MLResult.Error).fallbackAvailable)
+        assertEquals("test message", (result as MLResult.Error).message)
     }
     
     @Test
@@ -74,7 +74,7 @@ class MLResultTest {
     fun `map should preserve error result`() {
         // Given
         val exception = RuntimeException("error")
-        val result = MLResult.error(exception)
+        val result = MLResult.error<String>(exception)
         
         // When
         val mapped = result.map { "should not execute" }
@@ -107,7 +107,7 @@ class MLResultTest {
         // When
         val flatMapped = result.flatMap { value ->
             if (value > 0) MLResult.Success(value * 2)
-            else MLResult.error(RuntimeException("negative"))
+            else MLResult.error<Int>(RuntimeException("negative"))
         }
         
         // Then
@@ -119,7 +119,7 @@ class MLResultTest {
     fun `flatMap should propagate error`() {
         // Given
         val exception = RuntimeException("original error")
-        val result = MLResult.error(exception)
+        val result = MLResult.error<Int>(exception)
         
         // When
         val flatMapped = result.flatMap { MLResult.Success("should not execute") }
@@ -146,7 +146,7 @@ class MLResultTest {
     fun `onSuccess should not execute action for error result`() {
         // Given
         var executed = false
-        val result = MLResult.error(RuntimeException())
+        val result = MLResult.error<String>(RuntimeException())
         
         // When
         result.onSuccess { executed = true }
@@ -160,7 +160,7 @@ class MLResultTest {
         // Given
         var executed = false
         val exception = RuntimeException("test")
-        val result = MLResult.error(exception, fallbackAvailable = true)
+        val result = MLResult.error<String>(exception, fallbackAvailable = true)
         
         // When
         result.onError { ex, fallback ->
@@ -204,7 +204,7 @@ class MLResultTest {
         assertEquals("success: data", successFolded)
         
         // Test Error
-        val errorResult = MLResult.error(RuntimeException("test"), true)
+        val errorResult = MLResult.error<String>(RuntimeException("test"), true)
         val errorFolded = errorResult.fold(
             onSuccess = { "success" },
             onError = { ex, fallback -> "error: ${ex.message}, fallback: $fallback" },
@@ -279,7 +279,7 @@ class MLResultTest {
         // Given
         val results = listOf(
             MLResult.Success("a"),
-            MLResult.error(RuntimeException("error")),
+            MLResult.error<String>(RuntimeException("error")),
             MLResult.Success("c")
         )
         
@@ -315,7 +315,7 @@ class MLResultTest {
         assertEquals("data", success.getOrNull())
         
         // Test error factory
-        val error = MLResult.error(RuntimeException("test"), true, "message")
+        val error = MLResult.error<String>(RuntimeException("test"), true, "message")
         assertTrue(error.isError)
         assertEquals("test", error.getExceptionOrNull()?.message)
         

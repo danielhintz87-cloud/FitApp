@@ -18,6 +18,10 @@
 gradle-app.setting
 .gradletasknamecache
 build/
+
+# Kotlin/Native and Kotlin compiler artifacts
+.kotlin/
+*.salive
 */build/
 .externalNativeBuild/
 .cxx/

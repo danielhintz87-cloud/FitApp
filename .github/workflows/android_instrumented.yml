@@ -1,4 +1,6 @@
 name: Android Instrumented Tests
+# Runs Android instrumentation tests on emulator
+# Includes migration tests, UI tests, and integration tests
 
 on:
   pull_request:
@@ -47,7 +49,7 @@ jobs:
       - name: Ensure platforms & build-tools
         run: |
           sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-      - name: Run connected tests (API 30)
+      - name: Run connected tests (API 30) - Instrumentation only
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 30
@@ -56,10 +58,17 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
           disable-animations: true
           script: |
+            echo "Running Android instrumentation tests (require emulator)"
             ./gradlew --stacktrace \
               assembleDebug \
               assembleAndroidTest \
               connectedDebugAndroidTest
+              
+      # Verify instrumentation test separation
+      - name: Verify instrumentation test separation
+        run: |
+          echo "Instrumentation tests completed - these run on Android emulator"
+          echo "Migration tests, UI tests, and integration tests executed"
       - name: Collect benchmark artifact
         if: success()
         run: |

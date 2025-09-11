@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.fitapp.R
 import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.getPersonalizedRecommendations
 import com.example.fitapp.data.prefs.ApiKeys
@@ -44,6 +45,9 @@ fun AIPersonalTrainerScreen(
     onNavigateToWorkout: (() -> Unit)? = null,
     onNavigateToNutrition: (() -> Unit)? = null,
     onNavigateToProgress: (() -> Unit)? = null,
+    onNavigateToHiitBuilder: (() -> Unit)? = null,
+    onNavigateToAnalytics: (() -> Unit)? = null,
+    onNavigateToRecipeGeneration: (() -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val context = LocalContext.current
@@ -130,12 +134,12 @@ fun AIPersonalTrainerScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Psychology,
-                        contentDescription = null,
+                        contentDescription = context.getString(R.string.icon_psychology),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "AI Personal Trainer",
+                        text = context.getString(R.string.ai_personal_trainer),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -145,7 +149,7 @@ fun AIPersonalTrainerScreen(
                 IconButton(onClick = { onBack?.invoke() }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Zurück"
+                        contentDescription = context.getString(R.string.back)
                     )
                 }
             },
@@ -247,7 +251,11 @@ fun AIPersonalTrainerScreen(
                     item {
                         WorkoutPlanCard(
                             workoutPlan = workoutPlan,
-                            onNavigateToWorkout = onNavigateToWorkout
+                            onNavigateToWorkout = onNavigateToWorkout,
+                            onStartWorkout = {
+                                // Support both signature styles
+                                onNavigateToWorkout?.invoke()
+                            }
                         )
                     }
                 }
@@ -257,7 +265,10 @@ fun AIPersonalTrainerScreen(
                     item {
                         MealPlanCard(
                             mealPlan = mealPlan,
-                            onNavigateToNutrition = onNavigateToNutrition
+                            onNavigateToNutrition = onNavigateToNutrition,
+                            onViewFullPlan = {
+                                onNavigateToRecipeGeneration?.invoke()
+                            }
                         )
                     }
                 }
@@ -272,9 +283,15 @@ fun AIPersonalTrainerScreen(
                 // Quick Actions
                 item {
                     QuickActionsCard(
-                        onGenerateWorkout = { onNavigateToWorkout?.invoke() },
+                        onGenerateWorkout = { 
+                            onNavigateToWorkout?.invoke()
+                            onNavigateToHiitBuilder?.invoke()
+                        },
                         onGetNutritionAdvice = { onNavigateToNutrition?.invoke() },
-                        onAnalyzeProgress = { onNavigateToProgress?.invoke() }
+                        onAnalyzeProgress = { 
+                            onNavigateToProgress?.invoke()
+                            onNavigateToAnalytics?.invoke()
+                        }
                     )
                 }
             }
@@ -412,7 +429,8 @@ fun SmartRecommendationCard(
 @Composable
 fun WorkoutPlanCard(
     workoutPlan: WorkoutPlan,
-    onNavigateToWorkout: (() -> Unit)? = null
+    onNavigateToWorkout: (() -> Unit)? = null,
+    onStartWorkout: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -470,10 +488,13 @@ fun WorkoutPlanCard(
             Spacer(modifier = Modifier.height(12.dp))
             
             Button(
-                onClick = { onNavigateToWorkout?.invoke() },
+                onClick = { 
+                    onNavigateToWorkout?.invoke()
+                    onStartWorkout()
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Workout starten")
+                Text(LocalContext.current.getString(R.string.start_workout))
             }
         }
     }
@@ -482,7 +503,8 @@ fun WorkoutPlanCard(
 @Composable
 fun MealPlanCard(
     mealPlan: PersonalizedMealPlan,
-    onNavigateToNutrition: (() -> Unit)? = null
+    onNavigateToNutrition: (() -> Unit)? = null,
+    onViewFullPlan: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -548,10 +570,13 @@ fun MealPlanCard(
             Spacer(modifier = Modifier.height(12.dp))
             
             Button(
-                onClick = { onNavigateToNutrition?.invoke() },
+                onClick = { 
+                    onNavigateToNutrition?.invoke()
+                    onViewFullPlan()
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Vollständigen Plan anzeigen")
+                Text(LocalContext.current.getString(R.string.view_full_plan))
             }
         }
     }
@@ -632,6 +657,8 @@ fun QuickActionsCard(
     onGetNutritionAdvice: () -> Unit,
     onAnalyzeProgress: () -> Unit
 ) {
+    val context = LocalContext.current
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -642,7 +669,7 @@ fun QuickActionsCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Schnellaktionen",
+                text = context.getString(R.string.quick_actions),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -668,12 +695,12 @@ fun QuickActionsCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.FitnessCenter,
-                            contentDescription = "Workout",
+                            contentDescription = context.getString(R.string.icon_fitness_center),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     Text(
-                        text = "Workout",
+                        text = context.getString(R.string.workout),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -693,12 +720,12 @@ fun QuickActionsCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Restaurant,
-                            contentDescription = "Ernährung",
+                            contentDescription = context.getString(R.string.icon_restaurant),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     Text(
-                        text = "Ernährung",
+                        text = context.getString(R.string.nutrition),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -718,12 +745,12 @@ fun QuickActionsCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Analytics,
-                            contentDescription = "Analyse",
+                            contentDescription = context.getString(R.string.icon_analytics),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     Text(
-                        text = "Analyse",
+                        text = context.getString(R.string.analysis),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
