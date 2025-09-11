@@ -8,8 +8,8 @@ import com.example.fitapp.domain.entities.CaloriesEstimate
 import com.example.fitapp.util.ApiCallWrapper
 import com.example.fitapp.util.safeApiCall
 import com.example.fitapp.infrastructure.ai.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.example.fitapp.core.threading.DispatcherProvider
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -41,7 +41,8 @@ import com.example.fitapp.domain.entities.TaskType
  */
 class GeminiAiProvider(
     private val context: Context,
-    private val httpClient: OkHttpClient
+    private val httpClient: OkHttpClient,
+    private val dispatchers: DispatcherProvider
 ) : AiProvider {
     private val logTag = "GeminiProvider"
     
@@ -127,7 +128,7 @@ class GeminiAiProvider(
      * Intelligente Bildanalyse mit funktionsbasierter Modellauswahl  
      * Für Multimodal-Tasks wird immer Gemini Flash verwendet (beste Vision-Fähigkeiten)
      */
-    suspend fun analyzeImageWithTaskType(prompt: String, bitmap: Bitmap, taskType: TaskType): Result<CaloriesEstimate> = withContext(Dispatchers.IO) {
+    suspend fun analyzeImageWithTaskType(prompt: String, bitmap: Bitmap, taskType: TaskType): Result<CaloriesEstimate> = withContext(dispatchers.io) {
         runCatching {
             val apiKey = ApiKeys.getGeminiKey(context)
             if (apiKey.isBlank()) {
