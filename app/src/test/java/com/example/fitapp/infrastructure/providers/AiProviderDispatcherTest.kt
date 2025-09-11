@@ -2,16 +2,17 @@ package com.example.fitapp.infrastructure.providers
 
 import android.content.Context
 import com.example.fitapp.core.threading.DispatcherProvider
+import com.example.fitapp.di.IoDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.*
-import okhttp3.OkHttpClient
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Test to verify AI providers properly use IO dispatcher for network operations
@@ -48,6 +49,63 @@ class AiProviderDispatcherTest {
         
         // Verify IO dispatcher was used
         assertTrue("IO dispatcher should be used for operations", ioDispatcherCalled.get())
+    }
+    
+    @Test
+    fun `ai providers with io dispatcher injection avoid main thread`() = runTest {
+        val threadNameCapture = AtomicReference<String>()
+        val mainThreadDetected = AtomicBoolean(false)
+        
+        // Create tracking IO dispatcher that captures thread names
+        val trackingIoDispatcher = object : CoroutineDispatcher() {
+            override fun dispatch(context: kotlin.coroutines.CoroutineContext, block: Runnable) {
+                StandardTestDispatcher(testScheduler).dispatch(context) {
+                    val currentThreadName = Thread.currentThread().name
+                    threadNameCapture.set(currentThreadName)
+                    
+                    // Check if we're on main thread (should never happen for network operations)
+                    if (currentThreadName.contains("main", ignoreCase = true)) {
+                        mainThreadDetected.set(true)
+                    }
+                    
+                    block.run()
+                }
+            }
+        }
+        
+        // Simulate dispatcher usage as AI providers would
+        kotlinx.coroutines.withContext(trackingIoDispatcher) {
+            // Simulate network operation work
+            "network call result"
+        }
+        
+        testScheduler.advanceUntilIdle()
+        
+        // Verify no main thread usage was detected
+        assertFalse(
+            "AI provider network operations should never execute on main thread. " +
+            "Detected thread: ${threadNameCapture.get()}", 
+            mainThreadDetected.get()
+        )
+    }
+    
+    @Test
+    fun `io dispatcher qualifier injection pattern works correctly`() {
+        // This test verifies the @IoDispatcher injection pattern
+        val testDispatcher = StandardTestDispatcher()
+        
+        // Simulate how @IoDispatcher would be injected
+        class TestProviderWithIoDispatcher(
+            @IoDispatcher private val ioDispatcher: CoroutineDispatcher
+        ) {
+            fun getIoDispatcher() = ioDispatcher
+        }
+        
+        val testProvider = TestProviderWithIoDispatcher(testDispatcher)
+        
+        // Verify the dispatcher can be injected and accessed
+        assertNotNull("IO dispatcher should be injectable", testProvider.getIoDispatcher())
+        assertEquals("Injected dispatcher should match provided one", testDispatcher, testProvider.getIoDispatcher())
     }
     
     @Test

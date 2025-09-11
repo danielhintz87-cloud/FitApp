@@ -86,12 +86,12 @@ class FitAppApplication : Application() {
             StrictMode.setVmPolicy(
                 StrictMode.VmPolicy.Builder()
                     .detectLeakedSqlLiteObjects()
-                    .detectLeakedClosableObjects()
+                    .detectLeakedClosableObjects() // Detect resource leaks early
                     .penaltyLog()
                     .build()
             )
             
-            Log.d("FitApp", "StrictMode enabled for debug build")
+            Log.d("FitApp", "StrictMode enabled for debug build with leak detection")
         } catch (e: Exception) {
             Log.w("FitApp", "Failed to enable StrictMode", e)
         }
