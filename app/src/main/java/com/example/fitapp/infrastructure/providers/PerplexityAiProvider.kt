@@ -178,7 +178,7 @@ class PerplexityAiProvider @Inject constructor(
                     "Error parsing response: ${e.message}"
                 }
             }
-            content
+            return content
     }
     
     override suspend fun analyzeImage(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> {
