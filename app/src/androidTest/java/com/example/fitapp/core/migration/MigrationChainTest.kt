@@ -27,6 +27,54 @@ class MigrationChainTest {
     )
 
     @Test
+    fun migration_8_to_17_complete_chain_completes_successfully() {
+        // 1) Create database with version 8 (oldest available schema)
+        helper.createDatabase(TEST_DB, 8).apply { close() }
+
+        // 2) Run complete migration chain 8→9→10→11→12→13→14→15→16→17
+        val ctx = InstrumentationRegistry.getInstrumentation().targetContext
+        val db = Room.databaseBuilder(ctx, AppDatabase::class.java, TEST_DB)
+            .addMigrations(
+                AppDatabase.MIGRATION_8_9,
+                AppDatabase.MIGRATION_9_10,
+                AppDatabase.MIGRATION_10_11,
+                AppDatabase.MIGRATION_11_12,
+                AppDatabase.MIGRATION_12_13,
+                AppDatabase.MIGRATION_13_14,
+                AppDatabase.MIGRATION_14_15,
+                AppDatabase.MIGRATION_15_16,
+                AppDatabase.MIGRATION_16_17
+            )
+            .build()
+
+        // 3) Verify database opens successfully at version 17
+        db.openHelper.writableDatabase.use { sqlDb ->
+            // Basic schema validation - ensure core tables exist
+            val tables = mutableSetOf<String>()
+            sqlDb.query("SELECT name FROM sqlite_master WHERE type='table'").use { c ->
+                val nameIdx = c.getColumnIndexOrThrow("name")
+                while (c.moveToNext()) {
+                    tables += c.getString(nameIdx)
+                }
+            }
+            
+            // Verify key tables exist after migration
+            val requiredTables = setOf(
+                "recipes", "ai_logs", "personal_achievements", 
+                "cooking_sessions", "recipe_ingredients", "meal_entries"
+            )
+            
+            for (table in requiredTables) {
+                assert(tables.contains(table)) { 
+                    "Required table '$table' missing after migration. Found tables: $tables" 
+                }
+            }
+        }
+        
+        db.close()
+    }
+
+    @Test
     fun migration_14_to_17_chain_completes_successfully() {
         // 1) Create database with version 14 (known stable version from logs)
         helper.createDatabase(TEST_DB, 14).apply { close() }
