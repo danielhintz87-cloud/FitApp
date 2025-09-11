@@ -22,9 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
+import com.example.fitapp.domain.usecases.HydrationGoalUseCase
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.math.PI
 import kotlin.math.cos
@@ -39,6 +41,7 @@ fun NutritionAnalyticsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val repo = remember { NutritionRepository(AppDatabase.get(context)) }
+    val hydrationGoalUseCase = remember { HydrationGoalUseCase.create(context) }
     
     var selectedPeriod by remember { mutableStateOf("week") }
     var nutritionData by remember { mutableStateOf<List<DailyNutritionData>>(emptyList()) }
@@ -49,7 +52,7 @@ fun NutritionAnalyticsScreen(
         scope.launch {
             isLoading = true
             try {
-                val endDate = LocalDate.now()
+                val endDate = LocalDate.now(ZoneId.systemDefault())
                 val startDate = when (selectedPeriod) {
                     "week" -> endDate.minusDays(6)
                     "month" -> endDate.minusDays(29)
@@ -67,6 +70,9 @@ fun NutritionAnalyticsScreen(
                     val water = repo.getTotalWaterForDate(dateString)
                     val goal = repo.goalFlow(currentDate).firstOrNull()
                     
+                    // Use unified hydration goal for this date
+                    val targetWater = hydrationGoalUseCase.getHydrationGoalMl(currentDate)
+                    
                     data.add(
                         DailyNutritionData(
                             date = currentDate,
@@ -79,7 +85,7 @@ fun NutritionAnalyticsScreen(
                             targetCarbs = goal?.targetCarbs ?: 250f,
                             targetProtein = goal?.targetProtein ?: 100f,
                             targetFat = goal?.targetFat ?: 65f,
-                            targetWater = goal?.targetWaterMl ?: 2000
+                            targetWater = targetWater
                         )
                     )
                     currentDate = currentDate.plusDays(1)
