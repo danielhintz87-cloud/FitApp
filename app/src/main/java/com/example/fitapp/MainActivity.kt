@@ -1,7 +1,9 @@
 package com.example.fitapp
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -16,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.data.repo.PersonalMotivationRepository
@@ -33,6 +37,8 @@ import com.example.fitapp.util.StructuredLogger
 class MainActivity : ComponentActivity() {
     private var isInitialized = false
     private var networkMonitor: NetworkStateMonitor? = null
+    private lateinit var navController: NavHostController
+    private var pendingDeepLink: String? = null
     
     // Permission launcher for POST_NOTIFICATIONS
     private val notificationPermissionLauncher = registerForActivityResult(
@@ -56,8 +62,23 @@ class MainActivity : ComponentActivity() {
             StructuredLogger.initialize(this, enableFileLogging = true, StructuredLogger.LogLevel.INFO)
             StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "App starting")
             
+            // Handle deep links
+            handleDeepLink(intent)
+            
             // Set content immediately for faster UI loading
-            setContent { MainScaffold() }
+            setContent { 
+                navController = rememberNavController()
+                MainScaffold(navController = navController)
+                
+                // Navigate to deep link if pending
+                LaunchedEffect(pendingDeepLink) {
+                    pendingDeepLink?.let { deepLink ->
+                        StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Navigating to deep link: $deepLink")
+                        navController.navigate(deepLink)
+                        pendingDeepLink = null
+                    }
+                }
+            }
             
             // Initialize critical services in background
             initializeCriticalServices()
@@ -87,6 +108,57 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+            }
+        }
+    }
+    
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleDeepLink(intent)
+        
+        // Navigate immediately if nav controller is ready
+        pendingDeepLink?.let { deepLink ->
+            if (::navController.isInitialized) {
+                StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Navigating to deep link via onNewIntent: $deepLink")
+                navController.navigate(deepLink)
+                pendingDeepLink = null
+            }
+        }
+    }
+    
+    private fun handleDeepLink(intent: Intent?) {
+        intent?.data?.let { uri ->
+            StructuredLogger.info(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Processing deep link: $uri")
+            pendingDeepLink = parseDeepLink(uri)
+        }
+    }
+    
+    private fun parseDeepLink(uri: Uri): String {
+        return when {
+            uri.scheme == "fitapp" -> {
+                when (uri.host) {
+                    "dashboard", "today" -> "unified_dashboard"
+                    "nutrition" -> "nutrition"
+                    "training", "plan" -> "plan"
+                    "analytics", "progress" -> "enhanced_analytics"
+                    "settings" -> "apikeys"
+                    "recipes" -> "enhanced_recipes"
+                    "ai_trainer" -> "ai_personal_trainer"
+                    "hiit" -> "hiit_builder"
+                    "food_search" -> "food_search"
+                    "bmi" -> "bmi_calculator"
+                    "weight" -> "weight_tracking"
+                    "help" -> "help"
+                    "about" -> "about"
+                    else -> {
+                        StructuredLogger.warning(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Unknown deep link host: ${uri.host}")
+                        "unified_dashboard" // Default fallback
+                    }
+                }
+            }
+            else -> {
+                StructuredLogger.warning(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Unsupported deep link scheme: ${uri.scheme}")
+                "unified_dashboard" // Default fallback
             }
         }
     }

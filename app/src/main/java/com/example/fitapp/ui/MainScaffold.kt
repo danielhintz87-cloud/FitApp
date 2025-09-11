@@ -67,8 +67,8 @@ import java.time.LocalDate
 @OptIn(ExperimentalMaterial3Api::class)
 @ExperimentalGetImage
 @Composable
-fun MainScaffold() {
-    val nav = rememberNavController()
+fun MainScaffold(navController: NavController? = null) {
+    val nav = navController ?: rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val ctx = LocalContext.current

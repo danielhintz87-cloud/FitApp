@@ -51,4 +51,16 @@
     <string name="icon_timer">Timer Symbol</string>
     <string name="icon_psychology">Psychologie Symbol</string>
     <string name="icon_shopping_cart">Einkaufswagen Symbol</string>
+    <string name="icon_search">Suche Symbol</string>
+    <string name="icon_more_vert">Weitere Optionen Symbol</string>
+    <string name="icon_help">Hilfe Symbol</string>
+    <string name="icon_info">Info Symbol</string>
+    <string name="icon_menu">Menü Symbol</string>
+    
+    <!-- Navigation Content Descriptions -->
+    <string name="navigate_to_dashboard">Zum Dashboard navigieren</string>
+    <string name="navigate_to_training">Zu Training navigieren</string>
+    <string name="navigate_to_nutrition">Zu Ernährung navigieren</string>
+    <string name="navigate_to_analytics">Zu Analytics navigieren</string>
+    <string name="navigate_to_settings">Zu Einstellungen navigieren</string>
 </resources>
