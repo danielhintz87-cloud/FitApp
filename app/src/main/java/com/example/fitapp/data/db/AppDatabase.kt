@@ -898,12 +898,12 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_leaderboard_score` ON `leaderboard_entries` (`score`)")
                 
                 // Add new columns to personal_achievements table for enhanced badge system
-                db.execSQL("ALTER TABLE `personal_achievements` ADD COLUMN `badgeType` TEXT")
-                db.execSQL("ALTER TABLE `personal_achievements` ADD COLUMN `rarity` TEXT")
-                db.execSQL("ALTER TABLE `personal_achievements` ADD COLUMN `socialVisible` INTEGER NOT NULL DEFAULT 1")
-                db.execSQL("ALTER TABLE `personal_achievements` ADD COLUMN `challengeId` INTEGER")
-                db.execSQL("ALTER TABLE `personal_achievements` ADD COLUMN `shareMessage` TEXT")
-                db.execSQL("ALTER TABLE `personal_achievements` ADD COLUMN `pointsValue` INTEGER NOT NULL DEFAULT 0")
+                addColumnIfNotExists(db, "personal_achievements", "badgeType", "TEXT")
+                addColumnIfNotExists(db, "personal_achievements", "rarity", "TEXT") 
+                addColumnIfNotExists(db, "personal_achievements", "socialVisible", "INTEGER NOT NULL DEFAULT 1")
+                addColumnIfNotExists(db, "personal_achievements", "challengeId", "INTEGER")
+                addColumnIfNotExists(db, "personal_achievements", "shareMessage", "TEXT")
+                addColumnIfNotExists(db, "personal_achievements", "pointsValue", "INTEGER NOT NULL DEFAULT 0")
             }
         }
 
@@ -1343,6 +1343,37 @@ abstract class AppDatabase : RoomDatabase() {
             }
             
             android.util.Log.i("AppDatabase", "Performance indices creation completed: $successCount successful, $failureCount failed")
+        }
+        
+        /**
+         * Safely adds a column to a table if it doesn't already exist.
+         * This makes ALTER TABLE ADD COLUMN operations idempotent.
+         */
+        private fun addColumnIfNotExists(
+            db: SupportSQLiteDatabase,
+            tableName: String,
+            columnName: String,
+            columnDefinition: String
+        ) {
+            try {
+                // Check if column already exists
+                db.query("PRAGMA table_info($tableName)").use { cursor ->
+                    val nameIndex = cursor.getColumnIndexOrThrow("name")
+                    while (cursor.moveToNext()) {
+                        if (cursor.getString(nameIndex) == columnName) {
+                            android.util.Log.d("AppDatabase", "Column $tableName.$columnName already exists, skipping")
+                            return
+                        }
+                    }
+                }
+                
+                // Column doesn't exist, add it
+                db.execSQL("ALTER TABLE `$tableName` ADD COLUMN `$columnName` $columnDefinition")
+                android.util.Log.d("AppDatabase", "Added column $tableName.$columnName")
+            } catch (e: Exception) {
+                android.util.Log.w("AppDatabase", "Failed to add column $tableName.$columnName", e)
+                // Don't rethrow - this allows migrations to continue
+            }
         }
     }
 }
