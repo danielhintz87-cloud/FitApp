@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.fitapp.R
 
 /**
  * Feedback Screen for user feedback and bug reports
@@ -42,10 +44,13 @@ fun FeedbackScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Feedback senden") },
+                title = { Text(stringResource(R.string.title_feedback)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = stringResource(R.string.cd_back_button)
+                        )
                     }
                 }
             )
@@ -75,12 +80,12 @@ fun FeedbackScreen(
                         ) {
                             Icon(
                                 Icons.Filled.Feedback,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.cd_feedback_icon),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Ihr Feedback ist wichtig",
+                                text = stringResource(R.string.feedback_subtitle),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )

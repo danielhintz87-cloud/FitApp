@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.fitapp.R
 
 /**
  * Quick Actions Screen - Central hub for commonly used actions
@@ -33,10 +35,13 @@ fun QuickActionsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Schnellaktionen") },
+                title = { Text(stringResource(R.string.title_quick_actions)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = stringResource(R.string.cd_back_button)
+                        )
                     }
                 }
             )
