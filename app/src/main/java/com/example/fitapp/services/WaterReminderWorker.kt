@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.*
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
+import com.example.fitapp.domain.usecases.HydrationGoalUseCase
 import com.example.fitapp.services.SmartNotificationManager
 import java.time.LocalDate
 import java.util.concurrent.TimeUnit
@@ -20,7 +21,10 @@ class WaterReminderWorker(
             val today = LocalDate.now().toString()
             val repo = NutritionRepository(database)
             val waterIntake = repo.getTotalWaterForDate(today)
-            val targetIntake = 2000 // Default Ziel; könnte künftig aus Zielen stammen
+            
+            // Use unified hydration goal instead of hardcoded value
+            val hydrationGoalUseCase = HydrationGoalUseCase.create(applicationContext)
+            val targetIntake = hydrationGoalUseCase.getTodaysHydrationGoalMl()
             
             SmartNotificationManager.showWaterReminder(
                 applicationContext,

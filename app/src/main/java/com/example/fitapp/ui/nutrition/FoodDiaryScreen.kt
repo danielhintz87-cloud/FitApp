@@ -27,6 +27,7 @@ import com.example.fitapp.data.db.DailyGoalEntity
 import com.example.fitapp.data.db.MealEntryEntity
 import com.example.fitapp.data.db.FoodItemEntity
 import com.example.fitapp.data.repo.NutritionRepository
+import com.example.fitapp.domain.usecases.HydrationGoalUseCase
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -43,6 +44,7 @@ fun FoodDiaryScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val repo = remember { NutritionRepository(AppDatabase.get(context)) }
+    val hydrationGoalUseCase = remember { HydrationGoalUseCase.create(context) }
     
     val today = remember { LocalDate.now() }
     val todayString = today.toString()
@@ -56,6 +58,7 @@ fun FoodDiaryScreen(
     var totalProtein by remember { mutableFloatStateOf(0f) }
     var totalFat by remember { mutableFloatStateOf(0f) }
     var totalWater by remember { mutableIntStateOf(0) }
+    var hydrationGoal by remember { mutableIntStateOf(2000) } // Default, will be updated
     
     // Load data
     LaunchedEffect(todayString) {
@@ -79,6 +82,9 @@ fun FoodDiaryScreen(
             totalProtein = repo.getTotalProteinForDate(todayString)
             totalFat = repo.getTotalFatForDate(todayString)
             totalWater = repo.getTotalWaterForDate(todayString)
+            
+            // Get unified hydration goal
+            hydrationGoal = hydrationGoalUseCase.getHydrationGoalMl(today)
         }
     }
     
@@ -129,7 +135,7 @@ fun FoodDiaryScreen(
         // Water Tracking Card
         WaterTrackingCard(
             currentWater = totalWater,
-            targetWater = goal?.targetWaterMl ?: 2000,
+            targetWater = hydrationGoal,
             onAddWater = { amount ->
                 scope.launch {
                     repo.addWater(todayString, amount)
