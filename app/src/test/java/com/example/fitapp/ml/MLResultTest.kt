@@ -27,7 +27,7 @@ class MLResultTest {
     fun `Error should contain exception and fallback info`() {
         // Given
         val exception = RuntimeException("test error")
-        val result = MLResult.Error(exception, fallbackAvailable = true, message = "test message")
+        val result = MLResult.error<String>(exception, fallbackAvailable = true, message = "test message")
         
         // Then
         assertFalse(result.isSuccess)
@@ -36,8 +36,8 @@ class MLResultTest {
         assertNull(result.getOrNull())
         assertEquals("default", result.getOrDefault("default"))
         assertEquals(exception, result.getExceptionOrNull())
-        assertTrue(result.fallbackAvailable)
-        assertEquals("test message", result.message)
+        assertTrue((result as MLResult.Error).fallbackAvailable)
+        assertEquals("test message", (result as MLResult.Error).message)
     }
     
     @Test
