@@ -2,37 +2,37 @@ package com.example.fitapp.services
 
 import android.content.Context
 import androidx.work.*
-import com.example.fitapp.data.db.AppDatabase
-import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.domain.usecases.HydrationGoalUseCase
-import java.time.LocalDate
-import java.time.ZoneId
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
 
-class WaterReminderWorker(
-    context: Context,
-    workerParams: WorkerParameters,
+class WaterReminderWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val hydrationGoalUseCase: HydrationGoalUseCase
 ) : CoroutineWorker(context, workerParams) {
+    
+    @dagger.assisted.AssistedFactory
+    interface Factory {
+        fun create(context: Context, workerParams: WorkerParameters): WaterReminderWorker
+    }
+    
     override suspend fun doWork(): Result {
         return try {
-            val database = AppDatabase.get(applicationContext)
-
-            val today = LocalDate.now(ZoneId.systemDefault()).toString()
-            val repo = NutritionRepository(database, applicationContext)
-            val waterIntake = repo.getTotalWaterForDate(today)
-
-            // Use unified hydration goal instead of hardcoded value
-            val hydrationGoalUseCase = HydrationGoalUseCase.create(applicationContext)
-            val targetIntake = hydrationGoalUseCase.getTodaysHydrationGoalMl()
-
+            // Get current hydration status using the reactive use case
+            val status = hydrationGoalUseCase.hydrationStatus.first()
+            
             SmartNotificationManager.showWaterReminder(
                 applicationContext,
-                waterIntake,
-                targetIntake,
+                status.consumedMl,
+                status.goalMl
             )
 
             Result.success()
         } catch (e: Exception) {
+            android.util.Log.e("WaterReminderWorker", "Failed to show water reminder", e)
             Result.failure()
         }
     }
