@@ -7,6 +7,9 @@ plugins {
     id("org.jetbrains.kotlin.kapt")
     alias(libs.plugins.hilt)
     alias(libs.plugins.protobuf)
+    // Static analysis tools
+    id("io.gitlab.arturbosch.detekt") version "1.23.8"
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.1"
 }
 
 // Ensure Hilt's annotation processors see the JavaPoet version that provides
@@ -184,4 +187,68 @@ protobuf {
 
 hilt {
     enableAggregatingTask = false
+}
+
+// Static analysis configuration
+detekt {
+    source.setFrom("src/main/java", "src/main/kotlin")
+    config.setFrom("$rootDir/detekt.yml")
+    buildUponDefaultConfig = true
+    autoCorrect = true
+}
+
+ktlint {
+    version.set("1.0.1")
+    debug.set(false)
+    verbose.set(true)
+    android.set(true)
+    outputToConsole.set(true)
+    ignoreFailures.set(false)
+    enableExperimentalRules.set(false)
+    filter {
+        exclude("**/generated/**")
+        include("**/kotlin/**")
+    }
+}
+
+// NavGraph reachability check task
+tasks.register("checkNavGraphReachability") {
+    group = "verification"
+    description = "Checks that all navigation destinations are reachable"
+    
+    doLast {
+        val navGraphFiles = fileTree("src/main/res/navigation") {
+            include("**/*.xml")
+        }
+        
+        if (navGraphFiles.isEmpty) {
+            println("No navigation graph files found - skipping reachability check")
+            return@doLast
+        }
+        
+        navGraphFiles.forEach { file ->
+            println("Checking navigation graph: ${file.name}")
+            val content = file.readText()
+            
+            // Basic check for unreferenced destinations
+            val destinations = Regex("<(fragment|activity)\\s+[^>]*android:id=\"@\\+?id/([^\"]+)\"").findAll(content)
+                .map { it.groupValues[2] }.toSet()
+            val actions = Regex("android:destination=\"@\\+?id/([^\"]+)\"").findAll(content)
+                .map { it.groupValues[1] }.toSet()
+            
+            val unreachable = destinations - actions
+            if (unreachable.isNotEmpty()) {
+                // Remove start destination from unreachable list
+                val startDestination = Regex("app:startDestination=\"@\\+?id/([^\"]+)\"").find(content)?.groupValues?.get(1)
+                val actualUnreachable = if (startDestination != null) {
+                    unreachable - startDestination
+                } else unreachable
+                
+                if (actualUnreachable.isNotEmpty()) {
+                    throw GradleException("Unreachable destinations found in ${file.name}: $actualUnreachable")
+                }
+            }
+            println("✓ Navigation graph ${file.name} is valid")
+        }
+    }
 }
