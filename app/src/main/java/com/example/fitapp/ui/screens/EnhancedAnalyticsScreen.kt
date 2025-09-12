@@ -43,7 +43,7 @@ fun EnhancedAnalyticsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val db = remember { AppDatabase.get(context) }
-    val nutritionRepo = remember { NutritionRepository(db) }
+    val nutritionRepo = remember { NutritionRepository(db, context) }
     val motivationRepo = remember { PersonalMotivationRepository(db) }
     val weightLossRepo = remember { WeightLossRepository(db) }
 

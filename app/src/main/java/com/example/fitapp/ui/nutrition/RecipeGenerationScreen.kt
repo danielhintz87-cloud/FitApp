@@ -36,7 +36,7 @@ fun RecipeGenerationScreen(
     modifier: Modifier = Modifier,
 ) {
     val ctx = LocalContext.current
-    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val repo = remember { NutritionRepository(AppDatabase.get(ctx), ctx) }
     val scope = rememberCoroutineScope()
 
     // Form state

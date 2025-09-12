@@ -84,7 +84,6 @@ class HealthCheckWorker(
          */
         fun schedulePeriodicHealthCheck(context: Context) {
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
                 .setRequiresBatteryNotLow(true)
                 .build()
 
@@ -116,9 +115,7 @@ class HealthCheckWorker(
          * Trigger immediate health check
          */
         fun triggerImmediateHealthCheck(context: Context) {
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
+              val constraints = Constraints.Builder().build()
 
             val immediateRequest = OneTimeWorkRequestBuilder<HealthCheckWorker>()
                 .setConstraints(constraints)

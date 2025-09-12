@@ -39,7 +39,7 @@ fun PlanScreen(
     val scope = rememberSafeCoroutineScope()
 
     // Optimize expensive repository creation
-    val repo = rememberStable(ctx) { NutritionRepository(AppDatabase.get(ctx)) }
+    val repo = rememberStable(ctx) { NutritionRepository(AppDatabase.get(ctx), ctx) }
 
     // Optimized state management
     var goal by remember { mutableStateOf("Muskelaufbau") }

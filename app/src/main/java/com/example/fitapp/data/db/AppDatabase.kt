@@ -1556,10 +1556,6 @@ abstract class AppDatabase : RoomDatabase() {
                     android.util.Log.i("Migration", "Successfully migrated meal_entries to support recipes")
                 }
             }
-<<<<<<< HEAD
-
-=======
-        }
 
         val MIGRATION_17_18 = object : Migration(17, 18) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -1583,8 +1579,7 @@ abstract class AppDatabase : RoomDatabase() {
                 android.util.Log.i("Migration", "Successfully created health_status table")
             }
         }
-        
->>>>>>> fd108a8e (Implement core health checking infrastructure - entities, repositories, and worker foundation)
+
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: buildDatabase(context)

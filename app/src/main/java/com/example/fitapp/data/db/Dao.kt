@@ -1917,5 +1917,3 @@ interface HealthStatusDao {
     @Query("SELECT COUNT(*) FROM health_status WHERE isHealthy = 0")
     suspend fun getUnhealthyCount(): Int
 }
-
->>>>>>> fd108a8e (Implement core health checking infrastructure - entities, repositories, and worker foundation)
