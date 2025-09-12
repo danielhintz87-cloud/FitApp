@@ -268,6 +268,283 @@ class ComprehensiveMigrationTest {
     }
 
     @Test
+    fun migration_10_to_11_creates_workout_performance_tables() {
+        val db10 = helper.createDatabase(TEST_DB, 10)
+        db10.close()
+
+        val db11 = helper.runMigrationsAndValidate(
+            TEST_DB,
+            11,
+            true,
+            AppDatabase.MIGRATION_10_11
+        )
+
+        // Verify workout performance tables exist
+        val workoutTables = listOf("workout_performance", "workout_sessions", "exercise_progressions")
+        workoutTables.forEach { tableName ->
+            validateTableExists(db11, tableName)
+        }
+
+        // Validate workout_performance table structure
+        validateTableSchema(db11, "workout_performance", mapOf(
+            "id" to "TEXT",
+            "exerciseId" to "TEXT", 
+            "sessionId" to "TEXT",
+            "planId" to "INTEGER",
+            "sets" to "INTEGER",
+            "reps" to "INTEGER",
+            "weight" to "REAL",
+            "restTimeSeconds" to "INTEGER",
+            "completedAt" to "INTEGER"
+        ))
+
+        db11.close()
+    }
+
+    @Test
+    fun migration_11_to_12_creates_cooking_tables() {
+        val db11 = helper.createDatabase(TEST_DB, 11)
+        db11.close()
+
+        val db12 = helper.runMigrationsAndValidate(
+            TEST_DB,
+            12,
+            true,
+            AppDatabase.MIGRATION_11_12
+        )
+
+        // Verify cooking tables exist
+        val cookingTables = listOf("cooking_sessions", "cooking_timers")
+        cookingTables.forEach { tableName ->
+            validateTableExists(db12, tableName)
+        }
+
+        // Validate cooking_sessions table structure
+        validateTableSchema(db12, "cooking_sessions", mapOf(
+            "id" to "TEXT",
+            "recipeId" to "TEXT",
+            "startTime" to "INTEGER",
+            "endTime" to "INTEGER",
+            "status" to "TEXT",
+            "currentStep" to "INTEGER",
+            "notes" to "TEXT"
+        ))
+
+        db12.close()
+    }
+
+    @Test
+    fun migration_12_to_13_creates_cloud_sync_and_health_tables() {
+        val db12 = helper.createDatabase(TEST_DB, 12)
+        db12.close()
+
+        val db13 = helper.runMigrationsAndValidate(
+            TEST_DB,
+            13,
+            true,
+            AppDatabase.MIGRATION_12_13
+        )
+
+        // Verify cloud sync tables exist
+        val cloudTables = listOf("cloud_sync_metadata", "user_profiles", "sync_conflicts")
+        cloudTables.forEach { tableName ->
+            validateTableExists(db13, tableName)
+        }
+
+        // Verify Health Connect tables exist
+        val healthTables = listOf("health_connect_steps", "health_connect_heart_rate", 
+                                 "health_connect_calories", "health_connect_sleep", 
+                                 "health_connect_exercise_sessions")
+        healthTables.forEach { tableName ->
+            validateTableExists(db13, tableName)
+        }
+
+        // Validate cloud_sync_metadata table structure
+        validateTableSchema(db13, "cloud_sync_metadata", mapOf(
+            "id" to "TEXT",
+            "entityType" to "TEXT",
+            "entityId" to "TEXT",
+            "lastSyncTime" to "INTEGER",
+            "localHash" to "TEXT",
+            "cloudHash" to "TEXT",
+            "syncStatus" to "TEXT"
+        ))
+
+        db13.close()
+    }
+
+    @Test
+    fun migration_13_to_14_creates_social_challenge_tables() {
+        val db13 = helper.createDatabase(TEST_DB, 13)
+        db13.close()
+
+        val db14 = helper.runMigrationsAndValidate(
+            TEST_DB,
+            14,
+            true,
+            AppDatabase.MIGRATION_13_14
+        )
+
+        // Verify social challenge tables exist
+        val socialTables = listOf("social_challenges", "challenge_participations", 
+                                 "challenge_progress_logs", "social_badges", "leaderboard_entries")
+        socialTables.forEach { tableName ->
+            validateTableExists(db14, tableName)
+        }
+
+        // Validate social_challenges table structure
+        validateTableSchema(db14, "social_challenges", mapOf(
+            "id" to "INTEGER",
+            "title" to "TEXT",
+            "description" to "TEXT",
+            "category" to "TEXT",
+            "startDate" to "TEXT",
+            "endDate" to "TEXT",
+            "targetValue" to "REAL",
+            "unit" to "TEXT",
+            "isActive" to "INTEGER",
+            "createdBy" to "TEXT",
+            "createdAt" to "INTEGER"
+        ))
+
+        db14.close()
+    }
+
+    @Test
+    fun migration_14_to_15_is_no_op() {
+        val db14 = helper.createDatabase(TEST_DB, 14)
+        
+        // Insert test data to verify no-op doesn't break anything
+        db14.execSQL("""
+            INSERT INTO social_challenges (title, description, category, startDate, endDate, 
+                                         targetValue, unit, isActive, createdBy, createdAt)
+            VALUES ('Test Challenge', 'Test Description', 'fitness', '2024-01-01', '2024-01-31',
+                    100.0, 'steps', 1, 'test-user', 1705315200)
+        """)
+        
+        db14.close()
+
+        val db15 = helper.runMigrationsAndValidate(
+            TEST_DB,
+            15,
+            true,
+            AppDatabase.MIGRATION_14_15
+        )
+
+        // Verify data is unchanged by no-op migration
+        db15.query("SELECT title FROM social_challenges WHERE createdBy = 'test-user'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Test Challenge", cursor.getString(0))
+        }
+
+        db15.close()
+    }
+
+    @Test
+    fun migration_15_to_16_enhances_recipes_with_yazio_features() {
+        val db15 = helper.createDatabase(TEST_DB, 15)
+        
+        // Insert test recipe to verify data preservation
+        db15.execSQL("""
+            INSERT INTO recipes (id, title, markdown, calories, imageUrl, isFavorite, createdAt)
+            VALUES ('yazio-test', 'YAZIO Test Recipe', '# Test', 300, NULL, 0, 1705315200)
+        """)
+        
+        db15.close()
+
+        val db16 = helper.runMigrationsAndValidate(
+            TEST_DB,
+            16,
+            true,
+            AppDatabase.MIGRATION_15_16
+        )
+
+        // Verify YAZIO-style tables exist
+        val yazioTables = listOf("meals", "recipe_ingredients", "recipe_steps", 
+                                "grocery_lists", "grocery_items", "recipe_analytics",
+                                "recipe_ratings", "pro_features", "recipe_collections", 
+                                "recipe_collection_items")
+        yazioTables.forEach { tableName ->
+            validateTableExists(db16, tableName)
+        }
+
+        // Verify enhanced recipes table has new columns
+        val expectedRecipeColumns = mapOf(
+            "id" to "TEXT",
+            "title" to "TEXT",
+            "description" to "TEXT",
+            "markdown" to "TEXT",
+            "imageUrl" to "TEXT",
+            "prepTime" to "INTEGER",
+            "cookTime" to "INTEGER",
+            "servings" to "INTEGER",
+            "difficulty" to "TEXT",
+            "isPublic" to "INTEGER",
+            "isVerified" to "INTEGER",
+            "nutrition" to "TEXT",
+            "tags" to "TEXT",
+            "source" to "TEXT",
+            "authorId" to "TEXT",
+            "originalRecipeId" to "TEXT",
+            "version" to "INTEGER",
+            "createdAt" to "INTEGER",
+            "updatedAt" to "INTEGER"
+        )
+        validateTableSchema(db16, "recipes", expectedRecipeColumns)
+
+        // Verify original data was preserved and converted
+        db16.query("SELECT title FROM recipes WHERE id = 'yazio-test'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("YAZIO Test Recipe", cursor.getString(0))
+        }
+
+        db16.close()
+    }
+
+    @Test
+    fun migration_16_to_17_adds_recipe_support_to_meal_entries() {
+        val db16 = helper.createDatabase(TEST_DB, 16)
+        
+        // Insert test meal entry to verify data preservation
+        db16.execSQL("""
+            INSERT INTO meal_entries (foodItemId, date, mealType, quantityGrams, recordedAt)
+            VALUES ('test-food', '2024-01-15', 'lunch', 100.0, 1705315200)
+        """)
+        
+        db16.close()
+
+        val db17 = helper.runMigrationsAndValidate(
+            TEST_DB,
+            17,
+            true,
+            AppDatabase.MIGRATION_16_17
+        )
+
+        // Verify meal_entries has new recipe support columns
+        val expectedMealColumns = mapOf(
+            "id" to "INTEGER",
+            "foodItemId" to "TEXT",
+            "recipeId" to "TEXT",
+            "date" to "TEXT",
+            "mealType" to "TEXT",
+            "quantityGrams" to "REAL",
+            "servings" to "REAL",
+            "recordedAt" to "INTEGER",
+            "notes" to "TEXT"
+        )
+        validateTableSchema(db17, "meal_entries", expectedMealColumns)
+
+        // Verify original data was preserved
+        db17.query("SELECT foodItemId, quantityGrams FROM meal_entries WHERE date = '2024-01-15'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("test-food", cursor.getString(0))
+            assertEquals(100.0, cursor.getDouble(1), 0.01)
+        }
+
+        db17.close()
+    }
+
+    @Test
     fun full_migration_path_from_earliest_to_latest() {
         // Test complete migration from version 5 to current version
         val db5 = helper.createDatabase(TEST_DB, 5)
@@ -386,41 +663,15 @@ class ComprehensiveMigrationTest {
     // Helper functions for validation
 
     private fun validateTableSchema(db: SupportSQLiteDatabase, tableName: String, expectedColumns: Map<String, String>) {
-        db.query("PRAGMA table_info($tableName)").use { cursor ->
-            val actualColumns = mutableMapOf<String, String>()
-            val nameIndex = cursor.getColumnIndexOrThrow("name")
-            val typeIndex = cursor.getColumnIndexOrThrow("type")
-            
-            while (cursor.moveToNext()) {
-                val columnName = cursor.getString(nameIndex)
-                val columnType = cursor.getString(typeIndex)
-                actualColumns[columnName] = columnType
-            }
-            
-            expectedColumns.forEach { (columnName, expectedType) ->
-                assertTrue(
-                    actualColumns.containsKey(columnName),
-                    "Table $tableName should have column $columnName"
-                )
-                assertEquals(
-                    expectedType,
-                    actualColumns[columnName],
-                    "Column $tableName.$columnName should have type $expectedType"
-                )
-            }
-        }
+        MigrationTestUtils.validateTableSchema(db, tableName, expectedColumns)
     }
 
     private fun validateIndexExists(db: SupportSQLiteDatabase, indexName: String) {
-        db.query("SELECT name FROM sqlite_master WHERE type='index' AND name='$indexName'").use { cursor ->
-            assertTrue(cursor.moveToFirst(), "Index $indexName should exist")
-        }
+        MigrationTestUtils.validateIndexExists(db, indexName)
     }
 
     private fun validateTableExists(db: SupportSQLiteDatabase, tableName: String) {
-        db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='$tableName'").use { cursor ->
-            assertTrue(cursor.moveToFirst(), "Table $tableName should exist")
-        }
+        MigrationTestUtils.validateTableExists(db, tableName)
     }
 
     private fun insertTestDataVersion5(db: SupportSQLiteDatabase) {
