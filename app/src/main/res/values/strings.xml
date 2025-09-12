@@ -1,6 +1,84 @@
 <resources>
     <string name="app_name">FitApp</string>
     
+    <!-- Navigation and Menu -->
+    <string name="menu_content_description">Menü</string>
+    <string name="more_options_content_description">Mehr Optionen</string>
+    <string name="navigation_dashboard">🏠 Dashboard</string>
+    <string name="navigation_training">🎯 Training &amp; Pläne</string>
+    <string name="navigation_nutrition">🍽️ Ernährung &amp; Rezepte</string>
+    <string name="navigation_progress">📊 Fortschritt &amp; Analytics</string>
+    <string name="navigation_quick_actions">⚡ Schnellaktionen</string>
+    <string name="navigation_settings">⚙️ Einstellungen</string>
+    
+    <!-- Screen Titles -->
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_training_plans">Training &amp; Pläne</string>
+    <string name="title_nutrition_recipes">Ernährung &amp; Rezepte</string>
+    <string name="title_progress_analytics">Fortschritt &amp; Analytics</string>
+    <string name="title_quick_actions">Schnellaktionen</string>
+    <string name="title_feedback">Feedback senden</string>
+    <string name="title_recipe_generation">KI Rezept Generator</string>
+    <string name="title_ai_personal_trainer">KI Personal Trainer</string>
+    <string name="title_hiit_builder">HIIT Builder</string>
+    
+    <!-- Quick Actions -->
+    <string name="quick_actions_title">Schnelle Aktionen</string>
+    <string name="quick_actions_subtitle">Schneller Zugriff auf alle Hauptfunktionen</string>
+    <string name="quick_actions_training">Training</string>
+    <string name="quick_actions_nutrition">Ernährung</string>
+    <string name="quick_actions_health">Gesundheit</string>
+    <string name="quick_actions_tools">Werkzeuge</string>
+    
+    <!-- Feedback -->
+    <string name="feedback_title">Feedback senden</string>
+    <string name="feedback_subtitle">Ihr Feedback ist wichtig</string>
+    <string name="feedback_send">Feedback senden</string>
+    <string name="feedback_type_bug">Bug Report</string>
+    <string name="feedback_type_feature">Feature Request</string>
+    <string name="feedback_type_general">Allgemeines Feedback</string>
+    
+    <!-- AI Personal Trainer -->
+    <string name="ai_trainer_generate_workout">Workout generieren</string>
+    <string name="ai_trainer_nutrition_advice">Ernährungsberatung</string>
+    <string name="ai_trainer_analyze_progress">Fortschritt analysieren</string>
+    
+    <!-- Content Descriptions for Accessibility -->
+    <string name="cd_navigation_menu">Navigation Menü öffnen</string>
+    <string name="cd_back_button">Zurück</string>
+    <string name="cd_close_button">Schließen</string>
+    <string name="cd_search_icon">Suchen</string>
+    <string name="cd_settings_icon">Einstellungen</string>
+    <string name="cd_help_icon">Hilfe</string>
+    <string name="cd_feedback_icon">Feedback</string>
+    <string name="cd_quick_actions_icon">Schnellaktionen</string>
+    <string name="cd_training_icon">Training</string>
+    <string name="cd_nutrition_icon">Ernährung</string>
+    <string name="cd_health_icon">Gesundheit</string>
+    <string name="cd_analytics_icon">Analytics</string>
+    <string name="cd_ai_icon">KI Assistent</string>
+    
+    <!-- Overflow Menu Items -->
+    <string name="menu_settings">Einstellungen</string>
+    <string name="menu_health_connect">Health Connect</string>
+    <string name="menu_help_support">Hilfe &amp; Support</string>
+    <string name="menu_feedback">Feedback senden</string>
+    <string name="menu_about_app">Über die App</string>
+    
+    <!-- Common Actions -->
+    <string name="action_back">Zurück</string>
+    <string name="action_close">Schließen</string>
+    <string name="action_save">Speichern</string>
+    <string name="action_cancel">Abbrechen</string>
+    <string name="action_submit">Senden</string>
+    <string name="action_edit">Bearbeiten</string>
+    <string name="action_delete">Löschen</string>
+    
+    <!-- Deep Link Error Messages -->
+    <string name="deep_link_error_title">Navigation Fehler</string>
+    <string name="deep_link_error_message">Die angeforderte Seite konnte nicht gefunden werden.</string>
+    <string name="deep_link_error_action">Zur Startseite</string>
+
     <!-- Navigation and Common UI -->
     <string name="menu">Menü</string>
     <string name="dashboard">Dashboard</string>
@@ -40,15 +118,45 @@
     <!-- Health Connect -->
     <string name="health_connect">Health Connect</string>
     
-    <!-- Content Descriptions for Accessibility -->
-    <string name="icon_ai_trainer">KI Trainer Symbol</string>
-    <string name="icon_fitness_center">Fitness Center Symbol</string>
-    <string name="icon_restaurant">Restaurant Symbol</string>
+    <!-- Content Descriptions for icons and interactive elements -->
+    <string name="icon_home">Startseite Symbol</string>
+    <string name="icon_plan">Plan Symbol</string>
+    <string name="icon_nutrition">Ernährung Symbol</string>
+    <string name="icon_progress">Fortschritt Symbol</string>
     <string name="icon_analytics">Analytics Symbol</string>
-    <string name="icon_dashboard">Dashboard Symbol</string>
-    <string name="icon_insights">Insights Symbol</string>
-    <string name="icon_health_safety">Gesundheit und Sicherheit Symbol</string>
+    <string name="icon_training">Training Symbol</string>
+    <string name="icon_settings">Einstellungen Symbol</string>
+    <string name="icon_health_safety">Gesundheit Symbol</string>
     <string name="icon_timer">Timer Symbol</string>
     <string name="icon_psychology">Psychologie Symbol</string>
     <string name="icon_shopping_cart">Einkaufswagen Symbol</string>
+    <string name="icon_search">Suche Symbol</string>
+    <string name="icon_more_vert">Weitere Optionen Symbol</string>
+    <string name="icon_help">Hilfe Symbol</string>
+    <string name="icon_info">Info Symbol</string>
+    <string name="icon_menu">Menü Symbol</string>
+    <string name="icon_recipe">Rezept Symbol</string>
+    <string name="icon_ai_trainer">KI Trainer Symbol</string>
+    <string name="icon_hiit">HIIT Symbol</string>
+    <string name="icon_barcode">Barcode Symbol</string>
+    <string name="icon_fitness_center">Fitness Center Symbol</string>
+    <string name="icon_restaurant">Restaurant Symbol</string>
+    <string name="icon_dashboard">Dashboard Symbol</string>
+    <string name="icon_insights">Insights Symbol</string>
+    
+    <!-- Navigation Content Descriptions -->
+    <string name="navigate_to_dashboard">Zum Dashboard navigieren</string>
+    <string name="navigate_to_training">Zu Training navigieren</string>
+    <string name="navigate_to_nutrition">Zu Ernährung navigieren</string>
+    <string name="navigate_to_analytics">Zu Analytics navigieren</string>
+    <string name="navigate_to_settings">Zu Einstellungen navigieren</string>
+    <string name="navigate_to_recipes">Zu Rezepten navigieren</string>
+    <string name="navigate_to_shopping">Zur Einkaufsliste navigieren</string>
+    <string name="navigate_to_ai_trainer">Zum KI Trainer navigieren</string>
+    <string name="navigate_to_hiit">Zum HIIT Builder navigieren</string>
+    <string name="navigate_to_food_search">Zur Lebensmittelsuche navigieren</string>
+    
+    <!-- Menu and UI Labels -->
+    <string name="open_navigation_drawer">Navigationsmenü öffnen</string>
+    <string name="close_navigation_drawer">Navigationsmenü schließen</string>
 </resources>

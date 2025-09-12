@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import java.time.ZoneId
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,6 +28,7 @@ import com.example.fitapp.data.db.DailyGoalEntity
 import com.example.fitapp.data.db.MealEntryEntity
 import com.example.fitapp.data.db.FoodItemEntity
 import com.example.fitapp.data.repo.NutritionRepository
+import com.example.fitapp.domain.usecases.HydrationGoalUseCase
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -43,8 +45,9 @@ fun FoodDiaryScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val repo = remember { NutritionRepository(AppDatabase.get(context), context) }
+    val hydrationGoalUseCase = remember { HydrationGoalUseCase.create(context) }
     
-    val today = remember { LocalDate.now() }
+    val today = remember { LocalDate.now(ZoneId.systemDefault()) }
     val todayString = today.toString()
     
     var goal by remember { mutableStateOf<DailyGoalEntity?>(null) }
@@ -56,6 +59,9 @@ fun FoodDiaryScreen(
     var totalProtein by remember { mutableFloatStateOf(0f) }
     var totalFat by remember { mutableFloatStateOf(0f) }
     var totalWater by remember { mutableIntStateOf(0) }
+    
+    // Use reactive flow for hydration goal - updates automatically when goal changes
+    val hydrationGoal by hydrationGoalUseCase.getHydrationGoalMlFlow(today).collectAsState(initial = 2000)
     
     // Load data
     LaunchedEffect(todayString) {
@@ -79,6 +85,8 @@ fun FoodDiaryScreen(
             totalProtein = repo.getTotalProteinForDate(todayString)
             totalFat = repo.getTotalFatForDate(todayString)
             totalWater = repo.getTotalWaterForDate(todayString)
+            
+            // Note: hydrationGoal is now automatically updated via reactive flow
         }
     }
     
@@ -132,7 +140,7 @@ fun FoodDiaryScreen(
         // Water Tracking Card
         WaterTrackingCard(
             currentWater = totalWater,
-            targetWater = goal?.targetWaterMl ?: 2000,
+            targetWater = hydrationGoal,
             onAddWater = { amount ->
                 scope.launch {
                     repo.addWater(todayString, amount)

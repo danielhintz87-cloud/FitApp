@@ -1,12 +1,18 @@
-name: Android Tests (unit + lint)
+name: Android Tests (unit + lint) - DEPRECATED
+# DEPRECATED: This workflow is being replaced by ci-unit.yml
+# Will be removed in future PR once ci-unit.yml is validated
 # Runs JVM-based unit tests with Robolectric where needed
 # NO Android emulator required - pure unit testing
 
+# TEMPORARILY DISABLED - testing new ci-unit.yml workflow
+# on:
+#   pull_request:
+#     branches: [ main ]
+#   push:
+#     branches: [ main ]
+
 on:
-  pull_request:
-    branches: [ main ]
-  push:
-    branches: [ main ]
+  workflow_dispatch:  # Manual trigger only
 
 permissions:
   contents: read

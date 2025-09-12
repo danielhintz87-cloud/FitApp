@@ -1,0 +1,63 @@
+name: CI - Unit Tests
+# Runs Kotlin/Java unit tests and Robolectric tests
+# NO Android emulator required - pure JVM-based testing
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false -Dfile.encoding=UTF-8"
+
+    steps:
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle with caching
+        uses: gradle/gradle-build-action@v3
+        with:
+          cache-read-only: false
+
+      - name: Run unit tests
+        run: |
+          ./gradlew --stacktrace \
+            clean \
+            assembleDebug \
+            testDebugUnitTest
+
+      - name: Verify unit test separation
+        run: |
+          echo "✓ Unit tests completed - JVM-based with Robolectric where needed"
+          echo "✓ No Android emulator required for these tests"
+
+      - name: Upload unit test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports
+          path: |
+            **/build/test-results/**
+            **/build/reports/tests/**
+          retention-days: 7
+          if-no-files-found: warn

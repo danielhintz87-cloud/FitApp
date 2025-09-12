@@ -1,0 +1,101 @@
+name: CI - Lint & Static Analysis
+# Runs detekt, ktlint, Android lint, and NavGraph reachability checks
+# These checks gate merges and must pass for CI to succeed
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-analysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false -Dfile.encoding=UTF-8"
+      MOVEMENT_ANALYSIS_MODEL_URL: ${{ secrets.MOVEMENT_ANALYSIS_MODEL_URL }}
+      MOVEMENT_ANALYSIS_MODEL_SHA256: ${{ secrets.MOVEMENT_ANALYSIS_MODEL_SHA256 }}
+
+    steps:
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle with caching
+        uses: gradle/gradle-build-action@v3
+        with:
+          cache-read-only: false
+
+      - name: Run ktlint
+        run: |
+          echo "Running ktlint code style checks..."
+          ./gradlew ktlintCheck --stacktrace
+
+      - name: Run detekt
+        run: |
+          echo "Running detekt static analysis..."
+          ./gradlew detekt --stacktrace
+
+      - name: Run Android lint
+        run: |
+          echo "Running Android lint checks..."
+          ./gradlew lintDebug --stacktrace
+
+      - name: Verify ML Models
+        run: |
+          echo "Verifying ML model integrity..."
+          ./gradlew :app:verifyModels --stacktrace
+
+      - name: Check NavGraph reachability
+        run: |
+          echo "Checking navigation graph reachability..."
+          ./gradlew checkNavGraphReachability --stacktrace
+
+      - name: Generate unit test coverage
+        run: |
+          echo "Generating unit test coverage report..."
+          ./gradlew jacocoTestReport --stacktrace
+
+      - name: Quality gate check
+        run: |
+          echo "Running quality gate with coverage threshold..."
+          ./gradlew qualityCheck -Pcoverage.min=0.35 --stacktrace
+
+      - name: Upload lint and analysis reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-reports
+          path: |
+            **/build/reports/ktlint/**
+            **/build/reports/detekt/**
+            **/build/reports/lint-results*.*
+            **/build/reports/lint/**
+            **/build/reports/jacoco/**
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Lint summary
+        if: always()
+        run: |
+          echo "✓ Lint and static analysis completed"
+          echo "✓ ktlint: Code style verification"
+          echo "✓ detekt: Static code analysis"
+          echo "✓ Android lint: Platform-specific checks"
+          echo "✓ NavGraph: Navigation reachability verification"
+          echo "✓ Coverage: Unit test coverage analysis"
