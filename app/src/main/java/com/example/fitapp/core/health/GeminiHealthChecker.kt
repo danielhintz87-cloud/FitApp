@@ -1,5 +1,6 @@
 package com.example.fitapp.core.health
 
+import com.example.fitapp.ai.executeSuspending
 import com.example.fitapp.core.threading.DispatcherProvider
 import com.example.fitapp.data.prefs.ApiKeys
 import kotlinx.coroutines.flow.Flow
@@ -7,7 +8,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.coroutines.suspendCancellableCoroutine
 import android.content.Context
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -39,40 +39,14 @@ class GeminiHealthChecker @Inject constructor(
             
             // Simple health check with timeout
             val result = withTimeoutOrNull(10_000) {
-                try {
-                    // Basic API endpoint check (models list is a lightweight endpoint)
-                    val request = Request.Builder()
-                        .url("https://generativelanguage.googleapis.com/v1beta/models?key=$apiKey")
-                        .get()
-                        .build()
-                    
-                    val call = httpClient.newCall(request)
-                    // Use suspend-friendly approach instead of blocking execute()
-                    call.enqueue(object : okhttp3.Callback {
-                        override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
-                            // Handled in the outer try-catch
-                        }
-                        override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
-                            response.close()
-                        }
-                    })
-                    
-                    // For health check, we'll use a simpler approach with suspendCancellableCoroutine
-                    kotlinx.coroutines.suspendCancellableCoroutine<Boolean> { continuation ->
-                        call.enqueue(object : okhttp3.Callback {
-                            override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
-                                continuation.resume(false) {}
-                            }
-                            override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
-                                response.use { 
-                                    continuation.resume(it.isSuccessful) {}
-                                }
-                            }
-                        })
-                        continuation.invokeOnCancellation { call.cancel() }
-                    }
-                } catch (e: Exception) {
-                    false
+                // Basic API endpoint check (models list is a lightweight endpoint)
+                val request = Request.Builder()
+                    .url("https://generativelanguage.googleapis.com/v1beta/models?key=$apiKey")
+                    .get()
+                    .build()
+                
+                httpClient.newCall(request).executeSuspending().use { response ->
+                    response.isSuccessful
                 }
             }
             

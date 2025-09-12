@@ -303,8 +303,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 .post(body)
                 .build()
 
-            withContext(Dispatchers.IO) {
-                http.newCall(req).execute().use { resp ->
+            http.newCall(req).executeSuspending().use { resp ->
                 if (!resp.isSuccessful) {
                     val bodyStr = resp.body?.string().orEmpty()
                     val errorMsg = when (resp.code) {
@@ -357,7 +356,6 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
             }
         }
     }
-    }
 
     private suspend fun geminiVision(prompt: String, bitmap: Bitmap): Result<CaloriesEstimate> = runCatching {
         withRetry {
@@ -395,8 +393,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 .post(body)
                 .build()
 
-            withContext(Dispatchers.IO) {
-                http.newCall(req).execute().use { resp ->
+            http.newCall(req).executeSuspending().use { resp ->
                 if (!resp.isSuccessful) {
                     val bodyStr = resp.body?.string().orEmpty()
                     val errorMsg = when (resp.code) {
@@ -478,7 +475,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 .post(body)
                 .build()
 
-            http.newCall(req).execute().use { resp ->
+            http.newCall(req).executeSuspending().use { resp ->
                 if (!resp.isSuccessful) {
                     val bodyStr = resp.body?.string().orEmpty()
                     val errorMsg = when (resp.code) {
