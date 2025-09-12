@@ -154,9 +154,7 @@ dependencies {
     // Hilt Dependency Injection
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
-    implementation("androidx.hilt:hilt-work:1.2.0")
     kapt(libs.hilt.compiler)
-    kapt("androidx.hilt:hilt-compiler:1.2.0")
 
     // Desugaring
     coreLibraryDesugaring(libs.desugar.jdk.libs)
