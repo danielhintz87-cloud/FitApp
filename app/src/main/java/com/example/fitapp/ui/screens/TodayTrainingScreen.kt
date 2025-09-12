@@ -29,7 +29,7 @@ fun TodayTrainingScreen(
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
-    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val repo = remember { NutritionRepository(AppDatabase.get(ctx), ctx) }
 
     var currentPlan by remember { mutableStateOf<com.example.fitapp.data.db.PlanEntity?>(null) }
     var customGoal by remember { mutableStateOf("") }

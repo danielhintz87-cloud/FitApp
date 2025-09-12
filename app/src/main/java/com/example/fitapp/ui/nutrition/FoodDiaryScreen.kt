@@ -38,7 +38,14 @@ fun FoodDiaryScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val repo = remember { NutritionRepository(AppDatabase.get(context), context) }
-    val hydrationGoalUseCase = remember { HydrationGoalUseCase.create(context) }
+    val hydrationGoalUseCase = remember { 
+        HydrationGoalUseCase(
+                com.example.fitapp.data.prefs.UserPreferencesRepository(context),
+            NutritionRepository(AppDatabase.get(context), context),
+            AppDatabase.get(context),
+            com.example.fitapp.core.threading.DefaultDispatcherProvider()
+        )
+    }
 
     val today = remember { LocalDate.now(ZoneId.systemDefault()) }
     val todayString = today.toString()

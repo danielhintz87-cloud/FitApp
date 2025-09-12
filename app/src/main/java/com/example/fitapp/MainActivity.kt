@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
             // Set content immediately for faster UI loading
             setContent {
                 navController = rememberNavController()
-                MainScaffold(navController = navController)
+                    MainScaffold()
 
                 // Navigate to deep link if pending
                 LaunchedEffect(pendingDeepLink) {
@@ -322,7 +322,7 @@ class MainActivity : ComponentActivity() {
                     withTimeout(10_000) { // 10 second timeout
                         val database = AppDatabase.get(this@MainActivity)
                         val repository = PersonalMotivationRepository(database)
-                        val nutritionRepository = NutritionRepository(database)
+                        val nutritionRepository = NutritionRepository(database, this@MainActivity)
                         val achievementManager = PersonalAchievementManager(this@MainActivity, repository)
                         val streakManager = PersonalStreakManager(this@MainActivity, repository)
 
