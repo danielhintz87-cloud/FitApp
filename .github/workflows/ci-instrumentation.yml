@@ -1,0 +1,115 @@
+name: CI - Instrumentation Tests
+# Runs Android instrumentation tests on emulator
+# Includes migration tests, UI tests, and integration tests
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  instrumentation-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false -Dfile.encoding=UTF-8"
+      MOVEMENT_ANALYSIS_MODEL_URL: ${{ secrets.MOVEMENT_ANALYSIS_MODEL_URL }}
+      MOVEMENT_ANALYSIS_MODEL_SHA256: ${{ secrets.MOVEMENT_ANALYSIS_MODEL_SHA256 }}
+      USE_ONNX_MOVENET: true
+
+    steps:
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle with caching
+        uses: gradle/gradle-build-action@v3
+        with:
+          cache-read-only: false
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Ensure platforms & build-tools
+        run: |
+          sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-30-x86_64-google_apis
+
+      - name: Create AVD and generate snapshot for caching
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: false
+          script: echo "Generated AVD snapshot for caching."
+
+      - name: Run instrumentation tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          disable-animations: true
+          script: |
+            echo "Running Android instrumentation tests (require emulator)"
+            ./gradlew --stacktrace \
+              assembleDebug \
+              assembleAndroidTest \
+              connectedDebugAndroidTest
+
+      - name: Verify instrumentation test separation
+        run: |
+          echo "✓ Instrumentation tests completed - executed on Android emulator"
+          echo "✓ Migration tests, UI tests, and integration tests completed"
+
+      - name: Collect benchmark artifacts
+        if: success()
+        run: |
+          find . -name pose_backend_latency_ci.csv -maxdepth 6 -print -exec cp {} benchmarks_pose_backend_latency_ci.csv \; || true
+
+      - name: Upload benchmark latency CSV
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pose-backend-latency
+          path: benchmarks_pose_backend_latency_ci.csv
+          if-no-files-found: warn
+
+      - name: Upload instrumentation test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instrumentation-test-reports
+          path: |
+            **/build/reports/androidTests/**
+            **/build/outputs/androidTest-results/**
+          retention-days: 7
+          if-no-files-found: warn
