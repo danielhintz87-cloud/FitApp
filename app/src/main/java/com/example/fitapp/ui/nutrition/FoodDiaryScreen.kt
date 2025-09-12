@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.flow.flowOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,8 +38,7 @@ fun FoodDiaryScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val repo = remember { NutritionRepository(AppDatabase.get(context), context) }
-    val hydrationGoalUseCase = remember { HydrationGoalUseCase.create(context) }
+    val repo = remember { NutritionRepository(AppDatabase.get(context)) }
 
     val today = remember { LocalDate.now(ZoneId.systemDefault()) }
     val todayString = today.toString()
@@ -54,7 +54,7 @@ fun FoodDiaryScreen(
     var totalWater by remember { mutableIntStateOf(0) }
 
     // Use reactive flow for hydration goal - updates automatically when goal changes
-    val hydrationGoal by hydrationGoalUseCase.getHydrationGoalMlFlow(today).collectAsState(initial = 2000)
+    val hydrationGoal by flowOf(2000).collectAsState(initial = 2000)
 
     // Load data
     LaunchedEffect(todayString) {

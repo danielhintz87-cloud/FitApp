@@ -71,6 +71,7 @@ tensorflow-lite-metadata = "0.5.0"
 robolectric = "4.12"
 mockito = "5.2.0"
 mockito-kotlin = "5.1.0"
+mockk = "1.13.11"
 
 [libraries]
 # Kotlin / Serialization / Coroutines
@@ -173,6 +174,8 @@ robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectr
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockito-kotlin" }
 mockito-inline = { module = "org.mockito:mockito-inline", version.ref = "mockito" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
 [bundles]
@@ -251,6 +254,7 @@ test = [
     "mockito-core",
     "mockito-kotlin", 
     "mockito-inline",
+    "mockk",
     "coroutines-test",
     "robolectric",
     "room-testing"
@@ -260,7 +264,8 @@ test = [
 android-test = [
     "android-test-junit",
     "android-test-core",
-    "espresso-core"
+    "espresso-core",
+    "mockk-android"
 ]
 
 # Debug Bundle

@@ -3,17 +3,31 @@ package com.example.fitapp
 import android.app.Application
 import android.os.StrictMode
 import android.util.Log
+import androidx.work.Configuration
+import androidx.work.WorkManager
+import com.example.fitapp.BuildConfig
+import com.example.fitapp.di.HiltWorkerFactory
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltAndroidApp
-class FitAppApplication : Application() {
+class FitAppApplication : Application(), Configuration.Provider {
+    
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
+    
     // Application-level coroutine scope with SupervisorJob for safe background operations
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
+    
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
+    
     override fun onCreate() {
         super.onCreate()
 
