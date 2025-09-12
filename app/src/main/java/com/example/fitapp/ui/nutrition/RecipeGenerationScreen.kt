@@ -2,13 +2,10 @@
 
 package com.example.fitapp.ui.nutrition
 
-import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -17,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -25,8 +21,8 @@ import com.example.fitapp.ai.UiRecipe
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.ui.components.AiKeyGate
-import kotlinx.coroutines.launch
 import com.example.fitapp.ui.util.applyContentPadding
+import kotlinx.coroutines.launch
 
 /**
  * Dedicated AI-powered recipe generation screen with user-friendly form interface
@@ -37,7 +33,7 @@ fun RecipeGenerationScreen(
     onNavigateToApiKeys: (() -> Unit)? = null,
     onNavigateToCookingMode: ((String) -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val ctx = LocalContext.current
     val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
@@ -64,35 +60,36 @@ fun RecipeGenerationScreen(
                 IconButton(onClick = onBackPressed) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                 }
-            }
+            },
         )
 
         AiKeyGate(
             modifier = Modifier.fillMaxSize(),
             onNavigateToApiKeys = { onNavigateToApiKeys?.invoke() },
-            requireBothProviders = true
+            requireBothProviders = true,
         ) { isEnabled ->
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 // Hero Section
                 item {
                     Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            ),
                     ) {
                         Column(
                             modifier = Modifier.padding(20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Icon(
                                 Icons.Filled.Restaurant,
                                 contentDescription = null,
                                 modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
                             Spacer(Modifier.height(12.dp))
                             Text(
@@ -100,14 +97,14 @@ fun RecipeGenerationScreen(
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
                             Text(
                                 "Lass die KI dein perfektes Rezept basierend auf deinen Zielen und Vorlieben erstellen",
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.padding(top = 8.dp)
+                                modifier = Modifier.padding(top = 8.dp),
                             )
                         }
                     }
@@ -117,7 +114,7 @@ fun RecipeGenerationScreen(
                 item {
                     RecipeFormSection(
                         title = "Was möchtest du kochen?",
-                        icon = Icons.Filled.Restaurant
+                        icon = Icons.Filled.Restaurant,
                     ) {
                         OutlinedTextField(
                             value = whatToCook,
@@ -126,7 +123,7 @@ fun RecipeGenerationScreen(
                             placeholder = { Text("z.B. Nudeln mit Gemüse, Protein-Smoothie, Suppe...") },
                             modifier = Modifier.fillMaxWidth(),
                             maxLines = 3,
-                            enabled = isEnabled
+                            enabled = isEnabled,
                         )
                     }
                 }
@@ -135,26 +132,27 @@ fun RecipeGenerationScreen(
                 item {
                     RecipeFormSection(
                         title = "Dein Ziel",
-                        icon = Icons.Filled.Flag
+                        icon = Icons.Filled.Flag,
                     ) {
-                        val goals = listOf(
-                            "Muskelaufbau",
-                            "Abnehmen",
-                            "Ausdauer",
-                            "Gesund leben",
-                            "Energie steigern",
-                            "Keine speziellen Ziele"
-                        )
-                        
+                        val goals =
+                            listOf(
+                                "Muskelaufbau",
+                                "Abnehmen",
+                                "Ausdauer",
+                                "Gesund leben",
+                                "Energie steigern",
+                                "Keine speziellen Ziele",
+                            )
+
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             items(goals) { goal ->
                                 FilterChip(
                                     onClick = { selectedGoal = if (selectedGoal == goal) "" else goal },
                                     label = { Text(goal) },
                                     selected = selectedGoal == goal,
-                                    enabled = isEnabled
+                                    enabled = isEnabled,
                                 )
                             }
                         }
@@ -165,28 +163,29 @@ fun RecipeGenerationScreen(
                 item {
                     RecipeFormSection(
                         title = "Ernährungsform",
-                        icon = Icons.Filled.Eco
+                        icon = Icons.Filled.Eco,
                     ) {
-                        val dietaryForms = listOf(
-                            "Vegetarisch",
-                            "Vegan",
-                            "Proteinreich",
-                            "Low Carb",
-                            "Low Fat",
-                            "Ketogen",
-                            "Mediterran",
-                            "Keine Einschränkungen"
-                        )
-                        
+                        val dietaryForms =
+                            listOf(
+                                "Vegetarisch",
+                                "Vegan",
+                                "Proteinreich",
+                                "Low Carb",
+                                "Low Fat",
+                                "Ketogen",
+                                "Mediterran",
+                                "Keine Einschränkungen",
+                            )
+
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             items(dietaryForms) { form ->
                                 FilterChip(
                                     onClick = { selectedDietaryForm = if (selectedDietaryForm == form) "" else form },
                                     label = { Text(form) },
                                     selected = selectedDietaryForm == form,
-                                    enabled = isEnabled
+                                    enabled = isEnabled,
                                 )
                             }
                         }
@@ -197,22 +196,22 @@ fun RecipeGenerationScreen(
                 item {
                     RecipeFormSection(
                         title = "Portionen & Zeit",
-                        icon = Icons.Filled.Schedule
+                        icon = Icons.Filled.Schedule,
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             // Servings
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("Portionen", style = MaterialTheme.typography.labelMedium)
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
                                     IconButton(
                                         onClick = { if (servings > 1) servings-- },
-                                        enabled = isEnabled
+                                        enabled = isEnabled,
                                     ) {
                                         Icon(Icons.Filled.Remove, contentDescription = "Weniger")
                                     }
@@ -220,11 +219,11 @@ fun RecipeGenerationScreen(
                                         "$servings",
                                         style = MaterialTheme.typography.headlineSmall,
                                         modifier = Modifier.width(48.dp),
-                                        textAlign = TextAlign.Center
+                                        textAlign = TextAlign.Center,
                                     )
                                     IconButton(
                                         onClick = { if (servings < 10) servings++ },
-                                        enabled = isEnabled
+                                        enabled = isEnabled,
                                     ) {
                                         Icon(Icons.Filled.Add, contentDescription = "Mehr")
                                     }
@@ -236,23 +235,23 @@ fun RecipeGenerationScreen(
                                 Text("Zubereitungszeit", style = MaterialTheme.typography.labelMedium)
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
                                     IconButton(
                                         onClick = { if (cookingTime > 15) cookingTime -= 15 },
-                                        enabled = isEnabled
+                                        enabled = isEnabled,
                                     ) {
                                         Icon(Icons.Filled.Remove, contentDescription = "Weniger")
                                     }
                                     Text(
-                                        "${cookingTime} min",
+                                        "$cookingTime min",
                                         style = MaterialTheme.typography.headlineSmall,
                                         modifier = Modifier.width(80.dp),
-                                        textAlign = TextAlign.Center
+                                        textAlign = TextAlign.Center,
                                     )
                                     IconButton(
                                         onClick = { if (cookingTime < 120) cookingTime += 15 },
-                                        enabled = isEnabled
+                                        enabled = isEnabled,
                                     ) {
                                         Icon(Icons.Filled.Add, contentDescription = "Mehr")
                                     }
@@ -266,7 +265,7 @@ fun RecipeGenerationScreen(
                 item {
                     RecipeFormSection(
                         title = "Allergien & No-Gos (optional)",
-                        icon = Icons.Filled.Warning
+                        icon = Icons.Filled.Warning,
                     ) {
                         OutlinedTextField(
                             value = allergies,
@@ -275,7 +274,7 @@ fun RecipeGenerationScreen(
                             placeholder = { Text("z.B. Nüsse, Milchprodukte, Gluten...") },
                             modifier = Modifier.fillMaxWidth(),
                             maxLines = 2,
-                            enabled = isEnabled
+                            enabled = isEnabled,
                         )
                     }
                 }
@@ -287,27 +286,32 @@ fun RecipeGenerationScreen(
                             generating = true
                             scope.launch {
                                 try {
-                                    val prompt = buildRecipePrompt(
-                                        whatToCook, selectedGoal, selectedDietaryForm,
-                                        allergies, servings, cookingTime
-                                    )
+                                    val prompt =
+                                        buildRecipePrompt(
+                                            whatToCook,
+                                            selectedGoal,
+                                            selectedDietaryForm,
+                                            allergies,
+                                            servings,
+                                            cookingTime,
+                                        )
                                     results = repo.generateAndStoreOptimal(ctx, prompt)
                                     error = null
                                 } catch (e: Exception) {
                                     results = emptyList()
                                     error = "Fehler bei der Rezeptgenerierung:\n\n${e.message}\n\nProvider Status:\n${com.example.fitapp.ai.AppAi.getProviderStatus(ctx)}"
-                                } finally { 
+                                } finally {
                                     generating = false
                                 }
                             }
                         },
                         enabled = isEnabled && !generating && (whatToCook.isNotBlank() || selectedGoal.isNotBlank()),
-                        modifier = Modifier.fillMaxWidth().height(56.dp)
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
                     ) {
                         if (generating) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = MaterialTheme.colorScheme.onPrimary,
                             )
                             Spacer(Modifier.width(8.dp))
                             Text("Generiere Rezepte...")
@@ -323,14 +327,15 @@ fun RecipeGenerationScreen(
                 if (isEnabled && error != null) {
                     item {
                         Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            )
+                            colors =
+                                CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                                ),
                         ) {
                             Text(
                                 error!!,
                                 color = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.padding(16.dp)
+                                modifier = Modifier.padding(16.dp),
                             )
                         }
                     }
@@ -340,24 +345,24 @@ fun RecipeGenerationScreen(
                 items(results) { recipe ->
                     GeneratedRecipeCard(
                         recipe = recipe,
-                        onFavoriteClick = { fav -> 
+                        onFavoriteClick = { fav ->
                             scope.launch { repo.setFavorite(recipe.id, fav) }
                         },
-                        onAddToShopping = { 
+                        onAddToShopping = {
                             scope.launch { repo.addRecipeToShoppingList(recipe.id) }
                         },
-                        onLogCalories = { 
+                        onLogCalories = {
                             scope.launch {
                                 repo.logIntake(
-                                    recipe.calories ?: 0, 
-                                    "Rezept: ${recipe.title}", 
-                                    "RECIPE", 
-                                    recipe.id
+                                    recipe.calories ?: 0,
+                                    "Rezept: ${recipe.title}",
+                                    "RECIPE",
+                                    recipe.id,
                                 )
                                 repo.adjustDailyGoal(java.time.LocalDate.now())
                             }
                         },
-                        onSaveRecipe = { 
+                        onSaveRecipe = {
                             scope.launch {
                                 saveToSavedRecipes(ctx, recipe)
                             }
@@ -367,7 +372,7 @@ fun RecipeGenerationScreen(
                                 saveToSavedRecipes(ctx, recipe)
                                 onNavigateToCookingMode?.invoke(recipe.id)
                             }
-                        }
+                        },
                     )
                 }
 
@@ -384,26 +389,26 @@ fun RecipeGenerationScreen(
 private fun RecipeFormSection(
     title: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Card {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
                     icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
                 Text(
                     title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
             content()
@@ -417,36 +422,38 @@ private fun buildRecipePrompt(
     dietaryForm: String,
     allergies: String,
     servings: Int,
-    cookingTime: Int
+    cookingTime: Int,
 ): String {
     val prompt = StringBuilder()
-    
+
     prompt.append("Erstelle mir ")
-    
+
     if (whatToCook.isNotBlank()) {
         prompt.append("Rezepte für: $whatToCook")
     } else {
         prompt.append("passende Rezepte")
     }
-    
+
     prompt.append(" für $servings ${if (servings == 1) "Portion" else "Portionen"}")
-    
+
     if (goal.isNotBlank() && goal != "Keine speziellen Ziele") {
         prompt.append(", Ziel: $goal")
     }
-    
+
     if (dietaryForm.isNotBlank() && dietaryForm != "Keine Einschränkungen") {
         prompt.append(", Ernährungsform: $dietaryForm")
     }
-    
+
     prompt.append(", Zubereitungszeit: maximal $cookingTime Minuten")
-    
+
     if (allergies.isNotBlank()) {
         prompt.append(", zu vermeiden: $allergies")
     }
-    
-    prompt.append(". Bitte erstelle 3-5 detaillierte Rezepte mit Zutatenliste, Nährwerten und Schritt-für-Schritt Anleitung.")
-    
+
+    prompt.append(
+        ". Bitte erstelle 3-5 detaillierte Rezepte mit Zutatenliste, Nährwerten und Schritt-für-Schritt Anleitung.",
+    )
+
     return prompt.toString()
 }
 
@@ -458,63 +465,63 @@ private fun GeneratedRecipeCard(
     onLogCalories: () -> Unit,
     onSaveRecipe: () -> Unit,
     onPrepareRecipe: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var isFavorite by remember(recipe.id) { mutableStateOf(false) }
     var showFullRecipe by remember(recipe.id) { mutableStateOf(false) }
-    
+
     ElevatedCard(modifier = modifier) {
         Column(Modifier.padding(16.dp)) {
             // Header with title and calories
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
                         recipe.title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
-                    recipe.calories?.let { 
+                    recipe.calories?.let {
                         Text(
                             "~$it kcal",
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
-                
+
                 // Favorite button
                 IconButton(
-                    onClick = { 
+                    onClick = {
                         isFavorite = !isFavorite
-                        onFavoriteClick(isFavorite) 
-                    }
+                        onFavoriteClick(isFavorite)
+                    },
                 ) {
                     Icon(
                         if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         contentDescription = if (isFavorite) "Aus Favoriten entfernen" else "Zu Favoriten hinzufügen",
-                        tint = if (isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                        tint = if (isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
-            
+
             Spacer(Modifier.height(8.dp))
-            
+
             // Recipe preview/summary
             val recipePreview = extractRecipePreview(recipe.markdown)
             Text(
                 recipePreview,
                 style = MaterialTheme.typography.bodySmall,
-                maxLines = if (showFullRecipe) Int.MAX_VALUE else 3
+                maxLines = if (showFullRecipe) Int.MAX_VALUE else 3,
             )
-            
+
             // Show full recipe toggle
             if (!showFullRecipe) {
                 TextButton(
-                    onClick = { showFullRecipe = true }
+                    onClick = { showFullRecipe = true },
                 ) {
                     Text("Vollständiges Rezept anzeigen")
                     Icon(Icons.Filled.ExpandMore, contentDescription = null)
@@ -524,63 +531,64 @@ private fun GeneratedRecipeCard(
                 Spacer(Modifier.height(8.dp))
                 Text(
                     recipe.markdown,
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
                 )
                 TextButton(
-                    onClick = { showFullRecipe = false }
+                    onClick = { showFullRecipe = false },
                 ) {
                     Text("Weniger anzeigen")
                     Icon(Icons.Filled.ExpandLess, contentDescription = null)
                 }
             }
-            
+
             Spacer(Modifier.height(12.dp))
-            
+
             // Action buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // Primary action - Prepare Recipe
                 Button(
                     onClick = onPrepareRecipe,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                        ),
                 ) {
                     Icon(Icons.Filled.Restaurant, contentDescription = null)
                     Spacer(Modifier.width(4.dp))
                     Text("Zubereiten")
                 }
             }
-            
+
             // Secondary actions row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OutlinedButton(
                     onClick = onAddToShopping,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Filled.ShoppingCart, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
                     Text("Zutaten", style = MaterialTheme.typography.bodySmall)
                 }
-                
+
                 OutlinedButton(
                     onClick = onLogCalories,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
                     Text("Loggen", style = MaterialTheme.typography.bodySmall)
                 }
-                
+
                 OutlinedButton(
                     onClick = onSaveRecipe,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Filled.BookmarkAdd, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
@@ -595,7 +603,7 @@ private fun extractRecipePreview(markdown: String): String {
     // Extract ingredients and basic info for preview
     val lines = markdown.lines()
     val preview = StringBuilder()
-    
+
     for (line in lines) {
         when {
             line.trim().startsWith("**Zutaten") || line.trim().startsWith("Zutaten") -> {
@@ -613,7 +621,7 @@ private fun extractRecipePreview(markdown: String): String {
         }
         if (preview.length > 250) break
     }
-    
+
     return if (preview.isEmpty()) {
         "Leckeres Rezept mit detaillierter Anleitung..."
     } else {

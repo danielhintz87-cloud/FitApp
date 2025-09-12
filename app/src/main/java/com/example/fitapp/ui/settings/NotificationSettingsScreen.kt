@@ -26,7 +26,7 @@ import java.time.LocalTime
 @Composable
 fun NotificationSettingsScreen(
     onBack: (() -> Unit)? = null,
-    contentPadding: PaddingValues = PaddingValues(0.dp)
+    contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val context = LocalContext.current
     var workoutRemindersEnabled by remember { mutableStateOf(true) }
@@ -38,7 +38,7 @@ fun NotificationSettingsScreen(
     var quietHoursEnabled by remember { mutableStateOf(false) }
     var quietHoursStart by remember { mutableStateOf(LocalTime.of(22, 0)) }
     var quietHoursEnd by remember { mutableStateOf(LocalTime.of(8, 0)) }
-    
+
     // Permission state
     var hasNotificationPermission by remember {
         mutableStateOf(
@@ -46,17 +46,18 @@ fun NotificationSettingsScreen(
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
             } else {
                 true // No permission needed for Android < 13
-            }
+            },
         )
     }
-    
+
     // Permission launcher
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        hasNotificationPermission = isGranted
-    }
-    
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { isGranted ->
+            hasNotificationPermission = isGranted
+        }
+
     // Helper function to check/request permission before enabling notifications
     fun requestPermissionIfNeeded(onGranted: () -> Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
@@ -65,7 +66,7 @@ fun NotificationSettingsScreen(
             onGranted()
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -74,23 +75,24 @@ fun NotificationSettingsScreen(
                     IconButton(onClick = { onBack?.invoke() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zurück")
                     }
-                }
+                },
             )
-        }
+        },
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(contentPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(contentPadding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // Workout Reminders Section
             NotificationSectionCard(
                 title = "Workout-Erinnerungen",
-                icon = Icons.Default.FitnessCenter
+                icon = Icons.Default.FitnessCenter,
             ) {
                 SwitchPreference(
                     title = "Workout-Erinnerungen",
@@ -103,7 +105,7 @@ fun NotificationSettingsScreen(
                                 WorkoutReminderWorker.scheduleWorkoutReminder(
                                     context,
                                     "Training",
-                                    workoutTime
+                                    workoutTime,
                                 )
                             }
                         } else {
@@ -111,9 +113,9 @@ fun NotificationSettingsScreen(
                             WorkoutReminderWorker.cancelWorkoutReminder(context, "Training")
                         }
                     },
-                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
                 )
-                
+
                 if (workoutRemindersEnabled) {
                     TimePreference(
                         title = "Workout-Zeit",
@@ -124,17 +126,17 @@ fun NotificationSettingsScreen(
                             WorkoutReminderWorker.scheduleWorkoutReminder(
                                 context,
                                 "Training",
-                                newTime
+                                newTime,
                             )
-                        }
+                        },
                     )
                 }
             }
-            
+
             // Nutrition Reminders Section
             NotificationSectionCard(
                 title = "Ernährungs-Erinnerungen",
-                icon = Icons.Default.Restaurant
+                icon = Icons.Default.Restaurant,
             ) {
                 SwitchPreference(
                     title = "Mahlzeit-Erinnerungen",
@@ -151,9 +153,9 @@ fun NotificationSettingsScreen(
                             NutritionReminderWorker.cancelMealReminders(context)
                         }
                     },
-                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
                 )
-                
+
                 SwitchPreference(
                     title = "Wasser-Erinnerungen",
                     subtitle = "Alle 2 Stunden an Wasserzufuhr erinnern",
@@ -169,23 +171,23 @@ fun NotificationSettingsScreen(
                             WaterReminderWorker.cancelWaterReminders(context)
                         }
                     },
-                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
                 )
             }
-            
+
             // Achievement & Motivation Section
             NotificationSectionCard(
                 title = "Erfolge & Motivation",
-                icon = Icons.Default.EmojiEvents
+                icon = Icons.Default.EmojiEvents,
             ) {
                 SwitchPreference(
                     title = "Erfolg-Benachrichtigungen",
                     subtitle = "Sofortige Benachrichtigung bei neuen Erfolgen",
                     checked = achievementNotificationsEnabled && hasNotificationPermission,
                     onCheckedChange = { achievementNotificationsEnabled = it },
-                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
                 )
-                
+
                 SwitchPreference(
                     title = "Tägliche Motivation",
                     subtitle = "Motivierende Nachrichten jeden Morgen",
@@ -201,43 +203,43 @@ fun NotificationSettingsScreen(
                             DailyMotivationWorker.cancelWork(context)
                         }
                     },
-                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                    showPermissionWarning = !hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
                 )
             }
-            
+
             // Quiet Hours Section
             NotificationSectionCard(
                 title = "Ruhezeiten",
-                icon = Icons.Default.Bedtime
+                icon = Icons.Default.Bedtime,
             ) {
                 SwitchPreference(
                     title = "Ruhezeiten aktivieren",
                     subtitle = "Keine Benachrichtigungen während dieser Zeit",
                     checked = quietHoursEnabled,
-                    onCheckedChange = { quietHoursEnabled = it }
+                    onCheckedChange = { quietHoursEnabled = it },
                 )
-                
+
                 if (quietHoursEnabled) {
                     TimePreference(
                         title = "Ruhezeit Start",
                         subtitle = "Beginn der Ruhezeit",
                         time = quietHoursStart,
-                        onTimeChange = { quietHoursStart = it }
+                        onTimeChange = { quietHoursStart = it },
                     )
-                    
+
                     TimePreference(
                         title = "Ruhezeit Ende",
                         subtitle = "Ende der Ruhezeit",
                         time = quietHoursEnd,
-                        onTimeChange = { quietHoursEnd = it }
+                        onTimeChange = { quietHoursEnd = it },
                     )
                 }
             }
-            
+
             // Preview Section
             NotificationSectionCard(
                 title = "Vorschau",
-                icon = Icons.Default.Preview
+                icon = Icons.Default.Preview,
             ) {
                 Button(
                     onClick = {
@@ -245,44 +247,44 @@ fun NotificationSettingsScreen(
                             SmartNotificationManager.showWorkoutReminder(
                                 context,
                                 "Test-Training",
-                                "jetzt"
+                                "jetzt",
                             )
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = hasNotificationPermission || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                    enabled = hasNotificationPermission || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU,
                 ) {
                     Icon(Icons.Default.Notifications, null)
                     Spacer(Modifier.width(8.dp))
                     Text("Workout-Erinnerung testen")
                 }
-                
+
                 Spacer(Modifier.height(8.dp))
-                
+
                 Button(
                     onClick = {
                         requestPermissionIfNeeded {
                             SmartNotificationManager.showWaterReminder(
                                 context,
                                 1200,
-                                2000
+                                2000,
                             )
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = hasNotificationPermission || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                    enabled = hasNotificationPermission || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU,
                 ) {
                     Icon(Icons.Default.WaterDrop, null)
                     Spacer(Modifier.width(8.dp))
                     Text("Wasser-Erinnerung testen")
                 }
-                
+
                 if (!hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text = "💡 Tipp: Aktiviere die Test-Buttons durch Tippen darauf - sie fragen nach der benötigten Berechtigung.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -294,32 +296,32 @@ fun NotificationSettingsScreen(
 private fun NotificationSectionCard(
     title: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 16.dp),
             ) {
                 Icon(
                     icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.width(12.dp))
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
-            
+
             content()
         }
     }
@@ -331,60 +333,63 @@ private fun SwitchPreference(
     subtitle: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    showPermissionWarning: Boolean = false
+    showPermissionWarning: Boolean = false,
 ) {
     Column {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            
+
             Switch(
                 checked = checked,
-                onCheckedChange = onCheckedChange
+                onCheckedChange = onCheckedChange,
             )
         }
-        
+
         if (showPermissionWarning) {
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
             ) {
                 Row(
                     modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         Icons.Default.Warning,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = "Benachrichtigungserlaubnis erforderlich",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = MaterialTheme.colorScheme.onErrorContainer,
                     )
                 }
             }
@@ -397,38 +402,39 @@ private fun TimePreference(
     title: String,
     subtitle: String,
     time: LocalTime,
-    onTimeChange: (LocalTime) -> Unit
+    onTimeChange: (LocalTime) -> Unit,
 ) {
     var showTimePicker by remember { mutableStateOf(false) }
-    
+
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyLarge,
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        
+
         TextButton(
-            onClick = { showTimePicker = true }
+            onClick = { showTimePicker = true },
         ) {
             Text("${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}")
         }
     }
-    
+
     if (showTimePicker) {
         // Note: TimePicker would need a custom implementation or library
         // For now, we'll use a simple dialog
@@ -437,17 +443,24 @@ private fun TimePreference(
             title = { Text(title) },
             text = {
                 Column {
-                    Text("Aktuelle Zeit: ${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}")
-                    Text("Zeit-Picker würde hier implementiert werden", 
-                         style = MaterialTheme.typography.bodySmall,
-                         color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "Aktuelle Zeit: ${time.hour.toString().padStart(
+                            2,
+                            '0',
+                        )}:${time.minute.toString().padStart(2, '0')}",
+                    )
+                    Text(
+                        "Zeit-Picker würde hier implementiert werden",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             },
             confirmButton = {
                 TextButton(onClick = { showTimePicker = false }) {
                     Text("OK")
                 }
-            }
+            },
         )
     }
 }

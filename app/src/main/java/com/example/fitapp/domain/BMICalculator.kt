@@ -7,10 +7,11 @@ import kotlin.math.pow
  */
 enum class BMICategory(val germanName: String, val colorCode: String, val range: ClosedFloatingPointRange<Float>) {
     UNDERWEIGHT("Untergewicht", "#3F51B5", 0f..18.4f),
-    NORMAL("Normalgewicht", "#4CAF50", 18.5f..24.9f), 
+    NORMAL("Normalgewicht", "#4CAF50", 18.5f..24.9f),
     OVERWEIGHT("Übergewicht", "#FF9800", 25f..29.9f),
-    OBESE("Adipositas", "#F44336", 30f..Float.MAX_VALUE);
-    
+    OBESE("Adipositas", "#F44336", 30f..Float.MAX_VALUE),
+    ;
+
     companion object {
         fun fromBMI(bmi: Float): BMICategory {
             return when {
@@ -30,7 +31,7 @@ data class BMIResult(
     val bmi: Float,
     val category: BMICategory,
     val idealWeightRange: ClosedFloatingPointRange<Float>,
-    val recommendedWeightLoss: Float? = null // kg to lose for overweight/obese
+    val recommendedWeightLoss: Float? = null, // kg to lose for overweight/obese
 )
 
 /**
@@ -41,7 +42,7 @@ enum class ActivityLevel(val germanName: String, val multiplier: Float) {
     LIGHTLY_ACTIVE("Leicht aktiv", 1.375f),
     MODERATELY_ACTIVE("Mäßig aktiv", 1.55f),
     VERY_ACTIVE("Sehr aktiv", 1.725f),
-    EXTRA_ACTIVE("Extrem aktiv", 1.9f)
+    EXTRA_ACTIVE("Extrem aktiv", 1.9f),
 }
 
 /**
@@ -52,7 +53,7 @@ data class WeightLossProgram(
     val macroTargets: MacroTargets,
     val weeklyWeightLossGoal: Float,
     val recommendedExerciseMinutes: Int,
-    val milestones: List<WeightLossMilestone>
+    val milestones: List<WeightLossMilestone>,
 )
 
 /**
@@ -61,7 +62,7 @@ data class WeightLossProgram(
 data class MacroTargets(
     val proteinGrams: Float,
     val carbsGrams: Float,
-    val fatGrams: Float
+    val fatGrams: Float,
 )
 
 /**
@@ -70,41 +71,49 @@ data class MacroTargets(
 data class WeightLossMilestone(
     val targetWeight: Float,
     val estimatedDate: String, // ISO date
-    val description: String
+    val description: String,
 )
 
 /**
  * BMI Calculator utility class
  */
 object BMICalculator {
-    
     /**
      * Calculate BMI from height and weight
      */
-    fun calculateBMI(heightCm: Float, weightKg: Float): Float {
+    fun calculateBMI(
+        heightCm: Float,
+        weightKg: Float,
+    ): Float {
         val heightM = heightCm / 100f
         return weightKg / (heightM.pow(2))
     }
-    
+
     /**
      * Calculate BMI result with recommendations
      */
-    fun calculateBMIResult(heightCm: Float, weightKg: Float): BMIResult {
+    fun calculateBMIResult(
+        heightCm: Float,
+        weightKg: Float,
+    ): BMIResult {
         val bmi = calculateBMI(heightCm, weightKg)
         val category = BMICategory.fromBMI(bmi)
         val idealWeightRange = calculateIdealWeightRange(heightCm)
-        val recommendedWeightLoss = if (category == BMICategory.OVERWEIGHT || category == BMICategory.OBESE) {
-            weightKg - idealWeightRange.endInclusive
-        } else null
-        
+        val recommendedWeightLoss =
+            if (category == BMICategory.OVERWEIGHT || category == BMICategory.OBESE) {
+                weightKg - idealWeightRange.endInclusive
+            } else {
+                null
+            }
+
         return BMIResult(
             bmi = bmi,
             category = category,
             idealWeightRange = idealWeightRange,
-            recommendedWeightLoss = recommendedWeightLoss
+            recommendedWeightLoss = recommendedWeightLoss,
         )
     }
-    
+
     /**
      * Calculate ideal weight range (BMI 18.5-24.9)
      */
@@ -114,39 +123,47 @@ object BMICalculator {
         val maxWeight = 24.9f * heightM.pow(2)
         return minWeight..maxWeight
     }
-    
+
     /**
      * Calculate weight needed for target BMI
      */
-    fun calculateWeightForTargetBMI(heightCm: Float, targetBMI: Float): Float {
+    fun calculateWeightForTargetBMI(
+        heightCm: Float,
+        targetBMI: Float,
+    ): Float {
         val heightM = heightCm / 100f
         return targetBMI * heightM.pow(2)
     }
-    
+
     /**
      * Calculate BMR (Basal Metabolic Rate) using Mifflin-St Jeor equation
      */
-    fun calculateBMR(weightKg: Float, heightCm: Float, ageYears: Int, isMale: Boolean): Float {
+    fun calculateBMR(
+        weightKg: Float,
+        heightCm: Float,
+        ageYears: Int,
+        isMale: Boolean,
+    ): Float {
         return if (isMale) {
             10 * weightKg + 6.25f * heightCm - 5 * ageYears + 5
         } else {
             10 * weightKg + 6.25f * heightCm - 5 * ageYears - 161
         }
     }
-    
+
     /**
      * Calculate daily calorie target for weight loss
      */
     fun calculateDailyCalorieTarget(
         bmr: Float,
         activityLevel: ActivityLevel,
-        weeklyWeightLossGoal: Float
+        weeklyWeightLossGoal: Float,
     ): Int {
         val tdee = bmr * activityLevel.multiplier
         val dailyDeficit = (weeklyWeightLossGoal * 7700) / 7 // 7700 kcal per kg
         return (tdee - dailyDeficit).toInt()
     }
-    
+
     /**
      * Calculate macro targets based on calorie target
      */
@@ -155,11 +172,11 @@ object BMICalculator {
         val proteinCalories = calorieTarget * 0.3f
         val carbsCalories = calorieTarget * 0.4f
         val fatCalories = calorieTarget * 0.3f
-        
+
         return MacroTargets(
             proteinGrams = proteinCalories / 4f, // 4 kcal per gram
-            carbsGrams = carbsCalories / 4f,     // 4 kcal per gram
-            fatGrams = fatCalories / 9f          // 9 kcal per gram
+            carbsGrams = carbsCalories / 4f, // 4 kcal per gram
+            fatGrams = fatCalories / 9f, // 9 kcal per gram
         )
     }
 }

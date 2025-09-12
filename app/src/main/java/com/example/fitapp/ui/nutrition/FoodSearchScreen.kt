@@ -30,7 +30,6 @@ import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.FoodItemEntity
 import com.example.fitapp.data.db.MealEntryEntity
 import com.example.fitapp.data.repo.NutritionRepository
-import com.example.fitapp.ui.nutrition.BarcodeScannerScreen
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -40,13 +39,13 @@ import java.time.LocalDate
 fun FoodSearchScreen(
     contentPadding: PaddingValues,
     onBackPressed: () -> Unit,
-    onFoodAdded: () -> Unit = {}
+    onFoodAdded: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val repo = remember { NutritionRepository(AppDatabase.get(context)) }
     val keyboardController = LocalSoftwareKeyboardController.current
-    
+
     var searchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<FoodItemEntity>>(emptyList()) }
     var isSearching by remember { mutableStateOf(false) }
@@ -54,16 +53,17 @@ fun FoodSearchScreen(
     var recentFoods by remember { mutableStateOf<List<FoodItemEntity>>(emptyList()) }
     var showBarcodeScanner by remember { mutableStateOf(false) }
     var selectedFoodItem by remember { mutableStateOf<FoodItemEntity?>(null) }
-    
+
     // Permission launcher for camera
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            showBarcodeScanner = true
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            if (granted) {
+                showBarcodeScanner = true
+            }
         }
-    }
-    
+
     // Load recent foods on start
     LaunchedEffect(Unit) {
         scope.launch {
@@ -75,7 +75,7 @@ fun FoodSearchScreen(
             }
         }
     }
-    
+
     // Search for foods when query changes
     LaunchedEffect(searchQuery) {
         if (searchQuery.isNotBlank()) {
@@ -94,19 +94,20 @@ fun FoodSearchScreen(
             searchResults = emptyList()
         }
     }
-    
+
     Column(
-        modifier = Modifier
-            .padding(contentPadding)
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .padding(contentPadding)
+                .fillMaxSize()
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBackPressed) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -114,13 +115,13 @@ fun FoodSearchScreen(
             Text(
                 "Lebensmittel hinzufügen",
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
             IconButton(onClick = { showAddCustomFood = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Add Custom Food")
             }
         }
-        
+
         // Search bar
         OutlinedTextField(
             value = searchQuery,
@@ -139,17 +140,18 @@ fun FoodSearchScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(
-                onSearch = { 
-                    keyboardController?.hide()
-                    // Clear focus to prevent input connection issues
-                    kotlin.runCatching { 
-                        // Force focus clearing by triggering a UI update
-                    }
-                }
-            )
+            keyboardActions =
+                KeyboardActions(
+                    onSearch = {
+                        keyboardController?.hide()
+                        // Clear focus to prevent input connection issues
+                        kotlin.runCatching {
+                            // Force focus clearing by triggering a UI update
+                        }
+                    },
+                ),
         )
-        
+
         // Barcode scanner button
         Button(
             onClick = {
@@ -163,21 +165,22 @@ fun FoodSearchScreen(
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(Icons.Default.QrCodeScanner, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text("Barcode scannen")
         }
-        
+
         // Search results or recent foods
         if (searchQuery.isNotBlank()) {
             if (isSearching) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
                 }
@@ -186,7 +189,7 @@ fun FoodSearchScreen(
                     searchResults = searchResults,
                     onFoodSelected = { foodItem ->
                         selectedFoodItem = foodItem
-                    }
+                    },
                 )
             }
         } else {
@@ -194,11 +197,11 @@ fun FoodSearchScreen(
                 recentFoods = recentFoods,
                 onFoodSelected = { foodItem ->
                     selectedFoodItem = foodItem
-                }
+                },
             )
         }
     }
-    
+
     // Barcode scanner
     if (showBarcodeScanner) {
         BarcodeScannerScreen(
@@ -207,10 +210,10 @@ fun FoodSearchScreen(
             onFoodItemFound = { foodItem ->
                 selectedFoodItem = foodItem
                 showBarcodeScanner = false
-            }
+            },
         )
     }
-    
+
     // Add custom food dialog
     if (showAddCustomFood) {
         AddCustomFoodDialog(
@@ -221,10 +224,10 @@ fun FoodSearchScreen(
                     recentFoods = repo.getRecentFoodItems(20)
                     showAddCustomFood = false
                 }
-            }
+            },
         )
     }
-    
+
     // Meal selection dialog
     selectedFoodItem?.let { foodItem ->
         AddMealDialog(
@@ -236,7 +239,7 @@ fun FoodSearchScreen(
                     selectedFoodItem = null
                     onFoodAdded()
                 }
-            }
+            },
         )
     }
 }
@@ -244,32 +247,32 @@ fun FoodSearchScreen(
 @Composable
 private fun SearchResultsList(
     searchResults: List<FoodItemEntity>,
-    onFoodSelected: (FoodItemEntity) -> Unit
+    onFoodSelected: (FoodItemEntity) -> Unit,
 ) {
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
             Text(
                 "Suchergebnisse",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         }
-        
+
         if (searchResults.isEmpty()) {
             item {
                 Text(
                     "Keine Ergebnisse gefunden",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         } else {
             items(searchResults) { foodItem ->
                 FoodItemCard(
                     foodItem = foodItem,
-                    onClick = { onFoodSelected(foodItem) }
+                    onClick = { onFoodSelected(foodItem) },
                 )
             }
         }
@@ -279,32 +282,32 @@ private fun SearchResultsList(
 @Composable
 private fun RecentFoodsList(
     recentFoods: List<FoodItemEntity>,
-    onFoodSelected: (FoodItemEntity) -> Unit
+    onFoodSelected: (FoodItemEntity) -> Unit,
 ) {
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
             Text(
                 "Zuletzt verwendet",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         }
-        
+
         if (recentFoods.isEmpty()) {
             item {
                 Text(
                     "Keine kürzlich verwendeten Lebensmittel",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         } else {
             items(recentFoods) { foodItem ->
                 FoodItemCard(
                     foodItem = foodItem,
-                    onClick = { onFoodSelected(foodItem) }
+                    onClick = { onFoodSelected(foodItem) },
                 )
             }
         }
@@ -314,26 +317,26 @@ private fun RecentFoodsList(
 @Composable
 private fun FoodItemCard(
     foodItem: FoodItemEntity,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     ElevatedCard(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Text(
                 foodItem.name,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 NutritionInfo("${foodItem.calories} kcal", "pro 100g")
                 NutritionInfo("${foodItem.carbs}g", "Kohlenhydrate")
@@ -347,18 +350,18 @@ private fun FoodItemCard(
 @Composable
 private fun NutritionInfo(
     value: String,
-    label: String
+    label: String,
 ) {
     Column {
         Text(
             value,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
         )
         Text(
             label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -367,7 +370,7 @@ private fun NutritionInfo(
 @Composable
 private fun AddCustomFoodDialog(
     onDismiss: () -> Unit,
-    onFoodAdded: (FoodItemEntity) -> Unit
+    onFoodAdded: (FoodItemEntity) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
     var calories by remember { mutableStateOf("") }
@@ -375,87 +378,90 @@ private fun AddCustomFoodDialog(
     var protein by remember { mutableStateOf("") }
     var fat by remember { mutableStateOf("") }
     var barcode by remember { mutableStateOf("") }
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Eigenes Lebensmittel hinzufügen") },
         text = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("Name") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
                 )
-                
+
                 OutlinedTextField(
                     value = calories,
                     onValueChange = { calories = it },
                     label = { Text("Kalorien (pro 100g)") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
+                    singleLine = true,
                 )
-                
+
                 OutlinedTextField(
                     value = carbs,
                     onValueChange = { carbs = it },
                     label = { Text("Kohlenhydrate (g pro 100g)") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true
+                    singleLine = true,
                 )
-                
+
                 OutlinedTextField(
                     value = protein,
                     onValueChange = { protein = it },
                     label = { Text("Protein (g pro 100g)") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true
+                    singleLine = true,
                 )
-                
+
                 OutlinedTextField(
                     value = fat,
                     onValueChange = { fat = it },
                     label = { Text("Fett (g pro 100g)") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true
+                    singleLine = true,
                 )
-                
+
                 OutlinedTextField(
                     value = barcode,
                     onValueChange = { barcode = it },
                     label = { Text("Barcode (optional)") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
+                    singleLine = true,
                 )
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    if (name.isNotBlank() && calories.isNotBlank() && 
-                        carbs.isNotBlank() && protein.isNotBlank() && fat.isNotBlank()) {
-                        val foodItem = FoodItemEntity(
-                            name = name.trim(),
-                            calories = calories.toIntOrNull() ?: 0,
-                            carbs = carbs.toFloatOrNull() ?: 0f,
-                            protein = protein.toFloatOrNull() ?: 0f,
-                            fat = fat.toFloatOrNull() ?: 0f,
-                            barcode = barcode.takeIf { it.isNotBlank() }
-                        )
+                    if (name.isNotBlank() && calories.isNotBlank() &&
+                        carbs.isNotBlank() && protein.isNotBlank() && fat.isNotBlank()
+                    ) {
+                        val foodItem =
+                            FoodItemEntity(
+                                name = name.trim(),
+                                calories = calories.toIntOrNull() ?: 0,
+                                carbs = carbs.toFloatOrNull() ?: 0f,
+                                protein = protein.toFloatOrNull() ?: 0f,
+                                fat = fat.toFloatOrNull() ?: 0f,
+                                barcode = barcode.takeIf { it.isNotBlank() },
+                            )
                         onFoodAdded(foodItem)
                     }
-                }
+                },
             ) {
                 Text("Hinzufügen")
             }
@@ -464,7 +470,7 @@ private fun AddCustomFoodDialog(
             TextButton(onClick = onDismiss) {
                 Text("Abbrechen")
             }
-        }
+        },
     )
 }
 
@@ -473,50 +479,51 @@ private fun AddCustomFoodDialog(
 fun AddMealDialog(
     foodItem: FoodItemEntity,
     onDismiss: () -> Unit,
-    onMealAdded: (MealEntryEntity) -> Unit
+    onMealAdded: (MealEntryEntity) -> Unit,
 ) {
     var selectedMealType by remember { mutableStateOf("breakfast") }
     var quantity by remember { mutableStateOf("100") }
     var notes by remember { mutableStateOf("") }
-    
-    val mealTypes = listOf(
-        "breakfast" to "Frühstück",
-        "lunch" to "Mittagessen", 
-        "dinner" to "Abendessen",
-        "snack" to "Snack"
-    )
-    
+
+    val mealTypes =
+        listOf(
+            "breakfast" to "Frühstück",
+            "lunch" to "Mittagessen",
+            "dinner" to "Abendessen",
+            "snack" to "Snack",
+        )
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("${foodItem.name} hinzufügen") },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // Meal type selection
                 Text(
                     "Mahlzeit",
-                    style = MaterialTheme.typography.labelLarge
+                    style = MaterialTheme.typography.labelLarge,
                 )
-                
+
                 Column {
                     mealTypes.forEach { (type, label) ->
                         Row(
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             RadioButton(
                                 selected = selectedMealType == type,
-                                onClick = { selectedMealType = type }
+                                onClick = { selectedMealType = type },
                             )
                             Text(
                                 label,
-                                modifier = Modifier.padding(start = 8.dp)
+                                modifier = Modifier.padding(start = 8.dp),
                             )
                         }
                     }
                 }
-                
+
                 // Quantity
                 OutlinedTextField(
                     value = quantity,
@@ -524,34 +531,34 @@ fun AddMealDialog(
                     label = { Text("Menge (g)") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true
+                    singleLine = true,
                 )
-                
+
                 // Notes
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
                     label = { Text("Notizen (optional)") },
                     modifier = Modifier.fillMaxWidth(),
-                    maxLines = 2
+                    maxLines = 2,
                 )
-                
+
                 // Nutrition preview
                 val quantityFloat = quantity.toFloatOrNull() ?: 100f
                 val previewCalories = ((quantityFloat / 100f) * foodItem.calories).toInt()
                 val previewCarbs = (quantityFloat / 100f) * foodItem.carbs
                 val previewProtein = (quantityFloat / 100f) * foodItem.protein
                 val previewFat = (quantityFloat / 100f) * foodItem.fat
-                
+
                 Card {
                     Column(
-                        modifier = Modifier.padding(12.dp)
+                        modifier = Modifier.padding(12.dp),
                     ) {
                         Text(
                             "Nährwerte für ${quantityFloat.toInt()}g:",
-                            style = MaterialTheme.typography.labelMedium
+                            style = MaterialTheme.typography.labelMedium,
                         )
-                        Text("${previewCalories} kcal")
+                        Text("$previewCalories kcal")
                         Text("${previewCarbs.toString().take(4)}g Kohlenhydrate")
                         Text("${previewProtein.toString().take(4)}g Protein")
                         Text("${previewFat.toString().take(4)}g Fett")
@@ -563,15 +570,16 @@ fun AddMealDialog(
             TextButton(
                 onClick = {
                     val quantityFloat = quantity.toFloatOrNull() ?: 100f
-                    val mealEntry = MealEntryEntity(
-                        foodItemId = foodItem.id,
-                        date = LocalDate.now().toString(),
-                        mealType = selectedMealType,
-                        quantityGrams = quantityFloat,
-                        notes = notes.takeIf { it.isNotBlank() }
-                    )
+                    val mealEntry =
+                        MealEntryEntity(
+                            foodItemId = foodItem.id,
+                            date = LocalDate.now().toString(),
+                            mealType = selectedMealType,
+                            quantityGrams = quantityFloat,
+                            notes = notes.takeIf { it.isNotBlank() },
+                        )
                     onMealAdded(mealEntry)
-                }
+                },
             ) {
                 Text("Hinzufügen")
             }
@@ -580,6 +588,6 @@ fun AddMealDialog(
             TextButton(onClick = onDismiss) {
                 Text("Abbrechen")
             }
-        }
+        },
     )
 }

@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -18,12 +17,12 @@ fun Modifier.applyContentPadding(
     contentPadding: PaddingValues,
     horizontal: Dp = 16.dp,
     top: Dp = 16.dp,
-    extraBottom: Dp = 0.dp
+    extraBottom: Dp = 0.dp,
 ): Modifier {
     return this.padding(
         start = horizontal,
         end = horizontal,
         top = top,
-        bottom = extraBottom
+        bottom = extraBottom,
     ).padding(contentPadding)
 }

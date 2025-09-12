@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun ResetSettingsScreen(
     onBackPressed: () -> Unit,
-    viewModel: ResetSettingsViewModel = hiltViewModel()
+    viewModel: ResetSettingsViewModel = hiltViewModel(),
 ) {
     val scope = rememberCoroutineScope()
     var showResetDialog by remember { mutableStateOf(false) }
@@ -35,60 +35,62 @@ fun ResetSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         "Daten & Reset",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Zurück"
+                            contentDescription = "Zurück",
                         )
                     }
-                }
+                },
             )
-        }
+        },
     ) { paddingValues ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                        ),
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(16.dp),
                     ) {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
                                 Icons.Default.Warning,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
+                                tint = MaterialTheme.colorScheme.error,
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 "⚠️ Daten Reset Optionen",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             "Diese Aktionen können nicht rückgängig gemacht werden. Bitte mit Vorsicht verwenden.",
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                 }
@@ -103,7 +105,7 @@ fun ResetSettingsScreen(
                         selectedResetAction = "workout"
                         showResetDialog = true
                     },
-                    isLoading = isLoading
+                    isLoading = isLoading,
                 )
             }
 
@@ -116,7 +118,7 @@ fun ResetSettingsScreen(
                         selectedResetAction = "nutrition"
                         showResetDialog = true
                     },
-                    isLoading = isLoading
+                    isLoading = isLoading,
                 )
             }
 
@@ -129,7 +131,7 @@ fun ResetSettingsScreen(
                         selectedResetAction = "user"
                         showResetDialog = true
                     },
-                    isLoading = isLoading
+                    isLoading = isLoading,
                 )
             }
 
@@ -142,7 +144,7 @@ fun ResetSettingsScreen(
                         selectedResetAction = "achievements"
                         showResetDialog = true
                     },
-                    isLoading = isLoading
+                    isLoading = isLoading,
                 )
             }
 
@@ -156,7 +158,7 @@ fun ResetSettingsScreen(
                         showResetDialog = true
                     },
                     isLoading = isLoading,
-                    isDestructive = true
+                    isDestructive = true,
                 )
             }
         }
@@ -165,7 +167,7 @@ fun ResetSettingsScreen(
     // Confirmation Dialog
     if (showResetDialog && selectedResetAction != null) {
         AlertDialog(
-            onDismissRequest = { 
+            onDismissRequest = {
                 showResetDialog = false
                 selectedResetAction = null
             },
@@ -173,7 +175,9 @@ fun ResetSettingsScreen(
                 Text("Reset bestätigen")
             },
             text = {
-                Text("Sind Sie sicher, dass Sie diese Daten zurücksetzen möchten? Diese Aktion kann nicht rückgängig gemacht werden.")
+                Text(
+                    "Sind Sie sicher, dass Sie diese Daten zurücksetzen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+                )
             },
             confirmButton = {
                 Button(
@@ -195,9 +199,10 @@ fun ResetSettingsScreen(
                             }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                        ),
                 ) {
                     Text("Reset durchführen")
                 }
@@ -207,11 +212,11 @@ fun ResetSettingsScreen(
                     onClick = {
                         showResetDialog = false
                         selectedResetAction = null
-                    }
+                    },
                 ) {
                     Text("Abbrechen")
                 }
-            }
+            },
         )
     }
 }
@@ -223,66 +228,70 @@ fun ResetOptionCard(
     icon: ImageVector,
     onClick: () -> Unit,
     isLoading: Boolean = false,
-    isDestructive: Boolean = false
+    isDestructive: Boolean = false,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDestructive) {
-                MaterialTheme.colorScheme.errorContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            }
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (isDestructive) {
+                        MaterialTheme.colorScheme.errorContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    },
+            ),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     icon,
                     contentDescription = null,
-                    tint = if (isDestructive) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    }
+                    tint =
+                        if (isDestructive) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                     Text(
                         description,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Button(
                 onClick = onClick,
                 enabled = !isLoading,
                 modifier = Modifier.fillMaxWidth(),
-                colors = if (isDestructive) {
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
-                } else {
-                    ButtonDefaults.buttonColors()
-                }
+                colors =
+                    if (isDestructive) {
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                        )
+                    } else {
+                        ButtonDefaults.buttonColors()
+                    },
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
+                        strokeWidth = 2.dp,
                     )
                 } else {
                     Text(if (isDestructive) "⚠️ Reset" else "Reset")

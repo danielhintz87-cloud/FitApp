@@ -7,262 +7,264 @@ import com.example.fitapp.util.ApiCallWrapper
 import com.example.fitapp.util.StructuredLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import java.util.concurrent.TimeUnit
-import com.example.fitapp.services.CloudConflictResolution
 
 /**
  * Offline sync manager that handles data synchronization when network is available
  * Implements conflict resolution and queuing for pending operations
  */
 class OfflineSyncManager(private val context: Context) {
-    
     private val database = AppDatabase.get(context)
     private val syncQueue = SyncQueue(context)
     private val cloudSyncManager by lazy { CloudSyncManager(context) }
-    
+
     companion object {
         private const val SYNC_WORK_NAME = "offline_sync_work"
         private const val PERIODIC_SYNC_WORK_NAME = "periodic_sync_work"
         private const val TAG = "OfflineSyncManager"
-        
-        fun schedulePeriodicSync(context: Context) {
-            val constraints = Constraints.Builder()
-                // Remove network constraint for now
-                .setRequiresBatteryNotLow(true)
-                .build()
 
-            val periodicSyncRequest = PeriodicWorkRequestBuilder<OfflineSyncWorker>(
-                15, TimeUnit.MINUTES // Sync every 15 minutes
-            )
-                .setConstraints(constraints)
-                .setBackoffCriteria(
-                    BackoffPolicy.EXPONENTIAL,
-                    WorkRequest.MIN_BACKOFF_MILLIS,
-                    TimeUnit.MILLISECONDS
+        fun schedulePeriodicSync(context: Context) {
+            val constraints =
+                Constraints.Builder()
+                    // Remove network constraint for now
+                    .setRequiresBatteryNotLow(true)
+                    .build()
+
+            val periodicSyncRequest =
+                PeriodicWorkRequestBuilder<OfflineSyncWorker>(
+                    15,
+                    TimeUnit.MINUTES, // Sync every 15 minutes
                 )
-                .build()
+                    .setConstraints(constraints)
+                    .setBackoffCriteria(
+                        BackoffPolicy.EXPONENTIAL,
+                        WorkRequest.MIN_BACKOFF_MILLIS,
+                        TimeUnit.MILLISECONDS,
+                    )
+                    .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 PERIODIC_SYNC_WORK_NAME,
                 ExistingPeriodicWorkPolicy.KEEP,
-                periodicSyncRequest
+                periodicSyncRequest,
             )
-            
+
             StructuredLogger.info(
                 StructuredLogger.LogCategory.SYNC,
                 TAG,
-                "Periodic sync scheduled"
+                "Periodic sync scheduled",
             )
         }
-        
-        fun triggerImmediateSync(context: Context) {
-            val constraints = Constraints.Builder()
-                // Remove network constraint for now
-                .build()
 
-            val immediateSyncRequest = OneTimeWorkRequestBuilder<OfflineSyncWorker>()
-                .setConstraints(constraints)
-                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-                .build()
+        fun triggerImmediateSync(context: Context) {
+            val constraints =
+                Constraints.Builder()
+                    // Remove network constraint for now
+                    .build()
+
+            val immediateSyncRequest =
+                OneTimeWorkRequestBuilder<OfflineSyncWorker>()
+                    .setConstraints(constraints)
+                    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                    .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(
                 SYNC_WORK_NAME,
                 ExistingWorkPolicy.REPLACE,
-                immediateSyncRequest
+                immediateSyncRequest,
             )
-            
+
             StructuredLogger.info(
                 StructuredLogger.LogCategory.SYNC,
                 TAG,
-                "Immediate sync triggered"
+                "Immediate sync triggered",
             )
         }
     }
-    
+
     /**
      * Queue a sync operation for later execution
      */
     suspend fun queueOperation(operation: SyncOperation) {
         syncQueue.addOperation(operation)
-        
+
         // Try immediate sync if network is available
         if (ApiCallWrapper.isNetworkAvailable(context)) {
             triggerImmediateSync(context)
         }
     }
-    
+
     /**
      * Process all pending sync operations
      */
-    suspend fun processPendingOperations(): Result<SyncResult> = withContext(Dispatchers.IO) {
-        try {
-            val pendingOperations = syncQueue.getPendingOperations()
-            
-            if (pendingOperations.isEmpty()) {
-                return@withContext Result.success(SyncResult(0, 0, emptyList()))
-            }
-            
-            StructuredLogger.info(
-                StructuredLogger.LogCategory.SYNC,
-                TAG,
-                "Processing ${pendingOperations.size} pending operations"
-            )
-            
-            var successCount = 0
-            var failureCount = 0
-            val errors = mutableListOf<String>()
-            
-            for (operation in pendingOperations) {
-                try {
-                    when (operation.type) {
-                        SyncOperationType.NUTRITION_ENTRY -> {
-                            processNutritionSync(operation)
-                            successCount++
-                        }
-                        SyncOperationType.WORKOUT_COMPLETION -> {
-                            processWorkoutSync(operation)
-                            successCount++
-                        }
-                        SyncOperationType.ACHIEVEMENT_UPDATE -> {
-                            processAchievementSync(operation)
-                            successCount++
-                        }
-                        SyncOperationType.WEIGHT_ENTRY -> {
-                            processWeightSync(operation)
-                            successCount++
-                        }
-                        SyncOperationType.VIDEO_CACHE -> {
-                            processVideoCache(operation)
-                            successCount++
-                        }
-                        SyncOperationType.VIDEO_DOWNLOAD -> {
-                            processVideoDownload(operation)
-                            successCount++
-                        }
-                        SyncOperationType.CLOUD_SYNC_UP -> {
-                            processCloudSyncUp(operation)
-                            successCount++
-                        }
-                        SyncOperationType.CLOUD_SYNC_DOWN -> {
-                            processCloudSyncDown(operation)
-                            successCount++
-                        }
-                        SyncOperationType.CLOUD_CONFLICT_RESOLUTION -> {
-                            processCloudConflictResolution(operation)
-                            successCount++
-                        }
-                    }
-                    
-                    // Remove successful operation from queue
-                    syncQueue.removeOperation(operation.id)
-                    
-                } catch (e: Exception) {
-                    failureCount++
-                    errors.add("${operation.type}: ${e.message}")
-                    
-                    // Update retry count
-                    syncQueue.incrementRetryCount(operation.id)
-                    
-                    StructuredLogger.warning(
-                        StructuredLogger.LogCategory.SYNC,
-                        TAG,
-                        "Failed to process operation ${operation.id}",
-                        exception = e
-                    )
+    suspend fun processPendingOperations(): Result<SyncResult> =
+        withContext(Dispatchers.IO) {
+            try {
+                val pendingOperations = syncQueue.getPendingOperations()
+
+                if (pendingOperations.isEmpty()) {
+                    return@withContext Result.success(SyncResult(0, 0, emptyList()))
                 }
+
+                StructuredLogger.info(
+                    StructuredLogger.LogCategory.SYNC,
+                    TAG,
+                    "Processing ${pendingOperations.size} pending operations",
+                )
+
+                var successCount = 0
+                var failureCount = 0
+                val errors = mutableListOf<String>()
+
+                for (operation in pendingOperations) {
+                    try {
+                        when (operation.type) {
+                            SyncOperationType.NUTRITION_ENTRY -> {
+                                processNutritionSync(operation)
+                                successCount++
+                            }
+                            SyncOperationType.WORKOUT_COMPLETION -> {
+                                processWorkoutSync(operation)
+                                successCount++
+                            }
+                            SyncOperationType.ACHIEVEMENT_UPDATE -> {
+                                processAchievementSync(operation)
+                                successCount++
+                            }
+                            SyncOperationType.WEIGHT_ENTRY -> {
+                                processWeightSync(operation)
+                                successCount++
+                            }
+                            SyncOperationType.VIDEO_CACHE -> {
+                                processVideoCache(operation)
+                                successCount++
+                            }
+                            SyncOperationType.VIDEO_DOWNLOAD -> {
+                                processVideoDownload(operation)
+                                successCount++
+                            }
+                            SyncOperationType.CLOUD_SYNC_UP -> {
+                                processCloudSyncUp(operation)
+                                successCount++
+                            }
+                            SyncOperationType.CLOUD_SYNC_DOWN -> {
+                                processCloudSyncDown(operation)
+                                successCount++
+                            }
+                            SyncOperationType.CLOUD_CONFLICT_RESOLUTION -> {
+                                processCloudConflictResolution(operation)
+                                successCount++
+                            }
+                        }
+
+                        // Remove successful operation from queue
+                        syncQueue.removeOperation(operation.id)
+                    } catch (e: Exception) {
+                        failureCount++
+                        errors.add("${operation.type}: ${e.message}")
+
+                        // Update retry count
+                        syncQueue.incrementRetryCount(operation.id)
+
+                        StructuredLogger.warning(
+                            StructuredLogger.LogCategory.SYNC,
+                            TAG,
+                            "Failed to process operation ${operation.id}",
+                            exception = e,
+                        )
+                    }
+                }
+
+                StructuredLogger.info(
+                    StructuredLogger.LogCategory.SYNC,
+                    TAG,
+                    "Sync completed: $successCount successful, $failureCount failed",
+                )
+
+                Result.success(SyncResult(successCount, failureCount, errors))
+            } catch (e: Exception) {
+                StructuredLogger.error(
+                    StructuredLogger.LogCategory.SYNC,
+                    TAG,
+                    "Error processing pending operations",
+                    exception = e,
+                )
+                Result.failure(e)
             }
-            
-            StructuredLogger.info(
-                StructuredLogger.LogCategory.SYNC,
-                TAG,
-                "Sync completed: $successCount successful, $failureCount failed"
-            )
-            
-            Result.success(SyncResult(successCount, failureCount, errors))
-            
-        } catch (e: Exception) {
-            StructuredLogger.error(
-                StructuredLogger.LogCategory.SYNC,
-                TAG,
-                "Error processing pending operations",
-                exception = e
-            )
-            Result.failure(e)
         }
-    }
-    
+
     private suspend fun processNutritionSync(operation: SyncOperation) {
         // Implement nutrition data sync logic
         // This would typically involve sending data to a remote server
         StructuredLogger.info(
             StructuredLogger.LogCategory.SYNC,
             TAG,
-            "Processing nutrition sync for operation ${operation.id}"
+            "Processing nutrition sync for operation ${operation.id}",
         )
-        
+
         // Simulate API call with conflict resolution
         val conflictResolution = resolveDataConflicts(operation)
         if (conflictResolution.hasConflict) {
             // Apply conflict resolution strategy
             applyConflictResolution(conflictResolution)
         }
-        
+
         // Also sync to cloud if enabled
         if (shouldTriggerCloudSync(operation)) {
             queueCloudSync(operation)
         }
     }
-    
+
     private suspend fun processWorkoutSync(operation: SyncOperation) {
         StructuredLogger.info(
             StructuredLogger.LogCategory.SYNC,
             TAG,
-            "Processing workout sync for operation ${operation.id}"
+            "Processing workout sync for operation ${operation.id}",
         )
         // Implement workout completion sync logic
     }
-    
+
     private suspend fun processAchievementSync(operation: SyncOperation) {
         StructuredLogger.info(
             StructuredLogger.LogCategory.SYNC,
             TAG,
-            "Processing achievement sync for operation ${operation.id}"
+            "Processing achievement sync for operation ${operation.id}",
         )
         // Implement achievement sync logic
     }
-    
+
     private suspend fun processWeightSync(operation: SyncOperation) {
         StructuredLogger.info(
             StructuredLogger.LogCategory.SYNC,
             TAG,
-            "Processing weight sync for operation ${operation.id}"
+            "Processing weight sync for operation ${operation.id}",
         )
         // Implement weight tracking sync logic
     }
-    
+
     private suspend fun processVideoCache(operation: SyncOperation) {
         StructuredLogger.info(
             StructuredLogger.LogCategory.SYNC,
             TAG,
-            "Processing video cache for operation ${operation.id}"
+            "Processing video cache for operation ${operation.id}",
         )
-        
+
         try {
             val videoManager = VideoManager(context)
             val exerciseId = operation.data["exerciseId"] as? String ?: return
-            
+
             // Check if video is already cached
             val cachedVideo = videoManager.getExerciseVideo(exerciseId)
             if (cachedVideo?.isLocal != true) {
                 // Queue video download if not cached
-                val downloadOperation = SyncOperation(
-                    id = "video_download_$exerciseId",
-                    type = SyncOperationType.VIDEO_DOWNLOAD,
-                    data = mapOf("exerciseId" to exerciseId),
-                    timestamp = System.currentTimeMillis(),
-                    retryCount = 0
-                )
+                val downloadOperation =
+                    SyncOperation(
+                        id = "video_download_$exerciseId",
+                        type = SyncOperationType.VIDEO_DOWNLOAD,
+                        data = mapOf("exerciseId" to exerciseId),
+                        timestamp = System.currentTimeMillis(),
+                        retryCount = 0,
+                    )
                 queueOperation(downloadOperation)
             }
         } catch (e: Exception) {
@@ -270,33 +272,33 @@ class OfflineSyncManager(private val context: Context) {
                 StructuredLogger.LogCategory.SYNC,
                 TAG,
                 "Failed to process video cache operation",
-                exception = e
+                exception = e,
             )
             throw e
         }
     }
-    
+
     private suspend fun processVideoDownload(operation: SyncOperation) {
         StructuredLogger.info(
             StructuredLogger.LogCategory.SYNC,
             TAG,
-            "Processing video download for operation ${operation.id}"
+            "Processing video download for operation ${operation.id}",
         )
-        
+
         try {
             val videoManager = VideoManager(context)
             val exerciseId = operation.data["exerciseId"] as? String ?: return
-            
+
             // Only download on WiFi to save mobile data
             if (ApiCallWrapper.isNetworkAvailable(context) && isWifiConnection()) {
                 videoManager.downloadVideoInBackground(exerciseId).collect { progress ->
                     StructuredLogger.debug(
                         StructuredLogger.LogCategory.SYNC,
                         TAG,
-                        "Video download progress for $exerciseId: ${progress.progress * 100}%"
+                        "Video download progress for $exerciseId: ${progress.progress * 100}%",
                     )
                 }
-                
+
                 // Manage cache size after download
                 videoManager.manageCacheSize()
             } else {
@@ -308,27 +310,27 @@ class OfflineSyncManager(private val context: Context) {
                 StructuredLogger.LogCategory.SYNC,
                 TAG,
                 "Failed to download video",
-                exception = e
+                exception = e,
             )
             throw e
         }
     }
-    
+
     private fun isWifiConnection(): Boolean {
         // Simplified WiFi check - in real implementation would check ConnectivityManager
         return true // Default to true for demo
     }
-    
+
     private fun resolveDataConflicts(operation: SyncOperation): ConflictResolution {
         // Implement conflict detection and resolution logic
         // This would compare local vs remote timestamps and data
         return ConflictResolution(
             hasConflict = false,
             strategy = ConflictStrategy.LOCAL_WINS,
-            resolvedData = operation.data
+            resolvedData = operation.data,
         )
     }
-    
+
     private suspend fun applyConflictResolution(resolution: ConflictResolution) {
         // Apply the conflict resolution strategy
         when (resolution.strategy) {
@@ -346,85 +348,90 @@ class OfflineSyncManager(private val context: Context) {
             }
         }
     }
-    
+
     private suspend fun processCloudSyncUp(operation: SyncOperation) {
         StructuredLogger.info(
             StructuredLogger.LogCategory.SYNC,
             TAG,
-            "Processing cloud sync up for operation ${operation.id}"
+            "Processing cloud sync up for operation ${operation.id}",
         )
-        
+
         val entityType = operation.data["entityType"] ?: return
         val entityId = operation.data["entityId"] ?: return
         val entityData = operation.data["entityData"] ?: return
-        
+
         cloudSyncManager.syncEntityToCloud(entityType, entityId, entityData)
     }
-    
+
     private suspend fun processCloudSyncDown(operation: SyncOperation) {
         StructuredLogger.info(
             StructuredLogger.LogCategory.SYNC,
             TAG,
-            "Processing cloud sync down for operation ${operation.id}"
+            "Processing cloud sync down for operation ${operation.id}",
         )
-        
+
         cloudSyncManager.syncFromCloud()
     }
-    
+
     private suspend fun processCloudConflictResolution(operation: SyncOperation) {
         StructuredLogger.info(
             StructuredLogger.LogCategory.SYNC,
             TAG,
-            "Processing cloud conflict resolution for operation ${operation.id}"
+            "Processing cloud conflict resolution for operation ${operation.id}",
         )
-        
+
         val conflictId = operation.data["conflictId"] ?: return
         val resolutionType = operation.data["resolution"] ?: "LOCAL_WINS"
-        
-        val resolution = try {
-            CloudConflictResolution.valueOf(resolutionType)
-        } catch (e: Exception) {
-            CloudConflictResolution.LOCAL_WINS
-        }
-        
+
+        val resolution =
+            try {
+                CloudConflictResolution.valueOf(resolutionType)
+            } catch (e: Exception) {
+                CloudConflictResolution.LOCAL_WINS
+            }
+
         cloudSyncManager.resolveConflict(conflictId, resolution)
     }
-    
+
     private fun shouldTriggerCloudSync(operation: SyncOperation): Boolean {
         return when (operation.type) {
             SyncOperationType.NUTRITION_ENTRY,
             SyncOperationType.WORKOUT_COMPLETION,
             SyncOperationType.ACHIEVEMENT_UPDATE,
-            SyncOperationType.WEIGHT_ENTRY -> true
+            SyncOperationType.WEIGHT_ENTRY,
+            -> true
             else -> false
         }
     }
-    
+
     private suspend fun queueCloudSync(operation: SyncOperation) {
         try {
-            val cloudSyncOperation = SyncOperation(
-                id = "cloud_sync_${operation.id}",
-                type = SyncOperationType.CLOUD_SYNC_UP,
-                data = operation.data + mapOf(
-                    "entityType" to mapEntityTypeFromOperation(operation.type),
-                    "entityId" to (operation.data["id"] ?: operation.id),
-                    "entityData" to operation.data.toString()
-                ),
-                timestamp = System.currentTimeMillis(),
-                retryCount = 0
-            )
-            
+            val cloudSyncOperation =
+                SyncOperation(
+                    id = "cloud_sync_${operation.id}",
+                    type = SyncOperationType.CLOUD_SYNC_UP,
+                    data =
+                        operation.data +
+                            mapOf(
+                                "entityType" to mapEntityTypeFromOperation(operation.type),
+                                "entityId" to (operation.data["id"] ?: operation.id),
+                                "entityData" to operation.data.toString(),
+                            ),
+                    timestamp = System.currentTimeMillis(),
+                    retryCount = 0,
+                )
+
             queueOperation(cloudSyncOperation)
         } catch (e: Exception) {
             StructuredLogger.error(
                 StructuredLogger.LogCategory.SYNC,
                 TAG,
                 "Failed to queue cloud sync operation",
-                exception = e
+                exception = e,
             )
         }
     }
-    
+
     private fun mapEntityTypeFromOperation(operationType: SyncOperationType): String {
         return when (operationType) {
             SyncOperationType.NUTRITION_ENTRY -> "MealEntry"
@@ -441,14 +448,13 @@ class OfflineSyncManager(private val context: Context) {
  */
 class OfflineSyncWorker(
     context: Context,
-    workerParams: WorkerParameters
+    workerParams: WorkerParameters,
 ) : CoroutineWorker(context, workerParams) {
-    
     override suspend fun doWork(): Result {
         return try {
             val syncManager = OfflineSyncManager(applicationContext)
             val syncResult = syncManager.processPendingOperations()
-            
+
             if (syncResult.isSuccess) {
                 val result = syncResult.getOrNull()!!
                 if (result.failureCount > 0) {
@@ -462,7 +468,7 @@ class OfflineSyncWorker(
                     StructuredLogger.LogCategory.SYNC,
                     "OfflineSyncWorker",
                     "Sync failed",
-                    exception = syncResult.exceptionOrNull()
+                    exception = syncResult.exceptionOrNull(),
                 )
                 Result.retry()
             }
@@ -471,7 +477,7 @@ class OfflineSyncWorker(
                 StructuredLogger.LogCategory.SYNC,
                 "OfflineSyncWorker",
                 "Worker execution failed",
-                exception = e
+                exception = e,
             )
             Result.failure()
         }
@@ -482,80 +488,83 @@ class OfflineSyncWorker(
  * Queue for managing sync operations
  */
 class SyncQueue(private val context: Context) {
-    
     private val database = AppDatabase.get(context)
-    
-    suspend fun addOperation(operation: SyncOperation) = withContext(Dispatchers.IO) {
-        try {
-            // Store operation in local database for persistence
-            // For now, just log - would implement proper persistence with Room
-            StructuredLogger.info(
-                StructuredLogger.LogCategory.SYNC,
-                "SyncQueue",
-                "Added operation ${operation.id} to queue"
-            )
-        } catch (e: Exception) {
-            StructuredLogger.error(
-                StructuredLogger.LogCategory.SYNC,
-                "SyncQueue",
-                "Failed to add operation to queue",
-                exception = e
-            )
-            throw e
+
+    suspend fun addOperation(operation: SyncOperation) =
+        withContext(Dispatchers.IO) {
+            try {
+                // Store operation in local database for persistence
+                // For now, just log - would implement proper persistence with Room
+                StructuredLogger.info(
+                    StructuredLogger.LogCategory.SYNC,
+                    "SyncQueue",
+                    "Added operation ${operation.id} to queue",
+                )
+            } catch (e: Exception) {
+                StructuredLogger.error(
+                    StructuredLogger.LogCategory.SYNC,
+                    "SyncQueue",
+                    "Failed to add operation to queue",
+                    exception = e,
+                )
+                throw e
+            }
         }
-    }
-    
-    suspend fun getPendingOperations(): List<SyncOperation> = withContext(Dispatchers.IO) {
-        try {
-            // Retrieve pending operations from database
-            // This would query the sync queue table
-            emptyList() // Placeholder
-        } catch (e: Exception) {
-            StructuredLogger.error(
-                StructuredLogger.LogCategory.SYNC,
-                "SyncQueue",
-                "Failed to retrieve pending operations",
-                exception = e
-            )
-            emptyList()
+
+    suspend fun getPendingOperations(): List<SyncOperation> =
+        withContext(Dispatchers.IO) {
+            try {
+                // Retrieve pending operations from database
+                // This would query the sync queue table
+                emptyList() // Placeholder
+            } catch (e: Exception) {
+                StructuredLogger.error(
+                    StructuredLogger.LogCategory.SYNC,
+                    "SyncQueue",
+                    "Failed to retrieve pending operations",
+                    exception = e,
+                )
+                emptyList()
+            }
         }
-    }
-    
-    suspend fun removeOperation(operationId: String) = withContext(Dispatchers.IO) {
-        try {
-            // Remove operation from database
-            StructuredLogger.info(
-                StructuredLogger.LogCategory.SYNC,
-                "SyncQueue",
-                "Removed operation $operationId from queue"
-            )
-        } catch (e: Exception) {
-            StructuredLogger.error(
-                StructuredLogger.LogCategory.SYNC,
-                "SyncQueue",
-                "Failed to remove operation from queue",
-                exception = e
-            )
+
+    suspend fun removeOperation(operationId: String) =
+        withContext(Dispatchers.IO) {
+            try {
+                // Remove operation from database
+                StructuredLogger.info(
+                    StructuredLogger.LogCategory.SYNC,
+                    "SyncQueue",
+                    "Removed operation $operationId from queue",
+                )
+            } catch (e: Exception) {
+                StructuredLogger.error(
+                    StructuredLogger.LogCategory.SYNC,
+                    "SyncQueue",
+                    "Failed to remove operation from queue",
+                    exception = e,
+                )
+            }
         }
-    }
-    
-    suspend fun incrementRetryCount(operationId: String) = withContext(Dispatchers.IO) {
-        try {
-            // Increment retry count in database
-            StructuredLogger.info(
-                StructuredLogger.LogCategory.SYNC,
-                "SyncQueue",
-                "Incremented retry count for operation $operationId"
-            )
-        } catch (e: Exception) {
-            StructuredLogger.error(
-                StructuredLogger.LogCategory.SYNC,
-                "SyncQueue",
-                "Failed to increment retry count",
-                exception = e
-            )
+
+    suspend fun incrementRetryCount(operationId: String) =
+        withContext(Dispatchers.IO) {
+            try {
+                // Increment retry count in database
+                StructuredLogger.info(
+                    StructuredLogger.LogCategory.SYNC,
+                    "SyncQueue",
+                    "Incremented retry count for operation $operationId",
+                )
+            } catch (e: Exception) {
+                StructuredLogger.error(
+                    StructuredLogger.LogCategory.SYNC,
+                    "SyncQueue",
+                    "Failed to increment retry count",
+                    exception = e,
+                )
+            }
         }
-    }
 }
 
 /**
@@ -566,7 +575,7 @@ data class SyncOperation(
     val type: SyncOperationType,
     val data: Map<String, String>,
     val timestamp: Long,
-    val retryCount: Int = 0
+    val retryCount: Int = 0,
 )
 
 enum class SyncOperationType {
@@ -576,27 +585,28 @@ enum class SyncOperationType {
     WEIGHT_ENTRY,
     VIDEO_CACHE,
     VIDEO_DOWNLOAD,
+
     // Cloud sync operations
     CLOUD_SYNC_UP,
     CLOUD_SYNC_DOWN,
-    CLOUD_CONFLICT_RESOLUTION
+    CLOUD_CONFLICT_RESOLUTION,
 }
 
 data class SyncResult(
     val successCount: Int,
     val failureCount: Int,
-    val errors: List<String>
+    val errors: List<String>,
 )
 
 data class ConflictResolution(
     val hasConflict: Boolean,
     val strategy: ConflictStrategy,
-    val resolvedData: Map<String, String>
+    val resolvedData: Map<String, String>,
 )
 
 enum class ConflictStrategy {
     LOCAL_WINS,
     REMOTE_WINS,
     MERGE,
-    MANUAL_REVIEW
+    MANUAL_REVIEW,
 }

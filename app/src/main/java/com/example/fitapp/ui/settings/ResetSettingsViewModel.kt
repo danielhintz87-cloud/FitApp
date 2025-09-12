@@ -12,37 +12,38 @@ import javax.inject.Inject
  * Manages reset operations using UserPreferencesRepository
  */
 @HiltViewModel
-class ResetSettingsViewModel @Inject constructor(
-    val userPreferencesRepository: UserPreferencesRepository
-) : ViewModel() {
-    
-    fun resetAllPreferences() {
-        viewModelScope.launch {
-            userPreferencesRepository.clearAllPreferences()
+class ResetSettingsViewModel
+    @Inject
+    constructor(
+        val userPreferencesRepository: UserPreferencesRepository,
+    ) : ViewModel() {
+        fun resetAllPreferences() {
+            viewModelScope.launch {
+                userPreferencesRepository.clearAllPreferences()
+            }
+        }
+
+        fun resetWorkoutPreferences() {
+            viewModelScope.launch {
+                userPreferencesRepository.clearWorkoutPreferences()
+            }
+        }
+
+        fun resetNutritionPreferences() {
+            viewModelScope.launch {
+                userPreferencesRepository.clearNutritionPreferences()
+            }
+        }
+
+        fun resetUserProfile() {
+            viewModelScope.launch {
+                userPreferencesRepository.clearUserPreferences()
+            }
+        }
+
+        fun resetAchievements() {
+            viewModelScope.launch {
+                userPreferencesRepository.clearAchievementPreferences()
+            }
         }
     }
-    
-    fun resetWorkoutPreferences() {
-        viewModelScope.launch {
-            userPreferencesRepository.clearWorkoutPreferences()
-        }
-    }
-    
-    fun resetNutritionPreferences() {
-        viewModelScope.launch {
-            userPreferencesRepository.clearNutritionPreferences()
-        }
-    }
-    
-    fun resetUserProfile() {
-        viewModelScope.launch {
-            userPreferencesRepository.clearUserPreferences()
-        }
-    }
-    
-    fun resetAchievements() {
-        viewModelScope.launch {
-            userPreferencesRepository.clearAchievementPreferences()
-        }
-    }
-}

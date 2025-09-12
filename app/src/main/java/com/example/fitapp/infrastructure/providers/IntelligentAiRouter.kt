@@ -7,11 +7,11 @@ import com.example.fitapp.domain.repositories.AiProviderRepository
 
 /**
  * Intelligenter AI-Router für funktionsbasierte Modellauswahl
- * 
+ *
  * BUDGET TIER STRATEGIE ($10/Monat):
  * - Gemini Tier 1: $5/Monat (150-4,000 RPM, Premium-Qualität)
  * - Perplexity: $5/Monat (~1,000 Searches für aktuelle Informationen)
- * 
+ *
  * = Professionelle AI-Fitness-App mit optimaler Quality/Cost Balance! �
  */
 class IntelligentAiRouter(
@@ -19,38 +19,41 @@ class IntelligentAiRouter(
     private val geminiProvider: GeminiAiProvider,
     private val perplexityProvider: PerplexityAiProvider?,
     private val repository: AiProviderRepository,
-    private val budgetOptimizer: BudgetTierOptimizer = BudgetTierOptimizer(context)
+    private val budgetOptimizer: BudgetTierOptimizer = BudgetTierOptimizer(context),
 ) {
-
     /**
      * Automatische Provider- und Modellauswahl für Text-Tasks
      * MIT BUDGET TIER OPTIMIERUNG ($10/Monat optimal nutzen)
      */
-    suspend fun generateOptimalText(prompt: String, taskType: TaskType): Result<String> {
+    suspend fun generateOptimalText(
+        prompt: String,
+        taskType: TaskType,
+    ): Result<String> {
         val selection = budgetOptimizer.selectOptimalBudgetModel(taskType, false)
-        
+
         android.util.Log.d("AiRouter", "Budget Tier: $taskType → ${selection.reason} (${selection.qualityLevel})")
-        
-        val result = when (selection.provider) {
-            OptimalProvider.GEMINI -> {
-                geminiProvider.generateTextWithTaskType(prompt, taskType)
-            }
-            OptimalProvider.PERPLEXITY -> {
-                if (perplexityProvider?.isAvailable() == true && selection.withinBudget) {
-                    perplexityProvider.generateText(prompt)
-                } else {
-                    // Fallback zu Gemini bei Perplexity-Budget-Überschreitung
-                    android.util.Log.w("AiRouter", "Perplexity Budget erreicht, Fallback zu Gemini")
-                    geminiProvider.generateTextWithTaskType(prompt, TaskType.SIMPLE_TEXT_COACHING)
+
+        val result =
+            when (selection.provider) {
+                OptimalProvider.GEMINI -> {
+                    geminiProvider.generateTextWithTaskType(prompt, taskType)
+                }
+                OptimalProvider.PERPLEXITY -> {
+                    if (perplexityProvider?.isAvailable() == true && selection.withinBudget) {
+                        perplexityProvider.generateText(prompt)
+                    } else {
+                        // Fallback zu Gemini bei Perplexity-Budget-Überschreitung
+                        android.util.Log.w("AiRouter", "Perplexity Budget erreicht, Fallback zu Gemini")
+                        geminiProvider.generateTextWithTaskType(prompt, TaskType.SIMPLE_TEXT_COACHING)
+                    }
                 }
             }
-        }
-        
+
         // Track usage für Budget Management
         if (result.isSuccess) {
             budgetOptimizer.trackRequest(selection)
         }
-        
+
         return result
     }
 
@@ -58,18 +61,22 @@ class IntelligentAiRouter(
      * Automatische Provider- und Modellauswahl für Bildanalyse-Tasks
      * MIT BUDGET TIER OPTIMIERUNG (Premium-Qualität für kritische Vision-Tasks)
      */
-    suspend fun analyzeOptimalImage(prompt: String, bitmap: Bitmap, taskType: TaskType): Result<CaloriesEstimate> {
+    suspend fun analyzeOptimalImage(
+        prompt: String,
+        bitmap: Bitmap,
+        taskType: TaskType,
+    ): Result<CaloriesEstimate> {
         val selection = budgetOptimizer.selectOptimalBudgetModel(taskType, true)
-        
+
         android.util.Log.d("AiRouter", "Budget Vision: $taskType → ${selection.reason} (${selection.qualityLevel})")
-        
+
         val result = geminiProvider.analyzeImageWithTaskType(prompt, bitmap, taskType)
-        
+
         // Track usage für Budget Management
         if (result.isSuccess) {
             budgetOptimizer.trackRequest(selection)
         }
-        
+
         return result
     }
 
@@ -78,31 +85,47 @@ class IntelligentAiRouter(
      */
 
     // 🖼️ FOOD RECOGNITION - Flash für beste Bildanalyse
-    suspend fun analyzeFoodImage(bitmap: Bitmap, note: String = ""): Result<CaloriesEstimate> {
+    suspend fun analyzeFoodImage(
+        bitmap: Bitmap,
+        note: String = "",
+    ): Result<CaloriesEstimate> {
         val prompt = buildFoodAnalysisPrompt(note)
         return analyzeOptimalImage(prompt, bitmap, TaskType.MEAL_PHOTO_ANALYSIS)
     }
 
     // 🏋️ FORM CHECK - Flash für Bewegungsanalyse
-    suspend fun analyzeFormCheck(bitmap: Bitmap, exerciseType: String): Result<String> {
+    suspend fun analyzeFormCheck(
+        bitmap: Bitmap,
+        exerciseType: String,
+    ): Result<String> {
         val prompt = buildFormCheckPrompt(exerciseType)
         return generateOptimalText(prompt, TaskType.FORM_CHECK_ANALYSIS)
     }
 
     // 📸 PROGRESS PHOTOS - Flash für Body-Analyse
-    suspend fun analyzeProgressPhoto(bitmap: Bitmap, previousNotes: String = ""): Result<CaloriesEstimate> {
+    suspend fun analyzeProgressPhoto(
+        bitmap: Bitmap,
+        previousNotes: String = "",
+    ): Result<CaloriesEstimate> {
         val prompt = buildProgressAnalysisPrompt(previousNotes)
         return analyzeOptimalImage(prompt, bitmap, TaskType.PROGRESS_PHOTO_ANALYSIS)
     }
 
     // 🍳 RECIPE GENERATION mit Bildern - Flash für AI-Bildgenerierung
-    suspend fun generateRecipeWithImages(preferences: String, count: Int = 3): Result<String> {
+    suspend fun generateRecipeWithImages(
+        preferences: String,
+        count: Int = 3,
+    ): Result<String> {
         val prompt = buildRecipePrompt(preferences, count, includeImages = true)
         return generateOptimalText(prompt, TaskType.RECIPE_WITH_IMAGE_GEN)
     }
 
     // 🏃 WORKOUT PLANS - Flash für komplexe Trainingspläne
-    suspend fun generateAdaptiveWorkout(goal: String, equipment: List<String>, duration: Int): Result<String> {
+    suspend fun generateAdaptiveWorkout(
+        goal: String,
+        equipment: List<String>,
+        duration: Int,
+    ): Result<String> {
         val prompt = buildWorkoutPrompt(goal, equipment, duration)
         return generateOptimalText(prompt, TaskType.TRAINING_PLAN)
     }
@@ -128,24 +151,30 @@ class IntelligentAiRouter(
     /**
      * Kostenschätzung für einen Task - MIT BUDGET TIER BERÜCKSICHTIGUNG
      */
-    fun estimateTaskCost(taskType: TaskType, hasImage: Boolean = false): TaskCost {
+    fun estimateTaskCost(
+        taskType: TaskType,
+        hasImage: Boolean = false,
+    ): TaskCost {
         val selection = budgetOptimizer.selectOptimalBudgetModel(taskType, hasImage)
-        
+
         return TaskCost(
             total = selection.estimatedCost,
-            breakdown = mapOf(
-                "model_cost" to selection.estimatedCost,
-                "quality_level" to when (selection.qualityLevel) {
-                    QualityLevel.PREMIUM -> 0.015
-                    QualityLevel.BUDGET -> 0.004
-                    QualityLevel.SPECIALIZED -> 0.005
-                    QualityLevel.OVER_BUDGET -> 0.0
-                }
-            ),
-            model = when (selection.provider) {
-                OptimalProvider.GEMINI -> selection.geminiModel?.modelId ?: "gemini-flash"
-                OptimalProvider.PERPLEXITY -> selection.perplexityModel?.modelId ?: "sonar"
-            }
+            breakdown =
+                mapOf(
+                    "model_cost" to selection.estimatedCost,
+                    "quality_level" to
+                        when (selection.qualityLevel) {
+                            QualityLevel.PREMIUM -> 0.015
+                            QualityLevel.BUDGET -> 0.004
+                            QualityLevel.SPECIALIZED -> 0.005
+                            QualityLevel.OVER_BUDGET -> 0.0
+                        },
+                ),
+            model =
+                when (selection.provider) {
+                    OptimalProvider.GEMINI -> selection.geminiModel?.modelId ?: "gemini-flash"
+                    OptimalProvider.PERPLEXITY -> selection.perplexityModel?.modelId ?: "sonar"
+                },
         )
     }
 
@@ -155,21 +184,27 @@ class IntelligentAiRouter(
     fun generateCostReport(): BudgetCostAnalysis {
         val status = budgetOptimizer.getBudgetStatus()
         val recommendations = budgetOptimizer.getBudgetRecommendations()
-        
+
         return BudgetCostAnalysis(
             currentStatus = status,
             recommendations = recommendations,
-            qualityDistribution = mapOf(
-                "Premium Flash" to status.flashUsed,
-                "Budget Flash-Lite" to status.flashLiteUsed,
-                "Specialized Perplexity" to status.perplexityUsed
-            ),
-            budgetOptimization = """
+            qualityDistribution =
+                mapOf(
+                    "Premium Flash" to status.flashUsed,
+                    "Budget Flash-Lite" to status.flashLiteUsed,
+                    "Specialized Perplexity" to status.perplexityUsed,
+                ),
+            budgetOptimization =
+                """
                 💰 BUDGET TIER OPTIMIERUNG ($10/Monat):
                 
                 📊 Aktueller Verbrauch:
-                • Gemini: ${"%.2f".format(status.geminiSpent)}$ / $5.00 (${String.format("%.1f", (status.geminiSpent/5.0)*100)}%)
-                • Perplexity: ${"%.2f".format(status.perplexitySpent)}$ / $5.00 (${String.format("%.1f", (status.perplexitySpent/5.0)*100)}%)
+                • Gemini: ${"%.2f".format(
+                    status.geminiSpent,
+                )}$ / $5.00 (${String.format("%.1f", (status.geminiSpent / 5.0) * 100)}%)
+                • Perplexity: ${"%.2f".format(
+                    status.perplexitySpent,
+                )}$ / $5.00 (${String.format("%.1f", (status.perplexitySpent / 5.0) * 100)}%)
                 • Total: ${"%.2f".format(status.totalSpent)}$ / $10.00
                 
                 🎯 Verfügbare Kapazität:
@@ -178,13 +213,14 @@ class IntelligentAiRouter(
                 • ${status.perplexityRemaining} Perplexity-Searches (Current Info)
                 
                 ✅ Quality First Allocation funktioniert optimal!
-            """.trimIndent()
+                """.trimIndent(),
         )
     }
 
     // --- PRIVATE PROMPT BUILDERS ---
 
-    private fun buildFoodAnalysisPrompt(note: String): String = """
+    private fun buildFoodAnalysisPrompt(note: String): String =
+        """
         Analysiere das Bild und schätze präzise die Kalorien des gezeigten Essens.
         
         **Analyseschritte:**
@@ -200,9 +236,10 @@ class IntelligentAiRouter(
         confidence: <0-100>
         Begründung: [Lebensmittel] ca. [Gramm]g = [kcal]kcal, [weitere Komponenten]
         Unsicherheitsfaktoren: [versteckte Fette, Portionsgröße, etc.]
-    """.trimIndent()
+        """.trimIndent()
 
-    private fun buildFormCheckPrompt(exerciseType: String): String = """
+    private fun buildFormCheckPrompt(exerciseType: String): String =
+        """
         Analysiere die Trainingsform in diesem Bild für die Übung: $exerciseType
         
         **Analyse-Punkte:**
@@ -215,9 +252,10 @@ class IntelligentAiRouter(
         ✅ **Gut:** [positive Aspekte]
         ⚠️ **Verbesserung:** [konkrete Korrekturen]
         🎯 **Tipp:** [Coaching-Hinweise]
-    """.trimIndent()
+        """.trimIndent()
 
-    private fun buildProgressAnalysisPrompt(previousNotes: String): String = """
+    private fun buildProgressAnalysisPrompt(previousNotes: String): String =
+        """
         Analysiere dieses Progress-Foto für Body-Transformation tracking.
         
         **Vorherige Notizen:** $previousNotes
@@ -232,9 +270,14 @@ class IntelligentAiRouter(
         📈 **Fortschritte:** [konkrete Veränderungen]
         💪 **Stärken:** [positive Entwicklungen]
         🎯 **Fokus:** [Bereiche für weitere Verbesserung]
-    """.trimIndent()
+        """.trimIndent()
 
-    private fun buildRecipePrompt(preferences: String, count: Int, includeImages: Boolean): String = """
+    private fun buildRecipePrompt(
+        preferences: String,
+        count: Int,
+        includeImages: Boolean,
+    ): String =
+        """
         Erstelle $count fitness-optimierte Rezepte basierend auf: $preferences
         
         ${if (includeImages) "**WICHTIG:** Generiere für jedes Rezept auch ein appetitliches Bild zur Visualisierung." else ""}
@@ -256,9 +299,14 @@ class IntelligentAiRouter(
         1. [Schritt-für-Schritt Anleitung]
         
         ${if (includeImages) "**Bild:** [AI-generiertes appetitliches Foto des fertigen Gerichts]" else ""}
-    """.trimIndent()
+        """.trimIndent()
 
-    private fun buildWorkoutPrompt(goal: String, equipment: List<String>, duration: Int): String = """
+    private fun buildWorkoutPrompt(
+        goal: String,
+        equipment: List<String>,
+        duration: Int,
+    ): String =
+        """
         Erstelle einen adaptiven $duration-Minuten Trainingsplan für: $goal
         
         **Verfügbare Ausrüstung:** ${equipment.joinToString(", ").ifEmpty { "Körpergewicht" }}
@@ -279,9 +327,10 @@ class IntelligentAiRouter(
         - Vereinfachungen für Anfänger
         - Steigerungen für Fortgeschrittene
         - Alternative Übungen bei Beschwerden
-    """.trimIndent()
+        """.trimIndent()
 
-    private fun buildCoachingPrompt(userContext: String): String = """
+    private fun buildCoachingPrompt(userContext: String): String =
+        """
         Erstelle eine motivierende Coaching-Nachricht basierend auf: $userContext
         
         **Stil:**
@@ -294,9 +343,10 @@ class IntelligentAiRouter(
         💪 **Motivation:** [Ermutigende Worte]
         🎯 **Heute:** [Konkrete Aktion für heute]
         ⭐ **Reminder:** [Motivierender Gedanke]
-    """.trimIndent()
+        """.trimIndent()
 
-    private fun buildTrendResearchPrompt(topic: String): String = """
+    private fun buildTrendResearchPrompt(topic: String): String =
+        """
         Recherchiere die aktuellsten Fitness-Trends und Entwicklungen zu: $topic
         
         **Fokus auf:**
@@ -316,9 +366,10 @@ class IntelligentAiRouter(
         📊 **Studien:** [Wissenschaftliche Erkenntnisse]
         🛠️ **Equipment:** [Innovative Geräte/Apps]
         👥 **Community:** [Was die Fitness-Community bewegt]
-    """.trimIndent()
+        """.trimIndent()
 
-    private fun buildSupplementResearchPrompt(supplement: String): String = """
+    private fun buildSupplementResearchPrompt(supplement: String): String =
+        """
         Recherchiere aktuelle wissenschaftliche Erkenntnisse zu: $supplement
         
         **Research-Bereiche:**
@@ -338,12 +389,12 @@ class IntelligentAiRouter(
         💊 **Dosierung:** [Empfohlene Einnahme]
         ⚠️ **Sicherheit:** [Nebenwirkungen, Wechselwirkungen]
         💰 **Empfehlung:** [Beste Produkte und Bezugsquellen]
-    """.trimIndent()
+        """.trimIndent()
 }
 
 data class BudgetCostAnalysis(
     val currentStatus: BudgetStatus,
     val recommendations: BudgetRecommendation,
     val qualityDistribution: Map<String, Int>,
-    val budgetOptimization: String
+    val budgetOptimization: String,
 )

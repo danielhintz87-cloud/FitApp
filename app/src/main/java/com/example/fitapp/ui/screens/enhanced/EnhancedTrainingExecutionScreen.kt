@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import com.example.fitapp.ai.*
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.PlanEntity
-import com.example.fitapp.data.db.WorkoutPerformanceEntity
 import com.example.fitapp.data.db.WorkoutSessionEntity
 import com.example.fitapp.network.healthconnect.HealthConnectManager
 import com.example.fitapp.services.WorkoutSensorService
@@ -45,12 +44,12 @@ import java.util.UUID
 fun EnhancedTrainingExecutionScreen(
     planId: Long,
     onBackPressed: () -> Unit,
-    onTrainingCompleted: () -> Unit
+    onTrainingCompleted: () -> Unit,
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.get(context) }
     val scope = rememberCoroutineScope()
-    
+
     // Basic state
     var plan by remember { mutableStateOf<PlanEntity?>(null) }
     var exercises by remember { mutableStateOf<List<ExerciseStep>>(emptyList()) }
@@ -58,19 +57,19 @@ fun EnhancedTrainingExecutionScreen(
     var isInTraining by remember { mutableStateOf(false) }
     var completedExercises by remember { mutableStateOf(setOf<Int>()) }
     var showTrainingOverview by remember { mutableStateOf(true) }
-    
+
     // Advanced state using our new state management
     var advancedState by remember { mutableStateOf(AdvancedTrainingUiState()) }
     var aiCoachingExpanded by remember { mutableStateOf(false) }
-    
+
     // Services
     val healthConnectManager = remember { HealthConnectManager(context) }
     val sensorService = remember { WorkoutSensorService(context, healthConnectManager) }
-    
+
     // New Pro-Feature Services
     val videoManager = remember { VideoManager(context) }
     val smartRestTimer = remember { SmartRestTimer(context) }
-    
+
     // Initialize audio system
     LaunchedEffect(Unit) {
         val audioInitialized = smartRestTimer.initializeAudio()
@@ -79,30 +78,30 @@ fun EnhancedTrainingExecutionScreen(
         }
     }
     val voiceCommandManager = remember { VoiceCommandManager(context) }
-    
+
     // Freeletics-style Adaptive Training Engine
     val adaptiveTrainer = remember { FreeleticsStyleAdaptiveTrainer(context) }
-    
+
     // Pro-feature states
     var currentVideo by remember { mutableStateOf<VideoResource?>(null) }
     var isVideoPlaying by remember { mutableStateOf(false) }
     var showVideoOverlays by remember { mutableStateOf(true) }
     var currentVideoAngle by remember { mutableIntStateOf(0) }
-    
+
     // Voice command state
     var isVoiceCommandActive by remember { mutableStateOf(false) }
     val voiceCommandState by voiceCommandManager.isListening.collectAsState()
     val lastVoiceCommand by voiceCommandManager.lastCommand.collectAsState()
-    
+
     // Rest timer state
     val restTimerState by smartRestTimer.timerState.collectAsState()
     val restSuggestions by smartRestTimer.restSuggestions.collectAsState()
-    
+
     // Initialize voice commands
     LaunchedEffect(Unit) {
         voiceCommandManager.initialize()
     }
-    
+
     // Release audio resources when leaving
     DisposableEffect(Unit) {
         onDispose {
@@ -110,7 +109,7 @@ fun EnhancedTrainingExecutionScreen(
             voiceCommandManager.cleanup()
         }
     }
-    
+
     // Handle voice commands
     LaunchedEffect(lastVoiceCommand) {
         lastVoiceCommand?.let { command ->
@@ -141,7 +140,7 @@ fun EnhancedTrainingExecutionScreen(
                             exerciseId = exercises[currentExerciseIndex].name,
                             intensity = 0.7f, // Default intensity
                             heartRate = advancedState.currentHeartRate,
-                            perceivedExertion = advancedState.currentRPE
+                            perceivedExertion = advancedState.currentRPE,
                         )
                     }
                 }
@@ -154,7 +153,7 @@ fun EnhancedTrainingExecutionScreen(
                 }
                 is VoiceCommand.SET_REPS -> {
                     // Handle rep setting via voice
-                    // This would integrate with existing set logging  
+                    // This would integrate with existing set logging
                 }
                 else -> {
                     // Handle other commands
@@ -162,57 +161,61 @@ fun EnhancedTrainingExecutionScreen(
             }
         }
     }
-    
+
     // Load plan and initialize
     LaunchedEffect(planId) {
         plan = db.planDao().getPlan(planId)
         plan?.let { p ->
             exercises = parseTrainingContentLocal(p.content)
-            advancedState = advancedState.copy(
-                plan = p,
-                exercises = exercises
-            )
+            advancedState =
+                advancedState.copy(
+                    plan = p,
+                    exercises = exercises,
+                )
         }
     }
-    
+
     // Start workout session when training begins
     LaunchedEffect(isInTraining) {
         if (isInTraining && advancedState.sessionId == null) {
             val sessionId = UUID.randomUUID().toString()
-            val session = WorkoutSessionEntity(
-                id = sessionId,
-                planId = planId,
-                userId = "current_user", // In real app, get from user context
-                startTime = System.currentTimeMillis() / 1000
-            )
-            
+            val session =
+                WorkoutSessionEntity(
+                    id = sessionId,
+                    planId = planId,
+                    userId = "current_user", // In real app, get from user context
+                    startTime = System.currentTimeMillis() / 1000,
+                )
+
             try {
                 db.workoutSessionDao().insert(session)
-                advancedState = advancedState.copy(
-                    sessionId = sessionId,
-                    isInTraining = true
-                )
-                
+                advancedState =
+                    advancedState.copy(
+                        sessionId = sessionId,
+                        isInTraining = true,
+                    )
+
                 // Start sensor services
                 if (exercises.isNotEmpty()) {
                     sensorService.startMovementTracking(exercises[currentExerciseIndex].name)
-                    
+
                     scope.launch {
                         sensorService.startHeartRateMonitoring().collect { heartReading ->
-                            advancedState = advancedState.copy(
-                                currentHeartRate = heartReading.bpm,
-                                heartRateZone = heartReading.zone,
-                                heartRateMonitorConnected = true
-                            )
+                            advancedState =
+                                advancedState.copy(
+                                    currentHeartRate = heartReading.bpm,
+                                    heartRateZone = heartReading.zone,
+                                    heartRateMonitorConnected = true,
+                                )
                         }
                     }
-                    
+
                     scope.launch {
                         sensorService.repCountFlow.collect { repCount ->
                             advancedState = advancedState.copy(repCount = repCount)
                         }
                     }
-                    
+
                     scope.launch {
                         sensorService.formQualityFlow.collect { quality ->
                             advancedState = advancedState.copy(formQuality = quality)
@@ -220,13 +223,14 @@ fun EnhancedTrainingExecutionScreen(
                     }
                 }
             } catch (e: Exception) {
-                advancedState = advancedState.copy(
-                    error = "Fehler beim Starten der Session: ${e.message}"
-                )
+                advancedState =
+                    advancedState.copy(
+                        error = "Fehler beim Starten der Session: ${e.message}",
+                    )
             }
         }
     }
-    
+
     // Load exercise video when current exercise changes
     LaunchedEffect(currentExerciseIndex, exercises) {
         if (exercises.isNotEmpty() && currentExerciseIndex < exercises.size) {
@@ -234,7 +238,7 @@ fun EnhancedTrainingExecutionScreen(
             try {
                 val video = videoManager.adaptiveQualityStreaming(currentExercise.name)
                 currentVideo = video
-                
+
                 // Preload next exercise video
                 if (currentExerciseIndex + 1 < exercises.size) {
                     val nextExercise = exercises[currentExerciseIndex + 1]
@@ -246,218 +250,235 @@ fun EnhancedTrainingExecutionScreen(
             }
         }
     }
-    
+
     // Generate AI coaching tips periodically
     LaunchedEffect(isInTraining, currentExerciseIndex) {
         if (isInTraining && exercises.isNotEmpty()) {
             delay(10000) // Wait 10 seconds before generating tips
-            
+
             try {
                 // Simulate AI coaching tips generation
-                val sampleTips = listOf(
-                    CoachingTip(
-                        type = CoachingTipType.FORM_IMPROVEMENT,
-                        message = "Achte auf eine langsame, kontrollierte Bewegung",
-                        priority = Priority.MEDIUM
-                    ),
-                    CoachingTip(
-                        type = CoachingTipType.MOTIVATION,
-                        message = "Du machst das großartig! Bleib fokussiert.",
-                        priority = Priority.LOW
+                val sampleTips =
+                    listOf(
+                        CoachingTip(
+                            type = CoachingTipType.FORM_IMPROVEMENT,
+                            message = "Achte auf eine langsame, kontrollierte Bewegung",
+                            priority = Priority.MEDIUM,
+                        ),
+                        CoachingTip(
+                            type = CoachingTipType.MOTIVATION,
+                            message = "Du machst das großartig! Bleib fokussiert.",
+                            priority = Priority.LOW,
+                        ),
                     )
-                )
-                
+
                 advancedState = advancedState.copy(aiCoachingTips = sampleTips)
             } catch (e: Exception) {
                 // Handle AI service errors gracefully
             }
         }
     }
-    
+
     // Generate progression suggestions when exercise is completed
     val generateProgressionSuggestion: (Int) -> Unit = { exerciseIndex ->
         scope.launch {
             try {
                 val exercise = exercises[exerciseIndex]
-                val suggestion = ProgressionSuggestion(
-                    exerciseId = exercise.name,
-                    exerciseName = exercise.name,
-                    currentWeight = 10f,
-                    recommendedWeight = 12.5f,
-                    currentReps = 10,
-                    recommendedReps = 12,
-                    reason = "Basierend auf deiner Form-Qualität von ${(advancedState.formQuality * 100).toInt()}% empfehle ich eine Steigerung.",
-                    confidence = 0.85f,
-                    alternatives = listOf(
-                        ProgressionAlternative(
-                            type = "weight_increase",
-                            description = "Gewicht um 2.5kg erhöhen",
-                            weight = 12.5f,
-                            reps = 10,
-                            difficulty = "harder"
-                        )
+                val suggestion =
+                    ProgressionSuggestion(
+                        exerciseId = exercise.name,
+                        exerciseName = exercise.name,
+                        currentWeight = 10f,
+                        recommendedWeight = 12.5f,
+                        currentReps = 10,
+                        recommendedReps = 12,
+                        reason = "Basierend auf deiner Form-Qualität von ${(advancedState.formQuality * 100).toInt()}% empfehle ich eine Steigerung.",
+                        confidence = 0.85f,
+                        alternatives =
+                            listOf(
+                                ProgressionAlternative(
+                                    type = "weight_increase",
+                                    description = "Gewicht um 2.5kg erhöhen",
+                                    weight = 12.5f,
+                                    reps = 10,
+                                    difficulty = "harder",
+                                ),
+                            ),
                     )
-                )
-                
-                advancedState = advancedState.copy(
-                    progressionSuggestions = listOf(suggestion)
-                )
+
+                advancedState =
+                    advancedState.copy(
+                        progressionSuggestions = listOf(suggestion),
+                    )
             } catch (e: Exception) {
                 // Handle error
             }
         }
     }
-    
+
     // Freeletics-style Real-time Adaptive Training
     LaunchedEffect(isInTraining, currentExerciseIndex, advancedState.currentHeartRate, advancedState.formQuality) {
         if (isInTraining && exercises.isNotEmpty() && currentExerciseIndex < exercises.size && advancedState.isAdaptiveTrainingEnabled) {
-            
             // Create real-time performance snapshot
-            val realTimePerformance = RealTimePerformance(
-                formQuality = advancedState.formQuality,
-                rpe = advancedState.currentRPE ?: 6,
-                heartRate = advancedState.currentHeartRate,
-                currentRep = advancedState.repCount,
-                movementSpeed = 1.0f // Default speed, would be calculated from sensor data
-            )
-            
+            val realTimePerformance =
+                RealTimePerformance(
+                    formQuality = advancedState.formQuality,
+                    rpe = advancedState.currentRPE ?: 6,
+                    heartRate = advancedState.currentHeartRate,
+                    currentRep = advancedState.repCount,
+                    movementSpeed = 1.0f, // Default speed, would be calculated from sensor data
+                )
+
             // Update state with current performance
             advancedState = advancedState.copy(realTimePerformance = realTimePerformance)
-            
+
             try {
                 val currentExercise = exercises[currentExerciseIndex]
-                val sessionContext = WorkoutSessionContext(
-                    sessionId = advancedState.sessionId ?: "unknown",
-                    sessionDuration = 30L, // Would calculate actual duration
-                    totalExercises = exercises.size,
-                    completedExercises = completedExercises.size,
-                    overallIntensity = 0.7f,
-                    userEnergyLevel = 1.0f - (advancedState.currentRPE ?: 5) / 10f
-                )
-                
+                val sessionContext =
+                    WorkoutSessionContext(
+                        sessionId = advancedState.sessionId ?: "unknown",
+                        sessionDuration = 30L, // Would calculate actual duration
+                        totalExercises = exercises.size,
+                        completedExercises = completedExercises.size,
+                        overallIntensity = 0.7f,
+                        userEnergyLevel = 1.0f - (advancedState.currentRPE ?: 5) / 10f,
+                    )
+
                 // Real-time workout adaptation
-                val adaptation = adaptiveTrainer.adaptWorkoutRealTime(
-                    currentExercise = currentExercise,
-                    currentPerformance = realTimePerformance,
-                    sessionContext = sessionContext
-                )
-                
+                val adaptation =
+                    adaptiveTrainer.adaptWorkoutRealTime(
+                        currentExercise = currentExercise,
+                        currentPerformance = realTimePerformance,
+                        sessionContext = sessionContext,
+                    )
+
                 // Apply adaptation if significant
                 if (adaptation.type != AdaptationType.NO_CHANGE) {
-                    advancedState = advancedState.copy(
-                        currentWorkoutAdaptation = adaptation,
-                        adaptationHistory = advancedState.adaptationHistory + adaptation
-                    )
+                    advancedState =
+                        advancedState.copy(
+                            currentWorkoutAdaptation = adaptation,
+                            adaptationHistory = advancedState.adaptationHistory + adaptation,
+                        )
                 }
-                
+
                 // Real-time difficulty adjustment
-                val performanceIndicators = PerformanceIndicators(
-                    formQuality = advancedState.formQuality,
-                    fatigueLevel = (advancedState.currentRPE ?: 5) / 10f,
-                    heartRateZone = advancedState.heartRateZone,
-                    movementConsistency = 0.8f // Would calculate from sensor data
-                )
-                
-                val difficultyAdjustment = adaptiveTrainer.adjustDifficultyRealTime(
-                    currentExercise = currentExercise,
-                    performanceIndicators = performanceIndicators
-                )
-                
+                val performanceIndicators =
+                    PerformanceIndicators(
+                        formQuality = advancedState.formQuality,
+                        fatigueLevel = (advancedState.currentRPE ?: 5) / 10f,
+                        heartRateZone = advancedState.heartRateZone,
+                        movementConsistency = 0.8f, // Would calculate from sensor data
+                    )
+
+                val difficultyAdjustment =
+                    adaptiveTrainer.adjustDifficultyRealTime(
+                        currentExercise = currentExercise,
+                        performanceIndicators = performanceIndicators,
+                    )
+
                 // Apply difficulty adjustment if significant
                 if (kotlin.math.abs(difficultyAdjustment.adjustmentFactor - 1.0f) > 0.05f) {
                     advancedState = advancedState.copy(difficultyAdjustment = difficultyAdjustment)
                 }
-                
+
                 // Check for exercise substitution needs
                 val performanceIssues = mutableListOf<PerformanceIssue>()
-                
+
                 if (advancedState.formQuality < 0.5f) {
-                    performanceIssues.add(PerformanceIssue(
-                        type = IssueType.FORM_DEGRADATION,
-                        severity = IssueSeverity.HIGH,
-                        description = "Signifikante Verschlechterung der Bewegungsqualität",
-                        detectionConfidence = 0.9f
-                    ))
-                }
-                
-                if ((advancedState.currentRPE ?: 5) > 8) {
-                    performanceIssues.add(PerformanceIssue(
-                        type = IssueType.EXCESSIVE_FATIGUE,
-                        severity = IssueSeverity.MEDIUM,
-                        description = "Hohe wahrgenommene Anstrengung",
-                        detectionConfidence = 0.8f
-                    ))
-                }
-                
-                if (performanceIssues.isNotEmpty()) {
-                    val substitution = adaptiveTrainer.suggestExerciseSubstitution(
-                        currentExercise = currentExercise,
-                        performanceIssues = performanceIssues,
-                        availableEquipment = listOf("Körpergewicht", "Hanteln") // Would get from user profile
+                    performanceIssues.add(
+                        PerformanceIssue(
+                            type = IssueType.FORM_DEGRADATION,
+                            severity = IssueSeverity.HIGH,
+                            description = "Signifikante Verschlechterung der Bewegungsqualität",
+                            detectionConfidence = 0.9f,
+                        ),
                     )
-                    
+                }
+
+                if ((advancedState.currentRPE ?: 5) > 8) {
+                    performanceIssues.add(
+                        PerformanceIssue(
+                            type = IssueType.EXCESSIVE_FATIGUE,
+                            severity = IssueSeverity.MEDIUM,
+                            description = "Hohe wahrgenommene Anstrengung",
+                            detectionConfidence = 0.8f,
+                        ),
+                    )
+                }
+
+                if (performanceIssues.isNotEmpty()) {
+                    val substitution =
+                        adaptiveTrainer.suggestExerciseSubstitution(
+                            currentExercise = currentExercise,
+                            performanceIssues = performanceIssues,
+                            availableEquipment = listOf("Körpergewicht", "Hanteln"), // Would get from user profile
+                        )
+
                     substitution?.let {
                         advancedState = advancedState.copy(exerciseSubstitution = it)
                     }
                 }
-                
+
                 // Calculate adaptive rest time for next exercise
                 if (currentExerciseIndex > 0) {
-                    val lastSetPerformance = SetPerformance(
-                        formQuality = advancedState.formQuality,
-                        perceivedExertion = advancedState.currentRPE ?: 6,
-                        actualReps = advancedState.repCount,
-                        targetReps = 10, // Would extract from exercise
-                        weight = 10f // Would get from last set
-                    )
-                    
-                    val adaptiveRest = adaptiveTrainer.calculateAdaptiveRestTime(
-                        lastSetPerformance = lastSetPerformance,
-                        currentFatigueLevel = (advancedState.currentRPE ?: 5) / 10f,
-                        targetIntensity = 0.7f,
-                        exerciseType = currentExercise.type
-                    )
-                    
+                    val lastSetPerformance =
+                        SetPerformance(
+                            formQuality = advancedState.formQuality,
+                            perceivedExertion = advancedState.currentRPE ?: 6,
+                            actualReps = advancedState.repCount,
+                            targetReps = 10, // Would extract from exercise
+                            weight = 10f, // Would get from last set
+                        )
+
+                    val adaptiveRest =
+                        adaptiveTrainer.calculateAdaptiveRestTime(
+                            lastSetPerformance = lastSetPerformance,
+                            currentFatigueLevel = (advancedState.currentRPE ?: 5) / 10f,
+                            targetIntensity = 0.7f,
+                            exerciseType = currentExercise.type,
+                        )
+
                     advancedState = advancedState.copy(adaptiveRestCalculation = adaptiveRest)
                 }
-                
             } catch (e: Exception) {
                 // Handle adaptive training errors gracefully
-                advancedState = advancedState.copy(
-                    error = "Adaptive Training Fehler: ${e.message}"
-                )
+                advancedState =
+                    advancedState.copy(
+                        error = "Adaptive Training Fehler: ${e.message}",
+                    )
             }
-            
+
             // Update frequency for real-time adaptation
             delay(2000) // Check every 2 seconds during training
         }
     }
-    
+
     // Adaptive coaching feedback flow
     LaunchedEffect(isInTraining) {
         if (isInTraining && exercises.isNotEmpty() && advancedState.isAdaptiveTrainingEnabled) {
             val exerciseId = exercises.getOrNull(currentExerciseIndex)?.name ?: return@LaunchedEffect
-            
+
             // Create a flow of real-time performance updates
-            val realTimeFlow = kotlinx.coroutines.flow.flow {
-                while (isInTraining) {
-                    advancedState.realTimePerformance?.let { emit(it) }
-                    delay(1000) // Emit every second
+            val realTimeFlow =
+                kotlinx.coroutines.flow.flow {
+                    while (isInTraining) {
+                        advancedState.realTimePerformance?.let { emit(it) }
+                        delay(1000) // Emit every second
+                    }
                 }
-            }
-            
+
             // Collect adaptive coaching feedback
             adaptiveTrainer.adaptiveCoachingFlow(exerciseId, realTimeFlow).collect { feedback ->
                 advancedState = advancedState.copy(adaptiveCoachingFeedback = feedback)
             }
         }
     }
-    
+
     // UI
     Column(Modifier.fillMaxSize()) {
         // Enhanced Top App Bar
         TopAppBar(
-            title = { 
+            title = {
                 Column {
                     Text("Advanced Training", style = MaterialTheme.typography.titleMedium)
                     plan?.let { Text(it.title, style = MaterialTheme.typography.bodyMedium) }
@@ -465,7 +486,7 @@ fun EnhancedTrainingExecutionScreen(
                         Text(
                             "Session aktiv",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
@@ -483,7 +504,7 @@ fun EnhancedTrainingExecutionScreen(
                             Icons.Filled.Favorite,
                             contentDescription = "HR Connected",
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                     if (advancedState.movementTrackingActive) {
@@ -491,19 +512,19 @@ fun EnhancedTrainingExecutionScreen(
                             Icons.Filled.FitnessCenter,
                             contentDescription = "Sensors Active",
                             tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                 }
-            }
+            },
         )
-        
+
         if (showTrainingOverview) {
             // Training Overview with advanced preview
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(16.dp)
+                contentPadding = PaddingValues(16.dp),
             ) {
                 item {
                     Card {
@@ -511,51 +532,51 @@ fun EnhancedTrainingExecutionScreen(
                             Text(
                                 "🚀 Advanced Training Ready",
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 "Dieses Training nutzt KI-gestützte Form-Analyse, Herzfrequenz-Monitoring und intelligente Progression.",
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
                             )
                             Spacer(modifier = Modifier.height(16.dp))
-                            
+
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
+                                horizontalArrangement = Arrangement.SpaceEvenly,
                             ) {
                                 FeatureIndicator("❤️", "HR Monitor")
                                 FeatureIndicator("📊", "Form Analysis")
                                 FeatureIndicator("🤖", "AI Coaching")
                                 FeatureIndicator("📈", "Smart Progress")
                             }
-                            
+
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
-                                onClick = { 
+                                onClick = {
                                     showTrainingOverview = false
                                     isInTraining = true
                                 },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Text("Advanced Training starten")
                             }
                         }
                     }
                 }
-                
+
                 items(exercises.mapIndexed { index, exercise -> index to exercise }) { (index, exercise) ->
                     Card {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 "Übung ${index + 1}: ${exercise.name}",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
                             )
                             Text(
                                 exercise.value,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
                             )
                         }
                     }
@@ -566,7 +587,7 @@ fun EnhancedTrainingExecutionScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(16.dp)
+                contentPadding = PaddingValues(16.dp),
             ) {
                 // Live Performance Dashboard
                 item {
@@ -575,10 +596,10 @@ fun EnhancedTrainingExecutionScreen(
                         heartRateZone = advancedState.heartRateZone,
                         repCount = advancedState.repCount,
                         volume = advancedState.sessionMetrics.totalVolume,
-                        efficiency = advancedState.sessionMetrics.workoutEfficiency
+                        efficiency = advancedState.sessionMetrics.workoutEfficiency,
                     )
                 }
-                
+
                 // Exercise Video Player - NEW PRO FEATURE
                 if (currentVideo != null && exercises.isNotEmpty() && currentExerciseIndex < exercises.size) {
                     item {
@@ -594,52 +615,62 @@ fun EnhancedTrainingExecutionScreen(
                                 // Handle speed change for slow-motion
                             },
                             onAngleChange = { angle -> currentVideoAngle = angle },
-                            onRepeat = { 
+                            onRepeat = {
                                 isVideoPlaying = false
                                 // Reset video to beginning
                                 isVideoPlaying = true
-                            }
+                            },
                         )
                     }
                 }
-                
+
                 // Voice Command Panel - NEW PRO FEATURE
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (voiceCommandState) MaterialTheme.colorScheme.primaryContainer 
-                                          else MaterialTheme.colorScheme.surfaceVariant
-                        )
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor =
+                                    if (voiceCommandState) {
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceVariant
+                                    },
+                            ),
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = if (voiceCommandState) "🎤 Höre zu..." else "🗣️ Voice Commands",
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 )
                                 Text(
-                                    text = if (voiceCommandState) "Sage: 'Fertig', 'Nächste Übung', 'Timer Start'" 
-                                          else "Tap to activate voice control",
+                                    text =
+                                        if (voiceCommandState) {
+                                            "Sage: 'Fertig', 'Nächste Übung', 'Timer Start'"
+                                        } else {
+                                            "Tap to activate voice control"
+                                        },
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 lastVoiceCommand?.let { command ->
                                     Text(
                                         text = "Last: ${command.getDisplayText()}",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.primary
+                                        color = MaterialTheme.colorScheme.primary,
                                     )
                                 }
                             }
-                            
+
                             Button(
                                 onClick = {
                                     if (voiceCommandState) {
@@ -649,17 +680,17 @@ fun EnhancedTrainingExecutionScreen(
                                             // Commands are handled in LaunchedEffect above
                                         }
                                     }
-                                }
+                                },
                             ) {
                                 Icon(
                                     imageVector = if (voiceCommandState) Icons.Filled.MicOff else Icons.Filled.Mic,
-                                    contentDescription = if (voiceCommandState) "Stop listening" else "Start listening"
+                                    contentDescription = if (voiceCommandState) "Stop listening" else "Start listening",
                                 )
                             }
                         }
                     }
                 }
-                
+
                 // Smart Rest Timer - NEW PRO FEATURE
                 if (restTimerState !is RestTimerState.IDLE) {
                     item {
@@ -668,16 +699,16 @@ fun EnhancedTrainingExecutionScreen(
                             restSuggestion = restSuggestions,
                             onSkip = { smartRestTimer.skipRest() },
                             onPause = { smartRestTimer.pauseTimer() },
-                            onResume = { 
-                                scope.launch { 
-                                    smartRestTimer.resumeTimer() 
+                            onResume = {
+                                scope.launch {
+                                    smartRestTimer.resumeTimer()
                                 }
                             },
-                            onStop = { smartRestTimer.stopTimer() }
+                            onStop = { smartRestTimer.stopTimer() },
                         )
                     }
                 }
-                
+
                 // Freeletics-style Adaptive Training Panel - NEW FEATURE
                 if (advancedState.isAdaptiveTrainingEnabled) {
                     item {
@@ -692,34 +723,38 @@ fun EnhancedTrainingExecutionScreen(
                                 // Apply the workout adaptation
                                 scope.launch {
                                     // Here we would apply the actual changes to the workout
-                                    advancedState = advancedState.copy(
-                                        currentWorkoutAdaptation = null // Clear after applying
-                                    )
+                                    advancedState =
+                                        advancedState.copy(
+                                            currentWorkoutAdaptation = null, // Clear after applying
+                                        )
                                 }
                             },
                             onDeclineAdaptation = {
-                                advancedState = advancedState.copy(
-                                    currentWorkoutAdaptation = null
-                                )
+                                advancedState =
+                                    advancedState.copy(
+                                        currentWorkoutAdaptation = null,
+                                    )
                             },
                             onAcceptSubstitution = { substitution ->
                                 // Replace current exercise with substitution
                                 scope.launch {
                                     // In a real implementation, this would modify the exercise list
-                                    advancedState = advancedState.copy(
-                                        exerciseSubstitution = null
-                                    )
+                                    advancedState =
+                                        advancedState.copy(
+                                            exerciseSubstitution = null,
+                                        )
                                 }
                             },
                             onDeclineSubstitution = {
-                                advancedState = advancedState.copy(
-                                    exerciseSubstitution = null
-                                )
-                            }
+                                advancedState =
+                                    advancedState.copy(
+                                        exerciseSubstitution = null,
+                                    )
+                            },
                         )
                     }
                 }
-                
+
                 // Adaptive Coaching Feedback Card - NEW FEATURE
                 advancedState.adaptiveCoachingFeedback?.let { feedback ->
                     item {
@@ -729,15 +764,16 @@ fun EnhancedTrainingExecutionScreen(
                                 // Handle coaching feedback actions
                                 scope.launch {
                                     // Apply the suggested action
-                                    advancedState = advancedState.copy(
-                                        adaptiveCoachingFeedback = null
-                                    )
+                                    advancedState =
+                                        advancedState.copy(
+                                            adaptiveCoachingFeedback = null,
+                                        )
                                 }
-                            }
+                            },
                         )
                     }
                 }
-                
+
                 // Real-time Performance Insights - NEW FEATURE
                 advancedState.realTimePerformance?.let { performance ->
                     item {
@@ -746,14 +782,15 @@ fun EnhancedTrainingExecutionScreen(
                             adaptationHistory = advancedState.adaptationHistory.takeLast(5),
                             sessionProgress = (completedExercises.size.toFloat() / exercises.size) * 100f,
                             onToggleAdaptiveTraining = {
-                                advancedState = advancedState.copy(
-                                    isAdaptiveTrainingEnabled = !advancedState.isAdaptiveTrainingEnabled
-                                )
-                            }
+                                advancedState =
+                                    advancedState.copy(
+                                        isAdaptiveTrainingEnabled = !advancedState.isAdaptiveTrainingEnabled,
+                                    )
+                            },
                         )
                     }
                 }
-                
+
                 // Current Exercise with Advanced Display
                 if (exercises.isNotEmpty() && currentExerciseIndex < exercises.size) {
                     item {
@@ -769,11 +806,11 @@ fun EnhancedTrainingExecutionScreen(
                             },
                             onFormFeedback = {
                                 // Show detailed form analysis
-                            }
+                            },
                         )
                     }
                 }
-                
+
                 // Progression Suggestions
                 advancedState.progressionSuggestions.firstOrNull()?.let { suggestion ->
                     item {
@@ -781,22 +818,24 @@ fun EnhancedTrainingExecutionScreen(
                             suggestion = suggestion,
                             onAccept = {
                                 // Apply progression
-                                advancedState = advancedState.copy(
-                                    progressionSuggestions = emptyList()
-                                )
+                                advancedState =
+                                    advancedState.copy(
+                                        progressionSuggestions = emptyList(),
+                                    )
                             },
                             onDecline = {
-                                advancedState = advancedState.copy(
-                                    progressionSuggestions = emptyList()
-                                )
+                                advancedState =
+                                    advancedState.copy(
+                                        progressionSuggestions = emptyList(),
+                                    )
                             },
                             onCustomize = {
                                 // Show customization dialog
-                            }
+                            },
                         )
                     }
                 }
-                
+
                 // AI Coaching Panel
                 item {
                     AICoachingPanel(
@@ -805,40 +844,40 @@ fun EnhancedTrainingExecutionScreen(
                         onToggleExpansion = { aiCoachingExpanded = !aiCoachingExpanded },
                         onTipAction = { tip ->
                             // Handle tip action
-                        }
+                        },
                     )
                 }
-                
+
                 // Exercise Controls
                 item {
                     Card {
                         Column(
                             modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             // Primary exercise controls
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 OutlinedButton(
-                                    onClick = { 
+                                    onClick = {
                                         // Skip exercise
                                         if (currentExerciseIndex < exercises.size - 1) {
                                             currentExerciseIndex++
                                         }
                                     },
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
                                 ) {
                                     Text("Überspringen")
                                 }
-                                
+
                                 Button(
                                     onClick = {
                                         // Complete exercise and start smart rest timer
                                         completedExercises = completedExercises + currentExerciseIndex
                                         generateProgressionSuggestion(currentExerciseIndex)
-                                        
+
                                         // Start adaptive rest timer with current exercise data
                                         scope.launch {
                                             smartRestTimer.startAdaptiveRest(
@@ -846,30 +885,32 @@ fun EnhancedTrainingExecutionScreen(
                                                 intensity = advancedState.formQuality,
                                                 heartRate = advancedState.currentHeartRate,
                                                 perceivedExertion = advancedState.currentRPE,
-                                                previousSetData = SetData(
-                                                    weight = 20f, // Would come from actual set data
-                                                    reps = advancedState.repCount,
-                                                    formQuality = advancedState.formQuality,
-                                                    rpe = advancedState.currentRPE,
-                                                    heartRate = advancedState.currentHeartRate
-                                                )
+                                                previousSetData =
+                                                    SetData(
+                                                        weight = 20f, // Would come from actual set data
+                                                        reps = advancedState.repCount,
+                                                        formQuality = advancedState.formQuality,
+                                                        rpe = advancedState.currentRPE,
+                                                        heartRate = advancedState.currentHeartRate,
+                                                    ),
                                             )
                                         }
-                                        
+
                                         if (currentExerciseIndex < exercises.size - 1) {
                                             currentExerciseIndex++
                                         } else {
                                             // Training completed
                                             scope.launch {
                                                 advancedState.sessionId?.let { sessionId ->
-                                                    val updatedSession = WorkoutSessionEntity(
-                                                        id = sessionId,
-                                                        planId = planId,
-                                                        userId = "current_user",
-                                                        startTime = System.currentTimeMillis() / 1000 - 1800, // 30 min ago
-                                                        endTime = System.currentTimeMillis() / 1000,
-                                                        completionPercentage = 100f
-                                                    )
+                                                    val updatedSession =
+                                                        WorkoutSessionEntity(
+                                                            id = sessionId,
+                                                            planId = planId,
+                                                            userId = "current_user",
+                                                            startTime = System.currentTimeMillis() / 1000 - 1800, // 30 min ago
+                                                            endTime = System.currentTimeMillis() / 1000,
+                                                            completionPercentage = 100f,
+                                                        )
                                                     db.workoutSessionDao().update(updatedSession)
                                                 }
                                                 sensorService.stopTracking()
@@ -878,14 +919,14 @@ fun EnhancedTrainingExecutionScreen(
                                             }
                                         }
                                     },
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
                                 ) {
                                     Icon(Icons.Filled.Check, contentDescription = null)
                                     Spacer(Modifier.width(4.dp))
                                     Text("Fertig")
                                 }
                             }
-                            
+
                             // Smart rest timer quick action
                             Button(
                                 onClick = {
@@ -894,14 +935,15 @@ fun EnhancedTrainingExecutionScreen(
                                             exerciseId = exercises[currentExerciseIndex].name,
                                             intensity = 0.7f, // Default intensity
                                             heartRate = advancedState.currentHeartRate,
-                                            perceivedExertion = advancedState.currentRPE
+                                            perceivedExertion = advancedState.currentRPE,
                                         )
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.secondary
-                                )
+                                colors =
+                                    ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.secondary,
+                                    ),
                             ) {
                                 Icon(Icons.Filled.Timer, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
@@ -912,18 +954,18 @@ fun EnhancedTrainingExecutionScreen(
                 }
             }
         }
-        
+
         // Error display
         advancedState.error?.let { error ->
             Snackbar(
                 action = {
-                    TextButton(onClick = { 
+                    TextButton(onClick = {
                         advancedState = advancedState.copy(error = null)
                     }) {
                         Text("OK")
                     }
                 },
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
             ) {
                 Text(error)
             }
@@ -935,20 +977,20 @@ fun EnhancedTrainingExecutionScreen(
 private fun FeatureIndicator(
     emoji: String,
     label: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = emoji,
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
         )
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -957,7 +999,7 @@ private fun FeatureIndicator(
 private fun parseTrainingContentLocal(content: String): List<ExerciseStep> {
     val exercises = mutableListOf<ExerciseStep>()
     val lines = content.lines()
-    
+
     for (line in lines) {
         val trimmed = line.trim()
         when {
@@ -965,60 +1007,70 @@ private fun parseTrainingContentLocal(content: String): List<ExerciseStep> {
             trimmed.matches(Regex("\\d+x\\d+\\s+.*", RegexOption.IGNORE_CASE)) -> {
                 val parts = trimmed.split("\\s+".toRegex(), 2)
                 if (parts.size >= 2) {
-                    exercises.add(ExerciseStep(
-                        name = parts[1],
-                        type = "reps",
-                        value = parts[0],
-                        description = "Führe ${parts[0]} aus",
-                        restTime = 30
-                    ))
+                    exercises.add(
+                        ExerciseStep(
+                            name = parts[1],
+                            type = "reps",
+                            value = parts[0],
+                            description = "Führe ${parts[0]} aus",
+                            restTime = 30,
+                        ),
+                    )
                 }
             }
             // Match patterns like "30 Sekunden Plank" or "2 Minuten Laufen"
             trimmed.matches(Regex("\\d+\\s+(Sekunden?|Minuten?)\\s+.*", RegexOption.IGNORE_CASE)) -> {
                 val parts = trimmed.split("\\s+".toRegex(), 3)
                 if (parts.size >= 3) {
-                    exercises.add(ExerciseStep(
-                        name = parts.drop(2).joinToString(" "),
-                        type = "time",
-                        value = "${parts[0]} ${parts[1]}",
-                        description = "Halte für ${parts[0]} ${parts[1]}",
-                        restTime = 15
-                    ))
+                    exercises.add(
+                        ExerciseStep(
+                            name = parts.drop(2).joinToString(" "),
+                            type = "time",
+                            value = "${parts[0]} ${parts[1]}",
+                            description = "Halte für ${parts[0]} ${parts[1]}",
+                            restTime = 15,
+                        ),
+                    )
                 }
             }
             // Match patterns like "Laufband: 5 km/h für 10 Min"
             trimmed.contains("km/h", ignoreCase = true) || trimmed.contains("stufe", ignoreCase = true) -> {
-                exercises.add(ExerciseStep(
-                    name = trimmed.substringBefore(":").trim(),
-                    type = "cardio",
-                    value = trimmed.substringAfter(":").trim(),
-                    description = "Cardio-Training wie angegeben",
-                    restTime = 60
-                ))
+                exercises.add(
+                    ExerciseStep(
+                        name = trimmed.substringBefore(":").trim(),
+                        type = "cardio",
+                        value = trimmed.substringAfter(":").trim(),
+                        description = "Cardio-Training wie angegeben",
+                        restTime = 60,
+                    ),
+                )
             }
             // General exercise lines
             trimmed.isNotBlank() && !trimmed.startsWith("#") && trimmed.length > 5 -> {
-                exercises.add(ExerciseStep(
-                    name = trimmed,
-                    type = "general",
-                    value = "Nach Anweisung",
-                    description = "Führe die Übung wie beschrieben aus",
-                    restTime = 30
-                ))
+                exercises.add(
+                    ExerciseStep(
+                        name = trimmed,
+                        type = "general",
+                        value = "Nach Anweisung",
+                        description = "Führe die Übung wie beschrieben aus",
+                        restTime = 30,
+                    ),
+                )
             }
         }
     }
-    
+
     if (exercises.isEmpty()) {
-        exercises.add(ExerciseStep(
-            name = "Freies Training",
-            type = "general",
-            value = "Nach Plan",
-            description = "Folge dem Trainingsplan",
-            restTime = 0
-        ))
+        exercises.add(
+            ExerciseStep(
+                name = "Freies Training",
+                type = "general",
+                value = "Nach Plan",
+                description = "Folge dem Trainingsplan",
+                restTime = 0,
+            ),
+        )
     }
-    
+
     return exercises
 }

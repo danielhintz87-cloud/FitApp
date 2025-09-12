@@ -16,7 +16,6 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class TodayScreenTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
@@ -68,7 +67,7 @@ class TodayScreenTest {
         composeTestRule
             .onNodeWithTag("motivation_section")
             .assertExists()
-            
+
         // And background image should be loaded
         composeTestRule
             .onNodeWithTag("background_image")
@@ -91,11 +90,11 @@ class TodayScreenTest {
         composeTestRule
             .onNodeWithTag("training_streak")
             .assertExists()
-            
+
         composeTestRule
             .onNodeWithTag("nutrition_streak")
             .assertExists()
-            
+
         composeTestRule
             .onNodeWithTag("weight_streak")
             .assertExists()

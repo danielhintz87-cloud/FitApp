@@ -17,7 +17,10 @@ interface GenerateRecipesUseCase {
 }
 
 interface EstimateCaloriesUseCase {
-    suspend fun execute(bitmap: Bitmap, note: String = ""): Result<CaloriesEstimate>
+    suspend fun execute(
+        bitmap: Bitmap,
+        note: String = "",
+    ): Result<CaloriesEstimate>
 }
 
 interface ParseShoppingListUseCase {
@@ -29,7 +32,11 @@ interface EstimateCaloriesForManualEntryUseCase {
 }
 
 interface GenerateDailyWorkoutStepsUseCase {
-    suspend fun execute(goal: String, minutes: Int, equipment: List<String>): Result<String>
+    suspend fun execute(
+        goal: String,
+        minutes: Int,
+        equipment: List<String>,
+    ): Result<String>
 }
 
 interface GeneratePersonalizedWorkoutUseCase {
@@ -37,15 +44,24 @@ interface GeneratePersonalizedWorkoutUseCase {
 }
 
 interface GenerateNutritionAdviceUseCase {
-    suspend fun execute(userProfile: UserProfile, goals: List<String>): Result<PersonalizedMealPlan>
+    suspend fun execute(
+        userProfile: UserProfile,
+        goals: List<String>,
+    ): Result<PersonalizedMealPlan>
 }
 
 interface AnalyzeProgressUseCase {
-    suspend fun execute(progressData: List<WeightEntry>, userProfile: UserProfile): Result<ProgressAnalysis>
+    suspend fun execute(
+        progressData: List<WeightEntry>,
+        userProfile: UserProfile,
+    ): Result<ProgressAnalysis>
 }
 
 interface GenerateMotivationUseCase {
-    suspend fun execute(userProfile: UserProfile, progressData: List<WeightEntry>): Result<MotivationalMessage>
+    suspend fun execute(
+        userProfile: UserProfile,
+        progressData: List<WeightEntry>,
+    ): Result<MotivationalMessage>
 }
 
 interface GetPersonalizedRecommendationsUseCase {

@@ -2,10 +2,9 @@ package com.example.fitapp.services
 
 import android.content.Context
 import com.example.fitapp.data.db.AppDatabase
-import kotlinx.coroutines.test.runTest
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
-import org.junit.Assert.*
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.*
@@ -15,7 +14,6 @@ import org.mockito.kotlin.*
  * Tests meal plan generation, dietary restrictions, and prep time optimization
  */
 class MealPlanningManagerTest {
-
     @Mock
     private lateinit var context: Context
 
@@ -46,7 +44,7 @@ class MealPlanningManagerTest {
 
         // When: Creating macro calculation result (simulating the expected structure)
         // Note: This tests the concept rather than the actual class since it's internal
-        
+
         // Then: All properties should be valid
         assertTrue("Calories should be positive", calories > 0)
         assertTrue("Protein should be non-negative", protein >= 0)
@@ -57,10 +55,17 @@ class MealPlanningManagerTest {
 
     @Test
     fun `should handle different dietary restrictions`() {
-        val restrictions = listOf(
-            "VEGETARIAN", "VEGAN", "GLUTEN_FREE", "DAIRY_FREE", 
-            "NUT_FREE", "LOW_SODIUM", "KETO", "PALEO"
-        )
+        val restrictions =
+            listOf(
+                "VEGETARIAN",
+                "VEGAN",
+                "GLUTEN_FREE",
+                "DAIRY_FREE",
+                "NUT_FREE",
+                "LOW_SODIUM",
+                "KETO",
+                "PALEO",
+            )
 
         for (restriction in restrictions) {
             // When: Using each dietary restriction
@@ -72,9 +77,13 @@ class MealPlanningManagerTest {
 
     @Test
     fun `should handle different cooking skill levels`() {
-        val skillLevels = listOf(
-            "BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"
-        )
+        val skillLevels =
+            listOf(
+                "BEGINNER",
+                "INTERMEDIATE",
+                "ADVANCED",
+                "EXPERT",
+            )
 
         for (skillLevel in skillLevels) {
             // When: Using each cooking skill level
@@ -86,10 +95,16 @@ class MealPlanningManagerTest {
 
     @Test
     fun `should handle different days of week`() {
-        val daysOfWeek = listOf(
-            "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", 
-            "FRIDAY", "SATURDAY", "SUNDAY"
-        )
+        val daysOfWeek =
+            listOf(
+                "MONDAY",
+                "TUESDAY",
+                "WEDNESDAY",
+                "THURSDAY",
+                "FRIDAY",
+                "SATURDAY",
+                "SUNDAY",
+            )
 
         assertEquals("Should have 7 days of week", 7, daysOfWeek.size)
 
@@ -144,12 +159,13 @@ class MealPlanningManagerTest {
 
     @Test
     fun `should handle cuisine preferences`() {
-        val cuisineOptions = listOf(
-            listOf("Italian", "Mexican"),
-            listOf("Asian", "Mediterranean", "Indian"),
-            listOf("American", "French", "Thai", "Japanese"),
-            emptyList()
-        )
+        val cuisineOptions =
+            listOf(
+                listOf("Italian", "Mexican"),
+                listOf("Asian", "Mediterranean", "Indian"),
+                listOf("American", "French", "Thai", "Japanese"),
+                emptyList(),
+            )
 
         for (cuisines in cuisineOptions) {
             // When: Testing cuisine preferences
@@ -160,12 +176,13 @@ class MealPlanningManagerTest {
 
     @Test
     fun `should handle avoided ingredients`() {
-        val avoidedOptions = listOf(
-            listOf("Nuts", "Shellfish"),
-            listOf("Mushrooms", "Olives", "Anchovies"),
-            listOf("Spicy food", "Raw onions"),
-            emptyList()
-        )
+        val avoidedOptions =
+            listOf(
+                listOf("Nuts", "Shellfish"),
+                listOf("Mushrooms", "Olives", "Anchovies"),
+                listOf("Spicy food", "Raw onions"),
+                emptyList(),
+            )
 
         for (avoided in avoidedOptions) {
             // When: Testing avoided ingredients
@@ -176,12 +193,13 @@ class MealPlanningManagerTest {
 
     @Test
     fun `should handle favorite meal preferences`() {
-        val favoriteOptions = listOf(
-            listOf("Chicken breast with rice"),
-            listOf("Protein smoothie", "Greek yogurt with berries", "Salmon with vegetables"),
-            listOf("Oatmeal", "Scrambled eggs", "Quinoa salad", "Turkey sandwich"),
-            emptyList()
-        )
+        val favoriteOptions =
+            listOf(
+                listOf("Chicken breast with rice"),
+                listOf("Protein smoothie", "Greek yogurt with berries", "Salmon with vegetables"),
+                listOf("Oatmeal", "Scrambled eggs", "Quinoa salad", "Turkey sandwich"),
+                emptyList(),
+            )
 
         for (favorites in favoriteOptions) {
             // When: Testing favorite meal preferences
@@ -198,7 +216,7 @@ class MealPlanningManagerTest {
         val carbs = 250.0
         val fat = 70.0
         val fiber = 30.0
-        
+
         assertTrue("Calories should be positive", calories > 0)
         assertTrue("Protein should be non-negative", protein >= 0)
         assertTrue("Carbs should be non-negative", carbs >= 0)
@@ -211,10 +229,10 @@ class MealPlanningManagerTest {
         // Test with some zero values (valid for certain diets)
         val calories = 1500
         val protein = 100.0
-        val carbs = 0.0    // Keto diet
+        val carbs = 0.0 // Keto diet
         val fat = 120.0
         val fiber = 25.0
-        
+
         assertEquals("Should handle zero carbs", 0.0, carbs, 0.01)
         assertTrue("Other values should be positive", calories > 0)
         assertTrue("Protein should be positive", protein > 0)
@@ -225,18 +243,20 @@ class MealPlanningManagerTest {
     fun `should handle realistic macro ratios`() {
         // Test typical macro distribution for different diet types
         val calories = 2200
-        val protein = 110.0    // 20% of calories
-        val carbs = 275.0      // 50% of calories
-        val fat = 73.0         // 30% of calories
-        
+        val protein = 110.0 // 20% of calories
+        val carbs = 275.0 // 50% of calories
+        val fat = 73.0 // 30% of calories
+
         // Calculate approximate calorie distribution
         val proteinCals = protein * 4
         val carbCals = carbs * 4
         val fatCals = fat * 9
         val totalCalculatedCals = proteinCals + carbCals + fatCals
-        
+
         // Allow for some rounding differences
-        assertTrue("Total calculated calories should be close to target", 
-            Math.abs(totalCalculatedCals - calories) < 100)
+        assertTrue(
+            "Total calculated calories should be close to target",
+            Math.abs(totalCalculatedCals - calories) < 100,
+        )
     }
 }

@@ -13,24 +13,23 @@ import com.google.mlkit.vision.common.InputImage
  * Provides high-accuracy barcode detection for food products
  */
 class BarcodeAnalyzer(
-    private val onBarcodeDetected: (String) -> Unit
+    private val onBarcodeDetected: (String) -> Unit,
 ) : ImageAnalysis.Analyzer {
-    
     companion object {
         private const val TAG = "BarcodeAnalyzer"
     }
-    
+
     private val scanner = BarcodeScanning.getClient()
     private var lastDetectedBarcode: String? = null
     private var lastDetectionTime = 0L
     private val debounceTime = 2000L // 2 seconds between same barcode detections
-    
+
     @SuppressLint("UnsafeOptInUsageError")
     override fun analyze(imageProxy: ImageProxy) {
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-            
+
             scanner.process(image)
                 .addOnSuccessListener { barcodes ->
                     processBarcodes(barcodes)
@@ -45,20 +44,20 @@ class BarcodeAnalyzer(
             imageProxy.close()
         }
     }
-    
+
     private fun processBarcodes(barcodes: List<Barcode>) {
         for (barcode in barcodes) {
             val rawValue = barcode.rawValue
             if (rawValue != null && isValidFoodBarcode(barcode)) {
                 val currentTime = System.currentTimeMillis()
-                
+
                 // Debounce same barcode detection
-                if (rawValue != lastDetectedBarcode || 
-                    currentTime - lastDetectionTime > debounceTime) {
-                    
+                if (rawValue != lastDetectedBarcode ||
+                    currentTime - lastDetectionTime > debounceTime
+                ) {
                     lastDetectedBarcode = rawValue
                     lastDetectionTime = currentTime
-                    
+
                     Log.d(TAG, "Detected barcode: $rawValue, format: ${barcode.format}")
                     onBarcodeDetected(rawValue)
                     break // Only process first valid barcode
@@ -66,13 +65,13 @@ class BarcodeAnalyzer(
             }
         }
     }
-    
+
     /**
      * Check if the barcode is likely a food product barcode
      */
     private fun isValidFoodBarcode(barcode: Barcode): Boolean {
         val rawValue = barcode.rawValue ?: return false
-        
+
         return when (barcode.format) {
             Barcode.FORMAT_EAN_13 -> {
                 // EAN-13 barcodes are most common for food products
@@ -92,8 +91,8 @@ class BarcodeAnalyzer(
             }
             else -> {
                 // Accept other formats but check basic criteria
-                rawValue.length >= 8 && rawValue.length <= 14 && 
-                rawValue.all { it.isDigit() }
+                rawValue.length >= 8 && rawValue.length <= 14 &&
+                    rawValue.all { it.isDigit() }
             }
         }
     }

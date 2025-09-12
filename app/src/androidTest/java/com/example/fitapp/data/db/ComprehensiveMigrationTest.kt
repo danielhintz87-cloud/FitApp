@@ -1,6 +1,5 @@
 package com.example.fitapp.data.db
 
-import androidx.room.Room
 import androidx.room.testing.MigrationTestHelper
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
@@ -24,35 +23,37 @@ private const val TEST_DB = "comprehensive_migration_test.db"
  */
 @RunWith(AndroidJUnit4::class)
 class ComprehensiveMigrationTest {
-
     @get:Rule
-    val helper = MigrationTestHelper(
-        InstrumentationRegistry.getInstrumentation(),
-        AppDatabase::class.java.canonicalName,
-        FrameworkSQLiteOpenHelperFactory()
-    )
+    val helper =
+        MigrationTestHelper(
+            InstrumentationRegistry.getInstrumentation(),
+            AppDatabase::class.java.canonicalName,
+            FrameworkSQLiteOpenHelperFactory(),
+        )
 
     @Test
     fun migration_5_to_6_creates_personal_tables() {
-        // Start from version 5 
+        // Start from version 5
         val db5 = helper.createDatabase(TEST_DB, 5)
         db5.close()
 
         // Migrate to version 6
-        val db6 = helper.runMigrationsAndValidate(
-            TEST_DB,
-            6,
-            true,
-            AppDatabase.MIGRATION_5_6
-        )
+        val db6 =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                6,
+                true,
+                AppDatabase.MIGRATION_5_6,
+            )
 
         // Validate all expected tables exist
-        val expectedTables = listOf(
-            "personal_achievements",
-            "personal_streaks", 
-            "personal_records",
-            "progress_milestones"
-        )
+        val expectedTables =
+            listOf(
+                "personal_achievements",
+                "personal_streaks",
+                "personal_records",
+                "progress_milestones",
+            )
 
         expectedTables.forEach { tableName ->
             db6.query("SELECT name FROM sqlite_master WHERE type='table' AND name='$tableName'").use { cursor ->
@@ -61,19 +62,23 @@ class ComprehensiveMigrationTest {
         }
 
         // Validate personal_achievements table structure
-        validateTableSchema(db6, "personal_achievements", mapOf(
-            "id" to "INTEGER",
-            "title" to "TEXT",
-            "description" to "TEXT", 
-            "category" to "TEXT",
-            "iconName" to "TEXT",
-            "targetValue" to "REAL",
-            "currentValue" to "REAL",
-            "unit" to "TEXT",
-            "isCompleted" to "INTEGER",
-            "completedAt" to "INTEGER",
-            "createdAt" to "INTEGER"
-        ))
+        validateTableSchema(
+            db6,
+            "personal_achievements",
+            mapOf(
+                "id" to "INTEGER",
+                "title" to "TEXT",
+                "description" to "TEXT",
+                "category" to "TEXT",
+                "iconName" to "TEXT",
+                "targetValue" to "REAL",
+                "currentValue" to "REAL",
+                "unit" to "TEXT",
+                "isCompleted" to "INTEGER",
+                "completedAt" to "INTEGER",
+                "createdAt" to "INTEGER",
+            ),
+        )
 
         db6.close()
     }
@@ -82,22 +87,25 @@ class ComprehensiveMigrationTest {
     fun migration_6_to_7_converts_date_to_timestamp() {
         // Create database version 6 with test data
         val db6 = helper.createDatabase(TEST_DB, 6)
-        
+
         // Insert test streak with date string
-        db6.execSQL("""
+        db6.execSQL(
+            """
             INSERT INTO personal_streaks (name, description, category, currentStreak, longestStreak, lastActivityDate, isActive, createdAt)
             VALUES ('Test Streak', 'Test Description', 'workout', 5, 10, '2024-01-15', 1, 1705315200)
-        """)
-        
+        """,
+        )
+
         db6.close()
 
         // Migrate to version 7
-        val db7 = helper.runMigrationsAndValidate(
-            TEST_DB,
-            7,
-            true,
-            AppDatabase.MIGRATION_6_7
-        )
+        val db7 =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                7,
+                true,
+                AppDatabase.MIGRATION_6_7,
+            )
 
         // Verify data conversion
         db7.query("SELECT lastActivityTimestamp FROM personal_streaks WHERE name = 'Test Streak'").use { cursor ->
@@ -112,49 +120,59 @@ class ComprehensiveMigrationTest {
     @Test
     fun migration_7_to_8_creates_weight_entries_and_indices() {
         val db7 = helper.createDatabase(TEST_DB, 7)
-        
+
         // Insert test recipe data to verify indices are added
-        db7.execSQL("""
+        db7.execSQL(
+            """
             INSERT INTO recipes (id, title, markdown, calories, imageUrl, isFavorite, createdAt)
             VALUES ('test-id', 'Test Recipe', '# Test', 300, NULL, 0, 1705315200)
-        """)
-        
+        """,
+        )
+
         db7.close()
 
-        val db8 = helper.runMigrationsAndValidate(
-            TEST_DB,
-            8,
-            true,
-            AppDatabase.MIGRATION_7_8
-        )
+        val db8 =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                8,
+                true,
+                AppDatabase.MIGRATION_7_8,
+            )
 
         // Validate weight_entries table exists and has correct structure
-        validateTableSchema(db8, "weight_entries", mapOf(
-            "id" to "INTEGER",
-            "weight" to "REAL",
-            "dateIso" to "TEXT",
-            "notes" to "TEXT",
-            "recordedAt" to "INTEGER"
-        ))
+        validateTableSchema(
+            db8,
+            "weight_entries",
+            mapOf(
+                "id" to "INTEGER",
+                "weight" to "REAL",
+                "dateIso" to "TEXT",
+                "notes" to "TEXT",
+                "recordedAt" to "INTEGER",
+            ),
+        )
 
         // Validate required indices exist
-        val expectedIndices = listOf(
-            "index_weight_entries_dateIso",
-            "index_weight_entries_recordedAt",
-            "index_recipes_createdAt",
-            "index_recipes_calories",
-            "index_recipes_title"
-        )
+        val expectedIndices =
+            listOf(
+                "index_weight_entries_dateIso",
+                "index_weight_entries_recordedAt",
+                "index_recipes_createdAt",
+                "index_recipes_calories",
+                "index_recipes_title",
+            )
 
         expectedIndices.forEach { indexName ->
             validateIndexExists(db8, indexName)
         }
 
         // Test weight_entries functionality
-        db8.execSQL("""
+        db8.execSQL(
+            """
             INSERT INTO weight_entries (weight, dateIso, notes, recordedAt)
             VALUES (75.5, '2024-01-15', 'Test weight', 1705315200)
-        """)
+        """,
+        )
 
         db8.query("SELECT weight FROM weight_entries WHERE dateIso = '2024-01-15'").use { cursor ->
             assertTrue(cursor.moveToFirst())
@@ -167,31 +185,38 @@ class ComprehensiveMigrationTest {
     @Test
     fun migration_8_to_9_extends_goals_and_creates_nutrition_tables() {
         val db8 = helper.createDatabase(TEST_DB, 8)
-        
+
         // Insert test daily goal
-        db8.execSQL("""
+        db8.execSQL(
+            """
             INSERT INTO daily_goals (dateIso, targetKcal)
             VALUES ('2024-01-15', 2000)
-        """)
-        
-        db8.close()
-
-        val db9 = helper.runMigrationsAndValidate(
-            TEST_DB,
-            9,
-            true,
-            AppDatabase.MIGRATION_8_9
+        """,
         )
 
+        db8.close()
+
+        val db9 =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                9,
+                true,
+                AppDatabase.MIGRATION_8_9,
+            )
+
         // Verify daily_goals has new columns
-        validateTableSchema(db9, "daily_goals", mapOf(
-            "dateIso" to "TEXT",
-            "targetKcal" to "INTEGER",
-            "targetCarbs" to "REAL",
-            "targetProtein" to "REAL", 
-            "targetFat" to "REAL",
-            "targetWaterMl" to "INTEGER"
-        ))
+        validateTableSchema(
+            db9,
+            "daily_goals",
+            mapOf(
+                "dateIso" to "TEXT",
+                "targetKcal" to "INTEGER",
+                "targetCarbs" to "REAL",
+                "targetProtein" to "REAL",
+                "targetFat" to "REAL",
+                "targetWaterMl" to "INTEGER",
+            ),
+        )
 
         // Verify existing data is preserved
         db9.query("SELECT targetKcal FROM daily_goals WHERE dateIso = '2024-01-15'").use { cursor ->
@@ -213,40 +238,44 @@ class ComprehensiveMigrationTest {
     @Test
     fun migration_9_to_10_extends_food_items_and_creates_bmi_tables() {
         val db9 = helper.createDatabase(TEST_DB, 9)
-        
+
         // Insert test food item
-        db9.execSQL("""
+        db9.execSQL(
+            """
             INSERT INTO food_items (id, name, calories, carbs, protein, fat, createdAt)
             VALUES ('test-food', 'Test Food', 100, 10.0, 5.0, 2.0, 1705315200)
-        """)
-        
+        """,
+        )
+
         db9.close()
 
-        val db10 = helper.runMigrationsAndValidate(
-            TEST_DB,
-            10,
-            true,
-            AppDatabase.MIGRATION_9_10
-        )
+        val db10 =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                10,
+                true,
+                AppDatabase.MIGRATION_9_10,
+            )
 
         // Verify food_items has extended fields
-        val expectedFoodColumns = mapOf(
-            "id" to "TEXT",
-            "name" to "TEXT",
-            "calories" to "INTEGER",
-            "carbs" to "REAL",
-            "protein" to "REAL",
-            "fat" to "REAL",
-            "createdAt" to "INTEGER",
-            "fiber" to "REAL",
-            "sugar" to "REAL", 
-            "sodium" to "REAL",
-            "brands" to "TEXT",
-            "categories" to "TEXT",
-            "imageUrl" to "TEXT",
-            "servingSize" to "TEXT",
-            "ingredients" to "TEXT"
-        )
+        val expectedFoodColumns =
+            mapOf(
+                "id" to "TEXT",
+                "name" to "TEXT",
+                "calories" to "INTEGER",
+                "carbs" to "REAL",
+                "protein" to "REAL",
+                "fat" to "REAL",
+                "createdAt" to "INTEGER",
+                "fiber" to "REAL",
+                "sugar" to "REAL",
+                "sodium" to "REAL",
+                "brands" to "TEXT",
+                "categories" to "TEXT",
+                "imageUrl" to "TEXT",
+                "servingSize" to "TEXT",
+                "ingredients" to "TEXT",
+            )
         validateTableSchema(db10, "food_items", expectedFoodColumns)
 
         // Verify existing data is preserved
@@ -272,12 +301,13 @@ class ComprehensiveMigrationTest {
         val db10 = helper.createDatabase(TEST_DB, 10)
         db10.close()
 
-        val db11 = helper.runMigrationsAndValidate(
-            TEST_DB,
-            11,
-            true,
-            AppDatabase.MIGRATION_10_11
-        )
+        val db11 =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                11,
+                true,
+                AppDatabase.MIGRATION_10_11,
+            )
 
         // Verify workout performance tables exist
         val workoutTables = listOf("workout_performance", "workout_sessions", "exercise_progressions")
@@ -286,17 +316,21 @@ class ComprehensiveMigrationTest {
         }
 
         // Validate workout_performance table structure
-        validateTableSchema(db11, "workout_performance", mapOf(
-            "id" to "TEXT",
-            "exerciseId" to "TEXT", 
-            "sessionId" to "TEXT",
-            "planId" to "INTEGER",
-            "sets" to "INTEGER",
-            "reps" to "INTEGER",
-            "weight" to "REAL",
-            "restTimeSeconds" to "INTEGER",
-            "completedAt" to "INTEGER"
-        ))
+        validateTableSchema(
+            db11,
+            "workout_performance",
+            mapOf(
+                "id" to "TEXT",
+                "exerciseId" to "TEXT",
+                "sessionId" to "TEXT",
+                "planId" to "INTEGER",
+                "sets" to "INTEGER",
+                "reps" to "INTEGER",
+                "weight" to "REAL",
+                "restTimeSeconds" to "INTEGER",
+                "completedAt" to "INTEGER",
+            ),
+        )
 
         db11.close()
     }
@@ -306,12 +340,13 @@ class ComprehensiveMigrationTest {
         val db11 = helper.createDatabase(TEST_DB, 11)
         db11.close()
 
-        val db12 = helper.runMigrationsAndValidate(
-            TEST_DB,
-            12,
-            true,
-            AppDatabase.MIGRATION_11_12
-        )
+        val db12 =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                12,
+                true,
+                AppDatabase.MIGRATION_11_12,
+            )
 
         // Verify cooking tables exist
         val cookingTables = listOf("cooking_sessions", "cooking_timers")
@@ -320,15 +355,19 @@ class ComprehensiveMigrationTest {
         }
 
         // Validate cooking_sessions table structure
-        validateTableSchema(db12, "cooking_sessions", mapOf(
-            "id" to "TEXT",
-            "recipeId" to "TEXT",
-            "startTime" to "INTEGER",
-            "endTime" to "INTEGER",
-            "status" to "TEXT",
-            "currentStep" to "INTEGER",
-            "notes" to "TEXT"
-        ))
+        validateTableSchema(
+            db12,
+            "cooking_sessions",
+            mapOf(
+                "id" to "TEXT",
+                "recipeId" to "TEXT",
+                "startTime" to "INTEGER",
+                "endTime" to "INTEGER",
+                "status" to "TEXT",
+                "currentStep" to "INTEGER",
+                "notes" to "TEXT",
+            ),
+        )
 
         db12.close()
     }
@@ -338,12 +377,13 @@ class ComprehensiveMigrationTest {
         val db12 = helper.createDatabase(TEST_DB, 12)
         db12.close()
 
-        val db13 = helper.runMigrationsAndValidate(
-            TEST_DB,
-            13,
-            true,
-            AppDatabase.MIGRATION_12_13
-        )
+        val db13 =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                13,
+                true,
+                AppDatabase.MIGRATION_12_13,
+            )
 
         // Verify cloud sync tables exist
         val cloudTables = listOf("cloud_sync_metadata", "user_profiles", "sync_conflicts")
@@ -352,23 +392,32 @@ class ComprehensiveMigrationTest {
         }
 
         // Verify Health Connect tables exist
-        val healthTables = listOf("health_connect_steps", "health_connect_heart_rate", 
-                                 "health_connect_calories", "health_connect_sleep", 
-                                 "health_connect_exercise_sessions")
+        val healthTables =
+            listOf(
+                "health_connect_steps",
+                "health_connect_heart_rate",
+                "health_connect_calories",
+                "health_connect_sleep",
+                "health_connect_exercise_sessions",
+            )
         healthTables.forEach { tableName ->
             validateTableExists(db13, tableName)
         }
 
         // Validate cloud_sync_metadata table structure
-        validateTableSchema(db13, "cloud_sync_metadata", mapOf(
-            "id" to "TEXT",
-            "entityType" to "TEXT",
-            "entityId" to "TEXT",
-            "lastSyncTime" to "INTEGER",
-            "localHash" to "TEXT",
-            "cloudHash" to "TEXT",
-            "syncStatus" to "TEXT"
-        ))
+        validateTableSchema(
+            db13,
+            "cloud_sync_metadata",
+            mapOf(
+                "id" to "TEXT",
+                "entityType" to "TEXT",
+                "entityId" to "TEXT",
+                "lastSyncTime" to "INTEGER",
+                "localHash" to "TEXT",
+                "cloudHash" to "TEXT",
+                "syncStatus" to "TEXT",
+            ),
+        )
 
         db13.close()
     }
@@ -378,34 +427,45 @@ class ComprehensiveMigrationTest {
         val db13 = helper.createDatabase(TEST_DB, 13)
         db13.close()
 
-        val db14 = helper.runMigrationsAndValidate(
-            TEST_DB,
-            14,
-            true,
-            AppDatabase.MIGRATION_13_14
-        )
+        val db14 =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                14,
+                true,
+                AppDatabase.MIGRATION_13_14,
+            )
 
         // Verify social challenge tables exist
-        val socialTables = listOf("social_challenges", "challenge_participations", 
-                                 "challenge_progress_logs", "social_badges", "leaderboard_entries")
+        val socialTables =
+            listOf(
+                "social_challenges",
+                "challenge_participations",
+                "challenge_progress_logs",
+                "social_badges",
+                "leaderboard_entries",
+            )
         socialTables.forEach { tableName ->
             validateTableExists(db14, tableName)
         }
 
         // Validate social_challenges table structure
-        validateTableSchema(db14, "social_challenges", mapOf(
-            "id" to "INTEGER",
-            "title" to "TEXT",
-            "description" to "TEXT",
-            "category" to "TEXT",
-            "startDate" to "TEXT",
-            "endDate" to "TEXT",
-            "targetValue" to "REAL",
-            "unit" to "TEXT",
-            "isActive" to "INTEGER",
-            "createdBy" to "TEXT",
-            "createdAt" to "INTEGER"
-        ))
+        validateTableSchema(
+            db14,
+            "social_challenges",
+            mapOf(
+                "id" to "INTEGER",
+                "title" to "TEXT",
+                "description" to "TEXT",
+                "category" to "TEXT",
+                "startDate" to "TEXT",
+                "endDate" to "TEXT",
+                "targetValue" to "REAL",
+                "unit" to "TEXT",
+                "isActive" to "INTEGER",
+                "createdBy" to "TEXT",
+                "createdAt" to "INTEGER",
+            ),
+        )
 
         db14.close()
     }
@@ -413,23 +473,26 @@ class ComprehensiveMigrationTest {
     @Test
     fun migration_14_to_15_is_no_op() {
         val db14 = helper.createDatabase(TEST_DB, 14)
-        
+
         // Insert test data to verify no-op doesn't break anything
-        db14.execSQL("""
+        db14.execSQL(
+            """
             INSERT INTO social_challenges (title, description, category, startDate, endDate, 
                                          targetValue, unit, isActive, createdBy, createdAt)
             VALUES ('Test Challenge', 'Test Description', 'fitness', '2024-01-01', '2024-01-31',
                     100.0, 'steps', 1, 'test-user', 1705315200)
-        """)
-        
+        """,
+        )
+
         db14.close()
 
-        val db15 = helper.runMigrationsAndValidate(
-            TEST_DB,
-            15,
-            true,
-            AppDatabase.MIGRATION_14_15
-        )
+        val db15 =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                15,
+                true,
+                AppDatabase.MIGRATION_14_15,
+            )
 
         // Verify data is unchanged by no-op migration
         db15.query("SELECT title FROM social_challenges WHERE createdBy = 'test-user'").use { cursor ->
@@ -443,53 +506,60 @@ class ComprehensiveMigrationTest {
     @Test
     fun migration_15_to_16_enhances_recipes_with_yazio_features() {
         val db15 = helper.createDatabase(TEST_DB, 15)
-        
+
         // Insert test recipe to verify data preservation
-        db15.execSQL("""
+        db15.execSQL(
+            """
             INSERT INTO recipes (id, title, markdown, calories, imageUrl, isFavorite, createdAt)
             VALUES ('yazio-test', 'YAZIO Test Recipe', '# Test', 300, NULL, 0, 1705315200)
-        """)
-        
-        db15.close()
-
-        val db16 = helper.runMigrationsAndValidate(
-            TEST_DB,
-            16,
-            true,
-            AppDatabase.MIGRATION_15_16
+        """,
         )
 
+        db15.close()
+
+        val db16 =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                16,
+                true,
+                AppDatabase.MIGRATION_15_16,
+            )
+
         // Verify YAZIO-style tables exist
-        val yazioTables = listOf("meals", "recipe_ingredients", "recipe_steps", 
-                                "grocery_lists", "grocery_items", "recipe_analytics",
-                                "recipe_ratings", "pro_features", "recipe_collections", 
-                                "recipe_collection_items")
+        val yazioTables =
+            listOf(
+                "meals", "recipe_ingredients", "recipe_steps",
+                "grocery_lists", "grocery_items", "recipe_analytics",
+                "recipe_ratings", "pro_features", "recipe_collections",
+                "recipe_collection_items",
+            )
         yazioTables.forEach { tableName ->
             validateTableExists(db16, tableName)
         }
 
         // Verify enhanced recipes table has new columns
-        val expectedRecipeColumns = mapOf(
-            "id" to "TEXT",
-            "title" to "TEXT",
-            "description" to "TEXT",
-            "markdown" to "TEXT",
-            "imageUrl" to "TEXT",
-            "prepTime" to "INTEGER",
-            "cookTime" to "INTEGER",
-            "servings" to "INTEGER",
-            "difficulty" to "TEXT",
-            "isPublic" to "INTEGER",
-            "isVerified" to "INTEGER",
-            "nutrition" to "TEXT",
-            "tags" to "TEXT",
-            "source" to "TEXT",
-            "authorId" to "TEXT",
-            "originalRecipeId" to "TEXT",
-            "version" to "INTEGER",
-            "createdAt" to "INTEGER",
-            "updatedAt" to "INTEGER"
-        )
+        val expectedRecipeColumns =
+            mapOf(
+                "id" to "TEXT",
+                "title" to "TEXT",
+                "description" to "TEXT",
+                "markdown" to "TEXT",
+                "imageUrl" to "TEXT",
+                "prepTime" to "INTEGER",
+                "cookTime" to "INTEGER",
+                "servings" to "INTEGER",
+                "difficulty" to "TEXT",
+                "isPublic" to "INTEGER",
+                "isVerified" to "INTEGER",
+                "nutrition" to "TEXT",
+                "tags" to "TEXT",
+                "source" to "TEXT",
+                "authorId" to "TEXT",
+                "originalRecipeId" to "TEXT",
+                "version" to "INTEGER",
+                "createdAt" to "INTEGER",
+                "updatedAt" to "INTEGER",
+            )
         validateTableSchema(db16, "recipes", expectedRecipeColumns)
 
         // Verify original data was preserved and converted
@@ -504,34 +574,38 @@ class ComprehensiveMigrationTest {
     @Test
     fun migration_16_to_17_adds_recipe_support_to_meal_entries() {
         val db16 = helper.createDatabase(TEST_DB, 16)
-        
+
         // Insert test meal entry to verify data preservation
-        db16.execSQL("""
+        db16.execSQL(
+            """
             INSERT INTO meal_entries (foodItemId, date, mealType, quantityGrams, recordedAt)
             VALUES ('test-food', '2024-01-15', 'lunch', 100.0, 1705315200)
-        """)
-        
+        """,
+        )
+
         db16.close()
 
-        val db17 = helper.runMigrationsAndValidate(
-            TEST_DB,
-            17,
-            true,
-            AppDatabase.MIGRATION_16_17
-        )
+        val db17 =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                17,
+                true,
+                AppDatabase.MIGRATION_16_17,
+            )
 
         // Verify meal_entries has new recipe support columns
-        val expectedMealColumns = mapOf(
-            "id" to "INTEGER",
-            "foodItemId" to "TEXT",
-            "recipeId" to "TEXT",
-            "date" to "TEXT",
-            "mealType" to "TEXT",
-            "quantityGrams" to "REAL",
-            "servings" to "REAL",
-            "recordedAt" to "INTEGER",
-            "notes" to "TEXT"
-        )
+        val expectedMealColumns =
+            mapOf(
+                "id" to "INTEGER",
+                "foodItemId" to "TEXT",
+                "recipeId" to "TEXT",
+                "date" to "TEXT",
+                "mealType" to "TEXT",
+                "quantityGrams" to "REAL",
+                "servings" to "REAL",
+                "recordedAt" to "INTEGER",
+                "notes" to "TEXT",
+            )
         validateTableSchema(db17, "meal_entries", expectedMealColumns)
 
         // Verify original data was preserved
@@ -548,38 +622,40 @@ class ComprehensiveMigrationTest {
     fun full_migration_path_from_earliest_to_latest() {
         // Test complete migration from version 5 to current version
         val db5 = helper.createDatabase(TEST_DB, 5)
-        
+
         // Insert comprehensive test data across all tables
         insertTestDataVersion5(db5)
-        
+
         db5.close()
 
         // Run all migrations in sequence
-        val dbLatest = helper.runMigrationsAndValidate(
-            TEST_DB,
-            17, // Current latest version
-            true,
-            AppDatabase.MIGRATION_5_6,
-            AppDatabase.MIGRATION_6_7,
-            AppDatabase.MIGRATION_7_8,
-            AppDatabase.MIGRATION_8_9,
-            AppDatabase.MIGRATION_9_10,
-            AppDatabase.MIGRATION_10_11,
-            AppDatabase.MIGRATION_11_12,
-            AppDatabase.MIGRATION_12_13,
-            AppDatabase.MIGRATION_13_14,
-            AppDatabase.MIGRATION_14_15,
-            AppDatabase.MIGRATION_15_16,
-            AppDatabase.MIGRATION_16_17
-        )
+        val dbLatest =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                17, // Current latest version
+                true,
+                AppDatabase.MIGRATION_5_6,
+                AppDatabase.MIGRATION_6_7,
+                AppDatabase.MIGRATION_7_8,
+                AppDatabase.MIGRATION_8_9,
+                AppDatabase.MIGRATION_9_10,
+                AppDatabase.MIGRATION_10_11,
+                AppDatabase.MIGRATION_11_12,
+                AppDatabase.MIGRATION_12_13,
+                AppDatabase.MIGRATION_13_14,
+                AppDatabase.MIGRATION_14_15,
+                AppDatabase.MIGRATION_15_16,
+                AppDatabase.MIGRATION_16_17,
+            )
 
         // Verify all critical tables exist in latest version
-        val criticalTables = listOf(
-            "recipes", "personal_achievements", "personal_streaks", "weight_entries",
-            "food_items", "meal_entries", "bmi_history", "workout_performance",
-            "cooking_sessions", "health_connect_steps", "cloud_sync_metadata",
-            "social_challenges", "recipe_collections"
-        )
+        val criticalTables =
+            listOf(
+                "recipes", "personal_achievements", "personal_streaks", "weight_entries",
+                "food_items", "meal_entries", "bmi_history", "workout_performance",
+                "cooking_sessions", "health_connect_steps", "cloud_sync_metadata",
+                "social_challenges", "recipe_collections",
+            )
 
         criticalTables.forEach { tableName ->
             dbLatest.query("SELECT name FROM sqlite_master WHERE type='table' AND name='$tableName'").use { cursor ->
@@ -598,24 +674,27 @@ class ComprehensiveMigrationTest {
         // Test that running migrations multiple times produces consistent results
         for (attempt in 1..3) {
             val testDbName = "${TEST_DB}_attempt_$attempt"
-            
+
             val db7 = helper.createDatabase(testDbName, 7)
-            
+
             // Insert identical test data
-            db7.execSQL("""
+            db7.execSQL(
+                """
                 INSERT INTO recipes (id, title, markdown, calories, imageUrl, isFavorite, createdAt)
                 VALUES ('deterministic-test', 'Deterministic Recipe', '# Test', 300, NULL, 0, 1705315200)
-            """)
-            
+            """,
+            )
+
             db7.close()
 
             // Run migration
-            val db8 = helper.runMigrationsAndValidate(
-                testDbName,
-                8,
-                true,
-                AppDatabase.MIGRATION_7_8
-            )
+            val db8 =
+                helper.runMigrationsAndValidate(
+                    testDbName,
+                    8,
+                    true,
+                    AppDatabase.MIGRATION_7_8,
+                )
 
             // Verify consistent results
             db8.query("SELECT title, calories FROM recipes WHERE id = 'deterministic-test'").use { cursor ->
@@ -626,7 +705,7 @@ class ComprehensiveMigrationTest {
 
             // Verify weight_entries table was created consistently
             validateTableExists(db8, "weight_entries")
-            
+
             db8.close()
         }
     }
@@ -634,22 +713,25 @@ class ComprehensiveMigrationTest {
     @Test
     fun migration_handles_edge_cases_gracefully() {
         val db7 = helper.createDatabase(TEST_DB, 7)
-        
+
         // Insert edge case data
-        db7.execSQL("""
+        db7.execSQL(
+            """
             INSERT INTO recipes (id, title, markdown, calories, imageUrl, isFavorite, createdAt)
             VALUES ('edge-case', '', '', -1, '', 0, 0)
-        """)
-        
+        """,
+        )
+
         db7.close()
 
         // Migration should complete without errors
-        val db8 = helper.runMigrationsAndValidate(
-            TEST_DB,
-            8,
-            true,
-            AppDatabase.MIGRATION_7_8
-        )
+        val db8 =
+            helper.runMigrationsAndValidate(
+                TEST_DB,
+                8,
+                true,
+                AppDatabase.MIGRATION_7_8,
+            )
 
         // Edge case data should be preserved
         db8.query("SELECT COUNT(*) FROM recipes WHERE id = 'edge-case'").use { cursor ->
@@ -662,31 +744,45 @@ class ComprehensiveMigrationTest {
 
     // Helper functions for validation
 
-    private fun validateTableSchema(db: SupportSQLiteDatabase, tableName: String, expectedColumns: Map<String, String>) {
+    private fun validateTableSchema(
+        db: SupportSQLiteDatabase,
+        tableName: String,
+        expectedColumns: Map<String, String>,
+    ) {
         MigrationTestUtils.validateTableSchema(db, tableName, expectedColumns)
     }
 
-    private fun validateIndexExists(db: SupportSQLiteDatabase, indexName: String) {
+    private fun validateIndexExists(
+        db: SupportSQLiteDatabase,
+        indexName: String,
+    ) {
         MigrationTestUtils.validateIndexExists(db, indexName)
     }
 
-    private fun validateTableExists(db: SupportSQLiteDatabase, tableName: String) {
+    private fun validateTableExists(
+        db: SupportSQLiteDatabase,
+        tableName: String,
+    ) {
         MigrationTestUtils.validateTableExists(db, tableName)
     }
 
     private fun insertTestDataVersion5(db: SupportSQLiteDatabase) {
         // Insert base recipe data that should survive all migrations
-        db.execSQL("""
+        db.execSQL(
+            """
             INSERT INTO recipes (id, title, markdown, calories, imageUrl, isFavorite, createdAt)
             VALUES ('migration-test-recipe', 'Migration Test Recipe', '# Test Recipe\nThis survives migrations', 
                     250, NULL, 0, 1705315200)
-        """)
-        
+        """,
+        )
+
         // Insert intake entry
-        db.execSQL("""
+        db.execSQL(
+            """
             INSERT INTO intake_entries (timestamp, label, kcal, source, referenceId)
             VALUES (1705315200, 'Test Meal', 300, 'manual', 'migration-test-recipe')
-        """)
+        """,
+        )
     }
 
     private fun verifyTestDataIntegrity(db: SupportSQLiteDatabase) {
@@ -696,7 +792,7 @@ class ComprehensiveMigrationTest {
             assertEquals("Migration Test Recipe", cursor.getString(0))
             assertEquals(250, cursor.getInt(1))
         }
-        
+
         // Verify intake entry survived
         db.query("SELECT label, kcal FROM intake_entries WHERE referenceId = 'migration-test-recipe'").use { cursor ->
             assertTrue(cursor.moveToFirst(), "Migration test intake entry should survive")

@@ -10,13 +10,13 @@ interface HealthCheckable {
      * Provider name for identification
      */
     val providerName: String
-    
+
     /**
      * Perform a health check
      * @return HealthStatus with the result
      */
     suspend fun checkHealth(): HealthStatus
-    
+
     /**
      * Continuous health monitoring as a Flow
      * @return Flow of HealthStatus updates

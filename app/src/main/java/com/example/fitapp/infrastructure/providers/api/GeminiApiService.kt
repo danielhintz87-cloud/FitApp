@@ -11,10 +11,9 @@ import retrofit2.http.Url
  * Retrofit service interface for Gemini AI API
  */
 interface GeminiApiService {
-    
     @POST
     suspend fun generateContent(
         @Url url: String,
-        @Body body: RequestBody
+        @Body body: RequestBody,
     ): Response<ResponseBody>
 }

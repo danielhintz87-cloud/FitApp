@@ -13,7 +13,7 @@ fun EnhancedAnalyticsScreenPreview() {
     FitAppTheme {
         EnhancedAnalyticsScreen(
             contentPadding = PaddingValues(0.dp),
-            navController = null
+            navController = null,
         )
     }
 }
@@ -24,7 +24,7 @@ fun EnhancedAnalyticsScreenCompactPreview() {
     FitAppTheme {
         EnhancedAnalyticsScreen(
             contentPadding = PaddingValues(16.dp),
-            navController = null
+            navController = null,
         )
     }
 }

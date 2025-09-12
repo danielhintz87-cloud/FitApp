@@ -19,7 +19,7 @@ data class WearWorkoutState(
     val elapsedTime: Long = 0L,
     val heartRate: Int = 0,
     val caloriesBurned: Int = 0,
-    val workoutId: String = ""
+    val workoutId: String = "",
 )
 
 @Serializable
@@ -29,7 +29,7 @@ data class WearProgressData(
     val currentStreak: Int = 0,
     val personalRecords: List<WearPersonalRecord> = emptyList(),
     val lastWorkoutDate: String = "",
-    val weeklyCaloriesBurned: Int = 0
+    val weeklyCaloriesBurned: Int = 0,
 )
 
 @Serializable
@@ -37,7 +37,7 @@ data class WearPersonalRecord(
     val exerciseName: String,
     val value: Float,
     val unit: String,
-    val achievedDate: String
+    val achievedDate: String,
 )
 
 @Serializable
@@ -47,7 +47,7 @@ data class WearNotification(
     val message: String,
     val type: WearNotificationType,
     val timestamp: Long,
-    val actionRequired: Boolean = false
+    val actionRequired: Boolean = false,
 )
 
 @Serializable
@@ -57,7 +57,7 @@ enum class WearNotificationType {
     STREAK_MILESTONE,
     REST_TIMER_COMPLETE,
     HYDRATION_REMINDER,
-    MOTIVATIONAL_MESSAGE
+    MOTIVATIONAL_MESSAGE,
 }
 
 @Serializable
@@ -67,7 +67,7 @@ data class WearWorkoutAction(
     val exerciseId: String = "",
     val setIndex: Int = -1,
     val reps: Int = 0,
-    val weight: Float = 0f
+    val weight: Float = 0f,
 )
 
 @Serializable
@@ -79,7 +79,7 @@ enum class WearActionType {
     COMPLETE_SET,
     SKIP_REST,
     UPDATE_HEART_RATE,
-    SYNC_REQUEST
+    SYNC_REQUEST,
 }
 
 // Data paths for Wearable Data Layer API

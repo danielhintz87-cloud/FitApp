@@ -18,19 +18,16 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class DataStoreModule {
-
     @Binds
     @Singleton
-    abstract fun bindUserPreferencesDataStore(
-        impl: UserPreferencesDataStoreImpl
-    ): UserPreferencesDataStore
+    abstract fun bindUserPreferencesDataStore(impl: UserPreferencesDataStoreImpl): UserPreferencesDataStore
 
     companion object {
         @Provides
         @Singleton
         @JvmStatic
         fun provideUserPreferencesRepository(
-            @ApplicationContext context: Context
+            @ApplicationContext context: Context,
         ): UserPreferencesRepository = UserPreferencesRepository(context)
     }
 }

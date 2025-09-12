@@ -7,5 +7,5 @@ data class UserStats(
     val todayCalories: Int = 0,
     val calorieGoal: Int = 0,
     val hasCompletedWorkoutToday: Boolean = false,
-    val hasLoggedNutritionToday: Boolean = false
+    val hasLoggedNutritionToday: Boolean = false,
 )

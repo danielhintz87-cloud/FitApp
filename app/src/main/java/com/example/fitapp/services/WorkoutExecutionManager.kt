@@ -1,13 +1,11 @@
 package com.example.fitapp.services
 
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import com.example.fitapp.data.db.*
 import com.example.fitapp.ui.screens.ExerciseStep
 import com.example.fitapp.util.StructuredLogger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.withContext
 import java.util.UUID
 import kotlin.math.max
 import kotlin.math.min
@@ -18,7 +16,7 @@ import kotlin.math.min
  */
 class WorkoutExecutionManager(
     private val database: AppDatabase,
-    private val smartRestTimer: SmartRestTimer
+    private val smartRestTimer: SmartRestTimer,
 ) {
     companion object {
         private const val TAG = "WorkoutExecutionManager"
@@ -45,7 +43,7 @@ class WorkoutExecutionManager(
     private var lastSetEndTime: Long? = null
     private var pauseStartTime: Long? = null
     private var totalPauseTime: Long = 0L
-    
+
     // Performance tracking
     private val exerciseTimings = mutableMapOf<String, MutableList<Long>>()
     private val restTimings = mutableMapOf<String, MutableList<Long>>()
@@ -59,7 +57,7 @@ class WorkoutExecutionManager(
         val videoReference: String? = null,
         val formTips: List<String> = emptyList(),
         val progressionHint: String? = null,
-        val autoWeightSuggestion: Float? = null
+        val autoWeightSuggestion: Float? = null,
     )
 
     data class WorkoutSet(
@@ -71,7 +69,7 @@ class WorkoutExecutionManager(
         val rpe: Int? = null, // Rate of Perceived Exertion 1-10
         val restTime: Int? = null,
         val isCompleted: Boolean = false,
-        val formQuality: Float? = null // 0.0-1.0 from sensor analysis
+        val formQuality: Float? = null, // 0.0-1.0 from sensor analysis
     )
 
     data class WorkoutExecutionFlow(
@@ -83,7 +81,7 @@ class WorkoutExecutionManager(
         val completedExercises: Set<Int> = emptySet(),
         val workoutSteps: List<WorkoutStep> = emptyList(),
         val totalVolume: Float = 0f,
-        val personalRecords: Int = 0
+        val personalRecords: Int = 0,
     )
 
     data class WorkoutSummary(
@@ -94,7 +92,7 @@ class WorkoutExecutionManager(
         val personalRecords: Int,
         val averageRPE: Float,
         val caloriesBurned: Int,
-        val sessionRating: Int? = null
+        val sessionRating: Int? = null,
     )
 
     /**
@@ -102,48 +100,51 @@ class WorkoutExecutionManager(
      */
     suspend fun startWorkoutFlow(
         planId: Long,
-        exercises: List<ExerciseStep>
+        exercises: List<ExerciseStep>,
     ): WorkoutExecutionFlow {
         val sessionId = UUID.randomUUID().toString()
         val startTime = System.currentTimeMillis() / 1000
-        
+
         // Initialize timing
         workoutStartTime = System.currentTimeMillis()
         currentExerciseStartTime = workoutStartTime
-        
+
         // Create workout session in database
-        val session = WorkoutSessionEntity(
-            id = sessionId,
-            planId = planId,
-            userId = getCurrentUserId(),
-            startTime = startTime
-        )
-        
+        val session =
+            WorkoutSessionEntity(
+                id = sessionId,
+                planId = planId,
+                userId = getCurrentUserId(),
+                startTime = startTime,
+            )
+
         database.workoutSessionDao().insert(session)
-        
+
         // Initialize workout steps with suggestions
-        val workoutSteps = exercises.mapIndexed { index, exercise ->
-            createWorkoutStep(exercise, index, sessionId)
-        }
-        
-        val flow = WorkoutExecutionFlow(
-            sessionId = sessionId,
-            planId = planId,
-            exercises = exercises,
-            workoutSteps = workoutSteps,
-            startTime = startTime
-        )
-        
+        val workoutSteps =
+            exercises.mapIndexed { index, exercise ->
+                createWorkoutStep(exercise, index, sessionId)
+            }
+
+        val flow =
+            WorkoutExecutionFlow(
+                sessionId = sessionId,
+                planId = planId,
+                exercises = exercises,
+                workoutSteps = workoutSteps,
+                startTime = startTime,
+            )
+
         _workoutFlow.value = flow
         _isInWorkout.value = true
         _currentStep.value = workoutSteps.firstOrNull()
-        
+
         StructuredLogger.info(
             StructuredLogger.LogCategory.USER_ACTION,
             TAG,
-            "Started workout flow for plan $planId with ${exercises.size} exercises"
+            "Started workout flow for plan $planId with ${exercises.size} exercises",
         )
-        
+
         return flow
     }
 
@@ -153,44 +154,51 @@ class WorkoutExecutionManager(
     suspend fun navigateToNextStep(): WorkoutStep? {
         val currentFlow = _workoutFlow.value ?: return null
         val currentStepValue = _currentStep.value ?: return null
-        
+
         // Check if current set is completed, if not complete current set
-        val currentStep = currentStepValue.copy(
-            sets = currentStepValue.sets.mapIndexed { index, set ->
-                if (index == currentStepValue.currentSet && !set.isCompleted) {
-                    set.copy(isCompleted = true)
-                } else set
-            }
-        )
-        
+        val currentStep =
+            currentStepValue.copy(
+                sets =
+                    currentStepValue.sets.mapIndexed { index, set ->
+                        if (index == currentStepValue.currentSet && !set.isCompleted) {
+                            set.copy(isCompleted = true)
+                        } else {
+                            set
+                        }
+                    },
+            )
+
         // Move to next set or next exercise
-        val nextStep = if (currentStep.currentSet < currentStep.sets.size - 1) {
-            // Next set in same exercise
-            currentStep.copy(currentSet = currentStep.currentSet + 1)
-        } else {
-            // Next exercise
-            val nextExerciseIndex = currentFlow.currentExerciseIndex + 1
-            if (nextExerciseIndex < currentFlow.exercises.size) {
-                val nextExercise = currentFlow.exercises[nextExerciseIndex]
-                withContext(Dispatchers.IO) {
-                    createWorkoutStep(nextExercise, nextExerciseIndex, currentFlow.sessionId)
-                }
+        val nextStep =
+            if (currentStep.currentSet < currentStep.sets.size - 1) {
+                // Next set in same exercise
+                currentStep.copy(currentSet = currentStep.currentSet + 1)
             } else {
-                null // Workout completed
+                // Next exercise
+                val nextExerciseIndex = currentFlow.currentExerciseIndex + 1
+                if (nextExerciseIndex < currentFlow.exercises.size) {
+                    val nextExercise = currentFlow.exercises[nextExerciseIndex]
+                    withContext(Dispatchers.IO) {
+                        createWorkoutStep(nextExercise, nextExerciseIndex, currentFlow.sessionId)
+                    }
+                } else {
+                    null // Workout completed
+                }
             }
-        }
-        
+
         if (nextStep != null) {
             _currentStep.value = nextStep
-            _workoutFlow.value = currentFlow.copy(
-                currentExerciseIndex = if (nextStep.exercise != currentStep.exercise) {
-                    currentFlow.currentExerciseIndex + 1
-                } else {
-                    currentFlow.currentExerciseIndex
-                }
-            )
+            _workoutFlow.value =
+                currentFlow.copy(
+                    currentExerciseIndex =
+                        if (nextStep.exercise != currentStep.exercise) {
+                            currentFlow.currentExerciseIndex + 1
+                        } else {
+                            currentFlow.currentExerciseIndex
+                        },
+                )
         }
-        
+
         return nextStep
     }
 
@@ -199,28 +207,28 @@ class WorkoutExecutionManager(
      */
     fun startSet() {
         currentSetStartTime = System.currentTimeMillis()
-        
+
         val currentStepValue = _currentStep.value ?: return
         val exerciseName = currentStepValue.exercise.name
-        
+
         StructuredLogger.info(
             StructuredLogger.LogCategory.USER_ACTION,
             TAG,
-            "Started set for exercise: $exerciseName"
+            "Started set for exercise: $exerciseName",
         )
     }
-    
+
     /**
      * Start rest period - record rest timing
      */
     fun startRest(durationSeconds: Int) {
         restStartTime = System.currentTimeMillis()
         _restTimeRemaining.value = durationSeconds.toLong()
-        
+
         // Start countdown timer
         // TODO: Implement proper countdown timer with coroutines
     }
-    
+
     /**
      * Get actual rest time in seconds
      */
@@ -229,7 +237,7 @@ class WorkoutExecutionManager(
         val lastSetEnd = lastSetEndTime ?: return 0L
         return (System.currentTimeMillis() / 1000) - lastSetEnd
     }
-    
+
     /**
      * Calculate total exercise time including all sets and rest
      */
@@ -237,7 +245,7 @@ class WorkoutExecutionManager(
         val timings = exerciseTimings[exerciseName] ?: return 0L
         return timings.sum()
     }
-    
+
     /**
      * Calculate average rest time for an exercise
      */
@@ -245,27 +253,27 @@ class WorkoutExecutionManager(
         val timings = restTimings[exerciseName]
         return if (timings.isNullOrEmpty()) 0L else timings.average().toLong()
     }
-    
+
     /**
      * Pause the workout - track pause time
      */
     suspend fun pauseWorkout() {
         pauseStartTime = System.currentTimeMillis()
-        
+
         // Save pause state to database
         val currentFlow = _workoutFlow.value ?: return
         database.workoutSessionDao().updatePauseTime(
             currentFlow.sessionId,
-            System.currentTimeMillis() / 1000
+            System.currentTimeMillis() / 1000,
         )
-        
+
         StructuredLogger.info(
             StructuredLogger.LogCategory.USER_ACTION,
             TAG,
-            "Workout paused"
+            "Workout paused",
         )
     }
-    
+
     /**
      * Resume the workout - calculate total pause time
      */
@@ -274,21 +282,23 @@ class WorkoutExecutionManager(
         val pauseDuration = System.currentTimeMillis() - pauseStart
         totalPauseTime += pauseDuration
         pauseStartTime = null
-        
+
         StructuredLogger.info(
             StructuredLogger.LogCategory.USER_ACTION,
             TAG,
-            "Workout resumed after ${pauseDuration / 1000}s pause"
+            "Workout resumed after ${pauseDuration / 1000}s pause",
         )
     }
-    
+
     /**
      * Get actual workout duration (excluding pause time)
      */
     fun getActualWorkoutDuration(): Long {
         return if (workoutStartTime > 0) {
             (System.currentTimeMillis() - workoutStartTime - totalPauseTime) / 1000
-        } else 0L
+        } else {
+            0L
+        }
     }
 
     /**
@@ -299,68 +309,72 @@ class WorkoutExecutionManager(
         reps: Int,
         rpe: Int,
         formQuality: Float? = null,
-        notes: String? = null
+        notes: String? = null,
     ) {
         val currentFlow = _workoutFlow.value ?: return
         val currentStepValue = _currentStep.value ?: return
-        
+
         // Update current set
-        val updatedSets = currentStepValue.sets.mapIndexed { index, set ->
-            if (index == currentStepValue.currentSet) {
-                set.copy(
-                    actualWeight = weight.toFloat(),
-                    actualReps = reps,
-                    rpe = rpe,
-                    formQuality = formQuality,
-                    isCompleted = true
-                )
-            } else set
-        }
-        
+        val updatedSets =
+            currentStepValue.sets.mapIndexed { index, set ->
+                if (index == currentStepValue.currentSet) {
+                    set.copy(
+                        actualWeight = weight.toFloat(),
+                        actualReps = reps,
+                        rpe = rpe,
+                        formQuality = formQuality,
+                        isCompleted = true,
+                    )
+                } else {
+                    set
+                }
+            }
+
         val updatedStep = currentStepValue.copy(sets = updatedSets)
         _currentStep.value = updatedStep
-        
+
         val now = System.currentTimeMillis()
         val nowSeconds = now / 1000
         val actualSetDuration = currentSetStartTime?.let { (now - it) / 1000 } ?: 60L
         lastSetEndTime = nowSeconds
-        
+
         // Track exercise timing
         val exerciseName = currentStepValue.exercise.name
         exerciseTimings.getOrPut(exerciseName) { mutableListOf() }.add(actualSetDuration)
-        
+
         // Track rest timing if this isn't the first set
         if (restStartTime != null) {
             val actualRestTime = calculateActualRest()
             restTimings.getOrPut(exerciseName) { mutableListOf() }.add(actualRestTime)
         }
-        
+
         // Save performance to database with actual timings
-        val performance = WorkoutPerformanceEntity(
-            exerciseId = currentStepValue.exercise.name,
-            sessionId = currentFlow.sessionId,
-            planId = currentFlow.planId,
-            exerciseIndex = currentFlow.currentExerciseIndex,
-            reps = reps,
-            weight = weight.toFloat(),
-            volume = weight.toFloat() * reps,
-            restTime = currentStepValue.restTime.toLong(),
-            actualRestTime = calculateActualRest(),
-            formQuality = formQuality ?: 1.0f,
-            perceivedExertion = rpe,
-            duration = actualSetDuration,
-            notes = notes
-        )
-        
+        val performance =
+            WorkoutPerformanceEntity(
+                exerciseId = currentStepValue.exercise.name,
+                sessionId = currentFlow.sessionId,
+                planId = currentFlow.planId,
+                exerciseIndex = currentFlow.currentExerciseIndex,
+                reps = reps,
+                weight = weight.toFloat(),
+                volume = weight.toFloat() * reps,
+                restTime = currentStepValue.restTime.toLong(),
+                actualRestTime = calculateActualRest(),
+                formQuality = formQuality ?: 1.0f,
+                perceivedExertion = rpe,
+                duration = actualSetDuration,
+                notes = notes,
+            )
+
         database.workoutPerformanceDao().insert(performance)
-        
+
         // Check for personal records
         checkPersonalRecord(currentStepValue.exercise.name, weight.toFloat(), reps)
-        
+
         StructuredLogger.info(
             StructuredLogger.LogCategory.USER_ACTION,
             TAG,
-            "Logged set: ${currentStepValue.exercise.name} - ${weight}kg x $reps reps, RPE: $rpe"
+            "Logged set: ${currentStepValue.exercise.name} - ${weight}kg x $reps reps, RPE: $rpe",
         )
     }
 
@@ -371,20 +385,21 @@ class WorkoutExecutionManager(
         val currentStepValue = _currentStep.value ?: return
         val currentSet = currentStepValue.sets.getOrNull(currentStepValue.currentSet)
 
-    // Mark set end and compute rest start
-    lastSetEndTime = System.currentTimeMillis() / 1000
-        
+        // Mark set end and compute rest start
+        lastSetEndTime = System.currentTimeMillis() / 1000
+
         // Calculate adaptive rest based on performance
-        val adaptiveRest = calculateAdaptiveRest(
-            baseRest = duration,
-            rpe = currentSet?.rpe,
-            formQuality = currentSet?.formQuality
-        )
-        
+        val adaptiveRest =
+            calculateAdaptiveRest(
+                baseRest = duration,
+                rpe = currentSet?.rpe,
+                formQuality = currentSet?.formQuality,
+            )
+
         smartRestTimer.startAdaptiveRest(
             exerciseId = currentStepValue.exercise.name,
             intensity = (currentSet?.rpe ?: 5) / 10f,
-            perceivedExertion = currentSet?.rpe
+            perceivedExertion = currentSet?.rpe,
         )
     }
 
@@ -404,82 +419,86 @@ class WorkoutExecutionManager(
         val currentFlow = _workoutFlow.value ?: throw IllegalStateException("No active workout")
         val endTime = System.currentTimeMillis() / 1000
         val actualDuration = getActualWorkoutDuration()
-        
+
         // Update session in database with accurate timing
         val session = database.workoutSessionDao().getById(currentFlow.sessionId)
         session?.let { s ->
-            val updatedSession = s.copy(
-                endTime = endTime,
-                completionPercentage = 100f,
-                totalVolume = calculateTotalVolume(currentFlow),
-                personalRecordsAchieved = currentFlow.personalRecords,
-                actualDuration = actualDuration,
-                totalPauseTime = totalPauseTime / 1000 // Convert to seconds
-            )
+            val updatedSession =
+                s.copy(
+                    endTime = endTime,
+                    completionPercentage = 100f,
+                    totalVolume = calculateTotalVolume(currentFlow),
+                    personalRecordsAchieved = currentFlow.personalRecords,
+                    actualDuration = actualDuration,
+                    totalPauseTime = totalPauseTime / 1000, // Convert to seconds
+                )
             database.workoutSessionDao().update(updatedSession)
         }
-        
+
         // Calculate summary with real timing data
-        val summary = WorkoutSummary(
-            sessionId = currentFlow.sessionId,
-            duration = actualDuration, // Use actual duration without pause time
-            totalVolume = calculateTotalVolume(currentFlow),
-            exercisesCompleted = currentFlow.completedExercises.size,
-            personalRecords = currentFlow.personalRecords,
-            averageRPE = calculateAverageRPE(currentFlow),
-            caloriesBurned = estimateCaloriesBurned(currentFlow)
-        )
-        
+        val summary =
+            WorkoutSummary(
+                sessionId = currentFlow.sessionId,
+                duration = actualDuration, // Use actual duration without pause time
+                totalVolume = calculateTotalVolume(currentFlow),
+                exercisesCompleted = currentFlow.completedExercises.size,
+                personalRecords = currentFlow.personalRecords,
+                averageRPE = calculateAverageRPE(currentFlow),
+                caloriesBurned = estimateCaloriesBurned(currentFlow),
+            )
+
         // Reset state
         _workoutFlow.value = null
         _currentStep.value = null
         _isInWorkout.value = false
-        
+
         StructuredLogger.info(
             StructuredLogger.LogCategory.USER_ACTION,
             TAG,
-            "Finished workout ${currentFlow.sessionId}: ${summary.exercisesCompleted} exercises, ${summary.totalVolume}kg volume"
+            "Finished workout ${currentFlow.sessionId}: ${summary.exercisesCompleted} exercises, ${summary.totalVolume}kg volume",
         )
-        
+
         return summary
     }
 
     // Private helper methods
-    
+
     private suspend fun createWorkoutStep(
         exercise: ExerciseStep,
         exerciseIndex: Int,
-        sessionId: String
+        sessionId: String,
     ): WorkoutStep {
         // Get previous performance for suggestions
-        val previousPerformances = database.workoutPerformanceDao()
-            .getRecentByExerciseId(exercise.name, 5)
-        
+        val previousPerformances =
+            database.workoutPerformanceDao()
+                .getRecentByExerciseId(exercise.name, 5)
+
         // Create sets based on exercise type
-        val sets = when (exercise.type) {
-            "reps" -> {
-                val targetReps = exercise.value.split(" ").firstOrNull()?.toIntOrNull() ?: 10
-                val suggestedWeight = suggestWeight(previousPerformances)
-                List(3) { setIndex ->
-                    WorkoutSet(
-                        setNumber = setIndex + 1,
-                        targetReps = targetReps,
-                        targetWeight = suggestedWeight
-                    )
+        val sets =
+            when (exercise.type) {
+                "reps" -> {
+                    val targetReps = exercise.value.split(" ").firstOrNull()?.toIntOrNull() ?: 10
+                    val suggestedWeight = suggestWeight(previousPerformances)
+                    List(3) { setIndex ->
+                        WorkoutSet(
+                            setNumber = setIndex + 1,
+                            targetReps = targetReps,
+                            targetWeight = suggestedWeight,
+                        )
+                    }
+                }
+                "time" -> {
+                    List(1) { setIndex ->
+                        WorkoutSet(setNumber = setIndex + 1)
+                    }
+                }
+                else -> {
+                    List(3) { setIndex ->
+                        WorkoutSet(setNumber = setIndex + 1)
+                    }
                 }
             }
-            "time" -> {
-                List(1) { setIndex ->
-                    WorkoutSet(setNumber = setIndex + 1)
-                }
-            }
-            else -> {
-                List(3) { setIndex ->
-                    WorkoutSet(setNumber = setIndex + 1)
-                }
-            }
-        }
-        
+
         return WorkoutStep(
             exercise = exercise,
             sets = sets,
@@ -488,17 +507,17 @@ class WorkoutExecutionManager(
             instructions = exercise.description,
             formTips = getFormTips(exercise.name),
             progressionHint = generateProgressionHint(previousPerformances),
-            autoWeightSuggestion = suggestWeight(previousPerformances)
+            autoWeightSuggestion = suggestWeight(previousPerformances),
         )
     }
 
     private fun calculateAdaptiveRest(
         baseRest: Int,
         rpe: Int?,
-        formQuality: Float?
+        formQuality: Float?,
     ): Int {
         var adaptedRest = baseRest
-        
+
         // Increase rest if RPE is high
         rpe?.let { rpeValue ->
             when {
@@ -507,41 +526,44 @@ class WorkoutExecutionManager(
                 rpeValue <= 3 -> adaptedRest = (adaptedRest * 0.8).toInt()
             }
         }
-        
+
         // Increase rest if form quality is poor
         formQuality?.let { quality ->
             if (quality < 0.7f) {
                 adaptedRest = (adaptedRest * 1.3).toInt()
             }
         }
-        
+
         return max(30, min(300, adaptedRest)) // Clamp between 30s and 5min
     }
 
     private suspend fun checkPersonalRecord(
         exerciseName: String,
         weight: Float,
-        reps: Int
+        reps: Int,
     ) {
         val volume = weight * reps
-        val currentRecord = database.personalRecordDao()
-            .getRecord(exerciseName, "volume")
-        
+        val currentRecord =
+            database.personalRecordDao()
+                .getRecord(exerciseName, "volume")
+
         if (currentRecord == null || volume > currentRecord.value) {
-            val record = PersonalRecordEntity(
-                exerciseName = exerciseName,
-                recordType = "volume",
-                value = volume.toDouble(),
-                unit = "kg",
-                previousRecord = currentRecord?.value
-            )
+            val record =
+                PersonalRecordEntity(
+                    exerciseName = exerciseName,
+                    recordType = "volume",
+                    value = volume.toDouble(),
+                    unit = "kg",
+                    previousRecord = currentRecord?.value,
+                )
             database.personalRecordDao().insert(record)
-            
+
             // Update workout flow with PR
             _workoutFlow.value?.let { flow ->
-                _workoutFlow.value = flow.copy(
-                    personalRecords = flow.personalRecords + 1
-                )
+                _workoutFlow.value =
+                    flow.copy(
+                        personalRecords = flow.personalRecords + 1,
+                    )
             }
         }
     }
@@ -555,12 +577,15 @@ class WorkoutExecutionManager(
     }
 
     private fun calculateAverageRPE(flow: WorkoutExecutionFlow): Float {
-        val allRPEs = flow.workoutSteps.flatMap { step ->
-            step.sets.mapNotNull { it.rpe }
-        }
+        val allRPEs =
+            flow.workoutSteps.flatMap { step ->
+                step.sets.mapNotNull { it.rpe }
+            }
         return if (allRPEs.isNotEmpty()) {
             allRPEs.average().toFloat()
-        } else 0f
+        } else {
+            0f
+        }
     }
 
     private fun estimateCaloriesBurned(flow: WorkoutExecutionFlow): Int {
@@ -572,10 +597,10 @@ class WorkoutExecutionManager(
 
     private fun suggestWeight(performances: List<WorkoutPerformanceEntity>): Float? {
         if (performances.isEmpty()) return null
-        
+
         val lastPerformance = performances.first()
         val avgWeight = performances.take(3).map { it.weight }.average().toFloat()
-        
+
         // Suggest slight increase if recent performance was good
         return if (lastPerformance.perceivedExertion != null && lastPerformance.perceivedExertion!! <= 7) {
             avgWeight * 1.025f // 2.5% increase
@@ -586,10 +611,10 @@ class WorkoutExecutionManager(
 
     private fun generateProgressionHint(performances: List<WorkoutPerformanceEntity>): String? {
         if (performances.isEmpty()) return null
-        
+
         val lastPerformance = performances.first()
         return when {
-            lastPerformance.reps > (lastPerformance.weight * 0.8).toInt() -> 
+            lastPerformance.reps > (lastPerformance.weight * 0.8).toInt() ->
                 "Letztes Mal: ${lastPerformance.reps} Reps - versuch ${lastPerformance.reps + 1}!"
             lastPerformance.perceivedExertion != null && lastPerformance.perceivedExertion!! <= 6 ->
                 "Form war gut! Zeit für mehr Gewicht?"
@@ -600,21 +625,24 @@ class WorkoutExecutionManager(
     private fun getFormTips(exerciseName: String): List<String> {
         // Basic form tips - could be expanded with AI-generated tips
         return when (exerciseName.lowercase()) {
-            "push-ups", "pushups" -> listOf(
-                "Körper in gerader Linie halten",
-                "Langsam und kontrolliert bewegen",
-                "Volle Bewegungsamplitude nutzen"
-            )
-            "squats", "kniebeugen" -> listOf(
-                "Knie nicht über Zehenspitzen",
-                "Gewicht auf den Fersen",
-                "Aufrechte Körperhaltung"
-            )
-            else -> listOf(
-                "Kontrollierte Bewegung",
-                "Volle Bewegungsamplitude",
-                "Gleichmäßige Atmung"
-            )
+            "push-ups", "pushups" ->
+                listOf(
+                    "Körper in gerader Linie halten",
+                    "Langsam und kontrolliert bewegen",
+                    "Volle Bewegungsamplitude nutzen",
+                )
+            "squats", "kniebeugen" ->
+                listOf(
+                    "Knie nicht über Zehenspitzen",
+                    "Gewicht auf den Fersen",
+                    "Aufrechte Körperhaltung",
+                )
+            else ->
+                listOf(
+                    "Kontrollierte Bewegung",
+                    "Volle Bewegungsamplitude",
+                    "Gleichmäßige Atmung",
+                )
         }
     }
 }

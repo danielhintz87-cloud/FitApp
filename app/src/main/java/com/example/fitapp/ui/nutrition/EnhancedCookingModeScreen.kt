@@ -4,7 +4,6 @@ import android.app.Activity
 import android.view.WindowManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -36,22 +35,22 @@ import kotlinx.coroutines.launch
 fun EnhancedCookingModeScreen(
     recipe: SavedRecipeEntity,
     onBackPressed: () -> Unit,
-    onFinishCooking: () -> Unit
+    onFinishCooking: () -> Unit,
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.get(context) }
     val preferencesRepository = remember { UserPreferencesRepository(context) }
     val scope = rememberCoroutineScope()
-    
+
     // Cooking mode state
     val cookingManager = remember { CookingModeManager(db) }
     val shoppingManager = remember { ShoppingListManager(db, preferencesRepository) }
-    
+
     val cookingFlow by cookingManager.cookingFlow.collectAsState()
     val currentStep by cookingManager.currentStep.collectAsState()
     val isInCookingMode by cookingManager.isInCookingMode.collectAsState()
     val stepTimers by cookingManager.stepTimers.collectAsState()
-    
+
     // UI state
     var showOverview by remember { mutableStateOf(true) }
     var showPauseDialog by remember { mutableStateOf(false) }
@@ -59,7 +58,7 @@ fun EnhancedCookingModeScreen(
     var showImageDialog by remember { mutableStateOf(false) }
     var servings by remember { mutableIntStateOf(recipe.servings ?: 1) }
     var keepScreenOn by remember { mutableStateOf(true) }
-    
+
     // Keep screen on during cooking
     DisposableEffect(isInCookingMode && keepScreenOn) {
         val activity = context as? Activity
@@ -77,10 +76,10 @@ fun EnhancedCookingModeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         if (isInCookingMode) "Kochmodus" else recipe.title,
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge,
                     )
                 },
                 navigationIcon = {
@@ -93,21 +92,22 @@ fun EnhancedCookingModeScreen(
                         IconButton(onClick = { keepScreenOn = !keepScreenOn }) {
                             Icon(
                                 if (keepScreenOn) Icons.Filled.ScreenLockPortrait else Icons.Filled.ScreenLockRotation,
-                                contentDescription = "Display an/aus"
+                                contentDescription = "Display an/aus",
                             )
                         }
                         IconButton(onClick = { showPauseDialog = true }) {
                             Icon(Icons.Filled.Pause, contentDescription = "Pausieren")
                         }
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding),
         ) {
             when {
                 // Show recipe overview before starting cooking mode
@@ -127,13 +127,13 @@ fun EnhancedCookingModeScreen(
                                 shoppingManager.addAllRecipeIngredients(
                                     recipeTitle = recipe.title ?: "Kochmodus",
                                     ingredients = ingredients,
-                                    servings = servings
+                                    servings = servings,
                                 )
                             }
-                        }
+                        },
                     )
                 }
-                
+
                 // Show cooking mode execution
                 isInCookingMode && currentStep != null && cookingFlow != null -> {
                     CookingExecutionScreen(
@@ -167,7 +167,7 @@ fun EnhancedCookingModeScreen(
                                 cookingManager.startStepTimer(
                                     stepIndex = cookingFlow!!.currentStepIndex,
                                     duration = duration,
-                                    name = "Schritt ${currentStep!!.stepNumber}"
+                                    name = "Schritt ${currentStep!!.stepNumber}",
                                 )
                             }
                         },
@@ -181,15 +181,15 @@ fun EnhancedCookingModeScreen(
                         },
                         onShowImage = {
                             showImageDialog = true
-                        }
+                        },
                     )
                 }
-                
+
                 // Loading state
                 else -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator()
                     }
@@ -201,7 +201,7 @@ fun EnhancedCookingModeScreen(
     // Dialogs
     if (showPauseDialog) {
         PauseCookingDialog(
-            onResume = { 
+            onResume = {
                 scope.launch {
                     cookingManager.resumeCooking()
                     showPauseDialog = false
@@ -214,7 +214,7 @@ fun EnhancedCookingModeScreen(
                     showPauseDialog = false
                 }
             },
-            onDismiss = { showPauseDialog = false }
+            onDismiss = { showPauseDialog = false },
         )
     }
 
@@ -227,7 +227,7 @@ fun EnhancedCookingModeScreen(
                     showFinishDialog = false
                 }
             },
-            onDismiss = { showFinishDialog = false }
+            onDismiss = { showFinishDialog = false },
         )
     }
 
@@ -235,7 +235,7 @@ fun EnhancedCookingModeScreen(
         StepImageDialog(
             stepNumber = currentStep!!.stepNumber,
             imagePath = currentStep!!.image,
-            onDismiss = { showImageDialog = false }
+            onDismiss = { showImageDialog = false },
         )
     }
 }
@@ -246,13 +246,14 @@ private fun RecipeDetailScreen(
     servings: Int,
     onServingsChange: (Int) -> Unit,
     onStartCooking: () -> Unit,
-    onAddToShoppingList: (List<CookingModeManager.Ingredient>) -> Unit
+    onAddToShoppingList: (List<CookingModeManager.Ingredient>) -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
             RecipeHeaderCard(
@@ -260,43 +261,44 @@ private fun RecipeDetailScreen(
                 servings = servings,
                 difficulty = recipe.difficulty,
                 estimatedTime = recipe.prepTime,
-                onServingsChange = onServingsChange
+                onServingsChange = onServingsChange,
             )
         }
 
         item {
             Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    ),
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Icon(
                         Icons.Filled.Restaurant,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
                         "Bereit zum Kochen?",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
                         "Starte den Kochmodus für eine geführte Schritt-für-Schritt Anleitung",
                         style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(20.dp))
                     Button(
                         onClick = onStartCooking,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Icon(Icons.Filled.PlayArrow, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
@@ -310,36 +312,36 @@ private fun RecipeDetailScreen(
         item {
             Card {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(16.dp),
                 ) {
                     Text(
                         "Zutaten",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                     Spacer(Modifier.height(8.dp))
-                    
+
                     // Parse and display ingredients from markdown
                     val ingredients = parseIngredientsFromMarkdown(recipe.markdown, servings)
                     ingredients.take(5).forEach { ingredient ->
                         Text(
                             "• ${ingredient.quantity} ${ingredient.unit} ${ingredient.name}",
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
-                    
+
                     if (ingredients.size > 5) {
                         Text(
                             "... und ${ingredients.size - 5} weitere",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
+                            color = MaterialTheme.colorScheme.outline,
                         )
                     }
-                    
+
                     Spacer(Modifier.height(12.dp))
                     OutlinedButton(
                         onClick = { onAddToShoppingList(ingredients) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Icon(Icons.Filled.ShoppingCart, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
@@ -353,42 +355,42 @@ private fun RecipeDetailScreen(
         item {
             Card {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(16.dp),
                 ) {
                     Text(
                         "Anleitung (Vorschau)",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                     Spacer(Modifier.height(8.dp))
-                    
+
                     val steps = parseStepsPreview(recipe.markdown)
                     steps.take(3).forEachIndexed { index, step ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.Top
+                            verticalAlignment = Alignment.Top,
                         ) {
                             Text(
                                 "${index + 1}.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.width(24.dp)
+                                modifier = Modifier.width(24.dp),
                             )
                             Text(
                                 step.take(80) + if (step.length > 80) "..." else "",
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
                             )
                         }
                         if (index < steps.size - 1) Spacer(Modifier.height(4.dp))
                     }
-                    
+
                     if (steps.size > 3) {
                         Spacer(Modifier.height(8.dp))
                         Text(
                             "... und ${steps.size - 3} weitere Schritte",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
+                            color = MaterialTheme.colorScheme.outline,
                         )
                     }
                 }
@@ -410,27 +412,28 @@ private fun CookingExecutionScreen(
     onStartTimer: (Int) -> Unit,
     onToggleTimer: () -> Unit,
     onResetTimer: () -> Unit,
-    onShowImage: () -> Unit
+    onShowImage: () -> Unit,
 ) {
     val isLastStep = cookingFlow.currentStepIndex >= cookingFlow.steps.size - 1
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
             CookingProgressBar(
                 currentStep = cookingStep.stepNumber,
-                totalSteps = cookingFlow.steps.size
+                totalSteps = cookingFlow.steps.size,
             )
         }
 
         item {
             StepInstructionCard(
                 cookingStep = cookingStep,
-                onShowImage = onShowImage
+                onShowImage = onShowImage,
             )
         }
 
@@ -442,7 +445,7 @@ private fun CookingExecutionScreen(
                     stepDuration = cookingStep.duration,
                     onStartTimer = { onStartTimer(cookingStep.duration!!) },
                     onPauseTimer = onToggleTimer,
-                    onResetTimer = onResetTimer
+                    onResetTimer = onResetTimer,
                 )
             }
         }
@@ -462,7 +465,7 @@ private fun CookingExecutionScreen(
                 onPrevious = onPreviousStep,
                 onPause = onPauseCooking,
                 onNext = onNextStep,
-                onFinish = onFinishCooking
+                onFinish = onFinishCooking,
             )
         }
     }
@@ -473,7 +476,7 @@ private fun CookingExecutionScreen(
 private fun PauseCookingDialog(
     onResume: () -> Unit,
     onEndCooking: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -495,14 +498,14 @@ private fun PauseCookingDialog(
             OutlinedButton(onClick = onEndCooking) {
                 Text("Beenden")
             }
-        }
+        },
     )
 }
 
 @Composable
 private fun FinishCookingDialog(
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -524,7 +527,7 @@ private fun FinishCookingDialog(
             OutlinedButton(onClick = onDismiss) {
                 Text("Abbrechen")
             }
-        }
+        },
     )
 }
 
@@ -532,60 +535,63 @@ private fun FinishCookingDialog(
 private fun StepImageDialog(
     stepNumber: Int,
     imagePath: String?,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     "Bild - Schritt $stepNumber",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 Spacer(Modifier.height(16.dp))
-                
+
                 // Placeholder for image
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        ),
                 ) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Icon(
                                 Icons.Filled.Image,
                                 contentDescription = null,
                                 modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                             Spacer(Modifier.height(8.dp))
                             Text("Schritt-Bild")
                         }
                     }
                 }
-                
+
                 Spacer(Modifier.height(16.dp))
                 Button(
                     onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("Schließen")
                 }
@@ -596,17 +602,17 @@ private fun StepImageDialog(
 
 // Helper functions
 private fun parseIngredientsFromMarkdown(
-    markdown: String, 
-    servings: Int
+    markdown: String,
+    servings: Int,
 ): List<CookingModeManager.Ingredient> {
     val ingredients = mutableListOf<CookingModeManager.Ingredient>()
     val lines = markdown.split("\n")
-    
+
     lines.forEach { line ->
         val trimmedLine = line.trim()
         if (trimmedLine.startsWith("-") || trimmedLine.startsWith("*")) {
             val ingredientText = trimmedLine.substring(1).trim()
-            
+
             // Simple parsing for demonstration
             val parts = ingredientText.split(" ", limit = 3)
             if (parts.size >= 3) {
@@ -614,14 +620,14 @@ private fun parseIngredientsFromMarkdown(
                     val quantity = (parts[0].toFloat() * servings / (1)).toString() // Adjust for servings
                     val unit = parts[1]
                     val name = parts.drop(2).joinToString(" ")
-                    
+
                     ingredients.add(
                         CookingModeManager.Ingredient(
                             name = name,
                             quantity = quantity,
                             unit = unit,
-                            isOptional = ingredientText.contains("optional", ignoreCase = true)
-                        )
+                            isOptional = ingredientText.contains("optional", ignoreCase = true),
+                        ),
                     )
                 } catch (e: NumberFormatException) {
                     // Fallback for non-numeric quantities
@@ -629,35 +635,36 @@ private fun parseIngredientsFromMarkdown(
                         CookingModeManager.Ingredient(
                             name = ingredientText,
                             quantity = "1",
-                            unit = "Stück"
-                        )
+                            unit = "Stück",
+                        ),
                     )
                 }
             }
         }
     }
-    
+
     return ingredients
 }
 
 private fun parseStepsPreview(markdown: String): List<String> {
     val steps = mutableListOf<String>()
     val lines = markdown.split("\n")
-    
+
     lines.forEach { line ->
         val trimmedLine = line.trim()
-        if (trimmedLine.matches(Regex("^\\d+\\s*\\..*")) || 
-            trimmedLine.matches(Regex("^#{1,3}\\s*[Ss]chritt\\s+\\d+.*"))) {
-            
-            val stepText = trimmedLine
-                .replace(Regex("^\\d+\\.\\s*"), "")
-                .replace(Regex("^#{1,3}\\s*[Ss]chritt\\s+\\d+:?\\s*"), "")
-            
+        if (trimmedLine.matches(Regex("^\\d+\\s*\\..*")) ||
+            trimmedLine.matches(Regex("^#{1,3}\\s*[Ss]chritt\\s+\\d+.*"))
+        ) {
+            val stepText =
+                trimmedLine
+                    .replace(Regex("^\\d+\\.\\s*"), "")
+                    .replace(Regex("^#{1,3}\\s*[Ss]chritt\\s+\\d+:?\\s*"), "")
+
             if (stepText.isNotEmpty()) {
                 steps.add(stepText)
             }
         }
     }
-    
+
     return steps
 }
