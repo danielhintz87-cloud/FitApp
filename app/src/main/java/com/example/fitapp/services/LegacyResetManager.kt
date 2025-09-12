@@ -1,13 +1,12 @@
 package com.example.fitapp.services
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
+import android.content.Context
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.prefs.UserPreferencesService
 import com.example.fitapp.util.StructuredLogger
-import android.content.Context
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
 
 /**
  * Reset types for different data categories
@@ -16,7 +15,7 @@ enum class ResetError {
     INVALID_TOKEN,
     DATABASE_ERROR,
     PERMISSION_DENIED,
-    UNKNOWN_ERROR
+    UNKNOWN_ERROR,
 }
 
 /**
@@ -30,7 +29,7 @@ enum class ResetType {
     SHOPPING_LIST,
     PERSONAL_RECORDS,
     SELECTIVE_RESET,
-    COMPLETE_RESET
+    COMPLETE_RESET,
 }
 
 /**
@@ -44,7 +43,7 @@ data class ResetResult(
     val errorMessage: String? = null,
     val preservedUserSettings: Boolean = false,
     val clearedDataTypes: List<String> = emptyList(),
-    val errorType: ResetError? = null
+    val errorType: ResetError? = null,
 )
 
 /**
@@ -54,7 +53,7 @@ data class SelectiveResetOptions(
     val resetPersonalInfo: Boolean = false,
     val resetFitnessGoals: Boolean = false,
     val resetPreferences: Boolean = false,
-    val resetAchievements: Boolean = false
+    val resetAchievements: Boolean = false,
 )
 
 /**
@@ -64,14 +63,14 @@ data class SelectiveResetOptions(
 class LegacyResetManager(
     private val context: Context,
     private val database: AppDatabase,
-    private val userPreferences: UserPreferencesService
+    private val userPreferences: UserPreferencesService,
 ) {
     companion object {
         private const val TAG = "ResetManager"
     }
 
     private val scope = CoroutineScope(Dispatchers.IO)
-    
+
     /**
      * Helper function for creating error results
      */
@@ -80,10 +79,10 @@ class LegacyResetManager(
             "success" to false,
             "error" to (error.message ?: "Unknown error"),
             "timestamp" to System.currentTimeMillis(),
-            "errorType" to error.javaClass.simpleName
+            "errorType" to error.javaClass.simpleName,
         )
     }
-    
+
     /**
      * Helper function for creating success results
      */
@@ -91,10 +90,10 @@ class LegacyResetManager(
         return mapOf(
             "success" to true,
             "message" to message,
-            "timestamp" to System.currentTimeMillis()
+            "timestamp" to System.currentTimeMillis(),
         )
     }
-    
+
     // Flow states for reset progress
     private val _resetProgress = MutableStateFlow<ResetProgress?>(null)
     val resetProgress: StateFlow<ResetProgress?> = _resetProgress.asStateFlow()
@@ -105,19 +104,18 @@ class LegacyResetManager(
         val currentStep: String,
         val isCompleted: Boolean = false,
         val hasError: Boolean = false,
-        val errorMessage: String? = null
+        val errorMessage: String? = null,
     )
 
-    
     /**
      * Perform reset operation with confirmation
      */
     suspend fun performReset(
-        resetType: ResetType, 
+        resetType: ResetType,
         confirmationToken: String,
         preserveSettings: Boolean = false,
         validateIntegrity: Boolean = false,
-        createBackup: Boolean = false
+        createBackup: Boolean = false,
     ): ResetResult {
         return try {
             // Validate confirmation token
@@ -128,10 +126,10 @@ class LegacyResetManager(
                     isCompleted = false,
                     hasError = true,
                     errorMessage = "Invalid confirmation token",
-                    errorType = ResetError.INVALID_TOKEN
+                    errorType = ResetError.INVALID_TOKEN,
                 )
             }
-            
+
             // Perform the reset based on type
             when (resetType) {
                 ResetType.WORKOUT_DATA -> {
@@ -141,7 +139,7 @@ class LegacyResetManager(
                         resetType = resetType,
                         isCompleted = true,
                         hasError = false,
-                        preservedUserSettings = preserveSettings
+                        preservedUserSettings = preserveSettings,
                     )
                 }
                 ResetType.NUTRITION_DATA -> {
@@ -151,7 +149,7 @@ class LegacyResetManager(
                         resetType = resetType,
                         isCompleted = true,
                         hasError = false,
-                        preservedUserSettings = preserveSettings
+                        preservedUserSettings = preserveSettings,
                     )
                 }
                 ResetType.USER_PROFILE -> {
@@ -161,7 +159,7 @@ class LegacyResetManager(
                         resetType = resetType,
                         isCompleted = true,
                         hasError = false,
-                        preservedUserSettings = preserveSettings
+                        preservedUserSettings = preserveSettings,
                     )
                 }
                 ResetType.ACHIEVEMENTS -> {
@@ -170,7 +168,7 @@ class LegacyResetManager(
                         isSuccess = true,
                         resetType = resetType,
                         isCompleted = true,
-                        hasError = false
+                        hasError = false,
                     )
                 }
                 ResetType.SHOPPING_LIST -> {
@@ -179,7 +177,7 @@ class LegacyResetManager(
                         isSuccess = true,
                         resetType = resetType,
                         isCompleted = true,
-                        hasError = false
+                        hasError = false,
                     )
                 }
                 ResetType.PERSONAL_RECORDS -> {
@@ -189,7 +187,7 @@ class LegacyResetManager(
                         resetType = resetType,
                         isCompleted = true,
                         hasError = false,
-                        clearedDataTypes = listOf("personal_records", "pr_history")
+                        clearedDataTypes = listOf("personal_records", "pr_history"),
                     )
                 }
                 ResetType.SELECTIVE_RESET -> {
@@ -199,7 +197,7 @@ class LegacyResetManager(
                         resetType = resetType,
                         isCompleted = false,
                         hasError = true,
-                        errorMessage = "Use performSelectiveReset method for selective operations"
+                        errorMessage = "Use performSelectiveReset method for selective operations",
                     )
                 }
                 ResetType.COMPLETE_RESET -> {
@@ -209,7 +207,7 @@ class LegacyResetManager(
                         resetType = resetType,
                         isCompleted = true,
                         hasError = false,
-                        preservedUserSettings = preserveSettings
+                        preservedUserSettings = preserveSettings,
                     )
                 }
             }
@@ -219,7 +217,7 @@ class LegacyResetManager(
                 TAG,
                 "Error performing reset: ${e.message}",
                 emptyMap(),
-                e
+                e,
             )
             ResetResult(
                 isSuccess = false,
@@ -227,18 +225,18 @@ class LegacyResetManager(
                 isCompleted = false,
                 hasError = true,
                 errorMessage = e.message,
-                errorType = ResetError.DATABASE_ERROR
+                errorType = ResetError.DATABASE_ERROR,
             )
         }
     }
-    
+
     /**
      * Perform selective reset with options
      */
     suspend fun performSelectiveReset(
         resetType: ResetType,
         confirmationToken: String,
-        options: SelectiveResetOptions
+        options: SelectiveResetOptions,
     ): ResetResult {
         return try {
             if (!isValidConfirmationToken(resetType, confirmationToken)) {
@@ -248,38 +246,38 @@ class LegacyResetManager(
                     isCompleted = false,
                     hasError = true,
                     errorMessage = "Invalid confirmation token",
-                    errorType = ResetError.INVALID_TOKEN
+                    errorType = ResetError.INVALID_TOKEN,
                 )
             }
-            
+
             val clearedTypes = mutableListOf<String>()
-            
+
             if (options.resetPersonalInfo) {
                 // Reset personal info specific data
                 clearedTypes.add("personal_info")
             }
-            
+
             if (options.resetFitnessGoals) {
                 // Reset fitness goals specific data
                 clearedTypes.add("fitness_goals")
             }
-            
+
             if (options.resetPreferences && !options.resetPreferences) {
                 // Don't clear preferences if explicitly preserved
             } else if (options.resetPreferences) {
                 clearedTypes.add("preferences")
             }
-            
+
             if (options.resetAchievements) {
                 clearedTypes.add("achievements")
             }
-            
+
             ResetResult(
                 isSuccess = true,
                 resetType = resetType,
                 isCompleted = true,
                 hasError = false,
-                clearedDataTypes = clearedTypes
+                clearedDataTypes = clearedTypes,
             )
         } catch (e: Exception) {
             ResetResult(
@@ -288,15 +286,18 @@ class LegacyResetManager(
                 isCompleted = false,
                 hasError = true,
                 errorMessage = e.message,
-                errorType = ResetError.DATABASE_ERROR
+                errorType = ResetError.DATABASE_ERROR,
             )
         }
     }
-    
+
     /**
      * Validate confirmation token
      */
-    private fun isValidConfirmationToken(resetType: ResetType, token: String): Boolean {
+    private fun isValidConfirmationToken(
+        resetType: ResetType,
+        token: String,
+    ): Boolean {
         return when (resetType) {
             ResetType.COMPLETE_RESET -> token == "CONFIRM_COMPLETE_RESET_I_UNDERSTAND"
             else -> token.startsWith("CONFIRM")
@@ -312,7 +313,7 @@ class LegacyResetManager(
             mapOf(
                 "success" to true,
                 "message" to "Workout data reset successfully",
-                "timestamp" to System.currentTimeMillis()
+                "timestamp" to System.currentTimeMillis(),
             )
         } catch (e: Exception) {
             handleResetError(e)
@@ -325,51 +326,52 @@ class LegacyResetManager(
     suspend fun resetWorkoutData(): Map<String, Any> {
         return try {
             _resetProgress.value = ResetProgress("Workout-Daten", 0f, "Starte Reset...")
-            
+
             // Delete workout sessions
             _resetProgress.value = ResetProgress("Workout-Daten", 0.2f, "Lösche Trainingseinheiten...")
             database.workoutSessionDao().deleteAll()
-            
+
             // Delete workout performance data
             _resetProgress.value = ResetProgress("Workout-Daten", 0.4f, "Lösche Leistungsdaten...")
             database.workoutPerformanceDao().deleteAll()
-            
+
             // Delete exercise progressions
             _resetProgress.value = ResetProgress("Workout-Daten", 0.6f, "Lösche Progression-Daten...")
             database.exerciseProgressionDao().deleteAll()
-            
+
             // Delete today workouts
             _resetProgress.value = ResetProgress("Workout-Daten", 0.8f, "Lösche heutige Trainings...")
             database.todayWorkoutDao().deleteAll()
-            
+
             // Clear workout preferences
             _resetProgress.value = ResetProgress("Workout-Daten", 0.9f, "Lösche Einstellungen...")
             userPreferences.clearWorkoutPreferences()
-            
+
             _resetProgress.value = ResetProgress("Workout-Daten", 1.0f, "Abgeschlossen", isCompleted = true)
-            
+
             StructuredLogger.info(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
-                "Successfully reset workout data"
+                "Successfully reset workout data",
             )
-            
+
             createSuccessResult("Workout data reset successfully")
         } catch (e: Exception) {
-            _resetProgress.value = ResetProgress(
-                "Workout-Daten", 0f, "Fehler", 
-                hasError = true, 
-                errorMessage = e.message
-            )
-            
+            _resetProgress.value =
+                ResetProgress(
+                    "Workout-Daten", 0f, "Fehler",
+                    hasError = true,
+                    errorMessage = e.message,
+                )
+
             StructuredLogger.error(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error resetting workout data: ${e.message}",
                 emptyMap(),
-                e
+                e,
             )
-            
+
             return createErrorResult(e)
         }
     }
@@ -383,7 +385,7 @@ class LegacyResetManager(
             mapOf(
                 "success" to true,
                 "message" to "Nutrition data reset successfully",
-                "timestamp" to System.currentTimeMillis()
+                "timestamp" to System.currentTimeMillis(),
             )
         } catch (e: Exception) {
             handleResetError(e)
@@ -396,56 +398,57 @@ class LegacyResetManager(
     suspend fun resetNutritionData(): Map<String, Any> {
         return try {
             _resetProgress.value = ResetProgress("Ernährungs-Daten", 0f, "Starte Reset...")
-            
+
             // Delete meal entries
             _resetProgress.value = ResetProgress("Ernährungs-Daten", 0.15f, "Lösche Mahlzeiten...")
             database.mealEntryDao().deleteAll()
-            
+
             // Delete water entries
             _resetProgress.value = ResetProgress("Ernährungs-Daten", 0.3f, "Lösche Wasser-Logs...")
             database.waterEntryDao().deleteAll()
-            
+
             // Delete intake entries
             _resetProgress.value = ResetProgress("Ernährungs-Daten", 0.45f, "Lösche Kalorie-Logs...")
             database.intakeDao().deleteAll()
-            
+
             // Delete saved recipes
             _resetProgress.value = ResetProgress("Ernährungs-Daten", 0.6f, "Lösche gespeicherte Rezepte...")
             database.savedRecipeDao().deleteAll()
-            
+
             // Delete cooking sessions
             _resetProgress.value = ResetProgress("Ernährungs-Daten", 0.75f, "Lösche Koch-Sessions...")
             database.cookingSessionDao().deleteAll()
             database.cookingTimerDao().deleteAll()
-            
+
             // Clear nutrition preferences
             _resetProgress.value = ResetProgress("Ernährungs-Daten", 0.9f, "Lösche Einstellungen...")
             userPreferences.clearNutritionPreferences()
-            
+
             _resetProgress.value = ResetProgress("Ernährungs-Daten", 1.0f, "Abgeschlossen", isCompleted = true)
-            
+
             StructuredLogger.info(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
-                "Successfully reset nutrition data"
+                "Successfully reset nutrition data",
             )
-            
+
             createSuccessResult("Nutrition data reset successfully")
         } catch (e: Exception) {
-            _resetProgress.value = ResetProgress(
-                "Ernährungs-Daten", 0f, "Fehler", 
-                hasError = true, 
-                errorMessage = e.message
-            )
-            
+            _resetProgress.value =
+                ResetProgress(
+                    "Ernährungs-Daten", 0f, "Fehler",
+                    hasError = true,
+                    errorMessage = e.message,
+                )
+
             StructuredLogger.error(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error resetting nutrition data: ${e.message}",
                 emptyMap(),
-                e
+                e,
             )
-            
+
             return createErrorResult(e)
         }
     }
@@ -459,7 +462,7 @@ class LegacyResetManager(
             mapOf(
                 "success" to true,
                 "message" to "User profile reset successfully",
-                "timestamp" to System.currentTimeMillis()
+                "timestamp" to System.currentTimeMillis(),
             )
         } catch (e: Exception) {
             handleResetError(e)
@@ -472,55 +475,56 @@ class LegacyResetManager(
     suspend fun resetUserProfile(): Map<String, Any> {
         return try {
             _resetProgress.value = ResetProgress("Benutzer-Profil", 0f, "Starte Reset...")
-            
+
             // Delete weight entries
             _resetProgress.value = ResetProgress("Benutzer-Profil", 0.2f, "Lösche Gewichts-Daten...")
             database.weightDao().deleteAll()
-            
+
             // Delete BMI history
             _resetProgress.value = ResetProgress("Benutzer-Profil", 0.4f, "Lösche BMI-Verlauf...")
             database.bmiHistoryDao().deleteAll()
-            
+
             // Delete progress photos (if DAO exists)
             _resetProgress.value = ResetProgress("Benutzer-Profil", 0.5f, "Lösche Fortschritts-Fotos...")
             // database.progressPhotoDao().deleteAll() // TODO: Implement if DAO exists
-            
+
             // Delete weight loss programs (if DAO exists)
             _resetProgress.value = ResetProgress("Benutzer-Profil", 0.6f, "Lösche Abnehm-Programme...")
             // database.weightLossProgramDao().deleteAll() // TODO: Implement if DAO exists
-            
+
             // Delete behavioral check-ins
             _resetProgress.value = ResetProgress("Benutzer-Profil", 0.8f, "Lösche Verhaltens-Daten...")
             database.behavioralCheckInDao().deleteAll()
-            
+
             // Clear user preferences
             _resetProgress.value = ResetProgress("Benutzer-Profil", 0.9f, "Lösche Einstellungen...")
             userPreferences.clearUserPreferences()
-            
+
             _resetProgress.value = ResetProgress("Benutzer-Profil", 1.0f, "Abgeschlossen", isCompleted = true)
-            
+
             StructuredLogger.info(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
-                "Successfully reset user profile data"
+                "Successfully reset user profile data",
             )
-            
+
             createSuccessResult("User profile reset successfully")
         } catch (e: Exception) {
-            _resetProgress.value = ResetProgress(
-                "Benutzer-Profil", 0f, "Fehler", 
-                hasError = true, 
-                errorMessage = e.message
-            )
-            
+            _resetProgress.value =
+                ResetProgress(
+                    "Benutzer-Profil", 0f, "Fehler",
+                    hasError = true,
+                    errorMessage = e.message,
+                )
+
             StructuredLogger.error(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error resetting user profile: ${e.message}",
                 emptyMap(),
-                e
+                e,
             )
-            
+
             return createErrorResult(e)
         }
     }
@@ -531,51 +535,52 @@ class LegacyResetManager(
     suspend fun resetAchievements(): Map<String, Any> {
         return try {
             _resetProgress.value = ResetProgress("Erfolge & Streaks", 0f, "Starte Reset...")
-            
+
             // Reset personal achievements
             _resetProgress.value = ResetProgress("Erfolge & Streaks", 0.25f, "Setze Erfolge zurück...")
             database.personalAchievementDao().deleteAll()
-            
+
             // Reset personal streaks
             _resetProgress.value = ResetProgress("Erfolge & Streaks", 0.5f, "Setze Streaks zurück...")
             database.personalStreakDao().deleteAll()
-            
+
             // Reset personal records
             _resetProgress.value = ResetProgress("Erfolge & Streaks", 0.65f, "Lösche persönliche Rekorde...")
             database.personalRecordDao().deleteAll()
-            
+
             // Reset progress milestones
             _resetProgress.value = ResetProgress("Erfolge & Streaks", 0.8f, "Lösche Meilensteine...")
             database.progressMilestoneDao().deleteAll()
-            
+
             // Clear achievement preferences
             _resetProgress.value = ResetProgress("Erfolge & Streaks", 0.9f, "Lösche Einstellungen...")
             userPreferences.clearAchievementPreferences()
-            
+
             _resetProgress.value = ResetProgress("Erfolge & Streaks", 1.0f, "Abgeschlossen", isCompleted = true)
-            
+
             StructuredLogger.info(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
-                "Successfully reset achievements and streaks"
+                "Successfully reset achievements and streaks",
             )
-            
+
             createSuccessResult("Achievements reset successfully")
         } catch (e: Exception) {
-            _resetProgress.value = ResetProgress(
-                "Erfolge & Streaks", 0f, "Fehler", 
-                hasError = true, 
-                errorMessage = e.message
-            )
-            
+            _resetProgress.value =
+                ResetProgress(
+                    "Erfolge & Streaks", 0f, "Fehler",
+                    hasError = true,
+                    errorMessage = e.message,
+                )
+
             StructuredLogger.error(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error resetting achievements: ${e.message}",
                 emptyMap(),
-                e
+                e,
             )
-            
+
             return createErrorResult(e)
         }
     }
@@ -586,39 +591,40 @@ class LegacyResetManager(
     suspend fun resetShoppingList(): Map<String, Any> {
         return try {
             _resetProgress.value = ResetProgress("Einkaufsliste", 0f, "Starte Reset...")
-            
+
             // Delete shopping items
             _resetProgress.value = ResetProgress("Einkaufsliste", 0.5f, "Lösche Einkaufsartikel...")
             database.shoppingDao().deleteAll()
-            
+
             // Reset categories to default
             _resetProgress.value = ResetProgress("Einkaufsliste", 0.8f, "Setze Kategorien zurück...")
             resetShoppingCategoriesToDefault()
-            
+
             _resetProgress.value = ResetProgress("Einkaufsliste", 1.0f, "Abgeschlossen", isCompleted = true)
-            
+
             StructuredLogger.info(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
-                "Successfully reset shopping list"
+                "Successfully reset shopping list",
             )
-            
+
             createSuccessResult("Shopping list reset successfully")
         } catch (e: Exception) {
-            _resetProgress.value = ResetProgress(
-                "Einkaufsliste", 0f, "Fehler", 
-                hasError = true, 
-                errorMessage = e.message
-            )
-            
+            _resetProgress.value =
+                ResetProgress(
+                    "Einkaufsliste", 0f, "Fehler",
+                    hasError = true,
+                    errorMessage = e.message,
+                )
+
             StructuredLogger.error(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error resetting shopping list: ${e.message}",
                 emptyMap(),
-                e
+                e,
             )
-            
+
             return createErrorResult(e)
         }
     }
@@ -629,39 +635,40 @@ class LegacyResetManager(
     suspend fun resetPersonalRecords(): Map<String, Any> {
         return try {
             _resetProgress.value = ResetProgress("Persönliche Rekorde", 0f, "Starte Reset...")
-            
+
             // Delete personal records
             _resetProgress.value = ResetProgress("Persönliche Rekorde", 0.5f, "Lösche persönliche Rekorde...")
             database.personalRecordDao().deleteAll()
-            
+
             // Clear PR history (if exists in database)
             _resetProgress.value = ResetProgress("Persönliche Rekorde", 0.8f, "Lösche PR-Verlauf...")
             // Note: PR history clearing would be done here if separate table exists
-            
+
             _resetProgress.value = ResetProgress("Persönliche Rekorde", 1.0f, "Abgeschlossen", isCompleted = true)
-            
+
             StructuredLogger.info(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
-                "Successfully reset personal records"
+                "Successfully reset personal records",
             )
-            
+
             createSuccessResult("Personal records reset successfully")
         } catch (e: Exception) {
-            _resetProgress.value = ResetProgress(
-                "Persönliche Rekorde", 0f, "Fehler", 
-                hasError = true, 
-                errorMessage = e.message
-            )
-            
+            _resetProgress.value =
+                ResetProgress(
+                    "Persönliche Rekorde", 0f, "Fehler",
+                    hasError = true,
+                    errorMessage = e.message,
+                )
+
             StructuredLogger.error(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error resetting personal records: ${e.message}",
                 emptyMap(),
-                e
+                e,
             )
-            
+
             return createErrorResult(e)
         }
     }
@@ -679,61 +686,62 @@ class LegacyResetManager(
     suspend fun performCompleteReset(): Map<String, Any> {
         return try {
             _resetProgress.value = ResetProgress("Vollständiger Reset", 0f, "Starte vollständigen Reset...")
-            
+
             // Reset in specific order to handle dependencies
-            
+
             // 1. Reset workout data
             _resetProgress.value = ResetProgress("Vollständiger Reset", 0.1f, "Lösche Trainings-Daten...")
             resetWorkoutDataSilent()
-            
+
             // 2. Reset nutrition data
             _resetProgress.value = ResetProgress("Vollständiger Reset", 0.3f, "Lösche Ernährungs-Daten...")
             resetNutritionDataSilent()
-            
+
             // 3. Reset achievements
             _resetProgress.value = ResetProgress("Vollständiger Reset", 0.5f, "Lösche Erfolge...")
             resetAchievementsSilent()
-            
+
             // 4. Reset user profile
             _resetProgress.value = ResetProgress("Vollständiger Reset", 0.7f, "Lösche Benutzer-Profil...")
             resetUserProfileSilent()
-            
+
             // 5. Reset shopping list
             _resetProgress.value = ResetProgress("Vollständiger Reset", 0.85f, "Lösche Einkaufsliste...")
             resetShoppingListSilent()
-            
+
             // 6. Clear all preferences
             _resetProgress.value = ResetProgress("Vollständiger Reset", 0.95f, "Lösche alle Einstellungen...")
             userPreferences.clearAllPreferences()
-            
+
             _resetProgress.value = ResetProgress("Vollständiger Reset", 1.0f, "Abgeschlossen", isCompleted = true)
-            
+
             StructuredLogger.info(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
-                "Successfully performed complete app reset"
+                "Successfully performed complete app reset",
             )
-            
+
             createSuccessResult("Complete app reset successfully")
         } catch (e: Exception) {
-            _resetProgress.value = ResetProgress(
-                "Vollständiger Reset", 0f, "Fehler", 
-                hasError = true, 
-                errorMessage = e.message
-            )
-            
+            _resetProgress.value =
+                ResetProgress(
+                    "Vollständiger Reset", 0f, "Fehler",
+                    hasError = true,
+                    errorMessage = e.message,
+                )
+
             StructuredLogger.error(
                 StructuredLogger.LogCategory.SYSTEM,
                 TAG,
                 "Error performing complete reset: ${e.message}",
                 emptyMap(),
-                e
+                e,
             )
-            
+
             return createErrorResult(e)
         }
     }
-    
+
     /**
      * Handle reset errors and return standardized error response
      */
@@ -741,7 +749,7 @@ class LegacyResetManager(
         return mapOf(
             "success" to false,
             "error" to (error.message ?: "Unknown error"),
-            "timestamp" to System.currentTimeMillis()
+            "timestamp" to System.currentTimeMillis(),
         )
     }
 
@@ -750,71 +758,71 @@ class LegacyResetManager(
      */
     fun getResetConfirmationMessage(resetType: ResetType): String {
         return when (resetType) {
-            ResetType.WORKOUT_DATA -> 
+            ResetType.WORKOUT_DATA ->
                 "Alle Trainings-Daten werden gelöscht:\n" +
-                "• Trainingseinheiten\n" +
-                "• Leistungsdaten\n" +
-                "• Progression-Verfolgung\n" +
-                "• Training-Einstellungen\n\n" +
-                "Diese Aktion kann nicht rückgängig gemacht werden."
-                
-            ResetType.NUTRITION_DATA -> 
+                    "• Trainingseinheiten\n" +
+                    "• Leistungsdaten\n" +
+                    "• Progression-Verfolgung\n" +
+                    "• Training-Einstellungen\n\n" +
+                    "Diese Aktion kann nicht rückgängig gemacht werden."
+
+            ResetType.NUTRITION_DATA ->
                 "Alle Ernährungs-Daten werden gelöscht:\n" +
-                "• Mahlzeiten-Logs\n" +
-                "• Wasser-Aufnahme\n" +
-                "• Gespeicherte Rezepte\n" +
-                "• Koch-Sessions\n" +
-                "• Ernährungs-Einstellungen\n\n" +
-                "Diese Aktion kann nicht rückgängig gemacht werden."
-                
-            ResetType.USER_PROFILE -> 
+                    "• Mahlzeiten-Logs\n" +
+                    "• Wasser-Aufnahme\n" +
+                    "• Gespeicherte Rezepte\n" +
+                    "• Koch-Sessions\n" +
+                    "• Ernährungs-Einstellungen\n\n" +
+                    "Diese Aktion kann nicht rückgängig gemacht werden."
+
+            ResetType.USER_PROFILE ->
                 "Alle Profil-Daten werden gelöscht:\n" +
-                "• Gewichts-Verlauf\n" +
-                "• BMI-Daten\n" +
-                "• Abnehm-Programme\n" +
-                "• Verhaltens-Daten\n" +
-                "• Benutzer-Einstellungen\n\n" +
-                "Diese Aktion kann nicht rückgängig gemacht werden."
-                
-            ResetType.ACHIEVEMENTS -> 
+                    "• Gewichts-Verlauf\n" +
+                    "• BMI-Daten\n" +
+                    "• Abnehm-Programme\n" +
+                    "• Verhaltens-Daten\n" +
+                    "• Benutzer-Einstellungen\n\n" +
+                    "Diese Aktion kann nicht rückgängig gemacht werden."
+
+            ResetType.ACHIEVEMENTS ->
                 "Alle Erfolge werden zurückgesetzt:\n" +
-                "• Persönliche Erfolge\n" +
-                "• Streak-Zähler\n" +
-                "• Persönliche Rekorde\n" +
-                "• Meilenstein-Fortschritt\n\n" +
-                "Diese Aktion kann nicht rückgängig gemacht werden."
-                
-            ResetType.SHOPPING_LIST -> 
+                    "• Persönliche Erfolge\n" +
+                    "• Streak-Zähler\n" +
+                    "• Persönliche Rekorde\n" +
+                    "• Meilenstein-Fortschritt\n\n" +
+                    "Diese Aktion kann nicht rückgängig gemacht werden."
+
+            ResetType.SHOPPING_LIST ->
                 "Die Einkaufsliste wird geleert:\n" +
-                "• Alle Einkaufsartikel\n" +
-                "• Kategorien werden zurückgesetzt\n\n" +
-                "Diese Aktion kann nicht rückgängig gemacht werden."
-                
-            ResetType.PERSONAL_RECORDS -> 
+                    "• Alle Einkaufsartikel\n" +
+                    "• Kategorien werden zurückgesetzt\n\n" +
+                    "Diese Aktion kann nicht rückgängig gemacht werden."
+
+            ResetType.PERSONAL_RECORDS ->
                 "Persönliche Rekorde werden zurückgesetzt:\n" +
-                "• Alle persönlichen Bestleistungen\n" +
-                "• PR-Verlauf\n" +
-                "• Rekord-Statistiken\n\n" +
-                "Diese Aktion kann nicht rückgängig gemacht werden."
-                
-            ResetType.SELECTIVE_RESET -> 
+                    "• Alle persönlichen Bestleistungen\n" +
+                    "• PR-Verlauf\n" +
+                    "• Rekord-Statistiken\n\n" +
+                    "Diese Aktion kann nicht rückgängig gemacht werden."
+
+            ResetType.SELECTIVE_RESET ->
                 "Selektiver Reset wird durchgeführt:\n" +
-                "• Nur ausgewählte Datenkategorien\n" +
-                "• Einstellungen können erhalten bleiben\n\n" +
-                "Diese Aktion kann nicht rückgängig gemacht werden."
-                
-            ResetType.COMPLETE_RESET -> 
+                    "• Nur ausgewählte Datenkategorien\n" +
+                    "• Einstellungen können erhalten bleiben\n\n" +
+                    "Diese Aktion kann nicht rückgängig gemacht werden."
+
+            ResetType.COMPLETE_RESET ->
                 "⚠️ WARNUNG: VOLLSTÄNDIGER RESET ⚠️\n\n" +
-                "ALLE App-Daten werden gelöscht:\n" +
-                "• Trainings-Daten\n" +
-                "• Ernährungs-Daten\n" +
-                "• Benutzer-Profil\n" +
-                "• Erfolge & Streaks\n" +
-                "• Einkaufsliste\n" +
-                "• Alle Einstellungen\n\n" +
-                "Die App wird in den Werkszustand zurückgesetzt.\n" +
-                "Diese Aktion kann NICHT rückgängig gemacht werden!"
-                
+                    "ALLE App-Daten werden gelöscht:\n" +
+                    "• Trainings-Daten\n" +
+                    "• Ernährungs-Daten\n" +
+                    "• Benutzer-Profil\n" +
+                    "• Erfolge & Streaks\n" +
+                    "• Einkaufsliste\n" +
+                    "• Alle Einstellungen\n\n" +
+                    "Die App wird in den Werkszustand zurückgesetzt.\n" +
+                    "Diese Aktion kann NICHT rückgängig gemacht werden!"
+
             else -> "Ausgewählte Daten werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
         }
     }
@@ -827,7 +835,7 @@ class LegacyResetManager(
     }
 
     // Private helper methods for silent resets (used in complete reset)
-    
+
     private suspend fun resetWorkoutDataSilent() {
         database.workoutSessionDao().deleteAll()
         database.workoutPerformanceDao().deleteAll()
@@ -835,7 +843,7 @@ class LegacyResetManager(
         database.todayWorkoutDao().deleteAll()
         userPreferences.clearWorkoutPreferences()
     }
-    
+
     private suspend fun resetNutritionDataSilent() {
         database.mealEntryDao().deleteAll()
         database.waterEntryDao().deleteAll()
@@ -845,7 +853,7 @@ class LegacyResetManager(
         database.cookingTimerDao().deleteAll()
         userPreferences.clearNutritionPreferences()
     }
-    
+
     private suspend fun resetUserProfileSilent() {
         database.weightDao().deleteAll()
         database.bmiHistoryDao().deleteAll()
@@ -854,7 +862,7 @@ class LegacyResetManager(
         database.behavioralCheckInDao().deleteAll()
         userPreferences.clearUserPreferences()
     }
-    
+
     private suspend fun resetAchievementsSilent() {
         database.personalAchievementDao().deleteAll()
         database.personalStreakDao().deleteAll()
@@ -862,31 +870,32 @@ class LegacyResetManager(
         database.progressMilestoneDao().deleteAll()
         userPreferences.clearAchievementPreferences()
     }
-    
+
     private suspend fun resetShoppingListSilent() {
         database.shoppingDao().deleteAll()
         resetShoppingCategoriesToDefault()
     }
-    
+
     private suspend fun resetShoppingCategoriesToDefault() {
         // First clear existing categories
         database.shoppingCategoryDao().deleteAll()
-        
+
         // Then add default categories
-        val defaultCategories = listOf(
-            "Obst & Gemüse" to 1,
-            "Fleisch & Fisch" to 2,
-            "Milchprodukte" to 3,
-            "Getreide & Backwaren" to 4,
-            "Tiefkühl" to 5,
-            "Getränke" to 6,
-            "Gewürze & Kräuter" to 7,
-            "Sonstiges" to 8
-        )
-        
+        val defaultCategories =
+            listOf(
+                "Obst & Gemüse" to 1,
+                "Fleisch & Fisch" to 2,
+                "Milchprodukte" to 3,
+                "Getreide & Backwaren" to 4,
+                "Tiefkühl" to 5,
+                "Getränke" to 6,
+                "Gewürze & Kräuter" to 7,
+                "Sonstiges" to 8,
+            )
+
         defaultCategories.forEach { (name, order) ->
             database.shoppingCategoryDao().insert(
-                com.example.fitapp.data.db.ShoppingCategoryEntity(name = name, order = order)
+                com.example.fitapp.data.db.ShoppingCategoryEntity(name = name, order = order),
             )
         }
     }

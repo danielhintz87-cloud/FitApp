@@ -5,7 +5,6 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.testing.TestNavHostController
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.fitapp.ui.MainScaffold
 import com.example.fitapp.ui.theme.FitAppTheme
@@ -16,7 +15,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class NavigationTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
@@ -44,10 +42,10 @@ class NavigationTest {
     fun navHost_clickDashboard_navigatesToDashboard() {
         // Open drawer
         composeTestRule.onNodeWithContentDescription("Menü").performClick()
-        
+
         // Click on Dashboard
         composeTestRule.onNodeWithText("🏠 Dashboard").performClick()
-        
+
         // Verify we're on dashboard
         composeTestRule.onNodeWithText("Dashboard").assertIsDisplayed()
     }
@@ -56,22 +54,22 @@ class NavigationTest {
     fun navHost_clickTraining_navigatesToTraining() {
         // Open drawer
         composeTestRule.onNodeWithContentDescription("Menü").performClick()
-        
+
         // Click on Training & Pläne
         composeTestRule.onNodeWithText("🎯 Training & Pläne").performClick()
-        
+
         // Verify we're on training screen
         composeTestRule.onNodeWithText("Training & Pläne").assertIsDisplayed()
     }
 
     @Test
     fun navHost_clickNutrition_navigatesToNutrition() {
-        // Open drawer  
+        // Open drawer
         composeTestRule.onNodeWithContentDescription("Menü").performClick()
-        
+
         // Click on Ernährung & Rezepte
         composeTestRule.onNodeWithText("🍽️ Ernährung & Rezepte").performClick()
-        
+
         // Verify we're on nutrition screen
         composeTestRule.onNodeWithText("Ernährung & Rezepte").assertIsDisplayed()
     }
@@ -80,10 +78,10 @@ class NavigationTest {
     fun navHost_clickAnalytics_navigatesToAnalytics() {
         // Open drawer
         composeTestRule.onNodeWithContentDescription("Menü").performClick()
-        
+
         // Click on Fortschritt & Analytics
         composeTestRule.onNodeWithText("📊 Fortschritt & Analytics").performClick()
-        
+
         // Verify we're on analytics screen
         composeTestRule.onNodeWithText("Fortschritt & Analytics").assertIsDisplayed()
     }
@@ -92,10 +90,10 @@ class NavigationTest {
     fun navHost_clickSettings_navigatesToSettings() {
         // Open drawer
         composeTestRule.onNodeWithContentDescription("Menü").performClick()
-        
+
         // Click on Einstellungen
         composeTestRule.onNodeWithText("⚙️ Einstellungen").performClick()
-        
+
         // Verify we're on settings screen
         composeTestRule.onNodeWithText("Einstellungen").assertIsDisplayed()
     }
@@ -105,11 +103,11 @@ class NavigationTest {
         // Navigate to training screen
         composeTestRule.onNodeWithContentDescription("Menü").performClick()
         composeTestRule.onNodeWithText("🎯 Training & Pläne").performClick()
-        
+
         // Verify AI Trainer quick action is displayed
         composeTestRule.onNodeWithContentDescription("KI Trainer").assertIsDisplayed()
-        
-        // Verify HIIT Builder quick action is displayed  
+
+        // Verify HIIT Builder quick action is displayed
         composeTestRule.onNodeWithContentDescription("HIIT Builder").assertIsDisplayed()
     }
 
@@ -117,7 +115,7 @@ class NavigationTest {
     fun overflowMenu_displaysAllOptions() {
         // Click overflow menu
         composeTestRule.onNodeWithContentDescription("Mehr Optionen").performClick()
-        
+
         // Verify menu items are displayed
         composeTestRule.onNodeWithText("Einstellungen").assertIsDisplayed()
         composeTestRule.onNodeWithText("Health Connect").assertIsDisplayed()

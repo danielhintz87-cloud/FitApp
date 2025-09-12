@@ -1,87 +1,77 @@
 package com.example.fitapp.data.datastore
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.dataStore
-import com.example.fitapp.data.prefs.UserPreferencesProto
-import com.example.fitapp.data.prefs.UserPreferencesSerializer
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringSetPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
 
-private const val DATA_STORE_FILE_NAME = "user_preferences.pb"
-
-// DataStore instance using Proto
-private val Context.userPreferencesStore: DataStore<UserPreferencesProto> by dataStore(
-    fileName = DATA_STORE_FILE_NAME,
-    serializer = UserPreferencesSerializer
-)
+private const val USER_PREFS_NAME = "user_prefs"
+private val Context.userPrefsDataStore by preferencesDataStore(name = USER_PREFS_NAME)
 
 @Singleton
-class UserPreferencesDataStoreImpl @Inject constructor(
-    @ApplicationContext private val context: Context
-) : UserPreferencesDataStore {
+class UserPreferencesDataStoreImpl
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+    ) : UserPreferencesDataStore {
+        private val ds get() = context.userPrefsDataStore
 
-    private val dataStore = context.userPreferencesStore
+        private val KEY_SELECTED_EQUIPMENT = stringSetPreferencesKey("selected_equipment")
 
-    override suspend fun clearWorkoutPreferences() {
-        dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .clearSelectedEquipment()
-                .setNotificationsEnabled(true) // Reset to default
-                .setDefaultRestTimeSeconds(60) // Reset to default
-                .setSoundEnabled(true) // Reset to default
-                .setVibrationEnabled(true) // Reset to default
-                .build()
+        private val WORKOUT_KEYS: Set<Preferences.Key<*>> =
+            setOf(
+                KEY_SELECTED_EQUIPMENT,
+            )
+        private val NUTRITION_KEYS: Set<Preferences.Key<*>> = emptySet()
+        private val USER_KEYS: Set<Preferences.Key<*>> = emptySet()
+        private val ACHIEVEMENT_KEYS: Set<Preferences.Key<*>> = emptySet()
+
+        override suspend fun clearWorkoutPreferences() {
+            ds.edit { prefs ->
+                WORKOUT_KEYS.forEach { key ->
+                    prefs -= key
+                }
+            }
+        }
+
+        override suspend fun clearNutritionPreferences() {
+            ds.edit { prefs ->
+                NUTRITION_KEYS.forEach { key ->
+                    prefs -= key
+                }
+            }
+        }
+
+        override suspend fun clearUserPreferences() {
+            ds.edit { prefs ->
+                USER_KEYS.forEach { key ->
+                    prefs -= key
+                }
+            }
+        }
+
+        override suspend fun clearAchievementPreferences() {
+            ds.edit { prefs ->
+                ACHIEVEMENT_KEYS.forEach { key ->
+                    prefs -= key
+                }
+            }
+        }
+
+        override suspend fun clearAllPreferences() {
+            ds.edit { it.clear() }
+        }
+
+        override fun getSelectedEquipment(): Flow<Set<String>> =
+            ds.data.map { it[KEY_SELECTED_EQUIPMENT] ?: emptySet() }
+
+        override suspend fun saveSelectedEquipment(equipment: Set<String>) {
+            ds.edit { it[KEY_SELECTED_EQUIPMENT] = equipment }
         }
     }
-
-    override suspend fun clearNutritionPreferences() {
-        dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .setDailyCalorieGoal(2000) // Reset to default
-                .setDailyWaterGoalLiters(2.0) // Reset to default
-                .setNutritionRemindersEnabled(true) // Reset to default
-                .build()
-        }
-    }
-
-    override suspend fun clearUserPreferences() {
-        dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .setUserName("") // Clear user data
-                .setAge(0)
-                .setWeightKg(0.0)
-                .setHeightCm(0.0)
-                .build()
-        }
-    }
-
-    override suspend fun clearAchievementPreferences() {
-        dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .setAchievementNotificationsEnabled(true) // Reset to default
-                .build()
-        }
-    }
-
-    override suspend fun clearAllPreferences() {
-        dataStore.updateData {
-            UserPreferencesProto.getDefaultInstance()
-        }
-    }
-
-    override fun getSelectedEquipment(): Flow<Set<String>> =
-        dataStore.data.map { prefs -> prefs.selectedEquipmentList.toSet() }
-
-    override suspend fun saveSelectedEquipment(equipment: Set<String>) {
-        dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .clearSelectedEquipment()
-                .addAllSelectedEquipment(equipment)
-                .build()
-        }
-    }
-}

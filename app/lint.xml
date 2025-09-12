@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Accessibility Rules: Enforce strict checking -->
+    
+    <!-- Content descriptions for images and icons -->
+    <issue id="ContentDescription" severity="error">
+        <ignore path="**/test/**" />
+        <ignore path="**/androidTest/**" />
+    </issue>
+    
+    <!-- Click handlers should have proper accessibility support -->
+    <issue id="ClickableViewAccessibility" severity="error">
+        <ignore path="**/test/**" />
+        <ignore path="**/androidTest/**" />
+    </issue>
+    
+    <!-- Focusable elements should have proper accessibility -->
+    <issue id="SpeakableTextPresentCheck" severity="warning">
+        <ignore path="**/test/**" />
+        <ignore path="**/androidTest/**" />
+    </issue>
+    
+    <!-- Touch target size checks -->
+    <issue id="TouchTargetSizeCheck" severity="warning">
+        <ignore path="**/test/**" />
+        <ignore path="**/androidTest/**" />
+    </issue>
+    
+    <!-- Compose-specific accessibility checks -->
+    <issue id="UnnecessaryComposedModifier" severity="ignore" />
+    
+    <!-- Color contrast and visual accessibility -->
+    <issue id="LabelFor" severity="warning">
+        <ignore path="**/test/**" />
+        <ignore path="**/androidTest/**" />
+    </issue>
+    
+    <!-- Custom views should properly support accessibility -->
+    <issue id="ViewConstructor" severity="warning">
+        <ignore path="**/test/**" />
+        <ignore path="**/androidTest/**" />
+    </issue>
+    
+    <!-- Text contrast checking where available -->
+    <issue id="TextContrastCheck" severity="warning">
+        <ignore path="**/test/**" />
+        <ignore path="**/androidTest/**" />
+    </issue>
+    
+    <!-- State descriptions for dynamic content -->
+    <issue id="StateDescriptionCheck" severity="warning">
+        <ignore path="**/test/**" />
+        <ignore path="**/androidTest/**" />
+    </issue>
+    
+    <!-- Keyboard navigation support -->
+    <issue id="KeyboardInaccessibleWidget" severity="warning">
+        <ignore path="**/test/**" />
+        <ignore path="**/androidTest/**" />
+    </issue>
+    
+    <!-- Other important lint rules to maintain code quality -->
+    <issue id="HardcodedText" severity="warning" />
+    <issue id="UnusedResources" severity="informational" />
+    <issue id="IconDensities" severity="warning" />
+    <issue id="IconDuplicates" severity="informational" />
+    
+    <!-- Disable noisy rules that don't affect functionality -->
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="NewerVersionAvailable" severity="ignore" />
+    <issue id="AllowBackup" severity="ignore" />
+    <issue id="GoogleAppIndexingWarning" severity="ignore" />
+</lint>

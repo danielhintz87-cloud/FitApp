@@ -22,33 +22,34 @@ import com.example.fitapp.ui.screens.AIPersonalTrainerUiState
 @Composable
 fun AIPersonalTrainerDashboard(uiState: AIPersonalTrainerUiState) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // AI Status Card with Real-Time Insights
         item {
             AIStatusCard(uiState)
         }
-        
+
         // Daily Motivation with Psychology Triggers
         item {
             AdvancedMotivationCard(uiState)
         }
-        
+
         // Smart Recommendations with Priority System
         if (uiState.recommendations.isNotEmpty()) {
             items(uiState.recommendations) { recommendation ->
                 SmartRecommendationCard(recommendation)
             }
         }
-        
+
         // Quick Actions with Behavioral Economics
         item {
             AIQuickActionsCard()
         }
-        
+
         // Progress Insights with Predictive Analytics
         if (uiState.progressAnalysis != null) {
             item {
@@ -61,10 +62,11 @@ fun AIPersonalTrainerDashboard(uiState: AIPersonalTrainerUiState) {
 @Composable
 fun AIWorkoutPlanner(uiState: AIPersonalTrainerUiState) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Adaptive Workout Plan
         uiState.workoutPlan?.let { plan ->
@@ -72,12 +74,12 @@ fun AIWorkoutPlanner(uiState: AIPersonalTrainerUiState) {
                 AdaptiveWorkoutPlanCard(plan)
             }
         }
-        
+
         // Real-Time Performance Optimizer
         item {
             PerformanceOptimizerCard()
         }
-        
+
         // Exercise Library with AI Suggestions
         item {
             AIExerciseLibraryCard()
@@ -88,26 +90,27 @@ fun AIWorkoutPlanner(uiState: AIPersonalTrainerUiState) {
 @Composable
 fun AICoachInterface(uiState: AIPersonalTrainerUiState) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Real-Time Coaching Panel
         item {
             RealTimeCoachingCard()
         }
-        
+
         // Form Analysis with Computer Vision
         item {
             FormAnalysisCard()
         }
-        
+
         // Motivational Psychology Engine
         item {
             MotivationalPsychologyCard()
         }
-        
+
         // Behavioral Trigger System
         item {
             BehavioralTriggerCard()
@@ -118,26 +121,27 @@ fun AICoachInterface(uiState: AIPersonalTrainerUiState) {
 @Composable
 fun AIAnalyticsDashboard(uiState: AIPersonalTrainerUiState) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Predictive Performance Analytics
         item {
             PredictiveAnalyticsCard()
         }
-        
+
         // Recovery Optimization
         item {
             RecoveryOptimizationCard()
         }
-        
+
         // Goal Achievement Probability
         item {
             GoalAchievementCard()
         }
-        
+
         // Advanced Metrics Dashboard
         item {
             AdvancedMetricsCard()
@@ -148,17 +152,18 @@ fun AIAnalyticsDashboard(uiState: AIPersonalTrainerUiState) {
 @Composable
 fun VoiceCoachInterface(uiState: AIPersonalTrainerUiState) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Voice Command Interface
         VoiceCommandCard()
-        
+
         // Audio Coaching Preferences
         AudioCoachingPreferencesCard()
-        
+
         // Voice Training Sessions
         VoiceTrainingSessionsCard()
     }
@@ -171,52 +176,53 @@ fun VoiceCoachInterface(uiState: AIPersonalTrainerUiState) {
 fun AIStatusCard(uiState: AIPersonalTrainerUiState) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+            ),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     "🤖 AI Coach Status",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
-                
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Default.Circle,
                         contentDescription = "Status",
                         tint = Color.Green,
-                        modifier = Modifier.size(8.dp)
+                        modifier = Modifier.size(8.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         "Aktiv",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Green
+                        color = Color.Green,
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 "🧠 Dual-AI System (Gemini Flash + Perplexity Sonar) bereit für optimale Trainingsberatung",
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 AIStatusMetric("Personalisierung", "97%")
                 AIStatusMetric("Genauigkeit", "94%")
@@ -227,17 +233,20 @@ fun AIStatusCard(uiState: AIPersonalTrainerUiState) {
 }
 
 @Composable
-fun AIStatusMetric(label: String, value: String) {
+fun AIStatusMetric(
+    label: String,
+    value: String,
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             value,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
         Text(
             label,
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
         )
     }
 }
@@ -247,56 +256,57 @@ fun AIStatusMetric(label: String, value: String) {
 fun AdvancedMotivationCard(uiState: AIPersonalTrainerUiState) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            ),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     Icons.Default.Psychology,
                     contentDescription = "Motivation",
-                    tint = MaterialTheme.colorScheme.secondary
+                    tint = MaterialTheme.colorScheme.secondary,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     "🔥 Behavioral Motivation Engine",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Text(
                 uiState.motivation?.message ?: "🌟 Heute ist der perfekte Tag, um deine Grenzen zu erweitern! " +
-                "Dein 7-Tage-Streak zeigt deine unglaubliche Willenskraft - schütze diesen wertvollen Fortschritt! " +
-                "💪 83% der erfolgreichen FitApp-Nutzer trainieren jetzt - gehöre zur Siegergruppe!",
-                style = MaterialTheme.typography.bodyMedium
+                    "Dein 7-Tage-Streak zeigt deine unglaubliche Willenskraft - schütze diesen wertvollen Fortschritt! " +
+                    "💪 83% der erfolgreichen FitApp-Nutzer trainieren jetzt - gehöre zur Siegergruppe!",
+                style = MaterialTheme.typography.bodyMedium,
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 Button(
                     onClick = { /* Start Workout */ },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Text("💪 Jetzt starten")
                 }
-                
+
                 Spacer(modifier = Modifier.width(8.dp))
-                
+
                 OutlinedButton(
                     onClick = { /* Customize */ },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Text("🎯 Anpassen")
                 }
@@ -310,31 +320,32 @@ fun AdvancedMotivationCard(uiState: AIPersonalTrainerUiState) {
 fun RealTimeCoachingCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            ),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Text(
                 "🎯 Real-Time Coaching",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 "Intelligente Form-Analyse, sofortige Korrekturen und adaptive Intensitätsanpassung während des Trainings.",
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 CoachingFeature("📹", "Form Check")
                 CoachingFeature("⚡", "Live Tipps")
@@ -345,15 +356,18 @@ fun RealTimeCoachingCard() {
 }
 
 @Composable
-fun CoachingFeature(icon: String, label: String) {
+fun CoachingFeature(
+    icon: String,
+    label: String,
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             icon,
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
         )
         Text(
             label,
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
         )
     }
 }
@@ -363,42 +377,43 @@ fun CoachingFeature(icon: String, label: String) {
 fun VoiceCommandCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+            ),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
                 Icons.Default.Mic,
                 contentDescription = "Voice Command",
                 modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Text(
                 "🎙️ Voice-Activated Coaching",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 "Hands-free Training mit KI-Voice Assistant. Sage einfach \"Pause\", \"Zu schwer\" oder \"Motivation\" für sofortige Hilfe!",
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Button(
                 onClick = { /* Start Voice Mode */ },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Default.Mic, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -421,29 +436,42 @@ fun SmartRecommendationCard(recommendation: com.example.fitapp.domain.entities.A
 
 @Composable
 fun AIQuickActionsCard() { /* Implementation */ }
+
 @Composable
 fun PredictiveProgressCard(progressAnalysis: com.example.fitapp.domain.entities.ProgressAnalysis) { /* Implementation */ }
+
 @Composable
 fun AdaptiveWorkoutPlanCard(plan: com.example.fitapp.domain.entities.WorkoutPlan) { /* Implementation */ }
+
 @Composable
 fun PerformanceOptimizerCard() { /* Implementation */ }
+
 @Composable
 fun AIExerciseLibraryCard() { /* Implementation */ }
+
 @Composable
 fun FormAnalysisCard() { /* Implementation */ }
+
 @Composable
 fun MotivationalPsychologyCard() { /* Implementation */ }
+
 @Composable
 fun BehavioralTriggerCard() { /* Implementation */ }
+
 @Composable
 fun PredictiveAnalyticsCard() { /* Implementation */ }
+
 @Composable
 fun RecoveryOptimizationCard() { /* Implementation */ }
+
 @Composable
 fun GoalAchievementCard() { /* Implementation */ }
+
 @Composable
 fun AdvancedMetricsCard() { /* Implementation */ }
+
 @Composable
 fun AudioCoachingPreferencesCard() { /* Implementation */ }
+
 @Composable
 fun VoiceTrainingSessionsCard() { /* Implementation */ }

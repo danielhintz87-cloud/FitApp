@@ -20,43 +20,51 @@ interface RecipeDao {
     @Query("DELETE FROM recipe_favorites WHERE recipeId = :recipeId")
     suspend fun removeFavorite(recipeId: String)
 
-    @Query("""
+    @Query(
+        """
         SELECT r.* FROM recipes r
         INNER JOIN recipe_favorites f ON r.id = f.recipeId
         ORDER BY f.savedAt DESC
-    """)
+    """,
+    )
     fun favoritesFlow(): Flow<List<RecipeEntity>>
 
     @Insert
     suspend fun insertHistory(history: RecipeHistoryEntity)
 
-    @Query("""
+    @Query(
+        """
         SELECT r.* FROM recipes r
         INNER JOIN recipe_history h ON r.id = h.recipeId
         ORDER BY h.createdAt DESC
-    """)
+    """,
+    )
     fun historyFlow(): Flow<List<RecipeEntity>>
 
     @Query("SELECT r.* FROM recipes r WHERE id = :id")
     suspend fun getRecipe(id: String): RecipeEntity?
-    
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun addToFavorites(entity: RecipeFavoriteEntity)
-    
+
     @Query("DELETE FROM recipe_favorites WHERE recipeId = :recipeId AND category = :category")
-    suspend fun removeFromFavoriteCategory(recipeId: String, category: String)
-    
+    suspend fun removeFromFavoriteCategory(
+        recipeId: String,
+        category: String,
+    )
+
     @Query("DELETE FROM recipe_favorites WHERE recipeId = :recipeId")
     suspend fun removeFromAllFavoriteCategories(recipeId: String)
-    
+
     @Query("SELECT * FROM recipe_favorites")
     suspend fun getAllFavoriteCategories(): List<RecipeFavoriteEntity>
-    
+
     @Query("SELECT recipeId FROM recipe_favorites WHERE category = :category")
     suspend fun getFavoriteRecipesByCategory(category: String): List<String>
-    
+
     // Enhanced recipe search and filtering (YAZIO-style)
-    @Query("""
+    @Query(
+        """
         SELECT * FROM recipes 
         WHERE (:searchQuery IS NULL OR title LIKE '%' || :searchQuery || '%' 
                OR description LIKE '%' || :searchQuery || '%')
@@ -73,7 +81,8 @@ interface RecipeDao {
                 WHEN 'calories' THEN CAST(calories AS TEXT)
                 ELSE CAST(createdAt AS TEXT)
             END
-    """)
+    """,
+    )
     suspend fun searchRecipesFiltered(
         searchQuery: String? = null,
         difficulty: String? = null,
@@ -81,24 +90,24 @@ interface RecipeDao {
         maxCookTime: Int? = null,
         maxCalories: Int? = null,
         isOfficial: Boolean? = null,
-        sortBy: String = "createdAt"
+        sortBy: String = "createdAt",
     ): List<RecipeEntity>
-    
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRecipeIngredient(ingredient: RecipeIngredientEntity)
-    
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRecipeStep(step: RecipeStepEntity)
-    
+
     @Query("SELECT * FROM recipe_ingredients WHERE recipeId = :recipeId ORDER BY ingredientOrder")
     suspend fun getRecipeIngredients(recipeId: String): List<RecipeIngredientEntity>
-    
+
     @Query("SELECT * FROM recipe_steps WHERE recipeId = :recipeId ORDER BY stepOrder")
     suspend fun getRecipeSteps(recipeId: String): List<RecipeStepEntity>
-    
+
     @Query("DELETE FROM recipe_ingredients WHERE recipeId = :recipeId")
     suspend fun deleteRecipeIngredients(recipeId: String)
-    
+
     @Query("DELETE FROM recipe_steps WHERE recipeId = :recipeId")
     suspend fun deleteRecipeSteps(recipeId: String)
 }
@@ -108,73 +117,91 @@ interface RecipeDao {
 interface MealDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMeal(meal: MealEntity)
-    
+
     @Update
     suspend fun updateMeal(meal: MealEntity)
-    
+
     @Query("DELETE FROM meals WHERE id = :id")
     suspend fun deleteMeal(id: String)
-    
+
     @Query("SELECT * FROM meals WHERE id = :id")
     suspend fun getMeal(id: String): MealEntity?
-    
+
     @Query("SELECT * FROM meals WHERE mealType = :mealType ORDER BY lastUsedAt DESC, createdAt DESC")
     fun getMealsByType(mealType: String): Flow<List<MealEntity>>
-    
+
     @Query("SELECT * FROM meals ORDER BY lastUsedAt DESC, createdAt DESC")
     fun getAllMeals(): Flow<List<MealEntity>>
-    
+
     @Query("UPDATE meals SET lastUsedAt = :timestamp WHERE id = :id")
-    suspend fun updateLastUsed(id: String, timestamp: Long = System.currentTimeMillis() / 1000)
+    suspend fun updateLastUsed(
+        id: String,
+        timestamp: Long = System.currentTimeMillis() / 1000,
+    )
 }
 
 // Smart Grocery Lists DAO (YAZIO-style)
-@Dao 
+@Dao
 interface GroceryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGroceryList(list: GroceryListEntity)
-    
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertGroceryItem(item: GroceryItemEntity)
-    
+
     @Update
     suspend fun updateGroceryList(list: GroceryListEntity)
-    
+
     @Update
     suspend fun updateGroceryItem(item: GroceryItemEntity)
-    
+
     @Query("DELETE FROM grocery_lists WHERE id = :id")
     suspend fun deleteGroceryList(id: String)
-    
+
     @Query("DELETE FROM grocery_items WHERE id = :id")
     suspend fun deleteGroceryItem(id: String)
-    
+
     @Query("SELECT * FROM grocery_lists WHERE isActive = 1 ORDER BY isDefault DESC, createdAt DESC")
     fun getActiveLists(): Flow<List<GroceryListEntity>>
-    
+
     @Query("SELECT * FROM grocery_items WHERE listId = :listId ORDER BY category, name")
     fun getListItems(listId: String): Flow<List<GroceryItemEntity>>
-    
-    @Query("""
+
+    @Query(
+        """
         SELECT * FROM grocery_items 
         WHERE listId = :listId AND category = :category 
         ORDER BY checked ASC, name ASC
-    """)
-    suspend fun getItemsByCategory(listId: String, category: String): List<GroceryItemEntity>
-    
+    """,
+    )
+    suspend fun getItemsByCategory(
+        listId: String,
+        category: String,
+    ): List<GroceryItemEntity>
+
     @Query("SELECT DISTINCT category FROM grocery_items WHERE listId = :listId ORDER BY category")
     suspend fun getListCategories(listId: String): List<String>
-    
+
     // Smart quantity merging for recipes
-    @Query("""
+    @Query(
+        """
         SELECT * FROM grocery_items 
         WHERE listId = :listId AND name = :itemName AND unit = :unit
         ORDER BY addedAt DESC
-    """)
-    suspend fun findSimilarItems(listId: String, itemName: String, unit: String): List<GroceryItemEntity>
-    
+    """,
+    )
+    suspend fun findSimilarItems(
+        listId: String,
+        itemName: String,
+        unit: String,
+    ): List<GroceryItemEntity>
+
     @Query("UPDATE grocery_items SET checked = :checked, checkedAt = :timestamp WHERE id = :id")
-    suspend fun updateItemChecked(id: String, checked: Boolean, timestamp: Long = System.currentTimeMillis() / 1000)
+    suspend fun updateItemChecked(
+        id: String,
+        checked: Boolean,
+        timestamp: Long = System.currentTimeMillis() / 1000,
+    )
 }
 
 @Dao
@@ -182,17 +209,21 @@ interface IntakeDao {
     @Insert
     suspend fun insert(entry: IntakeEntryEntity)
 
-    @Query("""
+    @Query(
+        """
         SELECT COALESCE(SUM(kcal),0) FROM intake_entries
         WHERE date(datetime(timestamp,'unixepoch')) = date(:epochSec,'unixepoch','localtime')
-    """)
+    """,
+    )
     suspend fun totalForDay(epochSec: Long): Int
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM intake_entries
         WHERE date(datetime(timestamp,'unixepoch')) = date(:epochSec,'unixepoch','localtime')
         ORDER BY timestamp DESC
-    """)
+    """,
+    )
     fun dayEntriesFlow(epochSec: Long): Flow<List<IntakeEntryEntity>>
 
     @Query("DELETE FROM intake_entries")
@@ -221,19 +252,26 @@ interface ShoppingDao {
 
     @Query("SELECT * FROM shopping_items ORDER BY category, name")
     fun itemsFlow(): Flow<List<ShoppingItemEntity>>
-    
+
     @Query("SELECT * FROM shopping_items ORDER BY checked, createdAt DESC")
     fun itemsFlowByDate(): Flow<List<ShoppingItemEntity>>
 
     @Query("UPDATE shopping_items SET checked = :checked WHERE id = :id")
-    suspend fun setChecked(id: Long, checked: Boolean)
-    
+    suspend fun setChecked(
+        id: Long,
+        checked: Boolean,
+    )
+
     @Query("DELETE FROM shopping_items WHERE checked = 1")
     suspend fun deleteCheckedItems()
-    
+
     @Query("UPDATE shopping_items SET quantity = :quantity, unit = :unit WHERE id = :id")
-    suspend fun updateQuantityAndUnit(id: Long, quantity: Double, unit: String)
-    
+    suspend fun updateQuantityAndUnit(
+        id: Long,
+        quantity: Double,
+        unit: String,
+    )
+
     @Query("DELETE FROM shopping_items")
     suspend fun deleteAll()
 }
@@ -258,12 +296,14 @@ interface SavedRecipeDao {
     @Query("SELECT * FROM saved_recipes WHERE tags LIKE '%' || :tag || '%' ORDER BY createdAt DESC")
     fun recipesByTagFlow(tag: String): Flow<List<SavedRecipeEntity>>
 
-    @Query("SELECT * FROM saved_recipes WHERE title LIKE '%' || :query || '%' OR tags LIKE '%' || :query || '%' ORDER BY createdAt DESC")
+    @Query(
+        "SELECT * FROM saved_recipes WHERE title LIKE '%' || :query || '%' OR tags LIKE '%' || :query || '%' ORDER BY createdAt DESC",
+    )
     fun searchRecipesFlow(query: String): Flow<List<SavedRecipeEntity>>
 
     @Query("SELECT * FROM saved_recipes WHERE id = :id")
     suspend fun getRecipe(id: String): SavedRecipeEntity?
-    
+
     @Query("SELECT * FROM saved_recipes WHERE id = :id")
     suspend fun getRecipeById(id: String): SavedRecipeEntity?
 
@@ -271,11 +311,17 @@ interface SavedRecipeDao {
     suspend fun getRecipesByIds(ids: List<String>): List<SavedRecipeEntity>
 
     @Query("UPDATE saved_recipes SET isFavorite = :favorite WHERE id = :id")
-    suspend fun setFavorite(id: String, favorite: Boolean)
+    suspend fun setFavorite(
+        id: String,
+        favorite: Boolean,
+    )
 
     @Query("UPDATE saved_recipes SET lastCookedAt = :timestamp WHERE id = :id")
-    suspend fun markAsCooked(id: String, timestamp: Long = System.currentTimeMillis() / 1000)
-    
+    suspend fun markAsCooked(
+        id: String,
+        timestamp: Long = System.currentTimeMillis() / 1000,
+    )
+
     @Query("DELETE FROM saved_recipes")
     suspend fun deleteAll()
 }
@@ -290,7 +336,7 @@ interface ShoppingCategoryDao {
 
     @Query("SELECT * FROM shopping_list_categories ORDER BY \"order\"")
     suspend fun getCategories(): List<ShoppingCategoryEntity>
-    
+
     @Query("DELETE FROM shopping_list_categories")
     suspend fun deleteAll()
 }
@@ -314,7 +360,7 @@ interface PlanDao {
 
     @Query("DELETE FROM training_plans WHERE id = :id")
     suspend fun delete(id: Long)
-    
+
     @Query("DELETE FROM training_plans")
     suspend fun deleteAll()
 }
@@ -328,10 +374,17 @@ interface TodayWorkoutDao {
     suspend fun getByDate(dateIso: String): TodayWorkoutEntity?
 
     @Query("UPDATE today_workouts SET status = :status, completedAt = :completedAt WHERE dateIso = :dateIso")
-    suspend fun setStatus(dateIso: String, status: String, completedAt: Long?)
+    suspend fun setStatus(
+        dateIso: String,
+        status: String,
+        completedAt: Long?,
+    )
 
     @Query("SELECT * FROM today_workouts WHERE dateIso BETWEEN :fromIso AND :toIso ORDER BY dateIso DESC")
-    suspend fun getBetween(fromIso: String, toIso: String): List<TodayWorkoutEntity>
+    suspend fun getBetween(
+        fromIso: String,
+        toIso: String,
+    ): List<TodayWorkoutEntity>
 
     @Query("DELETE FROM today_workouts")
     suspend fun deleteAll()
@@ -358,20 +411,27 @@ interface PersonalAchievementDao {
     fun achievementsByCompletionFlow(completed: Boolean): Flow<List<PersonalAchievementEntity>>
 
     @Query("UPDATE personal_achievements SET isCompleted = :completed, completedAt = :completedAt WHERE id = :id")
-    suspend fun markAsCompleted(id: Long, completed: Boolean, completedAt: Long?)
+    suspend fun markAsCompleted(
+        id: Long,
+        completed: Boolean,
+        completedAt: Long?,
+    )
 
     @Query("UPDATE personal_achievements SET currentValue = :value WHERE id = :id")
-    suspend fun updateProgress(id: Long, value: Double)
+    suspend fun updateProgress(
+        id: Long,
+        value: Double,
+    )
 
     @Query("SELECT * FROM personal_achievements WHERE id = :id")
     suspend fun getAchievement(id: Long): PersonalAchievementEntity?
-    
+
     @Query("SELECT * FROM personal_achievements WHERE title = :title LIMIT 1")
     suspend fun getAchievementByTitle(title: String): PersonalAchievementEntity?
-    
+
     @Query("UPDATE personal_achievements SET isCompleted = 0, completedAt = NULL, currentValue = 0.0")
     suspend fun resetAllAchievements()
-    
+
     @Query("DELETE FROM personal_achievements")
     suspend fun deleteAll()
 }
@@ -396,21 +456,34 @@ interface PersonalStreakDao {
     @Query("SELECT * FROM personal_streaks WHERE category = :category ORDER BY currentStreak DESC")
     fun streaksByCategoryFlow(category: String): Flow<List<PersonalStreakEntity>>
 
-    @Query("UPDATE personal_streaks SET currentStreak = :currentStreak, longestStreak = :longestStreak, lastActivityTimestamp = :lastActivityTimestamp WHERE id = :id")
-    suspend fun updateStreak(id: Long, currentStreak: Int, longestStreak: Int, lastActivityTimestamp: Long?)
+    @Query(
+        "UPDATE personal_streaks SET currentStreak = :currentStreak, longestStreak = :longestStreak, lastActivityTimestamp = :lastActivityTimestamp WHERE id = :id",
+    )
+    suspend fun updateStreak(
+        id: Long,
+        currentStreak: Int,
+        longestStreak: Int,
+        lastActivityTimestamp: Long?,
+    )
 
     @Query("UPDATE personal_streaks SET isActive = :active WHERE id = :id")
-    suspend fun setActive(id: Long, active: Boolean)
+    suspend fun setActive(
+        id: Long,
+        active: Boolean,
+    )
 
     @Query("SELECT * FROM personal_streaks WHERE id = :id")
     suspend fun getStreak(id: Long): PersonalStreakEntity?
-    
+
     @Query("SELECT * FROM personal_streaks WHERE name = :name AND category = :category LIMIT 1")
-    suspend fun getStreakByNameAndCategory(name: String, category: String): PersonalStreakEntity?
-    
+    suspend fun getStreakByNameAndCategory(
+        name: String,
+        category: String,
+    ): PersonalStreakEntity?
+
     @Query("UPDATE personal_streaks SET currentStreak = 0, lastActivityTimestamp = NULL")
     suspend fun resetAllStreaks()
-    
+
     @Query("DELETE FROM personal_streaks")
     suspend fun deleteAll()
 }
@@ -435,18 +508,28 @@ interface PersonalRecordDao {
     @Query("SELECT * FROM personal_records WHERE recordType = :recordType ORDER BY achievedAt DESC")
     fun recordsByTypeFlow(recordType: String): Flow<List<PersonalRecordEntity>>
 
-    @Query("SELECT * FROM personal_records WHERE exerciseName = :exerciseName AND recordType = :recordType ORDER BY value DESC LIMIT 1")
-    suspend fun getBestRecord(exerciseName: String, recordType: String): PersonalRecordEntity?
+    @Query(
+        "SELECT * FROM personal_records WHERE exerciseName = :exerciseName AND recordType = :recordType ORDER BY value DESC LIMIT 1",
+    )
+    suspend fun getBestRecord(
+        exerciseName: String,
+        recordType: String,
+    ): PersonalRecordEntity?
 
-    @Query("SELECT * FROM personal_records WHERE exerciseName = :exerciseName AND recordType = :recordType ORDER BY achievedAt DESC LIMIT 1")
-    suspend fun getRecord(exerciseName: String, recordType: String): PersonalRecordEntity?
+    @Query(
+        "SELECT * FROM personal_records WHERE exerciseName = :exerciseName AND recordType = :recordType ORDER BY achievedAt DESC LIMIT 1",
+    )
+    suspend fun getRecord(
+        exerciseName: String,
+        recordType: String,
+    ): PersonalRecordEntity?
 
     @Query("SELECT DISTINCT exerciseName FROM personal_records ORDER BY exerciseName")
     suspend fun getExerciseNames(): List<String>
 
     @Query("SELECT * FROM personal_records WHERE id = :id")
     suspend fun getRecord(id: Long): PersonalRecordEntity?
-    
+
     @Query("DELETE FROM personal_records")
     suspend fun deleteAll()
 }
@@ -472,14 +555,22 @@ interface ProgressMilestoneDao {
     fun milestonesByCompletionFlow(completed: Boolean): Flow<List<ProgressMilestoneEntity>>
 
     @Query("UPDATE progress_milestones SET currentValue = :value, progress = :progress WHERE id = :id")
-    suspend fun updateProgress(id: Long, value: Double, progress: Double)
+    suspend fun updateProgress(
+        id: Long,
+        value: Double,
+        progress: Double,
+    )
 
     @Query("UPDATE progress_milestones SET isCompleted = :completed, completedAt = :completedAt WHERE id = :id")
-    suspend fun markAsCompleted(id: Long, completed: Boolean, completedAt: Long?)
+    suspend fun markAsCompleted(
+        id: Long,
+        completed: Boolean,
+        completedAt: Long?,
+    )
 
     @Query("SELECT * FROM progress_milestones WHERE id = :id")
     suspend fun getMilestone(id: Long): ProgressMilestoneEntity?
-    
+
     @Query("DELETE FROM progress_milestones")
     suspend fun deleteAll()
 }
@@ -505,7 +596,10 @@ interface WeightDao {
     suspend fun getLatest(): WeightEntity?
 
     @Query("SELECT * FROM weight_entries WHERE dateIso BETWEEN :fromIso AND :toIso ORDER BY dateIso DESC")
-    suspend fun getBetween(fromIso: String, toIso: String): List<WeightEntity>
+    suspend fun getBetween(
+        fromIso: String,
+        toIso: String,
+    ): List<WeightEntity>
 
     @Query("SELECT COUNT(*) FROM weight_entries WHERE dateIso = :dateIso")
     suspend fun hasEntryForDate(dateIso: String): Int
@@ -532,7 +626,10 @@ interface FoodItemDao {
     suspend fun getByBarcode(barcode: String): FoodItemEntity?
 
     @Query("SELECT * FROM food_items WHERE name LIKE '%' || :query || '%' ORDER BY name LIMIT :limit")
-    suspend fun searchByName(query: String, limit: Int = 20): List<FoodItemEntity>
+    suspend fun searchByName(
+        query: String,
+        limit: Int = 20,
+    ): List<FoodItemEntity>
 
     @Query("SELECT * FROM food_items ORDER BY createdAt DESC LIMIT :limit")
     suspend fun getRecent(limit: Int = 20): List<FoodItemEntity>
@@ -562,12 +659,19 @@ interface MealEntryDao {
     fun getByDateFlow(date: String): Flow<List<MealEntryEntity>>
 
     @Query("SELECT * FROM meal_entries WHERE date = :date AND mealType = :mealType ORDER BY id")
-    suspend fun getByDateAndMealType(date: String, mealType: String): List<MealEntryEntity>
+    suspend fun getByDateAndMealType(
+        date: String,
+        mealType: String,
+    ): List<MealEntryEntity>
 
     @Query("SELECT * FROM meal_entries WHERE date = :date AND mealType = :mealType ORDER BY id")
-    fun getByDateAndMealTypeFlow(date: String, mealType: String): Flow<List<MealEntryEntity>>
+    fun getByDateAndMealTypeFlow(
+        date: String,
+        mealType: String,
+    ): Flow<List<MealEntryEntity>>
 
-    @Query("""
+    @Query(
+        """
         SELECT SUM(
             CASE mealType
                 WHEN 'breakfast' THEN (quantityGrams / 100.0) * (SELECT calories FROM food_items WHERE id = foodItemId)
@@ -577,42 +681,50 @@ interface MealEntryDao {
                 ELSE 0
             END
         ) FROM meal_entries WHERE date = :date
-    """)
+    """,
+    )
     suspend fun getTotalCaloriesForDate(date: String): Float?
 
-    @Query("""
+    @Query(
+        """
         SELECT SUM((quantityGrams / 100.0) * (SELECT carbs FROM food_items WHERE id = foodItemId))
         FROM meal_entries WHERE date = :date
-    """)
+    """,
+    )
     suspend fun getTotalCarbsForDate(date: String): Float?
 
-    @Query("""
+    @Query(
+        """
         SELECT SUM((quantityGrams / 100.0) * (SELECT protein FROM food_items WHERE id = foodItemId))
         FROM meal_entries WHERE date = :date
-    """)
+    """,
+    )
     suspend fun getTotalProteinForDate(date: String): Float?
 
-    @Query("""
+    @Query(
+        """
         SELECT SUM((quantityGrams / 100.0) * (SELECT fat FROM food_items WHERE id = foodItemId))
         FROM meal_entries WHERE date = :date
-    """)
+    """,
+    )
     suspend fun getTotalFatForDate(date: String): Float?
 
     @Query("DELETE FROM meal_entries")
     suspend fun deleteAll()
-    
+
     // Recipe-specific queries for diary entries
     @Query("SELECT * FROM meal_entries WHERE recipeId = :recipeId ORDER BY id DESC LIMIT 10")
     suspend fun getRecentRecipeEntries(recipeId: String): List<MealEntryEntity>
-    
+
     @Query("SELECT * FROM meal_entries WHERE recipeId IS NOT NULL AND date = :date ORDER BY id")
     suspend fun getRecipeEntriesForDate(date: String): List<MealEntryEntity>
-    
+
     @Query("SELECT * FROM meal_entries WHERE foodItemId IS NOT NULL AND date = :date ORDER BY id")
     suspend fun getFoodEntriesForDate(date: String): List<MealEntryEntity>
-    
+
     // Enhanced nutrition calculation supporting both food items and recipes
-    @Query("""
+    @Query(
+        """
         SELECT COALESCE(SUM(
             CASE 
                 WHEN foodItemId IS NOT NULL THEN 
@@ -622,10 +734,12 @@ interface MealEntryDao {
                 ELSE 0
             END
         ), 0) FROM meal_entries WHERE date = :date
-    """)
+    """,
+    )
     suspend fun getTotalCaloriesForDateEnhanced(date: String): Float
-    
-    @Query("""
+
+    @Query(
+        """
         SELECT COALESCE(SUM(
             CASE 
                 WHEN foodItemId IS NOT NULL THEN 
@@ -635,10 +749,12 @@ interface MealEntryDao {
                 ELSE 0
             END
         ), 0) FROM meal_entries WHERE date = :date
-    """)
+    """,
+    )
     suspend fun getTotalProteinForDateEnhanced(date: String): Float
-    
-    @Query("""
+
+    @Query(
+        """
         SELECT COALESCE(SUM(
             CASE 
                 WHEN foodItemId IS NOT NULL THEN 
@@ -648,10 +764,12 @@ interface MealEntryDao {
                 ELSE 0
             END
         ), 0) FROM meal_entries WHERE date = :date
-    """)
+    """,
+    )
     suspend fun getTotalCarbsForDateEnhanced(date: String): Float
-    
-    @Query("""
+
+    @Query(
+        """
         SELECT COALESCE(SUM(
             CASE 
                 WHEN foodItemId IS NOT NULL THEN 
@@ -661,7 +779,8 @@ interface MealEntryDao {
                 ELSE 0
             END
         ), 0) FROM meal_entries WHERE date = :date
-    """)
+    """,
+    )
     suspend fun getTotalFatForDateEnhanced(date: String): Float
 }
 
@@ -719,7 +838,10 @@ interface BMIHistoryDao {
     suspend fun getRecent(limit: Int): List<BMIHistoryEntity>
 
     @Query("SELECT * FROM bmi_history WHERE date BETWEEN :startDate AND :endDate ORDER BY date")
-    suspend fun getByDateRange(startDate: String, endDate: String): List<BMIHistoryEntity>
+    suspend fun getByDateRange(
+        startDate: String,
+        endDate: String,
+    ): List<BMIHistoryEntity>
 
     @Query("DELETE FROM bmi_history")
     suspend fun deleteAll()
@@ -781,12 +903,17 @@ interface BehavioralCheckInDao {
     @Query("SELECT * FROM behavioral_check_ins ORDER BY timestamp DESC LIMIT :limit")
     suspend fun getRecent(limit: Int): List<BehavioralCheckInEntity>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM behavioral_check_ins 
         WHERE timestamp BETWEEN :startTimestamp AND :endTimestamp 
         ORDER BY timestamp
-    """)
-    suspend fun getByDateRange(startTimestamp: Long, endTimestamp: Long): List<BehavioralCheckInEntity>
+    """,
+    )
+    suspend fun getByDateRange(
+        startTimestamp: Long,
+        endTimestamp: Long,
+    ): List<BehavioralCheckInEntity>
 
     @Query("DELETE FROM behavioral_check_ins")
     suspend fun deleteAll()
@@ -815,12 +942,17 @@ interface ProgressPhotoDao {
     @Query("SELECT * FROM progress_photos ORDER BY timestamp DESC LIMIT :limit")
     suspend fun getRecent(limit: Int): List<ProgressPhotoEntity>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM progress_photos 
         WHERE timestamp BETWEEN :startTimestamp AND :endTimestamp 
         ORDER BY timestamp
-    """)
-    suspend fun getByDateRange(startTimestamp: Long, endTimestamp: Long): List<ProgressPhotoEntity>
+    """,
+    )
+    suspend fun getByDateRange(
+        startTimestamp: Long,
+        endTimestamp: Long,
+    ): List<ProgressPhotoEntity>
 }
 
 // Advanced Workout Execution Enhancement - Phase 1 DAOs
@@ -849,7 +981,10 @@ interface WorkoutPerformanceDao {
     suspend fun getByExerciseId(exerciseId: String): List<WorkoutPerformanceEntity>
 
     @Query("SELECT * FROM workout_performance WHERE exerciseId = :exerciseId ORDER BY timestamp DESC LIMIT :limit")
-    suspend fun getRecentByExerciseId(exerciseId: String, limit: Int): List<WorkoutPerformanceEntity>
+    suspend fun getRecentByExerciseId(
+        exerciseId: String,
+        limit: Int,
+    ): List<WorkoutPerformanceEntity>
 
     @Query("SELECT * FROM workout_performance WHERE planId = :planId ORDER BY timestamp DESC")
     suspend fun getByPlanId(planId: Long): List<WorkoutPerformanceEntity>
@@ -857,23 +992,35 @@ interface WorkoutPerformanceDao {
     @Query("SELECT * FROM workout_performance WHERE isPersonalRecord = 1 ORDER BY timestamp DESC")
     suspend fun getPersonalRecords(): List<WorkoutPerformanceEntity>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM workout_performance 
         WHERE timestamp BETWEEN :startTimestamp AND :endTimestamp 
         ORDER BY timestamp
-    """)
-    suspend fun getByDateRange(startTimestamp: Long, endTimestamp: Long): List<WorkoutPerformanceEntity>
+    """,
+    )
+    suspend fun getByDateRange(
+        startTimestamp: Long,
+        endTimestamp: Long,
+    ): List<WorkoutPerformanceEntity>
 
-    @Query("""
+    @Query(
+        """
         SELECT AVG(volume) FROM workout_performance 
         WHERE exerciseId = :exerciseId AND timestamp >= :sinceTimestamp
-    """)
-    suspend fun getAverageVolumeForExercise(exerciseId: String, sinceTimestamp: Long): Float?
+    """,
+    )
+    suspend fun getAverageVolumeForExercise(
+        exerciseId: String,
+        sinceTimestamp: Long,
+    ): Float?
 
-    @Query("""
+    @Query(
+        """
         SELECT MAX(volume) FROM workout_performance 
         WHERE exerciseId = :exerciseId
-    """)
+    """,
+    )
     suspend fun getMaxVolumeForExercise(exerciseId: String): Float?
 
     @Query("DELETE FROM workout_performance")
@@ -901,7 +1048,10 @@ interface WorkoutSessionDao {
     fun getAllFlow(): Flow<List<WorkoutSessionEntity>>
 
     @Query("UPDATE workout_sessions SET pauseStartTime = :pauseTime WHERE id = :sessionId")
-    suspend fun updatePauseTime(sessionId: String, pauseTime: Long)
+    suspend fun updatePauseTime(
+        sessionId: String,
+        pauseTime: Long,
+    )
 
     @Query("SELECT * FROM workout_sessions WHERE planId = :planId ORDER BY startTime DESC")
     suspend fun getByPlanId(planId: Long): List<WorkoutSessionEntity>
@@ -915,24 +1065,39 @@ interface WorkoutSessionDao {
     @Query("SELECT * FROM workout_sessions ORDER BY startTime DESC LIMIT :limit")
     suspend fun getRecent(limit: Int): List<WorkoutSessionEntity>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM workout_sessions 
         WHERE startTime BETWEEN :startTimestamp AND :endTimestamp 
         ORDER BY startTime
-    """)
-    suspend fun getByDateRange(startTimestamp: Long, endTimestamp: Long): List<WorkoutSessionEntity>
+    """,
+    )
+    suspend fun getByDateRange(
+        startTimestamp: Long,
+        endTimestamp: Long,
+    ): List<WorkoutSessionEntity>
 
-    @Query("""
+    @Query(
+        """
         SELECT AVG(workoutEfficiencyScore) FROM workout_sessions 
         WHERE userId = :userId AND startTime >= :sinceTimestamp
-    """)
-    suspend fun getAverageEfficiencyScore(userId: String, sinceTimestamp: Long): Float?
+    """,
+    )
+    suspend fun getAverageEfficiencyScore(
+        userId: String,
+        sinceTimestamp: Long,
+    ): Float?
 
-    @Query("""
+    @Query(
+        """
         SELECT SUM(personalRecordsAchieved) FROM workout_sessions 
         WHERE userId = :userId AND startTime >= :sinceTimestamp
-    """)
-    suspend fun getTotalPersonalRecords(userId: String, sinceTimestamp: Long): Int?
+    """,
+    )
+    suspend fun getTotalPersonalRecords(
+        userId: String,
+        sinceTimestamp: Long,
+    ): Int?
 
     @Query("DELETE FROM workout_sessions")
     suspend fun deleteAll()
@@ -953,7 +1118,10 @@ interface ExerciseProgressionDao {
     suspend fun getById(id: String): ExerciseProgressionEntity?
 
     @Query("SELECT * FROM exercise_progressions WHERE exerciseId = :exerciseId AND userId = :userId")
-    suspend fun getByExerciseAndUser(exerciseId: String, userId: String): ExerciseProgressionEntity?
+    suspend fun getByExerciseAndUser(
+        exerciseId: String,
+        userId: String,
+    ): ExerciseProgressionEntity?
 
     @Query("SELECT * FROM exercise_progressions WHERE userId = :userId ORDER BY lastProgressDate DESC")
     suspend fun getByUserId(userId: String): List<ExerciseProgressionEntity>
@@ -964,31 +1132,48 @@ interface ExerciseProgressionDao {
     @Query("SELECT * FROM exercise_progressions WHERE plateauDetected = 1 AND userId = :userId")
     suspend fun getPlateauedExercises(userId: String): List<ExerciseProgressionEntity>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM exercise_progressions 
         WHERE performanceTrend = :trend AND userId = :userId 
         ORDER BY lastProgressDate DESC
-    """)
-    suspend fun getByPerformanceTrend(trend: String, userId: String): List<ExerciseProgressionEntity>
+    """,
+    )
+    suspend fun getByPerformanceTrend(
+        trend: String,
+        userId: String,
+    ): List<ExerciseProgressionEntity>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM exercise_progressions 
         WHERE nextReviewDate <= :currentTimestamp AND userId = :userId
         ORDER BY nextReviewDate
-    """)
-    suspend fun getExercisesDueForReview(currentTimestamp: Long, userId: String): List<ExerciseProgressionEntity>
+    """,
+    )
+    suspend fun getExercisesDueForReview(
+        currentTimestamp: Long,
+        userId: String,
+    ): List<ExerciseProgressionEntity>
 
-    @Query("""
+    @Query(
+        """
         SELECT COUNT(*) FROM exercise_progressions 
         WHERE performanceTrend = 'improving' AND userId = :userId
-    """)
+    """,
+    )
     suspend fun getImprovingExercisesCount(userId: String): Int
 
-    @Query("""
+    @Query(
+        """
         SELECT AVG(aiConfidence) FROM exercise_progressions 
         WHERE userId = :userId AND lastProgressDate >= :sinceTimestamp
-    """)
-    suspend fun getAverageAIConfidence(userId: String, sinceTimestamp: Long): Float?
+    """,
+    )
+    suspend fun getAverageAIConfidence(
+        userId: String,
+        sinceTimestamp: Long,
+    ): Float?
 
     @Query("DELETE FROM exercise_progressions")
     suspend fun deleteAll()
@@ -1023,34 +1208,53 @@ interface CookingSessionDao {
     fun getAllFlow(): Flow<List<CookingSessionEntity>>
 
     @Query("UPDATE cooking_sessions SET currentStep = :stepIndex WHERE id = :sessionId")
-    suspend fun updateCurrentStep(sessionId: String, stepIndex: Int)
+    suspend fun updateCurrentStep(
+        sessionId: String,
+        stepIndex: Int,
+    )
 
     @Query("UPDATE cooking_sessions SET status = :status WHERE id = :sessionId")
-    suspend fun updateStatus(sessionId: String, status: String)
+    suspend fun updateStatus(
+        sessionId: String,
+        status: String,
+    )
 
-    @Query("""
+    @Query(
+        """
         UPDATE cooking_sessions 
         SET endTime = :endTime, status = 'completed', actualDuration = :actualDuration 
         WHERE id = :sessionId
-    """)
-    suspend fun completeCookingSession(sessionId: String, endTime: Long, actualDuration: Long)
+    """,
+    )
+    suspend fun completeCookingSession(
+        sessionId: String,
+        endTime: Long,
+        actualDuration: Long,
+    )
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM cooking_sessions 
         WHERE startTime BETWEEN :startTimestamp AND :endTimestamp 
         ORDER BY startTime
-    """)
-    suspend fun getByDateRange(startTimestamp: Long, endTimestamp: Long): List<CookingSessionEntity>
+    """,
+    )
+    suspend fun getByDateRange(
+        startTimestamp: Long,
+        endTimestamp: Long,
+    ): List<CookingSessionEntity>
 
     @Query("SELECT COUNT(*) FROM cooking_sessions WHERE status = 'completed'")
     suspend fun getCompletedSessionsCount(): Int
 
-    @Query("""
+    @Query(
+        """
         SELECT AVG(actualDuration) FROM cooking_sessions 
         WHERE status = 'completed' AND actualDuration IS NOT NULL
-    """)
+    """,
+    )
     suspend fun getAverageCookingTime(): Float?
-    
+
     @Query("DELETE FROM cooking_sessions")
     suspend fun deleteAll()
 }
@@ -1076,7 +1280,10 @@ interface CookingTimerDao {
     fun getBySessionIdFlow(sessionId: String): Flow<List<CookingTimerEntity>>
 
     @Query("SELECT * FROM cooking_timers WHERE stepIndex = :stepIndex AND sessionId = :sessionId")
-    suspend fun getByStepIndex(sessionId: String, stepIndex: Int): List<CookingTimerEntity>
+    suspend fun getByStepIndex(
+        sessionId: String,
+        stepIndex: Int,
+    ): List<CookingTimerEntity>
 
     @Query("SELECT * FROM cooking_timers WHERE isActive = 1")
     suspend fun getActiveTimers(): List<CookingTimerEntity>
@@ -1085,21 +1292,32 @@ interface CookingTimerDao {
     fun getActiveTimersFlow(): Flow<List<CookingTimerEntity>>
 
     @Query("UPDATE cooking_timers SET isPaused = :isPaused WHERE stepIndex = :stepIndex")
-    suspend fun updatePauseState(stepIndex: Int, isPaused: Boolean)
+    suspend fun updatePauseState(
+        stepIndex: Int,
+        isPaused: Boolean,
+    )
 
     @Query("UPDATE cooking_timers SET remainingSeconds = :remainingSeconds WHERE id = :timerId")
-    suspend fun updateRemainingTime(timerId: String, remainingSeconds: Long)
+    suspend fun updateRemainingTime(
+        timerId: String,
+        remainingSeconds: Long,
+    )
 
-    @Query("""
+    @Query(
+        """
         UPDATE cooking_timers 
         SET isActive = 0, completedAt = :completedAt 
         WHERE id = :timerId
-    """)
-    suspend fun completeTimer(timerId: String, completedAt: Long)
+    """,
+    )
+    suspend fun completeTimer(
+        timerId: String,
+        completedAt: Long,
+    )
 
     @Query("DELETE FROM cooking_timers WHERE sessionId = :sessionId")
     suspend fun deleteBySessionId(sessionId: String)
-    
+
     @Query("DELETE FROM cooking_timers")
     suspend fun deleteAll()
 }
@@ -1121,17 +1339,25 @@ interface HealthStepsDao {
     suspend fun getByDate(date: String): List<HealthStepsEntity>
 
     @Query("SELECT * FROM health_connect_steps WHERE date = :date AND source = :source")
-    suspend fun getByDateAndSource(date: String, source: String): HealthStepsEntity?
+    suspend fun getByDateAndSource(
+        date: String,
+        source: String,
+    ): HealthStepsEntity?
 
     @Query("SELECT SUM(steps) FROM health_connect_steps WHERE date = :date")
     suspend fun getTotalStepsForDate(date: String): Int?
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM health_connect_steps 
         WHERE date BETWEEN :startDate AND :endDate 
         ORDER BY date DESC
-    """)
-    suspend fun getByDateRange(startDate: String, endDate: String): List<HealthStepsEntity>
+    """,
+    )
+    suspend fun getByDateRange(
+        startDate: String,
+        endDate: String,
+    ): List<HealthStepsEntity>
 
     @Query("SELECT * FROM health_connect_steps ORDER BY date DESC LIMIT :limit")
     suspend fun getRecent(limit: Int): List<HealthStepsEntity>
@@ -1163,12 +1389,17 @@ interface HealthHeartRateDao {
     @Query("SELECT MAX(heartRate) FROM health_connect_heart_rate WHERE date = :date")
     suspend fun getMaxHeartRateForDate(date: String): Int?
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM health_connect_heart_rate 
         WHERE timestamp BETWEEN :startTimestamp AND :endTimestamp 
         ORDER BY timestamp
-    """)
-    suspend fun getByTimeRange(startTimestamp: Long, endTimestamp: Long): List<HealthHeartRateEntity>
+    """,
+    )
+    suspend fun getByTimeRange(
+        startTimestamp: Long,
+        endTimestamp: Long,
+    ): List<HealthHeartRateEntity>
 
     @Query("DELETE FROM health_connect_heart_rate WHERE syncedAt < :beforeTimestamp")
     suspend fun deleteOldEntries(beforeTimestamp: Long)
@@ -1191,21 +1422,35 @@ interface HealthCalorieDao {
     @Query("SELECT * FROM health_connect_calories WHERE date = :date ORDER BY syncedAt DESC")
     suspend fun getByDate(date: String): List<HealthCalorieEntity>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM health_connect_calories 
         WHERE date = :date AND calorieType = :type AND source = :source
-    """)
-    suspend fun getByDateTypeAndSource(date: String, type: String, source: String): HealthCalorieEntity?
+    """,
+    )
+    suspend fun getByDateTypeAndSource(
+        date: String,
+        type: String,
+        source: String,
+    ): HealthCalorieEntity?
 
     @Query("SELECT SUM(calories) FROM health_connect_calories WHERE date = :date AND calorieType = :type")
-    suspend fun getTotalCaloriesForDateAndType(date: String, type: String): Double?
+    suspend fun getTotalCaloriesForDateAndType(
+        date: String,
+        type: String,
+    ): Double?
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM health_connect_calories 
         WHERE date BETWEEN :startDate AND :endDate 
         ORDER BY date DESC
-    """)
-    suspend fun getByDateRange(startDate: String, endDate: String): List<HealthCalorieEntity>
+    """,
+    )
+    suspend fun getByDateRange(
+        startDate: String,
+        endDate: String,
+    ): List<HealthCalorieEntity>
 
     @Query("DELETE FROM health_connect_calories WHERE syncedAt < :beforeTimestamp")
     suspend fun deleteOldEntries(beforeTimestamp: Long)
@@ -1231,18 +1476,28 @@ interface HealthSleepDao {
     @Query("SELECT SUM(durationMinutes) FROM health_connect_sleep WHERE date = :date")
     suspend fun getTotalSleepForDate(date: String): Int?
 
-    @Query("""
+    @Query(
+        """
         SELECT SUM(durationMinutes) FROM health_connect_sleep 
         WHERE date = :date AND sleepStage = :stage
-    """)
-    suspend fun getSleepDurationByStage(date: String, stage: String): Int?
+    """,
+    )
+    suspend fun getSleepDurationByStage(
+        date: String,
+        stage: String,
+    ): Int?
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM health_connect_sleep 
         WHERE startTime BETWEEN :startTimestamp AND :endTimestamp 
         ORDER BY startTime
-    """)
-    suspend fun getByTimeRange(startTimestamp: Long, endTimestamp: Long): List<HealthSleepEntity>
+    """,
+    )
+    suspend fun getByTimeRange(
+        startTimestamp: Long,
+        endTimestamp: Long,
+    ): List<HealthSleepEntity>
 
     @Query("DELETE FROM health_connect_sleep WHERE syncedAt < :beforeTimestamp")
     suspend fun deleteOldEntries(beforeTimestamp: Long)
@@ -1268,12 +1523,17 @@ interface HealthExerciseSessionDao {
     @Query("SELECT * FROM health_connect_exercise_sessions WHERE date = :date ORDER BY startTime DESC")
     suspend fun getByDate(date: String): List<HealthExerciseSessionEntity>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM health_connect_exercise_sessions 
         WHERE date BETWEEN :startDate AND :endDate 
         ORDER BY startTime DESC
-    """)
-    suspend fun getByDateRange(startDate: String, endDate: String): List<HealthExerciseSessionEntity>
+    """,
+    )
+    suspend fun getByDateRange(
+        startDate: String,
+        endDate: String,
+    ): List<HealthExerciseSessionEntity>
 
     @Query("SELECT * FROM health_connect_exercise_sessions WHERE exerciseType = :type ORDER BY startTime DESC")
     suspend fun getByExerciseType(type: String): List<HealthExerciseSessionEntity>
@@ -1296,28 +1556,41 @@ interface HealthExerciseSessionDao {
 interface CloudSyncDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSyncMetadata(metadata: CloudSyncEntity)
-    
+
     @Query("SELECT * FROM cloud_sync_metadata WHERE entityType = :entityType AND entityId = :entityId")
-    suspend fun getSyncMetadata(entityType: String, entityId: String): CloudSyncEntity?
-    
+    suspend fun getSyncMetadata(
+        entityType: String,
+        entityId: String,
+    ): CloudSyncEntity?
+
     @Query("SELECT * FROM cloud_sync_metadata WHERE syncStatus = :status")
     suspend fun getByStatus(status: String): List<CloudSyncEntity>
-    
+
     @Query("SELECT * FROM cloud_sync_metadata WHERE syncStatus = 'pending' OR syncStatus = 'error'")
     suspend fun getPendingSync(): List<CloudSyncEntity>
-    
+
     @Query("SELECT * FROM cloud_sync_metadata WHERE deviceId = :deviceId")
     suspend fun getByDeviceId(deviceId: String): List<CloudSyncEntity>
-    
+
     @Query("UPDATE cloud_sync_metadata SET syncStatus = :status, lastSyncTime = :timestamp WHERE id = :id")
-    suspend fun updateSyncStatus(id: String, status: String, timestamp: Long)
-    
+    suspend fun updateSyncStatus(
+        id: String,
+        status: String,
+        timestamp: Long,
+    )
+
     @Query("UPDATE cloud_sync_metadata SET retryCount = retryCount + 1, errorMessage = :error WHERE id = :id")
-    suspend fun incrementRetryCount(id: String, error: String?)
-    
+    suspend fun incrementRetryCount(
+        id: String,
+        error: String?,
+    )
+
     @Query("DELETE FROM cloud_sync_metadata WHERE entityType = :entityType AND entityId = :entityId")
-    suspend fun deleteSyncMetadata(entityType: String, entityId: String)
-    
+    suspend fun deleteSyncMetadata(
+        entityType: String,
+        entityId: String,
+    )
+
     @Query("DELETE FROM cloud_sync_metadata WHERE lastSyncTime < :cutoffTime")
     suspend fun cleanupOldMetadata(cutoffTime: Long)
 }
@@ -1326,28 +1599,34 @@ interface CloudSyncDao {
 interface UserProfileDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertUserProfile(profile: UserProfileEntity)
-    
+
     @Query("SELECT * FROM user_profiles WHERE userId = :userId")
     suspend fun getUserProfile(userId: String): UserProfileEntity?
-    
+
     @Query("SELECT * FROM user_profiles WHERE isActive = 1 LIMIT 1")
     suspend fun getActiveUserProfile(): UserProfileEntity?
-    
+
     @Query("SELECT * FROM user_profiles WHERE deviceId = :deviceId")
     suspend fun getByDeviceId(deviceId: String): UserProfileEntity?
-    
+
     @Query("UPDATE user_profiles SET lastSyncTime = :timestamp WHERE userId = :userId")
-    suspend fun updateLastSyncTime(userId: String, timestamp: Long)
-    
+    suspend fun updateLastSyncTime(
+        userId: String,
+        timestamp: Long,
+    )
+
     @Query("UPDATE user_profiles SET syncPreferences = :preferences WHERE userId = :userId")
-    suspend fun updateSyncPreferences(userId: String, preferences: String)
-    
+    suspend fun updateSyncPreferences(
+        userId: String,
+        preferences: String,
+    )
+
     @Query("UPDATE user_profiles SET isActive = 0")
     suspend fun deactivateAllProfiles()
-    
+
     @Query("UPDATE user_profiles SET isActive = 1 WHERE userId = :userId")
     suspend fun activateProfile(userId: String)
-    
+
     @Query("DELETE FROM user_profiles WHERE userId = :userId")
     suspend fun deleteUserProfile(userId: String)
 }
@@ -1356,22 +1635,36 @@ interface UserProfileDao {
 interface SyncConflictDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertConflict(conflict: SyncConflictEntity)
-    
+
     @Query("SELECT * FROM sync_conflicts WHERE status = 'pending'")
     suspend fun getPendingConflicts(): List<SyncConflictEntity>
-    
-    @Query("SELECT * FROM sync_conflicts WHERE entityType = :entityType AND entityId = :entityId AND status = 'pending'")
-    suspend fun getConflictForEntity(entityType: String, entityId: String): SyncConflictEntity?
-    
-    @Query("UPDATE sync_conflicts SET status = :status, resolution = :resolution, resolvedData = :resolvedData, resolvedBy = :resolvedBy, resolvedAt = :resolvedAt WHERE id = :id")
-    suspend fun resolveConflict(id: String, status: String, resolution: String, resolvedData: String?, resolvedBy: String, resolvedAt: Long)
-    
+
+    @Query(
+        "SELECT * FROM sync_conflicts WHERE entityType = :entityType AND entityId = :entityId AND status = 'pending'",
+    )
+    suspend fun getConflictForEntity(
+        entityType: String,
+        entityId: String,
+    ): SyncConflictEntity?
+
+    @Query(
+        "UPDATE sync_conflicts SET status = :status, resolution = :resolution, resolvedData = :resolvedData, resolvedBy = :resolvedBy, resolvedAt = :resolvedAt WHERE id = :id",
+    )
+    suspend fun resolveConflict(
+        id: String,
+        status: String,
+        resolution: String,
+        resolvedData: String?,
+        resolvedBy: String,
+        resolvedAt: Long,
+    )
+
     @Query("DELETE FROM sync_conflicts WHERE id = :id")
     suspend fun deleteConflict(id: String)
-    
+
     @Query("DELETE FROM sync_conflicts WHERE createdAt < :cutoffTime AND status != 'pending'")
     suspend fun cleanupResolvedConflicts(cutoffTime: Long)
-    
+
     @Query("SELECT COUNT(*) FROM sync_conflicts WHERE status = 'pending'")
     fun getPendingConflictCount(): Flow<Int>
 }
@@ -1408,10 +1701,16 @@ interface SocialChallengeDao {
     suspend fun getChallenge(id: Long): SocialChallengeEntity?
 
     @Query("UPDATE social_challenges SET currentParticipants = :count WHERE id = :id")
-    suspend fun updateParticipantCount(id: Long, count: Int)
+    suspend fun updateParticipantCount(
+        id: Long,
+        count: Int,
+    )
 
     @Query("UPDATE social_challenges SET status = :status WHERE id = :id")
-    suspend fun updateStatus(id: Long, status: String)
+    suspend fun updateStatus(
+        id: Long,
+        status: String,
+    )
 }
 
 @Dao
@@ -1432,22 +1731,44 @@ interface ChallengeParticipationDao {
     fun participationsByUserFlow(userId: String): Flow<List<ChallengeParticipationEntity>>
 
     @Query("SELECT * FROM challenge_participations WHERE challengeId = :challengeId AND userId = :userId")
-    suspend fun getUserParticipation(challengeId: Long, userId: String): ChallengeParticipationEntity?
+    suspend fun getUserParticipation(
+        challengeId: Long,
+        userId: String,
+    ): ChallengeParticipationEntity?
 
-    @Query("UPDATE challenge_participations SET currentProgress = :progress, progressPercentage = :percentage, lastActivityDate = :date WHERE id = :id")
-    suspend fun updateProgress(id: Long, progress: Double, percentage: Double, date: String)
+    @Query(
+        "UPDATE challenge_participations SET currentProgress = :progress, progressPercentage = :percentage, lastActivityDate = :date WHERE id = :id",
+    )
+    suspend fun updateProgress(
+        id: Long,
+        progress: Double,
+        percentage: Double,
+        date: String,
+    )
 
     @Query("UPDATE challenge_participations SET status = :status, completedAt = :completedAt WHERE id = :id")
-    suspend fun updateStatus(id: Long, status: String, completedAt: Long?)
+    suspend fun updateStatus(
+        id: Long,
+        status: String,
+        completedAt: Long?,
+    )
 
     @Query("UPDATE challenge_participations SET rank = :rank WHERE id = :id")
-    suspend fun updateRank(id: Long, rank: Int)
+    suspend fun updateRank(
+        id: Long,
+        rank: Int,
+    )
 
     @Query("SELECT COUNT(*) FROM challenge_participations WHERE challengeId = :challengeId")
     suspend fun getParticipantCount(challengeId: Long): Int
 
-    @Query("SELECT * FROM challenge_participations WHERE challengeId = :challengeId ORDER BY currentProgress DESC LIMIT :limit")
-    suspend fun getTopParticipants(challengeId: Long, limit: Int): List<ChallengeParticipationEntity>
+    @Query(
+        "SELECT * FROM challenge_participations WHERE challengeId = :challengeId ORDER BY currentProgress DESC LIMIT :limit",
+    )
+    suspend fun getTopParticipants(
+        challengeId: Long,
+        limit: Int,
+    ): List<ChallengeParticipationEntity>
 }
 
 @Dao
@@ -1465,13 +1786,22 @@ interface ChallengeProgressLogDao {
     fun logsByParticipationFlow(participationId: Long): Flow<List<ChallengeProgressLogEntity>>
 
     @Query("SELECT * FROM challenge_progress_logs WHERE participationId = :participationId AND logDate = :date")
-    suspend fun getLogForDate(participationId: Long, date: String): ChallengeProgressLogEntity?
+    suspend fun getLogForDate(
+        participationId: Long,
+        date: String,
+    ): ChallengeProgressLogEntity?
 
     @Query("SELECT SUM(value) FROM challenge_progress_logs WHERE participationId = :participationId")
     suspend fun getTotalProgress(participationId: Long): Double?
 
-    @Query("SELECT SUM(value) FROM challenge_progress_logs WHERE participationId = :participationId AND logDate BETWEEN :startDate AND :endDate")
-    suspend fun getProgressBetweenDates(participationId: Long, startDate: String, endDate: String): Double?
+    @Query(
+        "SELECT SUM(value) FROM challenge_progress_logs WHERE participationId = :participationId AND logDate BETWEEN :startDate AND :endDate",
+    )
+    suspend fun getProgressBetweenDates(
+        participationId: Long,
+        startDate: String,
+        endDate: String,
+    ): Double?
 }
 
 @Dao
@@ -1501,10 +1831,17 @@ interface SocialBadgeDao {
     suspend fun getBadge(id: Long): SocialBadgeEntity?
 
     @Query("UPDATE social_badges SET isUnlocked = :unlocked, unlockedAt = :unlockedAt WHERE id = :id")
-    suspend fun updateUnlockStatus(id: Long, unlocked: Boolean, unlockedAt: Long?)
+    suspend fun updateUnlockStatus(
+        id: Long,
+        unlocked: Boolean,
+        unlockedAt: Long?,
+    )
 
     @Query("UPDATE social_badges SET progress = :progress WHERE id = :id")
-    suspend fun updateProgress(id: Long, progress: Double)
+    suspend fun updateProgress(
+        id: Long,
+        progress: Double,
+    )
 
     @Query("SELECT COUNT(*) FROM social_badges WHERE isUnlocked = 1")
     suspend fun getUnlockedBadgeCount(): Int
@@ -1525,15 +1862,58 @@ interface LeaderboardEntryDao {
     fun leaderboardByChallengeFlow(challengeId: Long): Flow<List<LeaderboardEntryEntity>>
 
     @Query("SELECT * FROM leaderboard_entries WHERE challengeId = :challengeId ORDER BY score DESC LIMIT :limit")
-    suspend fun getTopEntries(challengeId: Long, limit: Int): List<LeaderboardEntryEntity>
+    suspend fun getTopEntries(
+        challengeId: Long,
+        limit: Int,
+    ): List<LeaderboardEntryEntity>
 
     @Query("SELECT * FROM leaderboard_entries WHERE challengeId = :challengeId AND userId = :userId")
-    suspend fun getUserEntry(challengeId: Long, userId: String): LeaderboardEntryEntity?
+    suspend fun getUserEntry(
+        challengeId: Long,
+        userId: String,
+    ): LeaderboardEntryEntity?
 
-    @Query("UPDATE leaderboard_entries SET rank = :rank, score = :score, lastUpdated = :updated WHERE challengeId = :challengeId AND userId = :userId")
-    suspend fun updateEntry(challengeId: Long, userId: String, rank: Int, score: Double, updated: Long)
+    @Query(
+        "UPDATE leaderboard_entries SET rank = :rank, score = :score, lastUpdated = :updated WHERE challengeId = :challengeId AND userId = :userId",
+    )
+    suspend fun updateEntry(
+        challengeId: Long,
+        userId: String,
+        rank: Int,
+        score: Double,
+        updated: Long,
+    )
 
     @Query("DELETE FROM leaderboard_entries WHERE challengeId = :challengeId")
     suspend fun clearLeaderboard(challengeId: Long)
 }
 
+@Dao
+interface HealthStatusDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertHealthStatus(status: HealthStatusEntity)
+
+    @Query("SELECT * FROM health_status ORDER BY lastChecked DESC")
+    fun getAllHealthStatusFlow(): Flow<List<HealthStatusEntity>>
+
+    @Query("SELECT * FROM health_status WHERE provider = :provider")
+    suspend fun getHealthStatus(provider: String): HealthStatusEntity?
+
+    @Query("SELECT * FROM health_status WHERE provider = :provider")
+    fun getHealthStatusFlow(provider: String): Flow<HealthStatusEntity?>
+
+    @Query("SELECT * FROM health_status ORDER BY lastChecked DESC")
+    suspend fun getAllHealthStatus(): List<HealthStatusEntity>
+
+    @Query("DELETE FROM health_status WHERE provider = :provider")
+    suspend fun deleteHealthStatus(provider: String)
+
+    @Query("DELETE FROM health_status")
+    suspend fun deleteAllHealthStatus()
+
+    @Query("SELECT COUNT(*) FROM health_status WHERE isHealthy = 1")
+    suspend fun getHealthyCount(): Int
+
+    @Query("SELECT COUNT(*) FROM health_status WHERE isHealthy = 0")
+    suspend fun getUnhealthyCount(): Int
+}

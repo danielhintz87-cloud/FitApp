@@ -11,7 +11,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,8 +24,8 @@ import com.example.fitapp.ai.AppAi
 import com.example.fitapp.ai.CaloriesEstimate
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.repo.NutritionRepository
-import com.example.fitapp.ui.components.BudgetBar
 import com.example.fitapp.ui.components.AiKeyGate
+import com.example.fitapp.ui.components.BudgetBar
 import com.example.fitapp.util.BitmapUtils
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -37,10 +36,10 @@ import java.time.ZoneId
 fun FoodScanScreen(
     contentPadding: PaddingValues,
     onLogged: () -> Unit = {},
-    onNavigateToApiKeys: (() -> Unit)? = null
+    onNavigateToApiKeys: (() -> Unit)? = null,
 ) {
     val ctx = LocalContext.current
-    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val repo = remember { NutritionRepository(AppDatabase.get(ctx), ctx) }
     val scope = rememberCoroutineScope()
     var picked by remember { mutableStateOf<Uri?>(null) }
     var captured by remember { mutableStateOf<Bitmap?>(null) }
@@ -52,393 +51,456 @@ fun FoodScanScreen(
     var analysisAttempts by remember { mutableIntStateOf(0) }
     var manualFoodDescription by remember { mutableStateOf("") }
     var isEstimatingManualCalories by remember { mutableStateOf(false) }
-    
+
     val todayEpoch = remember { LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond() }
     val goal by repo.goalFlow(LocalDate.now()).collectAsState(initial = null)
     val entries by repo.dayEntriesFlow(todayEpoch).collectAsState(initial = emptyList())
     val consumed = entries.sumOf { it.kcal }
     val target = goal?.targetKcal ?: 2000
 
-    val picker = rememberLauncherForActivityResult(contract = ActivityResultContracts.PickVisualMedia()) { uri ->
-        picked = uri
-        captured = null
-    }
-    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bmp ->
-        captured = bmp
-        picked = null
-    }
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) camera.launch(null)
-    }
+    val picker =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.PickVisualMedia()) { uri ->
+            picked = uri
+            captured = null
+        }
+    val camera =
+        rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bmp ->
+            captured = bmp
+            picked = null
+        }
+    val permissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) camera.launch(null)
+        }
 
     AiKeyGate(
         onNavigateToApiKeys = { onNavigateToApiKeys?.invoke() },
-        requireBothProviders = false // Only Gemini is required for food scanning
+        requireBothProviders = false, // Only Gemini is required for food scanning
     ) { isEnabled ->
         Column(
-            modifier = Modifier
-                .padding(contentPadding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier =
+                Modifier
+                    .padding(contentPadding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-        Text("Food Scan", style = MaterialTheme.typography.titleLarge)
+            Text("Food Scan", style = MaterialTheme.typography.titleLarge)
 
-        // Daily Goal Display - Show training plan derived calories instead of manual input
-        Card {
-            Column(Modifier.padding(16.dp)) {
-                Text("Tageskalorien (aus Trainingsplan)", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(8.dp))
-                
-                var recommendedCalories by remember { mutableStateOf<Int?>(null) }
-                
-                // Load recommended calories based on training plan
-                LaunchedEffect(Unit) {
-                    try {
-                        recommendedCalories = repo.generateAICalorieRecommendation()
-                    } catch (e: Exception) {
-                        // Fallback to current goal if no plan exists
-                        recommendedCalories = target
-                    }
-                }
-                
-                recommendedCalories?.let { recommended ->
-                    val remaining = recommended - consumed
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Empfohlen: $recommended kcal", style = MaterialTheme.typography.bodyMedium)
-                        Text("Verbraucht: $consumed kcal", style = MaterialTheme.typography.bodyMedium)
-                    }
-                    
-                    Spacer(Modifier.height(4.dp))
-                    
-                    Text(
-                        if (remaining > 0) "Noch verfügbar: $remaining kcal" else "Tagesbudget erreicht",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (remaining > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                    )
-                    
-                    // Update daily goal to match recommendation if different
-                    if (target != recommended) {
-                        LaunchedEffect(recommended) {
-                            repo.setDailyGoal(LocalDate.now(), recommended)
+            // Daily Goal Display - Show training plan derived calories instead of manual input
+            Card {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Tageskalorien (aus Trainingsplan)", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+
+                    var recommendedCalories by remember { mutableStateOf<Int?>(null) }
+
+                    // Load recommended calories based on training plan
+                    LaunchedEffect(Unit) {
+                        try {
+                            recommendedCalories = repo.generateAICalorieRecommendation()
+                        } catch (e: Exception) {
+                            // Fallback to current goal if no plan exists
+                            recommendedCalories = target
                         }
                     }
-                } ?: run {
-                    Text("Lade Empfehlung...", style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-        }
 
-        BudgetBar(consumed = consumed, target = target)
-        
-        // Auto-analyze when image is captured/picked
-        LaunchedEffect(picked, captured, isEnabled) {
-            if ((picked != null || captured != null) && !loading && estimate == null && isEnabled) {
-                loading = true
-                analysisAttempts++
-                try {
-                    val prompt = "Analysiere dieses Bild detailliert und identifiziere das Essen: 1) Erkenne alle sichtbaren Lebensmittel und Portionsgrößen 2) Schätze realistische Kalorien basierend auf typischen Portionen 3) Gib eine detaillierte Beschreibung mit Zubereitungsart 4) Falls kein Essen sichtbar ist, antworte mit 'KEIN_ESSEN_ERKANNT'. Beispiel: '200g gegrilltes Hähnchen, 150g Reis, gemischter Salat - ca. 450 kcal'"
-                    
-                    estimate = when {
-                        captured != null -> {
-                            val capturedBitmap = captured
-                            if (capturedBitmap != null) {
-                                val result = AppAi.caloriesWithOptimalProvider(ctx, capturedBitmap, prompt)
-                                if (result.isFailure) {
-                                    CaloriesEstimate(0, 30, "Analyse fehlgeschlagen: ${result.exceptionOrNull()?.message}")
-                                } else {
-                                    result.getOrNull()
-                                }
-                            } else null
+                    recommendedCalories?.let { recommended ->
+                        val remaining = recommended - consumed
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text("Empfohlen: $recommended kcal", style = MaterialTheme.typography.bodyMedium)
+                            Text("Verbraucht: $consumed kcal", style = MaterialTheme.typography.bodyMedium)
                         }
-                        picked != null -> {
-                            try {
-                                val pickedUri = picked
-                                if (pickedUri != null) {
-                                    val bitmap = BitmapUtils.loadBitmapFromUri(ctx.contentResolver, pickedUri)
-                                    val result = AppAi.caloriesWithOptimalProvider(ctx, bitmap, prompt)
-                                    if (result.isFailure) {
-                                        CaloriesEstimate(0, 30, "Analyse fehlgeschlagen: ${result.exceptionOrNull()?.message}")
-                                    } else {
-                                        result.getOrNull()
-                                    }
-                                } else null
-                            } catch (e: Exception) {
-                                CaloriesEstimate(0, 30, "Bild konnte nicht geladen werden: ${e.message}")
+
+                        Spacer(Modifier.height(4.dp))
+
+                        Text(
+                            if (remaining > 0) "Noch verfügbar: $remaining kcal" else "Tagesbudget erreicht",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (remaining > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        )
+
+                        // Update daily goal to match recommendation if different
+                        if (target != recommended) {
+                            LaunchedEffect(recommended) {
+                                repo.setDailyGoal(LocalDate.now(), recommended)
                             }
                         }
-                        else -> null
+                    } ?: run {
+                        Text("Lade Empfehlung...", style = MaterialTheme.typography.bodyMedium)
                     }
-                    
-                    // Check if food was detected or if there was an error
-                    estimate?.let { est ->
-                        if (est.text.contains("KEIN_ESSEN_ERKANNT", ignoreCase = true) || 
-                            est.text.contains("kein essen", ignoreCase = true) ||
-                            est.text.contains("fehlgeschlagen", ignoreCase = true) ||
-                            est.kcal == 0) {
-                            // Keep estimate to show error UI, but don't show confirm dialog
-                        } else {
-                            // Food was detected successfully
-                            showConfirmDialog = true
-                            editedKcal = est.kcal.toString()
-                            editedLabel = "Essen (Foto): ${est.text.take(50)}"
-                        }
-                    }
-                    
-                } catch (e: Exception) {
-                    estimate = CaloriesEstimate(0, 30, "Analyse fehlgeschlagen: ${e.message}")
-                } finally {
-                    loading = false
                 }
             }
-        }
-        
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(
-                onClick = {
-                    picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                },
-                enabled = isEnabled
-            ) {
-                Text("Foto wählen")
-            }
-            Button(
-                onClick = {
-                    if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                        camera.launch(null)
-                    } else {
-                        permissionLauncher.launch(Manifest.permission.CAMERA)
-                    }
-                },
-                enabled = isEnabled
-            ) {
-                Text("Foto aufnehmen")
-            }
-            // Only show manual re-analyze button if analysis failed or was incorrect
-            if ((picked != null || captured != null) && estimate != null && isEnabled) {
-                OutlinedButton(
-                    enabled = !loading,
-                    onClick = {
-                        loading = true
-                        analysisAttempts++
-                        scope.launch {
-                            try {
-                                val prompt = "Analysiere dieses Bild nochmals sehr genau für eine präzisere Erkennung: 1) Identifiziere alle Lebensmittel im Detail 2) Schätze Portionsgrößen realistisch 3) Berücksichtige Zubereitungsart (gebraten, gekocht, etc.) 4) Gib konkrete Kalorienschätzung mit Begründung. Fokussiere auf Genauigkeit und Details der sichtbaren Nahrungsmittel."
-                                
-                                estimate = when {
-                                    captured != null -> {
-                                        val capturedBitmap = captured
-                                        if (capturedBitmap != null) {
-                                            AppAi.caloriesWithOptimalProvider(ctx, capturedBitmap, prompt).getOrThrow()
-                                        } else null
+
+            BudgetBar(consumed = consumed, target = target)
+
+            // Auto-analyze when image is captured/picked
+            LaunchedEffect(picked, captured, isEnabled) {
+                if ((picked != null || captured != null) && !loading && estimate == null && isEnabled) {
+                    loading = true
+                    analysisAttempts++
+                    try {
+                        val prompt = "Analysiere dieses Bild detailliert und identifiziere das Essen: 1) Erkenne alle sichtbaren Lebensmittel und Portionsgrößen 2) Schätze realistische Kalorien basierend auf typischen Portionen 3) Gib eine detaillierte Beschreibung mit Zubereitungsart 4) Falls kein Essen sichtbar ist, antworte mit 'KEIN_ESSEN_ERKANNT'. Beispiel: '200g gegrilltes Hähnchen, 150g Reis, gemischter Salat - ca. 450 kcal'"
+
+                        estimate =
+                            when {
+                                captured != null -> {
+                                    val capturedBitmap = captured
+                                    if (capturedBitmap != null) {
+                                        val result = AppAi.caloriesWithOptimalProvider(ctx, capturedBitmap, prompt)
+                                        if (result.isFailure) {
+                                            CaloriesEstimate(0, 30, "Analyse fehlgeschlagen: ${result.exceptionOrNull()?.message}")
+                                        } else {
+                                            result.getOrNull()
+                                        }
+                                    } else {
+                                        null
                                     }
-                                    picked != null -> {
+                                }
+                                picked != null -> {
+                                    try {
                                         val pickedUri = picked
                                         if (pickedUri != null) {
                                             val bitmap = BitmapUtils.loadBitmapFromUri(ctx.contentResolver, pickedUri)
-                                            AppAi.caloriesWithOptimalProvider(ctx, bitmap, prompt).getOrThrow()
-                                        } else null
-                                    }
-                                    else -> null
-                                }
-                            } catch (e: Exception) {
-                                estimate = CaloriesEstimate(0, 30, "Erneute Analyse fehlgeschlagen: ${e.message}")
-                            } finally {
-                                loading = false
-                            }
-                        }
-                    }
-                ) {
-                    Text("🔄 Erneut analysieren")
-                }
-                
-                OutlinedButton(onClick = { 
-                    estimate = null
-                    picked = null
-                    captured = null
-                }) {
-                    Text("📷 Neues Foto")
-                }
-            }
-        }
-
-        // Manual Food Entry Section
-        Card {
-            Column(Modifier.padding(16.dp)) {
-                Text("📝 Manueller Eintrag", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(8.dp))
-                
-                OutlinedTextField(
-                    value = manualFoodDescription,
-                    onValueChange = { manualFoodDescription = it },
-                    label = { Text("Beschreibung des Essens") },
-                    placeholder = { Text("z.B. 'gekochtes Ei', 'Apfel', 'Pasta mit Tomatensauce'") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = false,
-                    maxLines = 3
-                )
-                
-                Spacer(Modifier.height(8.dp))
-                
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Button(
-                        onClick = {
-                            if (manualFoodDescription.isNotBlank()) {
-                                isEstimatingManualCalories = true
-                                scope.launch {
-                                    try {
-                                        val estimatedKcal = AppAi.estimateCaloriesForManualEntry(ctx, manualFoodDescription).getOrThrow()
-                                        editedKcal = estimatedKcal.toString()
-                                        editedLabel = "Manuell: $manualFoodDescription"
-                                        showConfirmDialog = true
+                                            val result = AppAi.caloriesWithOptimalProvider(ctx, bitmap, prompt)
+                                            if (result.isFailure) {
+                                                CaloriesEstimate(0, 30, "Analyse fehlgeschlagen: ${result.exceptionOrNull()?.message}")
+                                            } else {
+                                                result.getOrNull()
+                                            }
+                                        } else {
+                                            null
+                                        }
                                     } catch (e: Exception) {
-                                        // Fallback to manual input if AI estimation fails
-                                        editedKcal = ""
-                                        editedLabel = "Manuell: $manualFoodDescription"
-                                        showConfirmDialog = true
-                                    } finally {
-                                        isEstimatingManualCalories = false
+                                        CaloriesEstimate(0, 30, "Bild konnte nicht geladen werden: ${e.message}")
                                     }
+                                }
+                                else -> null
+                            }
+
+                        // Check if food was detected or if there was an error
+                        estimate?.let { est ->
+                            if (est.text.contains("KEIN_ESSEN_ERKANNT", ignoreCase = true) ||
+                                est.text.contains("kein essen", ignoreCase = true) ||
+                                est.text.contains("fehlgeschlagen", ignoreCase = true) ||
+                                est.kcal == 0
+                            ) {
+                                // Keep estimate to show error UI, but don't show confirm dialog
+                            } else {
+                                // Food was detected successfully
+                                showConfirmDialog = true
+                                editedKcal = est.kcal.toString()
+                                editedLabel = "Essen (Foto): ${est.text.take(50)}"
+                            }
+                        }
+                    } catch (e: Exception) {
+                        estimate = CaloriesEstimate(0, 30, "Analyse fehlgeschlagen: ${e.message}")
+                    } finally {
+                        loading = false
+                    }
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = {
+                        picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                    enabled = isEnabled,
+                ) {
+                    Text("Foto wählen")
+                }
+                Button(
+                    onClick = {
+                        if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                            camera.launch(null)
+                        } else {
+                            permissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
+                    },
+                    enabled = isEnabled,
+                ) {
+                    Text("Foto aufnehmen")
+                }
+                // Only show manual re-analyze button if analysis failed or was incorrect
+                if ((picked != null || captured != null) && estimate != null && isEnabled) {
+                    OutlinedButton(
+                        enabled = !loading,
+                        onClick = {
+                            loading = true
+                            analysisAttempts++
+                            scope.launch {
+                                try {
+                                    val prompt = "Analysiere dieses Bild nochmals sehr genau für eine präzisere Erkennung: 1) Identifiziere alle Lebensmittel im Detail 2) Schätze Portionsgrößen realistisch 3) Berücksichtige Zubereitungsart (gebraten, gekocht, etc.) 4) Gib konkrete Kalorienschätzung mit Begründung. Fokussiere auf Genauigkeit und Details der sichtbaren Nahrungsmittel."
+
+                                    estimate =
+                                        when {
+                                            captured != null -> {
+                                                val capturedBitmap = captured
+                                                if (capturedBitmap != null) {
+                                                    AppAi.caloriesWithOptimalProvider(ctx, capturedBitmap, prompt).getOrThrow()
+                                                } else {
+                                                    null
+                                                }
+                                            }
+                                            picked != null -> {
+                                                val pickedUri = picked
+                                                if (pickedUri != null) {
+                                                    val bitmap = BitmapUtils.loadBitmapFromUri(ctx.contentResolver, pickedUri)
+                                                    AppAi.caloriesWithOptimalProvider(ctx, bitmap, prompt).getOrThrow()
+                                                } else {
+                                                    null
+                                                }
+                                            }
+                                            else -> null
+                                        }
+                                } catch (e: Exception) {
+                                    estimate = CaloriesEstimate(0, 30, "Erneute Analyse fehlgeschlagen: ${e.message}")
+                                } finally {
+                                    loading = false
                                 }
                             }
                         },
-                        enabled = manualFoodDescription.isNotBlank() && !isEstimatingManualCalories && isEnabled,
-                        modifier = Modifier.weight(1f)
                     ) {
-                        if (isEstimatingManualCalories) {
-                            Text("🤖 Schätze...")
-                        } else {
-                            Text("🤖 KI-Schätzung + Buchen")
-                        }
+                        Text("🔄 Erneut analysieren")
                     }
-                    
-                    OutlinedButton(
-                        onClick = {
-                            if (manualFoodDescription.isNotBlank()) {
-                                editedKcal = ""
-                                editedLabel = "Manuell: $manualFoodDescription"
-                                showConfirmDialog = true
-                            }
-                        },
-                        enabled = manualFoodDescription.isNotBlank(),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("✏️ Selbst eingeben")
+
+                    OutlinedButton(onClick = {
+                        estimate = null
+                        picked = null
+                        captured = null
+                    }) {
+                        Text("📷 Neues Foto")
                     }
-                }
-                
-                if (manualFoodDescription.isBlank()) {
-                    Text(
-                        "Geben Sie eine Beschreibung des Essens ein für KI-Kalorienschätzung oder manuelle Eingabe",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
                 }
             }
-        }
 
-        picked?.let {
-            AsyncImage(
-                model = it,
-                contentDescription = "Selected food image for analysis",
-                modifier = Modifier.fillMaxWidth().height(200.dp)
-            )
-        }
-        captured?.let {
-            Image(
-                bitmap = it.asImageBitmap(),
-                contentDescription = null,
-                modifier = Modifier.fillMaxWidth().height(200.dp)
-            )
-        }
+            // Manual Food Entry Section
+            Card {
+                Column(Modifier.padding(16.dp)) {
+                    Text("📝 Manueller Eintrag", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
 
-        picked?.let { Text("Bild: $it", style = MaterialTheme.typography.bodySmall) }
-        captured?.let { Text("Foto aufgenommen", style = MaterialTheme.typography.bodySmall) }
-
-        estimate?.let { e ->
-            ElevatedCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(
+                    OutlinedTextField(
+                        value = manualFoodDescription,
+                        onValueChange = { manualFoodDescription = it },
+                        label = { Text("Beschreibung des Essens") },
+                        placeholder = { Text("z.B. 'gekochtes Ei', 'Apfel', 'Pasta mit Tomatensauce'") },
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        singleLine = false,
+                        maxLines = 3,
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("AI Analyse", style = MaterialTheme.typography.titleMedium)
-                        Text("Versuch #$analysisAttempts", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
-                    }
-                    
-                    if (e.kcal > 0) {
-                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-                            Column(Modifier.padding(12.dp)) {
-                                Text("🍽️ Erkanntes Essen", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                                Text("Kalorien: ${e.kcal} kcal", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                                Text("Vertrauenswürdigkeit: ${e.confidence}%", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Button(
+                            onClick = {
+                                if (manualFoodDescription.isNotBlank()) {
+                                    isEstimatingManualCalories = true
+                                    scope.launch {
+                                        try {
+                                            val estimatedKcal =
+                                                AppAi.estimateCaloriesForManualEntry(
+                                                    ctx,
+                                                    manualFoodDescription,
+                                                ).getOrThrow()
+                                            editedKcal = estimatedKcal.toString()
+                                            editedLabel = "Manuell: $manualFoodDescription"
+                                            showConfirmDialog = true
+                                        } catch (e: Exception) {
+                                            // Fallback to manual input if AI estimation fails
+                                            editedKcal = ""
+                                            editedLabel = "Manuell: $manualFoodDescription"
+                                            showConfirmDialog = true
+                                        } finally {
+                                            isEstimatingManualCalories = false
+                                        }
+                                    }
+                                }
+                            },
+                            enabled = manualFoodDescription.isNotBlank() && !isEstimatingManualCalories && isEnabled,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            if (isEstimatingManualCalories) {
+                                Text("🤖 Schätze...")
+                            } else {
+                                Text("🤖 KI-Schätzung + Buchen")
                             }
                         }
-                    }
-                    
-                    Text("Beschreibung:", style = MaterialTheme.typography.titleSmall)
-                    Text(e.text, style = MaterialTheme.typography.bodyMedium)
-                    
-                    // Show uncertainty warning if confidence is low
-                    if (e.confidence < 70) {
-                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
-                            Column(Modifier.padding(8.dp)) {
-                                Text("⚠️ Unsichere Schätzung", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onErrorContainer)
-                                Text("Die AI ist unsicher bei dieser Analyse. Bitte prüfen Sie die Kalorien und korrigieren Sie sie wenn nötig.", 
-                                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
-                            }
+
+                        OutlinedButton(
+                            onClick = {
+                                if (manualFoodDescription.isNotBlank()) {
+                                    editedKcal = ""
+                                    editedLabel = "Manuell: $manualFoodDescription"
+                                    showConfirmDialog = true
+                                }
+                            },
+                            enabled = manualFoodDescription.isNotBlank(),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text("✏️ Selbst eingeben")
                         }
                     }
-                    
-                    if (e.kcal > 0) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                onClick = {
-                                    editedKcal = e.kcal.toString()
-                                    editedLabel = "Essen (Foto): ${e.text.take(50)}"
-                                    showConfirmDialog = true
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) { 
-                                Text("✓ Korrekt & Buchen") 
-                            }
-                            OutlinedButton(
-                                onClick = {
-                                    editedKcal = e.kcal.toString()
-                                    editedLabel = "Essen (Foto): ${e.text.take(50)}"
-                                    showConfirmDialog = true
-                                },
-                                modifier = Modifier.weight(1f)
+
+                    if (manualFoodDescription.isBlank()) {
+                        Text(
+                            "Geben Sie eine Beschreibung des Essens ein für KI-Kalorienschätzung oder manuelle Eingabe",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                    }
+                }
+            }
+
+            picked?.let {
+                AsyncImage(
+                    model = it,
+                    contentDescription = "Selected food image for analysis",
+                    modifier = Modifier.fillMaxWidth().height(200.dp),
+                )
+            }
+            captured?.let {
+                Image(
+                    bitmap = it.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth().height(200.dp),
+                )
+            }
+
+            picked?.let { Text("Bild: $it", style = MaterialTheme.typography.bodySmall) }
+            captured?.let { Text("Foto aufgenommen", style = MaterialTheme.typography.bodySmall) }
+
+            estimate?.let { e ->
+                ElevatedCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text("AI Analyse", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                "Versuch #$analysisAttempts",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                        }
+
+                        if (e.kcal > 0) {
+                            Card(
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    ),
                             ) {
-                                Text("Bearbeiten")
+                                Column(Modifier.padding(12.dp)) {
+                                    Text(
+                                        "🍽️ Erkanntes Essen",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    )
+                                    Text(
+                                        "Kalorien: ${e.kcal} kcal",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    )
+                                    Text(
+                                        "Vertrauenswürdigkeit: ${e.confidence}%",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    )
+                                }
                             }
                         }
-                    } else {
-                        // If food not detected, don't show redundant error input, just guide to manual entry
-                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
-                            Column(Modifier.padding(12.dp)) {
-                                Text("❌ Kein Essen erkannt", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onErrorContainer)
-                                Text("Nutzen Sie bitte den 'Manueller Eintrag' unten für eine manuelle Eingabe.", 
-                                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer)
+
+                        Text("Beschreibung:", style = MaterialTheme.typography.titleSmall)
+                        Text(e.text, style = MaterialTheme.typography.bodyMedium)
+
+                        // Show uncertainty warning if confidence is low
+                        if (e.confidence < 70) {
+                            Card(
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    ),
+                            ) {
+                                Column(Modifier.padding(8.dp)) {
+                                    Text(
+                                        "⚠️ Unsichere Schätzung",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                    Text(
+                                        "Die AI ist unsicher bei dieser Analyse. Bitte prüfen Sie die Kalorien und korrigieren Sie sie wenn nötig.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                }
+                            }
+                        }
+
+                        if (e.kcal > 0) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = {
+                                        editedKcal = e.kcal.toString()
+                                        editedLabel = "Essen (Foto): ${e.text.take(50)}"
+                                        showConfirmDialog = true
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Text("✓ Korrekt & Buchen")
+                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        editedKcal = e.kcal.toString()
+                                        editedLabel = "Essen (Foto): ${e.text.take(50)}"
+                                        showConfirmDialog = true
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Text("Bearbeiten")
+                                }
+                            }
+                        } else {
+                            // If food not detected, don't show redundant error input, just guide to manual entry
+                            Card(
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    ),
+                            ) {
+                                Column(Modifier.padding(12.dp)) {
+                                    Text(
+                                        "❌ Kein Essen erkannt",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                    Text(
+                                        "Nutzen Sie bitte den 'Manueller Eintrag' unten für eine manuelle Eingabe.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        Spacer(Modifier.height(96.dp))
+            Spacer(Modifier.height(96.dp))
         }
     }
-    
+
     // Confirmation Dialog
     if (showConfirmDialog) {
         AlertDialog(
@@ -447,32 +509,36 @@ fun FoodScanScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("Bitte bestätigen oder korrigieren Sie die erkannten Werte:")
-                    
+
                     // Show detected food description if available
                     estimate?.let { e ->
-                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        ) {
                             Column(Modifier.padding(8.dp)) {
                                 Text("Erkanntes Essen:", style = MaterialTheme.typography.labelMedium)
-                                Text(e.text.take(100) + if (e.text.length > 100) "..." else "", 
-                                     style = MaterialTheme.typography.bodySmall)
+                                Text(
+                                    e.text.take(100) + if (e.text.length > 100) "..." else "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
                                 Text("Vertrauen: ${e.confidence}%", style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
-                    
+
                     OutlinedTextField(
                         value = editedKcal,
                         onValueChange = { editedKcal = it },
                         label = { Text("Kalorien") },
                         modifier = Modifier.fillMaxWidth(),
-                        supportingText = { Text("Korrigieren Sie die Kalorienzahl falls nötig") }
+                        supportingText = { Text("Korrigieren Sie die Kalorienzahl falls nötig") },
                     )
                     OutlinedTextField(
                         value = editedLabel,
                         onValueChange = { editedLabel = it },
                         label = { Text("Bezeichnung") },
                         modifier = Modifier.fillMaxWidth(),
-                        supportingText = { Text("Beschreibung für das Ernährungstagebuch") }
+                        supportingText = { Text("Beschreibung für das Ernährungstagebuch") },
                     )
                 }
             },
@@ -489,7 +555,7 @@ fun FoodScanScreen(
                             captured = null
                             onLogged()
                         }
-                    }
+                    },
                 ) {
                     Text("Buchen")
                 }
@@ -498,7 +564,7 @@ fun FoodScanScreen(
                 OutlinedButton(onClick = { showConfirmDialog = false }) {
                     Text("Abbrechen")
                 }
-            }
+            },
         )
     }
 }

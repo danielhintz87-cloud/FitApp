@@ -14,22 +14,26 @@ object UsageTracker {
     private const val KEY_GEMINI_REQUESTS = "gemini_requests_count"
     private const val KEY_PERPLEXITY_REQUESTS = "perplexity_requests_count"
     private const val KEY_LAST_RESET = "last_reset_timestamp"
-    
+
     // Estimated costs per 1K tokens (approximate)
     private const val GEMINI_COST_PER_1K_TOKENS = 0.075 // USD for Gemini 1.5 Flash
     private const val PERPLEXITY_COST_PER_1K_TOKENS = 0.20 // USD for Perplexity API
-    
+
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
-    
+
     /**
      * Record API usage for tracking
      */
-    fun recordUsage(context: Context, provider: AiProvider, estimatedTokens: Int) {
+    fun recordUsage(
+        context: Context,
+        provider: AiProvider,
+        estimatedTokens: Int,
+    ) {
         val prefs = getPrefs(context)
         val editor = prefs.edit()
-        
+
         when (provider) {
             AiProvider.Gemini -> {
                 val currentTokens = prefs.getInt(KEY_GEMINI_TOKENS, 0)
@@ -44,16 +48,19 @@ object UsageTracker {
                 editor.putInt(KEY_PERPLEXITY_REQUESTS, currentRequests + 1)
             }
         }
-        
+
         editor.apply()
     }
-    
+
     /**
      * Get usage statistics for a provider
      */
-    fun getUsageStats(context: Context, provider: AiProvider): UsageStats {
+    fun getUsageStats(
+        context: Context,
+        provider: AiProvider,
+    ): UsageStats {
         val prefs = getPrefs(context)
-        
+
         return when (provider) {
             AiProvider.Gemini -> {
                 val tokens = prefs.getInt(KEY_GEMINI_TOKENS, 0)
@@ -69,23 +76,23 @@ object UsageTracker {
             }
         }
     }
-    
+
     /**
      * Get total usage across all providers
      */
     fun getTotalUsageStats(context: Context): TotalUsageStats {
         val geminiStats = getUsageStats(context, AiProvider.Gemini)
         val perplexityStats = getUsageStats(context, AiProvider.Perplexity)
-        
+
         return TotalUsageStats(
             totalTokens = geminiStats.tokens + perplexityStats.tokens,
             totalRequests = geminiStats.requests + perplexityStats.requests,
             totalEstimatedCost = geminiStats.estimatedCost + perplexityStats.estimatedCost,
             geminiStats = geminiStats,
-            perplexityStats = perplexityStats
+            perplexityStats = perplexityStats,
         )
     }
-    
+
     /**
      * Reset usage statistics (e.g., monthly reset)
      */
@@ -95,7 +102,7 @@ object UsageTracker {
             .putLong(KEY_LAST_RESET, System.currentTimeMillis())
             .apply()
     }
-    
+
     /**
      * Estimate tokens for a given text (rough approximation)
      */
@@ -103,7 +110,7 @@ object UsageTracker {
         // Rough estimation: ~4 characters per token for English text
         return (text.length / 4.0).roundToInt().coerceAtLeast(1)
     }
-    
+
     /**
      * Estimate tokens for vision requests (includes image processing overhead)
      */
@@ -119,7 +126,7 @@ data class UsageStats(
     val provider: AiProvider,
     val tokens: Int,
     val requests: Int,
-    val estimatedCost: Double
+    val estimatedCost: Double,
 )
 
 data class TotalUsageStats(
@@ -127,5 +134,5 @@ data class TotalUsageStats(
     val totalRequests: Int,
     val totalEstimatedCost: Double,
     val geminiStats: UsageStats,
-    val perplexityStats: UsageStats
+    val perplexityStats: UsageStats,
 )

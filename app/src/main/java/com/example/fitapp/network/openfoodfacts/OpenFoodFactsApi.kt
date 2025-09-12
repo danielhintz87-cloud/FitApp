@@ -6,24 +6,25 @@ import retrofit2.http.Query
 
 /**
  * OpenFoodFacts API interface for comprehensive food database integration
- * 
+ *
  * Provides access to a global food product database with detailed nutritional information,
  * barcode scanning support, and multilingual product data.
  */
 interface OpenFoodFactsApi {
-    
     /**
      * Get product details by barcode
-     * 
+     *
      * @param barcode The product barcode (EAN-13, EAN-8, UPC-A, etc.)
      * @return ProductResponse containing detailed product information
      */
     @GET("/api/v0/product/{barcode}.json")
-    suspend fun getProduct(@Path("barcode") barcode: String): ProductResponse
-    
+    suspend fun getProduct(
+        @Path("barcode") barcode: String,
+    ): ProductResponse
+
     /**
      * Search products by text query
-     * 
+     *
      * @param query Search terms (product name, brand, ingredients, etc.)
      * @param simple Return simplified results (1) or full data (0)
      * @param json Return JSON format (1)
@@ -41,12 +42,12 @@ interface OpenFoodFactsApi {
         @Query("page") page: Int = 1,
         @Query("page_size") pageSize: Int = 20,
         @Query("cc") country: String? = null,
-        @Query("lc") lang: String? = null
+        @Query("lc") lang: String? = null,
     ): SearchResponse
-    
+
     /**
      * Search products by category
-     * 
+     *
      * @param category Category name (e.g., "beverages", "dairy", "meat")
      * @param page Page number for pagination
      * @param pageSize Number of results per page
@@ -59,6 +60,6 @@ interface OpenFoodFactsApi {
         @Query("tag_0") category: String,
         @Query("json") json: Int = 1,
         @Query("page") page: Int = 1,
-        @Query("page_size") pageSize: Int = 20
+        @Query("page_size") pageSize: Int = 20,
     ): SearchResponse
 }

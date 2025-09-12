@@ -4,18 +4,17 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.time.LocalDate
 
 @Entity(
     tableName = "recipes",
     indices = [
         Index(value = ["createdAt"], name = "index_recipes_createdAt"),
-        Index(value = ["calories"], name = "index_recipes_calories"), 
+        Index(value = ["calories"], name = "index_recipes_calories"),
         Index(value = ["title"], name = "index_recipes_title"),
         Index(value = ["difficulty"], name = "index_recipes_difficulty"),
         Index(value = ["prepTime"], name = "index_recipes_prepTime"),
-        Index(value = ["cookTime"], name = "index_recipes_cookTime")
-    ]
+        Index(value = ["cookTime"], name = "index_recipes_cookTime"),
+    ],
 )
 data class RecipeEntity(
     @PrimaryKey val id: String,
@@ -39,7 +38,7 @@ data class RecipeEntity(
     val isOfficial: Boolean = false, // true for YAZIO official recipes (PRO feature)
     val rating: Float = 0f, // average 5-star rating
     val ratingCount: Int = 0,
-    val isLocalOnly: Boolean = true // for potential cloud sync
+    val isLocalOnly: Boolean = true, // for potential cloud sync
 )
 
 @Entity(
@@ -50,16 +49,16 @@ data class RecipeEntity(
             entity = RecipeEntity::class,
             parentColumns = ["id"],
             childColumns = ["recipeId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
-    indices = [Index("recipeId")]
+    indices = [Index("recipeId")],
 )
 data class RecipeFavoriteEntity(
     val recipeId: String,
     val category: String = "general",
     val addedAt: Long = System.currentTimeMillis() / 1000,
-    val savedAt: Long = System.currentTimeMillis() / 1000
+    val savedAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -69,15 +68,15 @@ data class RecipeFavoriteEntity(
             entity = RecipeEntity::class,
             parentColumns = ["id"],
             childColumns = ["recipeId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
-    indices = [Index("recipeId")]
+    indices = [Index("recipeId")],
 )
 data class RecipeHistoryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val recipeId: String,
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -85,8 +84,8 @@ data class RecipeHistoryEntity(
     indices = [
         Index(value = ["timestamp"]),
         Index(value = ["kcal"]),
-        Index(value = ["timestamp", "kcal"])
-    ]
+        Index(value = ["timestamp", "kcal"]),
+    ],
 )
 data class IntakeEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -94,17 +93,17 @@ data class IntakeEntryEntity(
     val label: String,
     val kcal: Int,
     val source: String,
-    val referenceId: String?
+    val referenceId: String?,
 )
 
 @Entity(tableName = "daily_goals", primaryKeys = ["dateIso"])
 data class DailyGoalEntity(
     val dateIso: String,
     val targetKcal: Int,
-    val targetCarbs: Float? = null,      // g per day
-    val targetProtein: Float? = null,    // g per day  
-    val targetFat: Float? = null,        // g per day
-    val targetWaterMl: Int? = null       // ml per day
+    val targetCarbs: Float? = null, // g per day
+    val targetProtein: Float? = null, // g per day
+    val targetFat: Float? = null, // g per day
+    val targetWaterMl: Int? = null, // ml per day
 )
 
 @Entity(tableName = "shopping_items")
@@ -116,7 +115,7 @@ data class ShoppingItemEntity(
     val checked: Boolean = false,
     val category: String? = null, // "Obst & Gemüse", "Fleisch & Fisch", etc.
     val fromRecipeId: String? = null, // reference to recipe if added from recipe
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(tableName = "training_plans")
@@ -130,7 +129,7 @@ data class PlanEntity(
     val minutesPerSession: Int,
     val equipment: String, // JSON array as string
     val trainingDays: String? = null, // comma-separated DayOfWeek names, e.g. "MONDAY,WEDNESDAY,THURSDAY"
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
 )
 
 // YAZIO-style Meals for quick food combinations (no detailed cooking instructions)
@@ -139,8 +138,8 @@ data class PlanEntity(
     indices = [
         Index(value = ["name"]),
         Index(value = ["mealType"]),
-        Index(value = ["createdAt"])
-    ]
+        Index(value = ["createdAt"]),
+    ],
 )
 data class MealEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
@@ -153,7 +152,7 @@ data class MealEntity(
     val totalCarbs: Float,
     val totalFat: Float,
     val createdAt: Long = System.currentTimeMillis() / 1000,
-    val lastUsedAt: Long? = null
+    val lastUsedAt: Long? = null,
 )
 
 // Recipe ingredients with detailed portions and measurements
@@ -164,13 +163,13 @@ data class MealEntity(
             entity = RecipeEntity::class,
             parentColumns = ["id"],
             childColumns = ["recipeId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["recipeId"]),
-        Index(value = ["ingredientOrder"])
-    ]
+        Index(value = ["ingredientOrder"]),
+    ],
 )
 data class RecipeIngredientEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
@@ -181,7 +180,7 @@ data class RecipeIngredientEntity(
     val ingredientOrder: Int,
     val isOptional: Boolean = false,
     val preparationNote: String? = null, // "diced", "chopped", "grated", etc.
-    val category: String? = null // "protein", "vegetables", "spices", etc.
+    val category: String? = null, // "protein", "vegetables", "spices", etc.
 )
 
 // Recipe cooking steps with detailed instructions
@@ -192,13 +191,13 @@ data class RecipeIngredientEntity(
             entity = RecipeEntity::class,
             parentColumns = ["id"],
             childColumns = ["recipeId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["recipeId"]),
-        Index(value = ["stepOrder"])
-    ]
+        Index(value = ["stepOrder"]),
+    ],
 )
 data class RecipeStepEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
@@ -210,7 +209,7 @@ data class RecipeStepEntity(
     val timerName: String? = null, // for automatic timer creation
     val timerDurationSeconds: Int? = null,
     val imageUrl: String? = null,
-    val tips: String? = null // additional tips for this step
+    val tips: String? = null, // additional tips for this step
 )
 
 @Entity(tableName = "saved_recipes")
@@ -227,17 +226,17 @@ data class SavedRecipeEntity(
     val servings: Int?,
     val isFavorite: Boolean = false,
     val createdAt: Long = System.currentTimeMillis() / 1000,
-    val lastCookedAt: Long? = null
+    val lastCookedAt: Long? = null,
 )
 
 // Enhanced Grocery Lists (YAZIO-style smart grocery management)
 @Entity(
-    tableName = "grocery_lists", 
+    tableName = "grocery_lists",
     indices = [
         Index(value = ["name"]),
         Index(value = ["createdAt"]),
-        Index(value = ["isActive"])
-    ]
+        Index(value = ["isActive"]),
+    ],
 )
 data class GroceryListEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
@@ -247,7 +246,7 @@ data class GroceryListEntity(
     val isDefault: Boolean = false,
     val createdAt: Long = System.currentTimeMillis() / 1000,
     val lastModifiedAt: Long = System.currentTimeMillis() / 1000,
-    val completedAt: Long? = null
+    val completedAt: Long? = null,
 )
 
 @Entity(
@@ -257,15 +256,15 @@ data class GroceryListEntity(
             entity = GroceryListEntity::class,
             parentColumns = ["id"],
             childColumns = ["listId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["listId"]),
         Index(value = ["category"]),
         Index(value = ["checked"]),
-        Index(value = ["fromRecipeId"])
-    ]
+        Index(value = ["fromRecipeId"]),
+    ],
 )
 data class GroceryItemEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
@@ -280,7 +279,7 @@ data class GroceryItemEntity(
     val estimatedPrice: Float? = null, // for budget tracking
     val notes: String? = null,
     val addedAt: Long = System.currentTimeMillis() / 1000,
-    val checkedAt: Long? = null
+    val checkedAt: Long? = null,
 )
 
 @Entity(tableName = "shopping_list_categories")
@@ -288,7 +287,7 @@ data class ShoppingCategoryEntity(
     @PrimaryKey val name: String,
     val order: Int, // for supermarket sorting
     val iconName: String? = null, // Material icon name
-    val colorHex: String? = null // for visual categorization
+    val colorHex: String? = null, // for visual categorization
 )
 
 @Entity(
@@ -296,8 +295,8 @@ data class ShoppingCategoryEntity(
     indices = [
         Index(value = ["dateIso"]),
         Index(value = ["status"]),
-        Index(value = ["createdAt"])
-    ]
+        Index(value = ["createdAt"]),
+    ],
 )
 data class TodayWorkoutEntity(
     @PrimaryKey val dateIso: String, // e.g., "2025-08-28"
@@ -305,7 +304,7 @@ data class TodayWorkoutEntity(
     val status: String, // "pending", "completed", "skipped"
     val createdAt: Long = System.currentTimeMillis() / 1000,
     val completedAt: Long? = null,
-    val planId: Long? = null // nullable FK-like field; no constraint needed
+    val planId: Long? = null, // nullable FK-like field; no constraint needed
 )
 
 @Entity(
@@ -313,8 +312,8 @@ data class TodayWorkoutEntity(
     indices = [
         Index(value = ["category"]),
         Index(value = ["isCompleted"]),
-        Index(value = ["createdAt"])
-    ]
+        Index(value = ["createdAt"]),
+    ],
 )
 data class PersonalAchievementEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -334,7 +333,7 @@ data class PersonalAchievementEntity(
     val socialVisible: Boolean = true, // whether to show in social feeds
     val challengeId: Long? = null, // if earned from completing a challenge
     val shareMessage: String? = null, // custom message when sharing achievement
-    val pointsValue: Int = 0 // points earned for completing this achievement
+    val pointsValue: Int = 0, // points earned for completing this achievement
 )
 
 @Entity(tableName = "personal_streaks")
@@ -348,7 +347,7 @@ data class PersonalStreakEntity(
     val lastActivityTimestamp: Long? = null, // Epoch timestamp in seconds
     val isActive: Boolean = true,
     val targetDays: Int? = null, // target streak length
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(tableName = "personal_records")
@@ -361,7 +360,7 @@ data class PersonalRecordEntity(
     val notes: String? = null,
     val achievedAt: Long = System.currentTimeMillis() / 1000,
     val previousRecord: Double? = null, // previous best for comparison
-    val improvement: Double? = null // calculated improvement percentage
+    val improvement: Double? = null, // calculated improvement percentage
 )
 
 @Entity(tableName = "progress_milestones")
@@ -377,85 +376,87 @@ data class ProgressMilestoneEntity(
     val isCompleted: Boolean = false,
     val completedAt: Long? = null,
     val progress: Double = 0.0, // percentage (0.0 to 100.0)
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
     tableName = "weight_entries",
     indices = [
         Index(value = ["dateIso"]),
-        Index(value = ["recordedAt"])
-    ]
+        Index(value = ["recordedAt"]),
+    ],
 )
 data class WeightEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val weight: Double, // weight in kg
     val dateIso: String, // e.g., "2025-01-15"
     val notes: String? = null,
-    val recordedAt: Long = System.currentTimeMillis() / 1000
+    val recordedAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
-    tableName = "food_items", 
+    tableName = "food_items",
     indices = [
-        Index(value = ["name"]), 
-        Index(value = ["barcode"])
-    ]
+        Index(value = ["name"]),
+        Index(value = ["barcode"]),
+    ],
 )
 data class FoodItemEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
     val name: String,
     val barcode: String? = null,
-    val calories: Int,    // kcal per 100g
-    val carbs: Float,     // g per 100g
-    val protein: Float,   // g per 100g
-    val fat: Float,       // g per 100g
+    val calories: Int, // kcal per 100g
+    val carbs: Float, // g per 100g
+    val protein: Float, // g per 100g
+    val fat: Float, // g per 100g
     val createdAt: Long = System.currentTimeMillis() / 1000,
     // Extended fields for OpenFoodFacts integration
-    val fiber: Float? = null,       // g per 100g
-    val sugar: Float? = null,       // g per 100g
-    val sodium: Float? = null,      // mg per 100g
+    val fiber: Float? = null, // g per 100g
+    val sugar: Float? = null, // g per 100g
+    val sodium: Float? = null, // mg per 100g
     val brands: String? = null,
     val categories: String? = null,
     val imageUrl: String? = null,
     val servingSize: String? = null,
-    val ingredients: String? = null
+    val ingredients: String? = null,
 )
 
 @Entity(
     tableName = "meal_entries",
-    foreignKeys = [ForeignKey(
-        entity = FoodItemEntity::class,
-        parentColumns = ["id"],
-        childColumns = ["foodItemId"],
-        onDelete = ForeignKey.CASCADE
-    )],
+    foreignKeys = [
+        ForeignKey(
+            entity = FoodItemEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["foodItemId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
     indices = [
         Index(value = ["foodItemId"]),
         Index(value = ["date"]),
-        Index(value = ["mealType"])
-    ]
+        Index(value = ["mealType"]),
+    ],
 )
 data class MealEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val foodItemId: String?,    // For individual food items
+    val foodItemId: String?, // For individual food items
     val recipeId: String? = null, // For recipes (either foodItemId OR recipeId should be set)
-    val date: String,           // ISO-Date (yyyy-MM-dd)
-    val mealType: String,       // breakfast, lunch, dinner, snack
-    val quantityGrams: Float,   // Consumed amount in grams for food items
+    val date: String, // ISO-Date (yyyy-MM-dd)
+    val mealType: String, // breakfast, lunch, dinner, snack
+    val quantityGrams: Float, // Consumed amount in grams for food items
     val servings: Float? = null, // Number of servings for recipes (e.g., 0.5, 1.0, 2.0)
-    val notes: String? = null
+    val notes: String? = null,
 )
 
 @Entity(
     tableName = "water_entries",
-    indices = [Index(value = ["date"])]
+    indices = [Index(value = ["date"])],
 )
 data class WaterEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val date: String,  // ISO-Date (yyyy-MM-dd)
+    val date: String, // ISO-Date (yyyy-MM-dd)
     val amountMl: Int,
-    val timestamp: Long = System.currentTimeMillis() / 1000
+    val timestamp: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -463,8 +464,8 @@ data class WaterEntryEntity(
     indices = [
         Index(value = ["date"]),
         Index(value = ["bmi"]),
-        Index(value = ["recordedAt"])
-    ]
+        Index(value = ["recordedAt"]),
+    ],
 )
 data class BMIHistoryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -474,7 +475,7 @@ data class BMIHistoryEntity(
     val bmi: Float,
     val category: String, // UNDERWEIGHT, NORMAL, OVERWEIGHT, OBESE
     val notes: String? = null,
-    val recordedAt: Long = System.currentTimeMillis() / 1000
+    val recordedAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -482,8 +483,8 @@ data class BMIHistoryEntity(
     indices = [
         Index(value = ["startDate"]),
         Index(value = ["isActive"]),
-        Index(value = ["programType"])
-    ]
+        Index(value = ["programType"]),
+    ],
 )
 data class WeightLossProgramEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -496,7 +497,7 @@ data class WeightLossProgramEntity(
     val weeklyWeightLossGoal: Float, // kg per week
     val isActive: Boolean = true,
     val programType: String, // "standard", "intensive", "maintenance"
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -504,8 +505,8 @@ data class WeightLossProgramEntity(
     indices = [
         Index(value = ["timestamp"]),
         Index(value = ["moodScore"]),
-        Index(value = ["stressLevel"])
-    ]
+        Index(value = ["stressLevel"]),
+    ],
 )
 data class BehavioralCheckInEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -516,7 +517,7 @@ data class BehavioralCheckInEntity(
     val sleepQuality: Int?, // 1-10 scale
     val triggers: String, // JSON encoded list of EmotionalTrigger
     val copingStrategy: String?,
-    val mealContext: String? // "before_meal", "after_meal", "snack"
+    val mealContext: String?, // "before_meal", "after_meal", "snack"
 )
 
 @Entity(
@@ -524,8 +525,8 @@ data class BehavioralCheckInEntity(
     indices = [
         Index(value = ["timestamp"]),
         Index(value = ["weight"]),
-        Index(value = ["bmi"])
-    ]
+        Index(value = ["bmi"]),
+    ],
 )
 data class ProgressPhotoEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -533,7 +534,7 @@ data class ProgressPhotoEntity(
     val timestamp: Long,
     val weight: Float,
     val bmi: Float,
-    val notes: String? = null
+    val notes: String? = null,
 )
 
 // Advanced Workout Execution Enhancement - Phase 1 Entities
@@ -545,8 +546,8 @@ data class ProgressPhotoEntity(
         Index(value = ["sessionId"]),
         Index(value = ["planId"]),
         Index(value = ["timestamp"]),
-        Index(value = ["exerciseIndex"])
-    ]
+        Index(value = ["exerciseIndex"]),
+    ],
 )
 data class WorkoutPerformanceEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
@@ -554,7 +555,6 @@ data class WorkoutPerformanceEntity(
     val sessionId: String,
     val planId: Long,
     val exerciseIndex: Int,
-    
     // Performance Metrics
     val heartRateAvg: Int? = null,
     val heartRateMax: Int? = null,
@@ -564,18 +564,16 @@ data class WorkoutPerformanceEntity(
     val volume: Float, // weight * reps
     val restTime: Long, // planned rest time in seconds
     val actualRestTime: Long, // actual rest time in seconds
-    
     // Quality Metrics
     val formQuality: Float = 1.0f, // 0.0-1.0 from sensor analysis
     val perceivedExertion: Int? = null, // 1-10 RPE scale
     val movementSpeed: Float? = null, // reps per minute
     val rangeOfMotion: Float? = null, // percentage of full ROM
-    
     // Session Context
     val timestamp: Long = System.currentTimeMillis() / 1000,
     val duration: Long, // exercise duration in seconds
     val isPersonalRecord: Boolean = false,
-    val notes: String? = null
+    val notes: String? = null,
 )
 
 @Entity(
@@ -584,8 +582,8 @@ data class WorkoutPerformanceEntity(
         Index(value = ["planId"]),
         Index(value = ["userId"]),
         Index(value = ["startTime"]),
-        Index(value = ["workoutEfficiencyScore"])
-    ]
+        Index(value = ["workoutEfficiencyScore"]),
+    ],
 )
 data class WorkoutSessionEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
@@ -593,24 +591,21 @@ data class WorkoutSessionEntity(
     val userId: String,
     val startTime: Long,
     val endTime: Long? = null,
-    
     // Session Metrics
     val totalVolume: Float = 0f,
     val averageHeartRate: Int? = null,
     val caloriesBurned: Int? = null,
     val workoutEfficiencyScore: Float = 0f, // 0.0-1.0
     val fatigueLevel: String = "medium", // "low", "medium", "high"
-    
     // Progress Tracking
     val personalRecordsAchieved: Int = 0,
     val completionPercentage: Float = 0f,
     val sessionRating: Int? = null, // 1-5 stars
     val sessionNotes: String? = null,
-    
     // Pause/Resume Functionality
     val pauseStartTime: Long? = null,
     val totalPauseTime: Long = 0L,
-    val actualDuration: Long? = null
+    val actualDuration: Long? = null,
 )
 
 @Entity(
@@ -620,31 +615,28 @@ data class WorkoutSessionEntity(
         Index(value = ["userId"]),
         Index(value = ["performanceTrend"]),
         Index(value = ["plateauDetected"]),
-        Index(value = ["lastProgressDate"])
-    ]
+        Index(value = ["lastProgressDate"]),
+    ],
 )
 data class ExerciseProgressionEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
     val exerciseId: String,
     val userId: String,
-    
     // Progression Recommendations
     val currentWeight: Float,
     val recommendedWeight: Float,
     val currentReps: Int,
     val recommendedReps: Int,
     val progressionReason: String, // "strength_gain", "plateau_break", "deload"
-    
     // Performance Analysis
     val performanceTrend: String = "stable", // "improving", "plateauing", "declining", "stable"
     val plateauDetected: Boolean = false,
     val plateauWeeks: Int = 0,
     val lastProgressDate: Long,
-    
     // AI Insights
     val aiConfidence: Float = 0.5f, // 0.0-1.0
     val nextReviewDate: Long,
-    val adaptationNotes: String? = null
+    val adaptationNotes: String? = null,
 )
 
 // Cooking Feature Entities
@@ -654,8 +646,8 @@ data class ExerciseProgressionEntity(
     indices = [
         Index(value = ["recipeId"]),
         Index(value = ["startTime"]),
-        Index(value = ["status"])
-    ]
+        Index(value = ["status"]),
+    ],
 )
 data class CookingSessionEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
@@ -668,7 +660,7 @@ data class CookingSessionEntity(
     val estimatedDuration: Long? = null, // in seconds
     val actualDuration: Long? = null, // in seconds
     val notes: String? = null,
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -678,14 +670,14 @@ data class CookingSessionEntity(
             entity = CookingSessionEntity::class,
             parentColumns = ["id"],
             childColumns = ["sessionId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["sessionId"]),
         Index(value = ["stepIndex"]),
-        Index(value = ["isActive"])
-    ]
+        Index(value = ["isActive"]),
+    ],
 )
 data class CookingTimerEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
@@ -698,7 +690,7 @@ data class CookingTimerEntity(
     val isPaused: Boolean = false,
     val startTime: Long? = null,
     val completedAt: Long? = null,
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
 )
 
 // Health Connect Integration Entities
@@ -708,8 +700,8 @@ data class CookingTimerEntity(
     indices = [
         Index(value = ["date"]),
         Index(value = ["source"]),
-        Index(value = ["syncedAt"])
-    ]
+        Index(value = ["syncedAt"]),
+    ],
 )
 data class HealthStepsEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -717,7 +709,7 @@ data class HealthStepsEntity(
     val steps: Int,
     val source: String, // "health_connect", "manual", "google_fit", etc.
     val syncedAt: Long = System.currentTimeMillis() / 1000,
-    val lastModified: Long = System.currentTimeMillis() / 1000
+    val lastModified: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -725,8 +717,8 @@ data class HealthStepsEntity(
     indices = [
         Index(value = ["date"]),
         Index(value = ["timestamp"]),
-        Index(value = ["source"])
-    ]
+        Index(value = ["source"]),
+    ],
 )
 data class HealthHeartRateEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -734,7 +726,7 @@ data class HealthHeartRateEntity(
     val date: String, // ISO date (yyyy-MM-dd)
     val heartRate: Int, // BPM
     val source: String,
-    val syncedAt: Long = System.currentTimeMillis() / 1000
+    val syncedAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -742,8 +734,8 @@ data class HealthHeartRateEntity(
     indices = [
         Index(value = ["date"]),
         Index(value = ["calorieType"]),
-        Index(value = ["source"])
-    ]
+        Index(value = ["source"]),
+    ],
 )
 data class HealthCalorieEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -752,7 +744,7 @@ data class HealthCalorieEntity(
     val calorieType: String, // "active", "total", "basal"
     val source: String,
     val syncedAt: Long = System.currentTimeMillis() / 1000,
-    val lastModified: Long = System.currentTimeMillis() / 1000
+    val lastModified: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -760,8 +752,8 @@ data class HealthCalorieEntity(
     indices = [
         Index(value = ["date"]),
         Index(value = ["source"]),
-        Index(value = ["sleepStage"])
-    ]
+        Index(value = ["sleepStage"]),
+    ],
 )
 data class HealthSleepEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -771,7 +763,7 @@ data class HealthSleepEntity(
     val durationMinutes: Int,
     val sleepStage: String, // "light", "deep", "rem", "awake", "unknown"
     val source: String,
-    val syncedAt: Long = System.currentTimeMillis() / 1000
+    val syncedAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -779,8 +771,8 @@ data class HealthSleepEntity(
     indices = [
         Index(value = ["date"]),
         Index(value = ["exerciseType"]),
-        Index(value = ["source"])
-    ]
+        Index(value = ["source"]),
+    ],
 )
 data class HealthExerciseSessionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -797,7 +789,7 @@ data class HealthExerciseSessionEntity(
     val distance: Double? = null, // in meters
     val source: String,
     val syncedAt: Long = System.currentTimeMillis() / 1000,
-    val lastModified: Long = System.currentTimeMillis() / 1000
+    val lastModified: Long = System.currentTimeMillis() / 1000,
 )
 
 // Cloud Sync Entities for Multi-Device Support
@@ -807,22 +799,22 @@ data class HealthExerciseSessionEntity(
         Index(value = ["entityType", "entityId"], unique = true),
         Index(value = ["lastSyncTime"]),
         Index(value = ["syncStatus"]),
-        Index(value = ["deviceId"])
-    ]
+        Index(value = ["deviceId"]),
+    ],
 )
 data class CloudSyncEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
-    val entityType: String,  // e.g., "PersonalAchievement", "WeightEntry", "WorkoutSession"
-    val entityId: String,    // The ID of the actual entity being synced
-    val lastSyncTime: Long,  // Timestamp of last successful sync
+    val entityType: String, // e.g., "PersonalAchievement", "WeightEntry", "WorkoutSession"
+    val entityId: String, // The ID of the actual entity being synced
+    val lastSyncTime: Long, // Timestamp of last successful sync
     val lastModifiedTime: Long, // Timestamp when entity was last modified locally
-    val syncStatus: String,  // "synced", "pending", "conflict", "error"
-    val deviceId: String,    // Unique identifier for this device
+    val syncStatus: String, // "synced", "pending", "conflict", "error"
+    val deviceId: String, // Unique identifier for this device
     val cloudVersion: String?, // Version/etag from cloud storage
     val conflictData: String? = null, // JSON data for conflict resolution
     val retryCount: Int = 0,
     val errorMessage: String? = null,
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -830,21 +822,21 @@ data class CloudSyncEntity(
     indices = [
         Index(value = ["userId"], unique = true),
         Index(value = ["email"], unique = true),
-        Index(value = ["lastSyncTime"])
-    ]
+        Index(value = ["lastSyncTime"]),
+    ],
 )
 data class UserProfileEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
-    val userId: String,      // Cloud user ID (Firebase/Auth0/etc)
-    val email: String,       // User email for identification
+    val userId: String, // Cloud user ID (Firebase/Auth0/etc)
+    val email: String, // User email for identification
     val displayName: String? = null,
-    val deviceName: String,  // Name of this device
-    val deviceId: String,    // Unique device identifier
-    val lastSyncTime: Long,  // Last time this user synced
+    val deviceName: String, // Name of this device
+    val deviceId: String, // Unique device identifier
+    val lastSyncTime: Long, // Last time this user synced
     val syncPreferences: String, // JSON with sync settings (what to sync)
     val encryptionKey: String? = null, // For end-to-end encryption
     val isActive: Boolean = true,
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -852,23 +844,23 @@ data class UserProfileEntity(
     indices = [
         Index(value = ["entityType", "entityId"]),
         Index(value = ["createdAt"]),
-        Index(value = ["status"])
-    ]
+        Index(value = ["status"]),
+    ],
 )
 data class SyncConflictEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
     val entityType: String,
     val entityId: String,
-    val localData: String,   // JSON of local version
-    val remoteData: String,  // JSON of remote version
+    val localData: String, // JSON of local version
+    val remoteData: String, // JSON of remote version
     val localTimestamp: Long,
     val remoteTimestamp: Long,
-    val status: String,      // "pending", "resolved", "auto_resolved"
+    val status: String, // "pending", "resolved", "auto_resolved"
     val resolution: String?, // "local_wins", "remote_wins", "merged", "manual"
     val resolvedData: String? = null, // JSON of resolved version
-    val resolvedBy: String? = null,   // "auto", "user", "ai"
+    val resolvedBy: String? = null, // "auto", "user", "ai"
     val createdAt: Long = System.currentTimeMillis() / 1000,
-    val resolvedAt: Long? = null
+    val resolvedAt: Long? = null,
 )
 
 // Social Challenge Entities for Freeletics-style gamification
@@ -881,14 +873,14 @@ data class SyncConflictEntity(
             entity = RecipeEntity::class,
             parentColumns = ["id"],
             childColumns = ["recipeId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["recipeId"]),
         Index(value = ["eventType"]),
-        Index(value = ["timestamp"])
-    ]
+        Index(value = ["timestamp"]),
+    ],
 )
 data class RecipeAnalyticsEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
@@ -896,7 +888,7 @@ data class RecipeAnalyticsEntity(
     val eventType: String, // "view", "cooking_started", "cooking_completed", "added_to_favorites", "added_to_grocery_list"
     val timestamp: Long = System.currentTimeMillis() / 1000,
     val sessionId: String? = null, // for cooking sessions
-    val metadata: String? = null // JSON for additional data like completion percentage
+    val metadata: String? = null, // JSON for additional data like completion percentage
 )
 
 @Entity(
@@ -906,14 +898,14 @@ data class RecipeAnalyticsEntity(
             entity = RecipeEntity::class,
             parentColumns = ["id"],
             childColumns = ["recipeId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["recipeId"]),
         Index(value = ["rating"]),
-        Index(value = ["createdAt"])
-    ]
+        Index(value = ["createdAt"]),
+    ],
 )
 data class RecipeRatingEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
@@ -921,7 +913,7 @@ data class RecipeRatingEntity(
     val rating: Float, // 1.0 to 5.0
     val comment: String? = null,
     val userId: String? = null, // if user accounts are implemented
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
 )
 
 // PRO Feature Access Control
@@ -930,8 +922,8 @@ data class RecipeRatingEntity(
     indices = [
         Index(value = ["featureName"]),
         Index(value = ["isUnlocked"]),
-        Index(value = ["lastChecked"])
-    ]
+        Index(value = ["lastChecked"]),
+    ],
 )
 data class ProFeatureEntity(
     @PrimaryKey val featureName: String, // "access_official_recipe_database", "advanced_recipe_filters", etc.
@@ -939,7 +931,7 @@ data class ProFeatureEntity(
     val unlockedAt: Long? = null,
     val lastChecked: Long = System.currentTimeMillis() / 1000,
     val usageCount: Int = 0,
-    val maxUsage: Int? = null // for trial features
+    val maxUsage: Int? = null, // for trial features
 )
 
 // Recipe Collections/Categories (YAZIO-style organization)
@@ -948,8 +940,8 @@ data class ProFeatureEntity(
     indices = [
         Index(value = ["name"]),
         Index(value = ["isOfficial"]),
-        Index(value = ["createdAt"])
-    ]
+        Index(value = ["createdAt"]),
+    ],
 )
 data class RecipeCollectionEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
@@ -959,7 +951,7 @@ data class RecipeCollectionEntity(
     val isOfficial: Boolean = false, // true for YAZIO curated collections
     val isPremium: Boolean = false, // requires PRO subscription
     val sortOrder: Int = 0,
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -969,27 +961,27 @@ data class RecipeCollectionEntity(
             entity = RecipeCollectionEntity::class,
             parentColumns = ["id"],
             childColumns = ["collectionId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
             entity = RecipeEntity::class,
             parentColumns = ["id"],
             childColumns = ["recipeId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["collectionId"]),
         Index(value = ["recipeId"]),
-        Index(value = ["sortOrder"])
-    ]
+        Index(value = ["sortOrder"]),
+    ],
 )
 data class RecipeCollectionItemEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
     val collectionId: String,
     val recipeId: String,
     val sortOrder: Int = 0,
-    val addedAt: Long = System.currentTimeMillis() / 1000
+    val addedAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -999,8 +991,8 @@ data class RecipeCollectionItemEntity(
         Index(value = ["category"]),
         Index(value = ["startDate"]),
         Index(value = ["endDate"]),
-        Index(value = ["createdAt"])
-    ]
+        Index(value = ["createdAt"]),
+    ],
 )
 data class SocialChallengeEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -1023,7 +1015,7 @@ data class SocialChallengeEntity(
     val imageUrl: String? = null,
     val rules: String? = null, // Additional rules or description
     val isOfficial: Boolean = false, // true for app-created challenges
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -1033,15 +1025,15 @@ data class SocialChallengeEntity(
             entity = SocialChallengeEntity::class,
             parentColumns = ["id"],
             childColumns = ["challengeId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["challengeId"]),
         Index(value = ["userId"]),
         Index(value = ["status"]),
-        Index(value = ["joinedAt"])
-    ]
+        Index(value = ["joinedAt"]),
+    ],
 )
 data class ChallengeParticipationEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -1056,7 +1048,7 @@ data class ChallengeParticipationEntity(
     val joinedAt: Long = System.currentTimeMillis() / 1000,
     val rank: Int? = null, // current ranking in challenge
     val personalBest: Double? = null, // best single day/session performance
-    val notes: String? = null // user notes or motivation
+    val notes: String? = null, // user notes or motivation
 )
 
 @Entity(
@@ -1066,14 +1058,14 @@ data class ChallengeParticipationEntity(
             entity = ChallengeParticipationEntity::class,
             parentColumns = ["id"],
             childColumns = ["participationId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["participationId"]),
         Index(value = ["logDate"]),
-        Index(value = ["timestamp"])
-    ]
+        Index(value = ["timestamp"]),
+    ],
 )
 data class ChallengeProgressLogEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -1082,7 +1074,7 @@ data class ChallengeProgressLogEntity(
     val value: Double, // progress value for this day/session
     val description: String? = null, // what was accomplished
     val source: String, // "workout", "nutrition", "manual", "automatic"
-    val timestamp: Long = System.currentTimeMillis() / 1000
+    val timestamp: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -1092,8 +1084,8 @@ data class ChallengeProgressLogEntity(
         Index(value = ["badgeType"]),
         Index(value = ["rarity"]),
         Index(value = ["isUnlocked"]),
-        Index(value = ["unlockedAt"])
-    ]
+        Index(value = ["unlockedAt"]),
+    ],
 )
 data class SocialBadgeEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -1108,7 +1100,7 @@ data class SocialBadgeEntity(
     val isUnlocked: Boolean = false,
     val unlockedAt: Long? = null,
     val progress: Double = 0.0, // progress towards unlocking (0.0 to 100.0)
-    val createdAt: Long = System.currentTimeMillis() / 1000
+    val createdAt: Long = System.currentTimeMillis() / 1000,
 )
 
 @Entity(
@@ -1118,15 +1110,15 @@ data class SocialBadgeEntity(
             entity = SocialChallengeEntity::class,
             parentColumns = ["id"],
             childColumns = ["challengeId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["challengeId"]),
         Index(value = ["userId"]),
         Index(value = ["rank"]),
-        Index(value = ["score"], name = "index_leaderboard_score")
-    ]
+        Index(value = ["score"], name = "index_leaderboard_score"),
+    ],
 )
 data class LeaderboardEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -1137,5 +1129,70 @@ data class LeaderboardEntryEntity(
     val score: Double, // final score/progress
     val completionTime: Long? = null, // when they completed the challenge
     val badge: String? = null, // badge earned for this ranking
-    val lastUpdated: Long = System.currentTimeMillis() / 1000
+    val lastUpdated: Long = System.currentTimeMillis() / 1000,
 )
+
+// API Health Checking Entity
+@Entity(
+    tableName = "health_status",
+    indices = [
+        Index(value = ["provider"], unique = true),
+        Index(value = ["lastChecked"]),
+        Index(value = ["isHealthy"])
+    ]
+)
+data class HealthStatusEntity(
+    @PrimaryKey
+    val provider: String,
+    val isHealthy: Boolean,
+    val responseTimeMs: Long?,
+    val errorMessage: String?,
+    val lastChecked: Long,
+    val additionalData: String? = null // JSON string for additional data
+) {
+    /**
+     * Convert Room entity to domain model
+     */
+    fun toHealthStatus(): com.example.fitapp.core.health.HealthStatus {
+        val additionalDataMap = try {
+            additionalData?.let {
+                // Simple parsing for now - could use proper JSON serialization
+                emptyMap<String, Any>()
+            } ?: emptyMap()
+        } catch (e: Exception) {
+            emptyMap<String, Any>()
+        }
+
+        return com.example.fitapp.core.health.HealthStatus(
+            isHealthy = isHealthy,
+            provider = provider,
+            responseTimeMs = responseTimeMs,
+            errorMessage = errorMessage,
+            lastChecked = lastChecked,
+            additionalData = additionalDataMap
+        )
+    }
+
+    companion object {
+        /**
+         * Create Room entity from domain model
+         */
+        fun fromHealthStatus(status: com.example.fitapp.core.health.HealthStatus): HealthStatusEntity {
+            val additionalDataJson = if (status.additionalData.isNotEmpty()) {
+                // Simple serialization for now - could use proper JSON serialization
+                null
+            } else {
+                null
+            }
+
+            return HealthStatusEntity(
+                provider = status.provider,
+                isHealthy = status.isHealthy,
+                responseTimeMs = status.responseTimeMs,
+                errorMessage = status.errorMessage,
+                lastChecked = status.lastChecked,
+                additionalData = additionalDataJson
+            )
+        }
+    }
+}

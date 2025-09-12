@@ -16,7 +16,7 @@ import com.example.fitapp.data.db.AppDatabase
 @Composable
 fun AiLogsScreen(
     contentPadding: PaddingValues,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val ctx = LocalContext.current
     val dao = remember { AppDatabase.get(ctx).aiLogDao() }
@@ -24,7 +24,10 @@ fun AiLogsScreen(
 
     LazyColumn(modifier = modifier.padding(contentPadding)) {
         items(logs.value) { log ->
-            Text("${log.provider} • ${log.type} • ${if (log.success) "OK" else "ERR"} • ${log.tookMs}ms", style = MaterialTheme.typography.labelMedium)
+            Text(
+                "${log.provider} • ${log.type} • ${if (log.success) "OK" else "ERR"} • ${log.tookMs}ms",
+                style = MaterialTheme.typography.labelMedium,
+            )
             Text(log.prompt, style = MaterialTheme.typography.bodySmall)
             Text(log.result.take(600), style = MaterialTheme.typography.bodySmall)
             Text("—")

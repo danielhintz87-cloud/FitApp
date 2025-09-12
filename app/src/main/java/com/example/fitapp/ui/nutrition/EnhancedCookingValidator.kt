@@ -8,19 +8,18 @@ import android.util.Log
  * Original functionality temporarily disabled until dependencies are resolved
  */
 object EnhancedCookingValidator {
-    
     data class ValidationResult(
         val success: Boolean = true,
         val checks: List<ValidationCheck> = emptyList(),
-        val summary: String = "Validation temporarily disabled"
+        val summary: String = "Validation temporarily disabled",
     )
-    
+
     data class ValidationCheck(
         val name: String,
         val passed: Boolean = true,
-        val error: String? = null
+        val error: String? = null,
     )
-    
+
     /**
      * Async validation of enhanced cooking features
      */

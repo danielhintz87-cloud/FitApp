@@ -1,8 +1,9 @@
 package com.example.fitapp.data.prefs
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.dataStore
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringSetPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -12,105 +13,84 @@ import kotlinx.coroutines.flow.map
  */
 interface UserPreferencesServiceInterface {
     suspend fun clearWorkoutPreferences()
+
     suspend fun clearNutritionPreferences()
+
     suspend fun clearUserPreferences()
+
     suspend fun clearAchievementPreferences()
+
     suspend fun clearAllPreferences()
+
     suspend fun getSelectedEquipment(): Set<String>
+
     suspend fun saveSelectedEquipment(equipment: Set<String>)
 }
 
 /**
- * Proto DataStore based implementation for UserPreferences.
- * Migrated from SharedPreferences and Preferences DataStore to Proto DataStore.
+ * Jetpack DataStore basierte Implementierung für UserPreferences.
+ * Migriert sukzessive von SharedPreferences (Legacy) auf DataStore.
  */
 class UserDataStore(
-    private val context: Context
+    private val context: Context,
 ) : UserPreferencesServiceInterface {
-    
-    // Use the same proto DataStore as UserPreferencesRepository
-    private val Context.dataStore: DataStore<UserPreferencesProto> by dataStore(
-        fileName = "user_preferences.pb",
-        serializer = UserPreferencesSerializer
-    )
+    private val Context.dataStore by preferencesDataStore(name = "user_prefs")
+
+    private object Keys {
+        val SELECTED_EQUIPMENT = stringSetPreferencesKey("selected_equipment")
+    }
 
     override suspend fun clearWorkoutPreferences() {
-        context.dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .clearSelectedEquipment()
-                .setNotificationsEnabled(true) // Reset to defaults
-                .setDefaultRestTimeSeconds(60)
-                .setSoundEnabled(true)
-                .setVibrationEnabled(true)
-                .build()
-        }
+        clearAllPreferences()
     }
 
     override suspend fun clearNutritionPreferences() {
-        context.dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .setDailyCalorieGoal(2000) // Reset to defaults
-                .setDailyWaterGoalLiters(2.0)
-                .setNutritionRemindersEnabled(true)
-                .build()
-        }
+        clearAllPreferences()
     }
 
     override suspend fun clearUserPreferences() {
-        context.dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .setUserName("")
-                .setAge(0)
-                .setWeightKg(0.0)
-                .setHeightCm(0.0)
-                .build()
-        }
+        clearAllPreferences()
     }
 
     override suspend fun clearAchievementPreferences() {
-        context.dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .setAchievementNotificationsEnabled(true) // Reset to default
-                .build()
-        }
+        clearAllPreferences()
     }
 
     override suspend fun clearAllPreferences() {
-        context.dataStore.updateData {
-            UserPreferencesProto.getDefaultInstance()
-        }
+        context.dataStore.edit { it.clear() }
     }
 
     override suspend fun getSelectedEquipment(): Set<String> {
         return context.dataStore.data.map { prefs ->
-            prefs.selectedEquipmentList.toSet()
+            prefs[Keys.SELECTED_EQUIPMENT] ?: emptySet()
         }.first()
     }
 
     override suspend fun saveSelectedEquipment(equipment: Set<String>) {
-        context.dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .clearSelectedEquipment()
-                .addAllSelectedEquipment(equipment)
-                .build()
+        context.dataStore.edit { prefs ->
+            prefs[Keys.SELECTED_EQUIPMENT] = equipment
         }
     }
 
     /**
-     * Helper Flow for UI reactivity (optional use)
+     * Helfer Flow für UI Reaktivität (optional verwendbar)
      */
-    val selectedEquipmentFlow: Flow<Set<String>> = context.dataStore.data.map { prefs ->
-        prefs.selectedEquipmentList.toSet()
-    }
+    val selectedEquipmentFlow: Flow<Set<String>> =
+        context.dataStore.data.map { prefs ->
+            prefs[Keys.SELECTED_EQUIPMENT] ?: emptySet()
+        }
 }
 
 /**
- * Factory Method for migration assistance: now always uses Proto DataStore
+ * Factory Method for migration assistance: now always uses DataStore
  * @deprecated Use UserPreferencesRepository with Dependency Injection instead
  */
 @Deprecated("Use UserPreferencesRepository with Dependency Injection instead")
 object UserPreferencesFactory {
-    fun create(context: Context, preferDataStore: Boolean = true): UserPreferencesServiceInterface {
+    fun create(
+        context: Context,
+        preferDataStore: Boolean = true,
+    ): UserPreferencesServiceInterface {
         return UserDataStore(context)
     }
 }

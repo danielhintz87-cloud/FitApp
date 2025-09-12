@@ -12,7 +12,6 @@ import androidx.annotation.WorkerThread
  * Utility for loading a Bitmap from a Uri
  */
 object BitmapUtils {
-    
     /**
      * Load a Bitmap from Uri. Uses ImageDecoder for API 28+, MediaStore for older versions.
      * @param contentResolver ContentResolver to access the Uri
@@ -21,7 +20,10 @@ object BitmapUtils {
      * @throws Exception if the image cannot be loaded
      */
     @WorkerThread
-    fun loadBitmapFromUri(contentResolver: ContentResolver, uri: Uri): Bitmap {
+    fun loadBitmapFromUri(
+        contentResolver: ContentResolver,
+        uri: Uri,
+    ): Bitmap {
         return if (Build.VERSION.SDK_INT >= 28) {
             ImageDecoder.decodeBitmap(ImageDecoder.createSource(contentResolver, uri))
         } else {

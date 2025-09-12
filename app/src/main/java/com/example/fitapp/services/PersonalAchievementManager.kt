@@ -10,54 +10,51 @@ import java.time.format.DateTimeFormatter
 
 class PersonalAchievementManager(
     private val context: Context,
-    private val repository: PersonalMotivationRepository
+    private val repository: PersonalMotivationRepository,
 ) {
-    
     companion object {
         // Achievement categories
         const val CATEGORY_FITNESS = "fitness"
         const val CATEGORY_NUTRITION = "nutrition"
         const val CATEGORY_STREAK = "streak"
         const val CATEGORY_MILESTONE = "milestone"
-        
+
         // Achievement types for tracking
         const val TYPE_WORKOUT_COUNT = "workout_count"
         const val TYPE_NUTRITION_LOGGING = "nutrition_logging"
         const val TYPE_STREAK_ACHIEVEMENT = "streak_achievement"
         const val TYPE_WEIGHT_TRACKING = "weight_tracking"
     }
-    
-    fun getAllAchievements(): Flow<List<PersonalAchievementEntity>> =
-        repository.allAchievementsFlow()
-    
+
+    fun getAllAchievements(): Flow<List<PersonalAchievementEntity>> = repository.allAchievementsFlow()
+
     fun getCompletedAchievements(): Flow<List<PersonalAchievementEntity>> =
         repository.achievementsByCompletionFlow(true)
-    
-    fun getPendingAchievements(): Flow<List<PersonalAchievementEntity>> =
-        repository.achievementsByCompletionFlow(false)
-    
+
+    fun getPendingAchievements(): Flow<List<PersonalAchievementEntity>> = repository.achievementsByCompletionFlow(false)
+
     fun getAchievementsByCategory(category: String): Flow<List<PersonalAchievementEntity>> =
         repository.achievementsByCategoryFlow(category)
-    
+
     /**
      * Initialize default achievements for new users
      */
     suspend fun initializeDefaultAchievements() {
         val existingAchievements = repository.allAchievementsFlow().first()
         if (existingAchievements.isNotEmpty()) return
-        
+
         val defaultAchievements = createDefaultAchievements()
         defaultAchievements.forEach { achievement ->
             repository.insertAchievement(achievement)
         }
     }
-    
+
     /**
      * Auto-unlock achievements based on app usage patterns
      */
     suspend fun checkAndUnlockAchievements() {
         val pendingAchievements = repository.achievementsByCompletionFlow(false).first()
-        
+
         for (achievement in pendingAchievements) {
             when (achievement.title) {
                 "Erste Schritte" -> checkFirstStepsAchievement(achievement)
@@ -71,35 +68,38 @@ class PersonalAchievementManager(
             }
         }
     }
-    
+
     /**
      * Update progress for numeric achievements
      */
-    suspend fun updateAchievementProgress(achievementId: Long, newValue: Double) {
+    suspend fun updateAchievementProgress(
+        achievementId: Long,
+        newValue: Double,
+    ) {
         val achievement = repository.getAchievement(achievementId) ?: return
-        
+
         repository.updateAchievementProgress(achievementId, newValue)
-        
+
         // Check if achievement is now completed
         if (achievement.targetValue != null && newValue >= achievement.targetValue) {
             completeAchievement(achievementId)
         }
     }
-    
+
     /**
      * Mark an achievement as completed
      */
     suspend fun completeAchievement(achievementId: Long) {
         val currentTime = System.currentTimeMillis() / 1000
         repository.markAchievementCompleted(achievementId, true, currentTime)
-        
+
         // Trigger notification
         val achievement = repository.getAchievement(achievementId)
         if (achievement != null) {
             SmartNotificationManager.showAchievementUnlocked(context, achievement)
         }
     }
-    
+
     /**
      * Track workout completion for achievements
      */
@@ -108,7 +108,7 @@ class PersonalAchievementManager(
         updateWorkoutCountAchievements()
         updateFitnessAchievements()
     }
-    
+
     /**
      * Track nutrition logging for achievements
      */
@@ -117,27 +117,30 @@ class PersonalAchievementManager(
         updateNutritionAchievements()
         updateNutritionExpertAchievement()
     }
-    
+
     private suspend fun updateWorkoutCountAchievements() {
         val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
         val oneWeekAgo = LocalDate.now().minusDays(7).format(DateTimeFormatter.ISO_LOCAL_DATE)
-        
-        val recentWorkouts = repository.getWorkoutsBetween(oneWeekAgo, today)
-            .filter { it.status == "completed" }
-        
+
+        val recentWorkouts =
+            repository.getWorkoutsBetween(oneWeekAgo, today)
+                .filter { it.status == "completed" }
+
         // Update weekly workout achievement
-        val weeklyAchievements = repository.achievementsByCategoryFlow(CATEGORY_FITNESS).first()
-            .filter { it.title == "Wöchentlicher Krieger" && !it.isCompleted }
-        
+        val weeklyAchievements =
+            repository.achievementsByCategoryFlow(CATEGORY_FITNESS).first()
+                .filter { it.title == "Wöchentlicher Krieger" && !it.isCompleted }
+
         weeklyAchievements.forEach { achievement ->
             updateAchievementProgress(achievement.id, recentWorkouts.size.toDouble())
         }
     }
-    
+
     private suspend fun updateNutritionAchievements() {
-        val nutritionAchievements = repository.achievementsByCategoryFlow(CATEGORY_NUTRITION).first()
-            .filter { !it.isCompleted }
-        
+        val nutritionAchievements =
+            repository.achievementsByCategoryFlow(CATEGORY_NUTRITION).first()
+                .filter { !it.isCompleted }
+
         nutritionAchievements.forEach { achievement ->
             when (achievement.title) {
                 "Nahrungs-Tracker" -> {
@@ -147,72 +150,80 @@ class PersonalAchievementManager(
             }
         }
     }
-    
+
     private suspend fun checkFirstStepsAchievement(achievement: PersonalAchievementEntity) {
         // Complete first workout
-        val hasAnyWorkout = repository.getWorkoutsBetween(
-            LocalDate.now().minusDays(30).format(DateTimeFormatter.ISO_LOCAL_DATE),
-            LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-        ).any { it.status == "completed" }
-        
+        val hasAnyWorkout =
+            repository.getWorkoutsBetween(
+                LocalDate.now().minusDays(30).format(DateTimeFormatter.ISO_LOCAL_DATE),
+                LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
+            ).any { it.status == "completed" }
+
         if (hasAnyWorkout && !achievement.isCompleted) {
             completeAchievement(achievement.id)
         }
     }
-    
-    private suspend fun checkWeeklyWarriorAchievement(@Suppress("UNUSED_PARAMETER") achievement: PersonalAchievementEntity) {
+
+    private suspend fun checkWeeklyWarriorAchievement(
+        @Suppress("UNUSED_PARAMETER") achievement: PersonalAchievementEntity,
+    ) {
         // Already handled in updateWorkoutCountAchievements
     }
-    
-    private suspend fun checkNutritionTrackerAchievement(@Suppress("UNUSED_PARAMETER") achievement: PersonalAchievementEntity) {
+
+    private suspend fun checkNutritionTrackerAchievement(
+        @Suppress("UNUSED_PARAMETER") achievement: PersonalAchievementEntity,
+    ) {
         // Already handled in updateNutritionAchievements
     }
-    
+
     private suspend fun checkEnduranceChampionAchievement(achievement: PersonalAchievementEntity) {
         val oneMonthAgo = LocalDate.now().minusDays(30).format(DateTimeFormatter.ISO_LOCAL_DATE)
         val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-        
-        val monthlyWorkouts = repository.getWorkoutsBetween(oneMonthAgo, today)
-            .filter { it.status == "completed" }
-        
+
+        val monthlyWorkouts =
+            repository.getWorkoutsBetween(oneMonthAgo, today)
+                .filter { it.status == "completed" }
+
         updateAchievementProgress(achievement.id, monthlyWorkouts.size.toDouble())
     }
-    
+
     private suspend fun checkFitnessEnthusiastAchievement(achievement: PersonalAchievementEntity) {
         // Check total workouts completed (lifetime)
-        val allWorkouts = repository.getWorkoutsBetween(
-            LocalDate.now().minusDays(365).format(DateTimeFormatter.ISO_LOCAL_DATE), // Look back a year
-            LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-        ).filter { it.status == "completed" }
-        
+        val allWorkouts =
+            repository.getWorkoutsBetween(
+                LocalDate.now().minusDays(365).format(DateTimeFormatter.ISO_LOCAL_DATE), // Look back a year
+                LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
+            ).filter { it.status == "completed" }
+
         updateAchievementProgress(achievement.id, allWorkouts.size.toDouble())
     }
-    
+
     private suspend fun checkNutritionExpertAchievement(achievement: PersonalAchievementEntity) {
         // This would need to track daily nutrition logging for 30 days
         // For now, we'll increment based on the current value
         updateAchievementProgress(achievement.id, achievement.currentValue + 1.0)
     }
-    
+
     private suspend fun checkHabitGuruAchievement(achievement: PersonalAchievementEntity) {
         // Check longest streak for any habit
         val activeStreaks = repository.activeStreaksFlow().first()
         val maxStreak = activeStreaks.maxOfOrNull { it.longestStreak } ?: 0
-        
+
         updateAchievementProgress(achievement.id, maxStreak.toDouble())
     }
-    
+
     private suspend fun checkStreakMasterAchievement(achievement: PersonalAchievementEntity) {
         val activeStreaks = repository.activeStreaksFlow().first()
         val maxStreak = activeStreaks.maxOfOrNull { it.currentStreak } ?: 0
-        
+
         updateAchievementProgress(achievement.id, maxStreak.toDouble())
     }
-    
+
     private suspend fun updateFitnessAchievements() {
-        val fitnessAchievements = repository.achievementsByCategoryFlow(CATEGORY_FITNESS).first()
-            .filter { !it.isCompleted }
-        
+        val fitnessAchievements =
+            repository.achievementsByCategoryFlow(CATEGORY_FITNESS).first()
+                .filter { !it.isCompleted }
+
         for (achievement in fitnessAchievements) {
             when (achievement.title) {
                 "Ausdauer-Champion" -> checkEnduranceChampionAchievement(achievement)
@@ -220,16 +231,17 @@ class PersonalAchievementManager(
             }
         }
     }
-    
+
     private suspend fun updateNutritionExpertAchievement() {
-        val nutritionAchievements = repository.achievementsByCategoryFlow(CATEGORY_NUTRITION).first()
-            .filter { !it.isCompleted && it.title == "Ernährungs-Experte" }
-        
+        val nutritionAchievements =
+            repository.achievementsByCategoryFlow(CATEGORY_NUTRITION).first()
+                .filter { !it.isCompleted && it.title == "Ernährungs-Experte" }
+
         nutritionAchievements.forEach { achievement ->
             checkNutritionExpertAchievement(achievement)
         }
     }
-    
+
     private fun createDefaultAchievements(): List<PersonalAchievementEntity> {
         return listOf(
             PersonalAchievementEntity(
@@ -238,7 +250,7 @@ class PersonalAchievementManager(
                 category = CATEGORY_FITNESS,
                 iconName = "fitness_center",
                 targetValue = 1.0,
-                unit = "Training"
+                unit = "Training",
             ),
             PersonalAchievementEntity(
                 title = "Wöchentlicher Krieger",
@@ -246,7 +258,7 @@ class PersonalAchievementManager(
                 category = CATEGORY_FITNESS,
                 iconName = "emoji_events",
                 targetValue = 5.0,
-                unit = "Trainings"
+                unit = "Trainings",
             ),
             PersonalAchievementEntity(
                 title = "Nahrungs-Tracker",
@@ -254,15 +266,15 @@ class PersonalAchievementManager(
                 category = CATEGORY_NUTRITION,
                 iconName = "restaurant",
                 targetValue = 7.0,
-                unit = "Tage"
+                unit = "Tage",
             ),
             PersonalAchievementEntity(
-                title = "Ausdauer-Champion", 
+                title = "Ausdauer-Champion",
                 description = "Absolviere 20 Trainings",
                 category = CATEGORY_FITNESS,
                 iconName = "military_tech",
                 targetValue = 20.0,
-                unit = "Trainings"
+                unit = "Trainings",
             ),
             PersonalAchievementEntity(
                 title = "Streak-Meister",
@@ -270,7 +282,7 @@ class PersonalAchievementManager(
                 category = CATEGORY_STREAK,
                 iconName = "local_fire_department",
                 targetValue = 10.0,
-                unit = "Tage"
+                unit = "Tage",
             ),
             PersonalAchievementEntity(
                 title = "Gewohnheits-Guru",
@@ -278,7 +290,7 @@ class PersonalAchievementManager(
                 category = CATEGORY_STREAK,
                 iconName = "self_improvement",
                 targetValue = 30.0,
-                unit = "Tage"
+                unit = "Tage",
             ),
             PersonalAchievementEntity(
                 title = "Fitness-Enthusiast",
@@ -286,7 +298,7 @@ class PersonalAchievementManager(
                 category = CATEGORY_FITNESS,
                 iconName = "sports_gymnastics",
                 targetValue = 50.0,
-                unit = "Trainings"
+                unit = "Trainings",
             ),
             PersonalAchievementEntity(
                 title = "Ernährungs-Experte",
@@ -294,7 +306,7 @@ class PersonalAchievementManager(
                 category = CATEGORY_NUTRITION,
                 iconName = "book",
                 targetValue = 30.0,
-                unit = "Tage"
+                unit = "Tage",
             ),
             // Additional nutrition achievements
             PersonalAchievementEntity(
@@ -303,7 +315,7 @@ class PersonalAchievementManager(
                 category = CATEGORY_NUTRITION,
                 iconName = "fitness_center",
                 targetValue = 10.0,
-                unit = "Tage"
+                unit = "Tage",
             ),
             PersonalAchievementEntity(
                 title = "Hydrations-Held",
@@ -311,7 +323,7 @@ class PersonalAchievementManager(
                 category = CATEGORY_NUTRITION,
                 iconName = "water_drop",
                 targetValue = 7.0,
-                unit = "Tage"
+                unit = "Tage",
             ),
             PersonalAchievementEntity(
                 title = "Kalorie-Kontrolle",
@@ -319,7 +331,7 @@ class PersonalAchievementManager(
                 category = CATEGORY_NUTRITION,
                 iconName = "target",
                 targetValue = 14.0,
-                unit = "Tage"
+                unit = "Tage",
             ),
             PersonalAchievementEntity(
                 title = "Barcode-Scanner",
@@ -327,7 +339,7 @@ class PersonalAchievementManager(
                 category = CATEGORY_NUTRITION,
                 iconName = "qr_code_scanner",
                 targetValue = 25.0,
-                unit = "Scans"
+                unit = "Scans",
             ),
             PersonalAchievementEntity(
                 title = "Makro-Meister",
@@ -335,7 +347,7 @@ class PersonalAchievementManager(
                 category = CATEGORY_NUTRITION,
                 iconName = "pie_chart",
                 targetValue = 5.0,
-                unit = "Tage"
+                unit = "Tage",
             ),
             PersonalAchievementEntity(
                 title = "Gewichtswächter",
@@ -343,8 +355,8 @@ class PersonalAchievementManager(
                 category = CATEGORY_NUTRITION,
                 iconName = "monitor_weight",
                 targetValue = 14.0,
-                unit = "Tage"
-            )
+                unit = "Tage",
+            ),
         )
     }
 }

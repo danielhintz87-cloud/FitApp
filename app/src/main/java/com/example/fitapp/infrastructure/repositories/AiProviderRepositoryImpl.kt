@@ -14,15 +14,15 @@ import kotlin.random.Random
  */
 class AiProviderRepositoryImpl(
     private val providers: Map<com.example.fitapp.domain.entities.AiProvider, AiProvider>,
-    private val logger: AiLogger
+    private val logger: AiLogger,
 ) : AiProviderRepository {
-    
     override suspend fun generateText(request: AiRequest): Result<String> {
-        val provider = getProvider(request.provider)
-            ?: return Result.failure(IllegalStateException("Provider ${request.provider} not available"))
-        
+        val provider =
+            getProvider(request.provider)
+                ?: return Result.failure(IllegalStateException("Provider ${request.provider} not available"))
+
         val startTime = System.currentTimeMillis()
-        
+
         return withRetry {
             provider.generateText(request.prompt)
         }.onSuccess { response ->
@@ -31,56 +31,74 @@ class AiProviderRepositoryImpl(
             logger.logSuccess(request.taskType, request.provider, request.prompt, response, duration, estimatedTokens)
         }.onFailure { error ->
             val duration = System.currentTimeMillis() - startTime
-            logger.logError(request.taskType, request.provider, request.prompt, error.message ?: "Unknown error", duration)
+            logger.logError(
+                request.taskType,
+                request.provider,
+                request.prompt,
+                error.message ?: "Unknown error",
+                duration,
+            )
         }
     }
-    
+
     override suspend fun analyzeImage(
         prompt: String,
         bitmap: Bitmap,
-        provider: com.example.fitapp.domain.entities.AiProvider
+        provider: com.example.fitapp.domain.entities.AiProvider,
     ): Result<CaloriesEstimate> {
-        val aiProvider = getProvider(provider)
-            ?: return Result.failure(IllegalStateException("Provider $provider not available"))
-        
+        val aiProvider =
+            getProvider(provider)
+                ?: return Result.failure(IllegalStateException("Provider $provider not available"))
+
         if (!aiProvider.supportsVision()) {
             return Result.failure(IllegalStateException("Provider $provider does not support image analysis"))
         }
-        
+
         val startTime = System.currentTimeMillis()
-        
+
         return withRetry {
             aiProvider.analyzeImage(prompt, bitmap)
         }.onSuccess { estimate ->
             val duration = System.currentTimeMillis() - startTime
             val estimatedTokens = UsageTracker.estimateVisionTokens(prompt + estimate.text)
-            logger.logSuccess(TaskType.CALORIE_ESTIMATION, provider, prompt, estimate.toString(), duration, estimatedTokens)
+            logger.logSuccess(
+                TaskType.CALORIE_ESTIMATION,
+                provider,
+                prompt,
+                estimate.toString(),
+                duration,
+                estimatedTokens,
+            )
         }.onFailure { error ->
             val duration = System.currentTimeMillis() - startTime
             logger.logError(TaskType.CALORIE_ESTIMATION, provider, prompt, error.message ?: "Unknown error", duration)
         }
     }
-    
+
     override suspend fun isProviderAvailable(provider: com.example.fitapp.domain.entities.AiProvider): Boolean {
         return getProvider(provider)?.isAvailable() ?: false
     }
-    
+
     override suspend fun selectOptimalProvider(
         taskType: TaskType,
-        hasImage: Boolean
+        hasImage: Boolean,
     ): com.example.fitapp.domain.entities.AiProvider {
-        
         // Nutze den neuen ModelOptimizer für intelligente Auswahl
-        val selection = com.example.fitapp.infrastructure.providers.ModelOptimizer.selectOptimalModel(taskType, hasImage)
-        
-        val perplexityAvailable = isProviderAvailable(
-            com.example.fitapp.domain.entities.AiProvider.Perplexity
-        )
+        val selection =
+            com.example.fitapp.infrastructure.providers.ModelOptimizer.selectOptimalModel(
+                taskType,
+                hasImage,
+            )
+
+        val perplexityAvailable =
+            isProviderAvailable(
+                com.example.fitapp.domain.entities.AiProvider.Perplexity,
+            )
 
         return when (selection.provider) {
-            com.example.fitapp.infrastructure.providers.OptimalProvider.GEMINI -> 
+            com.example.fitapp.infrastructure.providers.OptimalProvider.GEMINI ->
                 com.example.fitapp.domain.entities.AiProvider.Gemini
-            
+
             com.example.fitapp.infrastructure.providers.OptimalProvider.PERPLEXITY -> {
                 if (perplexityAvailable) {
                     com.example.fitapp.domain.entities.AiProvider.Perplexity
@@ -92,24 +110,26 @@ class AiProviderRepositoryImpl(
             }
         }
     }
-    
-    override suspend fun getFallbackProvider(primary: com.example.fitapp.domain.entities.AiProvider): com.example.fitapp.domain.entities.AiProvider? {
+
+    override suspend fun getFallbackProvider(
+        primary: com.example.fitapp.domain.entities.AiProvider,
+    ): com.example.fitapp.domain.entities.AiProvider? {
         return when (primary) {
             com.example.fitapp.domain.entities.AiProvider.Gemini -> com.example.fitapp.domain.entities.AiProvider.Perplexity
             com.example.fitapp.domain.entities.AiProvider.Perplexity -> com.example.fitapp.domain.entities.AiProvider.Gemini
         }
     }
-    
+
     private fun getProvider(providerType: com.example.fitapp.domain.entities.AiProvider): AiProvider? {
         return providers[providerType]
     }
-    
+
     /**
      * Retry logic with exponential backoff for failed requests
      */
     private suspend fun <T> withRetry(request: suspend () -> Result<T>): Result<T> {
         var lastException: Exception? = null
-        
+
         for (attempt in 0..3) {
             try {
                 val result = request()
@@ -122,14 +142,15 @@ class AiProviderRepositoryImpl(
                 lastException = e
 
                 // Extract status code if available for retry logic
-                val lastStatusCode = when {
-                    e.message?.contains(" 429") == true || e.message?.contains("429") == true -> 429
-                    e.message?.contains(" 500") == true || e.message?.contains("500") == true -> 500
-                    e.message?.contains(" 502") == true || e.message?.contains("502") == true -> 502
-                    e.message?.contains(" 503") == true || e.message?.contains("503") == true -> 503
-                    e.message?.contains(" 504") == true || e.message?.contains("504") == true -> 504
-                    else -> null
-                }
+                val lastStatusCode =
+                    when {
+                        e.message?.contains(" 429") == true || e.message?.contains("429") == true -> 429
+                        e.message?.contains(" 500") == true || e.message?.contains("500") == true -> 500
+                        e.message?.contains(" 502") == true || e.message?.contains("502") == true -> 502
+                        e.message?.contains(" 503") == true || e.message?.contains("503") == true -> 503
+                        e.message?.contains(" 504") == true || e.message?.contains("504") == true -> 504
+                        else -> null
+                    }
 
                 if (attempt < 3 && isRetriableError(lastStatusCode, e)) {
                     val delayMs = calculateBackoffDelay(attempt)
@@ -141,7 +162,7 @@ class AiProviderRepositoryImpl(
         }
         return Result.failure(lastException ?: IllegalStateException("Max retries exceeded"))
     }
-    
+
     /**
      * Calculate exponential backoff delay with jitter for retry attempts
      */
@@ -155,10 +176,13 @@ class AiProviderRepositoryImpl(
     /**
      * Check if an exception or HTTP status code indicates a retriable error
      */
-    private fun isRetriableError(statusCode: Int?, exception: Exception?): Boolean {
+    private fun isRetriableError(
+        statusCode: Int?,
+        exception: Exception?,
+    ): Boolean {
         return when {
-            statusCode == 429 -> true  // Rate limit
-            statusCode in 500..599 -> true  // Server errors
+            statusCode == 429 -> true // Rate limit
+            statusCode in 500..599 -> true // Server errors
             exception?.message?.contains("timeout", ignoreCase = true) == true -> true
             exception?.message?.contains("connection", ignoreCase = true) == true -> true
             else -> false

@@ -17,7 +17,6 @@ import org.junit.runner.RunWith
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 class NavigationIntegrationTest {
-
     @get:Rule(order = 0)
     val hiltRule = HiltAndroidRule(this)
 
@@ -50,7 +49,7 @@ class NavigationIntegrationTest {
 
         // Verify all main sections are present
         composeTestRule.onNodeWithText("🏠 Dashboard").assertExists()
-        composeTestRule.onNodeWithText("🎯 Training & Pläne").assertExists() 
+        composeTestRule.onNodeWithText("🎯 Training & Pläne").assertExists()
         composeTestRule.onNodeWithText("🍽️ Ernährung & Rezepte").assertExists()
         composeTestRule.onNodeWithText("📊 Fortschritt & Analytics").assertExists()
         composeTestRule.onNodeWithText("⚡ Schnellaktionen").assertExists()
@@ -130,7 +129,7 @@ class NavigationIntegrationTest {
         composeTestRule.waitForIdle()
     }
 
-    @Test 
+    @Test
     fun navigation_overflowMenuOptionsAccessible() {
         composeTestRule.setContent {
             MainScaffold()

@@ -14,12 +14,9 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object HealthCheckerModule {
-    
     @Provides
     @Singleton
-    fun provideApiHealthRegistry(
-        geminiHealthChecker: GeminiHealthChecker
-    ): ApiHealthRegistry {
+    fun provideApiHealthRegistry(geminiHealthChecker: GeminiHealthChecker): ApiHealthRegistry {
         return ApiHealthRegistry(geminiHealthChecker)
     }
 }

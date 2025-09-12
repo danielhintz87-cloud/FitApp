@@ -1,228 +1,134 @@
 package com.example.fitapp.services
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.datastore.core.DataStore
-import androidx.datastore.dataStore
-import com.example.fitapp.data.prefs.UserPreferencesProto
-import com.example.fitapp.data.prefs.UserPreferencesSerializer
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 
 /**
  * 🚀 User Experience Manager
- * 
- * Manages user onboarding, preferences, and first-time experience using Proto DataStore
+ *
+ * Manages user onboarding, preferences, and first-time experience
  */
 class UserExperienceManager(private val context: Context) {
-    
     companion object {
+        private const val PREFS_NAME = "fitapp_user_experience"
+        private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
+        private const val KEY_FIRST_LAUNCH = "first_launch"
+        private const val KEY_UNIFIED_DASHBOARD_SHOWN = "unified_dashboard_shown"
+        private const val KEY_FEATURES_DISCOVERED = "features_discovered"
+        private const val KEY_APP_VERSION_SEEN = "app_version_seen"
+
         @Volatile
         private var INSTANCE: UserExperienceManager? = null
-        
+
         fun getInstance(context: Context): UserExperienceManager {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: UserExperienceManager(context.applicationContext).also { INSTANCE = it }
             }
         }
     }
-    
-    // Use the same proto DataStore instance
-    private val Context.dataStore: DataStore<UserPreferencesProto> by dataStore(
-        fileName = "user_preferences.pb",
-        serializer = UserPreferencesSerializer
-    )
-    
+
+    private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
     private val _userExperienceState = MutableStateFlow(getUserExperienceState())
     val userExperienceState: StateFlow<UserExperienceState> = _userExperienceState.asStateFlow()
-    
+
     private fun getUserExperienceState(): UserExperienceState {
         return UserExperienceState(
-            isFirstLaunch = true, // Will be loaded from DataStore
-            hasCompletedOnboarding = false,
-            hasSeenUnifiedDashboard = false,
-            discoveredFeatures = emptySet(),
-            lastSeenAppVersion = "1.0.0"
+            isFirstLaunch = prefs.getBoolean(KEY_FIRST_LAUNCH, true),
+            hasCompletedOnboarding = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false),
+            hasSeenUnifiedDashboard = prefs.getBoolean(KEY_UNIFIED_DASHBOARD_SHOWN, false),
+            discoveredFeatures = prefs.getStringSet(KEY_FEATURES_DISCOVERED, emptySet()) ?: emptySet(),
+            lastSeenAppVersion = prefs.getString(KEY_APP_VERSION_SEEN, "1.0.0") ?: "1.0.0",
         )
     }
-    
-    /**
-     * Load user experience state from Proto DataStore
-     */
-    suspend fun loadUserExperienceState(): UserExperienceState {
-        val prefs = context.dataStore.data.first()
-        return UserExperienceState(
-            isFirstLaunch = prefs.firstLaunch,
-            hasCompletedOnboarding = prefs.onboardingCompleted,
-            hasSeenUnifiedDashboard = prefs.unifiedDashboardShown,
-            discoveredFeatures = prefs.featuresDiscoveredList.toSet(),
-            lastSeenAppVersion = prefs.appVersionSeen.ifEmpty { "1.0.0" }
-        )
-    }
-    
-    /**
-     * Initialize and load state from DataStore
-     */
-    suspend fun initialize() {
-        val state = loadUserExperienceState()
-        _userExperienceState.value = state
-    }
-    
+
     /**
      * Mark onboarding as completed
      */
-    suspend fun markOnboardingCompleted() {
-        context.dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .setOnboardingCompleted(true)
-                .setFirstLaunch(false)
-                .build()
-        }
-        _userExperienceState.value = _userExperienceState.value.copy(
-            hasCompletedOnboarding = true,
-            isFirstLaunch = false
-        )
-    }
-    
-    /**
-     * Mark onboarding as completed (non-suspend version for UI compatibility)
-     */
     fun completeOnboarding() {
-        // Use the existing state flow mechanism
-        _userExperienceState.value = _userExperienceState.value.copy(
-            hasCompletedOnboarding = true,
-            isFirstLaunch = false
-        )
-        // Launch coroutine to persist changes
-        GlobalScope.launch {
-            markOnboardingCompleted()
-        }
-    }
-    
-    /**
-     * Mark app launch (no longer first launch)
-     */
-    suspend fun markAppLaunched() {
-        context.dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .setFirstLaunch(false)
-                .build()
-        }
-        _userExperienceState.value = _userExperienceState.value.copy(isFirstLaunch = false)
-    }
-    
-    /**
-     * Mark unified dashboard as seen (suspend version)
-     */
-    suspend fun markUnifiedDashboardSeenSuspend() {
-        context.dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .setUnifiedDashboardShown(true)
-                .build()
-        }
-        _userExperienceState.value = _userExperienceState.value.copy(hasSeenUnifiedDashboard = true)
-    }
-    
-    /**
-     * Add a discovered feature
-     */
-    suspend fun addDiscoveredFeature(feature: String) {
-        val currentFeatures = _userExperienceState.value.discoveredFeatures
-        if (!currentFeatures.contains(feature)) {
-            val newFeatures = currentFeatures + feature
-            context.dataStore.updateData { prefs ->
-                prefs.toBuilder()
-                    .clearFeaturesDiscovered()
-                    .addAllFeaturesDiscovered(newFeatures)
-                    .build()
-            }
-            _userExperienceState.value = _userExperienceState.value.copy(
-                discoveredFeatures = newFeatures
-            )
-        }
-    }
-    
-    /**
-     * Update last seen app version
-     */
-    suspend fun updateLastSeenAppVersion(version: String) {
-        context.dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .setAppVersionSeen(version)
-                .build()
-        }
-        _userExperienceState.value = _userExperienceState.value.copy(lastSeenAppVersion = version)
-    }
-    
-    /**
-     * Reset all user experience data
-     */
-    suspend fun reset() {
-        context.dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .setOnboardingCompleted(false)
-                .setFirstLaunch(true)
-                .setUnifiedDashboardShown(false)
-                .clearFeaturesDiscovered()
-                .setAppVersionSeen("1.0.0")
-                .build()
-        }
+        prefs.edit()
+            .putBoolean(KEY_ONBOARDING_COMPLETED, true)
+            .putBoolean(KEY_FIRST_LAUNCH, false)
+            .apply()
+
         _userExperienceState.value = getUserExperienceState()
     }
-    
-    // Flow-based access for reactive UI
-    val isFirstLaunchFlow = context.dataStore.data.map { it.firstLaunch }
-    val hasCompletedOnboardingFlow = context.dataStore.data.map { it.onboardingCompleted }
-    val hasSeenUnifiedDashboardFlow = context.dataStore.data.map { it.unifiedDashboardShown }
 
     /**
-     * Check if user should see onboarding (suspend version)
+     * Mark unified dashboard as seen
      */
-    suspend fun shouldShowOnboardingSuspend(): Boolean {
-        val prefs = context.dataStore.data.first()
-        return !prefs.onboardingCompleted
+    fun markUnifiedDashboardSeen() {
+        prefs.edit()
+            .putBoolean(KEY_UNIFIED_DASHBOARD_SHOWN, true)
+            .apply()
+
+        _userExperienceState.value = getUserExperienceState()
     }
 
     /**
-     * Check if this is a first launch (suspend version)
+     * Track discovered features for personalization
      */
-    suspend fun isFirstLaunchSuspend(): Boolean {
-        val prefs = context.dataStore.data.first()
-        return prefs.firstLaunch
+    fun markFeatureDiscovered(feature: String) {
+        val currentFeatures = prefs.getStringSet(KEY_FEATURES_DISCOVERED, emptySet())?.toMutableSet() ?: mutableSetOf()
+        currentFeatures.add(feature)
+
+        prefs.edit()
+            .putStringSet(KEY_FEATURES_DISCOVERED, currentFeatures)
+            .apply()
+
+        _userExperienceState.value = getUserExperienceState()
     }
 
     /**
-     * Get user's preferred starting screen (suspend version)
+     * Check if user should see onboarding
      */
-    suspend fun getPreferredStartScreenSuspend(): String {
-        val prefs = context.dataStore.data.first()
-        
+    fun shouldShowOnboarding(): Boolean {
+        return !prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+    }
+
+    /**
+     * Check if this is a first launch
+     */
+    fun isFirstLaunch(): Boolean {
+        return prefs.getBoolean(KEY_FIRST_LAUNCH, true)
+    }
+
+    /**
+     * Get user's preferred starting screen
+     */
+    fun getPreferredStartScreen(): String {
+        val hasSeenUnified = prefs.getBoolean(KEY_UNIFIED_DASHBOARD_SHOWN, false)
+        val hasCompletedOnboarding = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+
         return when {
-            !prefs.onboardingCompleted -> "onboarding"
-            !prefs.unifiedDashboardShown -> "unified_dashboard"
+            !hasCompletedOnboarding -> "onboarding"
+            !hasSeenUnified -> "unified_dashboard"
             else -> "unified_dashboard" // Default to unified experience
         }
     }
 
     /**
+     * Reset all user experience data (for testing/debugging)
+     */
+    fun resetUserExperience() {
+        prefs.edit().clear().apply()
+        _userExperienceState.value = getUserExperienceState()
+    }
+
+    /**
      * Get personalized recommendations based on discovered features
      */
-    suspend fun getPersonalizedRecommendations(): List<FeatureRecommendation> {
-        val prefs = context.dataStore.data.first()
-        val discoveredFeatures = prefs.featuresDiscoveredList.toSet()
+    fun getPersonalizedRecommendations(): List<FeatureRecommendation> {
+        val discoveredFeatures = prefs.getStringSet(KEY_FEATURES_DISCOVERED, emptySet()) ?: emptySet()
         val recommendations = mutableListOf<FeatureRecommendation>()
-        
+
         // Recommend based on what user hasn't discovered yet
         if (!discoveredFeatures.contains("bmi_calculator")) {
             recommendations.add(
@@ -230,118 +136,56 @@ class UserExperienceManager(private val context: Context) {
                     feature = "bmi_calculator",
                     title = "BMI Calculator entdecken",
                     description = "Verfolge deine Gewichtsziele mit unserem smarten BMI Rechner",
-                    priority = 8
-                )
+                    priority = 8,
+                ),
             )
         }
-        
+
         if (!discoveredFeatures.contains("intervallfasten")) {
             recommendations.add(
                 FeatureRecommendation(
                     feature = "fasting",
                     title = "Intervallfasten ausprobieren",
                     description = "6 professionelle Fasten-Protokolle für optimale Gesundheit",
-                    priority = 9
-                )
+                    priority = 9,
+                ),
             )
         }
-        
+
         if (!discoveredFeatures.contains("ai_personal_trainer")) {
             recommendations.add(
                 FeatureRecommendation(
                     feature = "ai_personal_trainer",
                     title = "AI Personal Trainer",
                     description = "Personalisierte Trainingspläne powered by KI",
-                    priority = 10
-                )
+                    priority = 10,
+                ),
             )
         }
-        
+
         if (!discoveredFeatures.contains("barcode_scanner")) {
             recommendations.add(
                 FeatureRecommendation(
                     feature = "barcode_scanner",
                     title = "Barcode Scanner nutzen",
                     description = "Scanne Produkte für instant Nährwert-Information",
-                    priority = 7
-                )
+                    priority = 7,
+                ),
             )
         }
-        
+
         if (!discoveredFeatures.contains("recipes")) {
             recommendations.add(
                 FeatureRecommendation(
                     feature = "recipes",
                     title = "Gesunde Rezepte",
                     description = "AI-generierte Rezepte passend zu deinen Zielen",
-                    priority = 6
-                )
+                    priority = 6,
+                ),
             )
         }
-        
-        return recommendations.sortedByDescending { it.priority }
-    }
 
-    /**
-     * Mark unified dashboard as seen (non-suspend version for UI compatibility)
-     */
-    fun markUnifiedDashboardSeen() {
-        _userExperienceState.value = _userExperienceState.value.copy(hasSeenUnifiedDashboard = true)
-        GlobalScope.launch {
-            markUnifiedDashboardSeenSuspend()
-        }
-    }
-    
-    /**
-     * Track discovered features for personalization (non-suspend version)
-     */
-    fun markFeatureDiscovered(feature: String) {
-        val currentFeatures = _userExperienceState.value.discoveredFeatures
-        if (!currentFeatures.contains(feature)) {
-            val newFeatures = currentFeatures + feature
-            _userExperienceState.value = _userExperienceState.value.copy(
-                discoveredFeatures = newFeatures
-            )
-            GlobalScope.launch {
-                addDiscoveredFeature(feature)
-            }
-        }
-    }
-    
-    /**
-     * Check if user should see onboarding (non-suspend version)
-     */
-    fun shouldShowOnboarding(): Boolean {
-        return !_userExperienceState.value.hasCompletedOnboarding
-    }
-    
-    /**
-     * Check if this is a first launch (non-suspend version)
-     */
-    fun isFirstLaunch(): Boolean {
-        return _userExperienceState.value.isFirstLaunch
-    }
-    
-    /**
-     * Get user's preferred starting screen (non-suspend version)
-     */
-    fun getPreferredStartScreen(): String {
-        val state = _userExperienceState.value
-        return when {
-            !state.hasCompletedOnboarding -> "onboarding"
-            !state.hasSeenUnifiedDashboard -> "unified_dashboard"
-            else -> "unified_dashboard" // Default to unified experience
-        }
-    }
-    
-    /**
-     * Reset all user experience data (non-suspend version)
-     */
-    fun resetUserExperience() {
-        _userExperienceState.value = getUserExperienceState()
-        GlobalScope.launch {
-            reset()
-        }
+        return recommendations.sortedByDescending { it.priority }
     }
 }
 
@@ -353,7 +197,7 @@ data class UserExperienceState(
     val hasCompletedOnboarding: Boolean = false,
     val hasSeenUnifiedDashboard: Boolean = false,
     val discoveredFeatures: Set<String> = emptySet(),
-    val lastSeenAppVersion: String = "1.0.0"
+    val lastSeenAppVersion: String = "1.0.0",
 ) {
     /**
      * Calculate user engagement level based on discovered features
@@ -367,7 +211,7 @@ data class UserExperienceState(
             else -> UserEngagementLevel.POWER_USER
         }
     }
-    
+
     /**
      * Get completion percentage for feature discovery
      */
@@ -382,10 +226,10 @@ data class UserExperienceState(
  */
 enum class UserEngagementLevel {
     NEW,
-    EXPLORING, 
+    EXPLORING,
     ACTIVE,
     ENGAGED,
-    POWER_USER
+    POWER_USER,
 }
 
 /**
@@ -395,7 +239,7 @@ data class FeatureRecommendation(
     val feature: String,
     val title: String,
     val description: String,
-    val priority: Int
+    val priority: Int,
 )
 
 /**

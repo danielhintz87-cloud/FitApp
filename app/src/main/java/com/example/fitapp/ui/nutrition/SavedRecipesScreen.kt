@@ -23,22 +23,34 @@ fun SavedRecipesScreen(
     onBackPressed: () -> Unit,
     onRecipeClick: (SavedRecipeEntity) -> Unit,
     onCookRecipe: (SavedRecipeEntity) -> Unit,
-    contentPadding: PaddingValues = PaddingValues(0.dp)
+    contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val ctx = LocalContext.current
     val db = remember { AppDatabase.get(ctx) }
     val scope = rememberCoroutineScope()
-    
+
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("all") }
     var showFilterMenu by remember { mutableStateOf(false) }
-    
+
     val recipes by when {
-        searchQuery.isNotBlank() -> db.savedRecipeDao().searchRecipesFlow(searchQuery).collectAsState(initial = emptyList())
+        searchQuery.isNotBlank() ->
+            db.savedRecipeDao().searchRecipesFlow(
+                searchQuery,
+            ).collectAsState(initial = emptyList())
         selectedFilter == "favorites" -> db.savedRecipeDao().favoriteRecipesFlow().collectAsState(initial = emptyList())
-        selectedFilter == "vegetarian" -> db.savedRecipeDao().recipesByTagFlow("vegetarian").collectAsState(initial = emptyList())
-        selectedFilter == "high-protein" -> db.savedRecipeDao().recipesByTagFlow("high-protein").collectAsState(initial = emptyList())
-        selectedFilter == "low-carb" -> db.savedRecipeDao().recipesByTagFlow("low-carb").collectAsState(initial = emptyList())
+        selectedFilter == "vegetarian" ->
+            db.savedRecipeDao().recipesByTagFlow(
+                "vegetarian",
+            ).collectAsState(initial = emptyList())
+        selectedFilter == "high-protein" ->
+            db.savedRecipeDao().recipesByTagFlow(
+                "high-protein",
+            ).collectAsState(initial = emptyList())
+        selectedFilter == "low-carb" ->
+            db.savedRecipeDao().recipesByTagFlow(
+                "low-carb",
+            ).collectAsState(initial = emptyList())
         else -> db.savedRecipeDao().allRecipesFlow().collectAsState(initial = emptyList())
     }
 
@@ -57,56 +69,75 @@ fun SavedRecipesScreen(
                 }
                 DropdownMenu(
                     expanded = showFilterMenu,
-                    onDismissRequest = { showFilterMenu = false }
+                    onDismissRequest = { showFilterMenu = false },
                 ) {
                     DropdownMenuItem(
                         text = { Text("Alle Rezepte") },
-                        onClick = { selectedFilter = "all"; showFilterMenu = false }
+                        onClick = {
+                            selectedFilter = "all"
+                            showFilterMenu = false
+                        },
                     )
                     DropdownMenuItem(
                         text = { Text("Favoriten") },
-                        onClick = { selectedFilter = "favorites"; showFilterMenu = false }
+                        onClick = {
+                            selectedFilter = "favorites"
+                            showFilterMenu = false
+                        },
                     )
                     DropdownMenuItem(
                         text = { Text("Vegetarisch") },
-                        onClick = { selectedFilter = "vegetarian"; showFilterMenu = false }
+                        onClick = {
+                            selectedFilter = "vegetarian"
+                            showFilterMenu = false
+                        },
                     )
                     DropdownMenuItem(
                         text = { Text("Proteinreich") },
-                        onClick = { selectedFilter = "high-protein"; showFilterMenu = false }
+                        onClick = {
+                            selectedFilter = "high-protein"
+                            showFilterMenu = false
+                        },
                     )
                     DropdownMenuItem(
                         text = { Text("Low Carb") },
-                        onClick = { selectedFilter = "low-carb"; showFilterMenu = false }
+                        onClick = {
+                            selectedFilter = "low-carb"
+                            showFilterMenu = false
+                        },
                     )
                 }
-            }
+            },
         )
-        
+
         // Search Field
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
             label = { Text("Rezepte suchen...") },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
         )
-        
+
         // Current Filter Indicator
         if (selectedFilter != "all") {
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
             ) {
                 Row(
                     modifier = Modifier.padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Filled.FilterList, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Icon(
+                        Icons.Filled.FilterList,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = "Filter: ${getFilterDisplayName(selectedFilter)}",
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     Spacer(Modifier.weight(1f))
                     TextButton(onClick = { selectedFilter = "all" }) {
@@ -115,54 +146,55 @@ fun SavedRecipesScreen(
                 }
             }
         }
-        
+
         // Recipe List
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                top = 16.dp,
-                end = 16.dp,
-                bottom = 16.dp + contentPadding.calculateBottomPadding()
-            ),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            contentPadding =
+                PaddingValues(
+                    start = 16.dp,
+                    top = 16.dp,
+                    end = 16.dp,
+                    bottom = 16.dp + contentPadding.calculateBottomPadding(),
+                ),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(recipes) { recipe ->
                 RecipeCard(
                     recipe = recipe,
-                    onFavoriteClick = { 
+                    onFavoriteClick = {
                         scope.launch {
                             db.savedRecipeDao().setFavorite(recipe.id, !recipe.isFavorite)
                         }
                     },
                     onCookClick = { onCookRecipe(recipe) },
-                    onRecipeClick = { onRecipeClick(recipe) }
+                    onRecipeClick = { onRecipeClick(recipe) },
                 )
             }
-            
+
             if (recipes.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(32.dp),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
                                 Icons.Filled.Restaurant,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.outline
+                                tint = MaterialTheme.colorScheme.outline,
                             )
                             Spacer(Modifier.height(16.dp))
                             Text(
                                 "Keine Rezepte gefunden",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.outline
+                                color = MaterialTheme.colorScheme.outline,
                             )
                             Text(
                                 "Erstellen Sie Rezepte im Nutrition-Bereich und speichern Sie sie hier",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.outline
+                                color = MaterialTheme.colorScheme.outline,
                             )
                         }
                     }
@@ -177,37 +209,37 @@ private fun RecipeCard(
     recipe: SavedRecipeEntity,
     onFavoriteClick: () -> Unit,
     onCookClick: () -> Unit,
-    onRecipeClick: () -> Unit
+    onRecipeClick: () -> Unit,
 ) {
     ElevatedCard(
         onClick = onRecipeClick,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
             ) {
                 Text(
                     text = recipe.title,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 IconButton(onClick = onFavoriteClick) {
                     Icon(
                         if (recipe.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         contentDescription = "Favorit",
-                        tint = if (recipe.isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline
+                        tint = if (recipe.isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
                     )
                 }
             }
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 recipe.calories?.let {
                     Text("$it kcal", style = MaterialTheme.typography.bodyMedium)
@@ -219,23 +251,23 @@ private fun RecipeCard(
                     Text("$it Portionen", style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            
+
             if (recipe.tags.isNotBlank()) {
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = recipe.tags.replace(",", " • "),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
-            
+
             Spacer(Modifier.height(12.dp))
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Button(
                     onClick = onCookClick,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Filled.Restaurant, contentDescription = null)
                     Spacer(Modifier.width(4.dp))
@@ -243,7 +275,7 @@ private fun RecipeCard(
                 }
                 OutlinedButton(
                     onClick = onRecipeClick,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Text("Details")
                 }

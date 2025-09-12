@@ -1,14 +1,15 @@
 package com.example.fitapp.core.health
 
+import android.content.Context
 import com.example.fitapp.ai.executeSuspending
 import com.example.fitapp.core.threading.DispatcherProvider
 import com.example.fitapp.data.prefs.ApiKeys
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import android.content.Context
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import javax.inject.Inject
@@ -17,7 +18,7 @@ import javax.inject.Inject
  * Health checker for Gemini AI provider
  */
 class GeminiHealthChecker @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val httpClient: OkHttpClient,
     private val dispatchers: DispatcherProvider
 ) : HealthCheckable {
@@ -75,7 +76,7 @@ class GeminiHealthChecker @Inject constructor(
             )
         }
     }
-    
+
     override fun healthStatusFlow(): Flow<HealthStatus> = flow {
         emit(checkHealth())
     }.flowOn(dispatchers.io)

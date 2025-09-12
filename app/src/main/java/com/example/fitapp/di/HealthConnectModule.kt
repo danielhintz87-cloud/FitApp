@@ -15,11 +15,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object HealthConnectModule {
-    
     @Provides
     @Singleton
     fun provideHealthConnectManager(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): HealthConnectManager {
         return HealthConnectManager(context)
     }
