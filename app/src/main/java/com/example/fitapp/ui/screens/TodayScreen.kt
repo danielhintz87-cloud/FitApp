@@ -42,7 +42,7 @@ fun TodayScreen(
     onNavigateToHiitBuilder: (() -> Unit)? = null,
 ) {
     val ctx = LocalContext.current
-    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val repo = remember { NutritionRepository(AppDatabase.get(ctx), ctx) }
     val motivationRepo = remember { PersonalMotivationRepository(AppDatabase.get(ctx)) }
     val digitalCoach = remember { DigitalCoachManager(ctx) }
     val scope = rememberCoroutineScope()

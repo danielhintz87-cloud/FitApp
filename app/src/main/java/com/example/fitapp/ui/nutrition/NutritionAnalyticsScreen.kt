@@ -35,7 +35,15 @@ fun NutritionAnalyticsScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val repo = remember { NutritionRepository(AppDatabase.get(context)) }
+    val repo = remember { NutritionRepository(AppDatabase.get(context), context) }
+    val hydrationGoalUseCase = remember { 
+        HydrationGoalUseCase(
+                com.example.fitapp.data.prefs.UserPreferencesRepository(context),
+            NutritionRepository(AppDatabase.get(context), context),
+            AppDatabase.get(context),
+            com.example.fitapp.core.threading.DefaultDispatcherProvider()
+        )
+    }
 
     var selectedPeriod by remember { mutableStateOf("week") }
     var nutritionData by remember { mutableStateOf<List<DailyNutritionData>>(emptyList()) }
@@ -66,7 +74,7 @@ fun NutritionAnalyticsScreen(
                     val goal = repo.goalFlow(currentDate).firstOrNull()
 
                     // Use unified hydration goal for this date
-                    val targetWater = 2000 // Default hydration goal in ml
+                    val targetWater = hydrationGoalUseCase.getHydrationGoalMl(currentDate)
 
                     data.add(
                         DailyNutritionData(
