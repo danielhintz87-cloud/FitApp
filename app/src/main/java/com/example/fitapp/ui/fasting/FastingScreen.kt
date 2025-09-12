@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -44,6 +45,12 @@ fun FastingScreen(
 ) {
     val fastingState by fastingManager.fastingState.collectAsState()
     val fastingStats by fastingManager.fastingStats.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Initialize FastingManager
+    LaunchedEffect(fastingManager) {
+        fastingManager.initialize()
+    }
     
     // Update timer every second when fasting
     LaunchedEffect(fastingState.isFasting) {
@@ -72,9 +79,21 @@ fun FastingScreen(
         // Main timer and status
         FastingTimerCard(
             fastingState = fastingState,
-            onStartFasting = { protocol -> fastingManager.startFasting(protocol) },
-            onEndFasting = { fastingManager.endFasting() },
-            onStartEating = { fastingManager.startEatingWindow() },
+            onStartFasting = { protocol -> 
+                coroutineScope.launch { 
+                    fastingManager.startFasting(protocol) 
+                }
+            },
+            onEndFasting = { 
+                coroutineScope.launch { 
+                    fastingManager.endFasting() 
+                }
+            },
+            onStartEating = { 
+                coroutineScope.launch { 
+                    fastingManager.startEatingWindow() 
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         )
         
@@ -85,7 +104,9 @@ fun FastingScreen(
             ProtocolSelector(
                 selectedProtocol = fastingState.protocol,
                 onProtocolSelected = { protocol ->
-                    fastingManager.startFasting(protocol)
+                    coroutineScope.launch {
+                        fastingManager.startFasting(protocol)
+                    }
                 },
                 modifier = Modifier.fillMaxWidth()
             )

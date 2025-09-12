@@ -91,6 +91,21 @@ class UserExperienceManager(private val context: Context) {
     }
     
     /**
+     * Mark onboarding as completed (non-suspend version for UI compatibility)
+     */
+    fun completeOnboarding() {
+        // Use the existing state flow mechanism
+        _userExperienceState.value = _userExperienceState.value.copy(
+            hasCompletedOnboarding = true,
+            isFirstLaunch = false
+        )
+        // Launch coroutine to persist changes
+        kotlinx.coroutines.GlobalScope.launch {
+            markOnboardingCompleted()
+        }
+    }
+    
+    /**
      * Mark app launch (no longer first launch)
      */
     suspend fun markAppLaunched() {
@@ -165,102 +180,175 @@ class UserExperienceManager(private val context: Context) {
     val isFirstLaunchFlow = context.dataStore.data.map { it.firstLaunch }
     val hasCompletedOnboardingFlow = context.dataStore.data.map { it.onboardingCompleted }
     val hasSeenUnifiedDashboardFlow = context.dataStore.data.map { it.unifiedDashboardShown }
-}
 
-/**
- * Check if user should see onboarding (suspending function)
- */
-suspend fun shouldShowOnboarding(): Boolean {
-    val prefs = context.dataStore.data.first()
-    return !prefs.onboardingCompleted
-}
+    /**
+     * Check if user should see onboarding (suspending function)
+     */
+    suspend fun shouldShowOnboarding(): Boolean {
+        val prefs = context.dataStore.data.first()
+        return !prefs.onboardingCompleted
+    }
 
-/**
- * Check if this is a first launch (suspending function)
- */
-suspend fun isFirstLaunch(): Boolean {
-    val prefs = context.dataStore.data.first()
-    return prefs.firstLaunch
-}
+    /**
+     * Check if this is a first launch (suspending function)
+     */
+    suspend fun isFirstLaunch(): Boolean {
+        val prefs = context.dataStore.data.first()
+        return prefs.firstLaunch
+    }
 
-/**
- * Get user's preferred starting screen
- */
-suspend fun getPreferredStartScreen(): String {
-    val prefs = context.dataStore.data.first()
-    
-    return when {
-        !prefs.onboardingCompleted -> "onboarding"
-        !prefs.unifiedDashboardShown -> "unified_dashboard"
-        else -> "unified_dashboard" // Default to unified experience
+    /**
+     * Get user's preferred starting screen
+     */
+    suspend fun getPreferredStartScreen(): String {
+        val prefs = context.dataStore.data.first()
+        
+        return when {
+            !prefs.onboardingCompleted -> "onboarding"
+            !prefs.unifiedDashboardShown -> "unified_dashboard"
+            else -> "unified_dashboard" // Default to unified experience
+        }
     }
-}
 
-/**
- * Get personalized recommendations based on discovered features
- */
-suspend fun getPersonalizedRecommendations(): List<FeatureRecommendation> {
-    val prefs = context.dataStore.data.first()
-    val discoveredFeatures = prefs.featuresDiscoveredList.toSet()
-    val recommendations = mutableListOf<FeatureRecommendation>()
-    
-    // Recommend based on what user hasn't discovered yet
-    if (!discoveredFeatures.contains("bmi_calculator")) {
-        recommendations.add(
-            FeatureRecommendation(
-                feature = "bmi_calculator",
-                title = "BMI Calculator entdecken",
-                description = "Verfolge deine Gewichtsziele mit unserem smarten BMI Rechner",
-                priority = 8
+    /**
+     * Get personalized recommendations based on discovered features
+     */
+    suspend fun getPersonalizedRecommendations(): List<FeatureRecommendation> {
+        val prefs = context.dataStore.data.first()
+        val discoveredFeatures = prefs.featuresDiscoveredList.toSet()
+        val recommendations = mutableListOf<FeatureRecommendation>()
+        
+        // Recommend based on what user hasn't discovered yet
+        if (!discoveredFeatures.contains("bmi_calculator")) {
+            recommendations.add(
+                FeatureRecommendation(
+                    feature = "bmi_calculator",
+                    title = "BMI Calculator entdecken",
+                    description = "Verfolge deine Gewichtsziele mit unserem smarten BMI Rechner",
+                    priority = 8
+                )
             )
-        )
+        }
+        
+        if (!discoveredFeatures.contains("intervallfasten")) {
+            recommendations.add(
+                FeatureRecommendation(
+                    feature = "fasting",
+                    title = "Intervallfasten ausprobieren",
+                    description = "6 professionelle Fasten-Protokolle für optimale Gesundheit",
+                    priority = 9
+                )
+            )
+        }
+        
+        if (!discoveredFeatures.contains("ai_personal_trainer")) {
+            recommendations.add(
+                FeatureRecommendation(
+                    feature = "ai_personal_trainer",
+                    title = "AI Personal Trainer",
+                    description = "Personalisierte Trainingspläne powered by KI",
+                    priority = 10
+                )
+            )
+        }
+        
+        if (!discoveredFeatures.contains("barcode_scanner")) {
+            recommendations.add(
+                FeatureRecommendation(
+                    feature = "barcode_scanner",
+                    title = "Barcode Scanner nutzen",
+                    description = "Scanne Produkte für instant Nährwert-Information",
+                    priority = 7
+                )
+            )
+        }
+        
+        if (!discoveredFeatures.contains("recipes")) {
+            recommendations.add(
+                FeatureRecommendation(
+                    feature = "recipes",
+                    title = "Gesunde Rezepte",
+                    description = "AI-generierte Rezepte passend zu deinen Zielen",
+                    priority = 6
+                )
+            )
+        }
+        
+        return recommendations.sortedByDescending { it.priority }
+    }
+
+    /**
+     * Mark unified dashboard as seen (non-suspend version for UI compatibility)
+     */
+    fun markUnifiedDashboardSeen() {
+        _userExperienceState.value = _userExperienceState.value.copy(hasSeenUnifiedDashboard = true)
+        kotlinx.coroutines.GlobalScope.launch {
+            markUnifiedDashboardSeenSuspend()
+        }
     }
     
-    if (!discoveredFeatures.contains("intervallfasten")) {
-        recommendations.add(
-            FeatureRecommendation(
-                feature = "fasting",
-                title = "Intervallfasten ausprobieren",
-                description = "6 professionelle Fasten-Protokolle für optimale Gesundheit",
-                priority = 9
-            )
-        )
+    /**
+     * Mark unified dashboard as seen (suspend version)
+     */
+    private suspend fun markUnifiedDashboardSeenSuspend() {
+        context.dataStore.updateData { prefs ->
+            prefs.toBuilder()
+                .setUnifiedDashboardShown(true)
+                .build()
+        }
     }
     
-    if (!discoveredFeatures.contains("ai_personal_trainer")) {
-        recommendations.add(
-            FeatureRecommendation(
-                feature = "ai_personal_trainer",
-                title = "AI Personal Trainer",
-                description = "Personalisierte Trainingspläne powered by KI",
-                priority = 10
+    /**
+     * Track discovered features for personalization (non-suspend version)
+     */
+    fun markFeatureDiscovered(feature: String) {
+        val currentFeatures = _userExperienceState.value.discoveredFeatures
+        if (!currentFeatures.contains(feature)) {
+            val newFeatures = currentFeatures + feature
+            _userExperienceState.value = _userExperienceState.value.copy(
+                discoveredFeatures = newFeatures
             )
-        )
+            kotlinx.coroutines.GlobalScope.launch {
+                addDiscoveredFeature(feature)
+            }
+        }
     }
     
-    if (!discoveredFeatures.contains("barcode_scanner")) {
-        recommendations.add(
-            FeatureRecommendation(
-                feature = "barcode_scanner",
-                title = "Barcode Scanner nutzen",
-                description = "Scanne Produkte für instant Nährwert-Information",
-                priority = 7
-            )
-        )
+    /**
+     * Check if user should see onboarding (non-suspend version)
+     */
+    fun shouldShowOnboarding(): Boolean {
+        return !_userExperienceState.value.hasCompletedOnboarding
     }
     
-    if (!discoveredFeatures.contains("recipes")) {
-        recommendations.add(
-            FeatureRecommendation(
-                feature = "recipes",
-                title = "Gesunde Rezepte",
-                description = "AI-generierte Rezepte passend zu deinen Zielen",
-                priority = 6
-            )
-        )
+    /**
+     * Check if this is a first launch (non-suspend version)
+     */
+    fun isFirstLaunch(): Boolean {
+        return _userExperienceState.value.isFirstLaunch
     }
     
-    return recommendations.sortedByDescending { it.priority }
+    /**
+     * Get user's preferred starting screen (non-suspend version)
+     */
+    fun getPreferredStartScreen(): String {
+        val state = _userExperienceState.value
+        return when {
+            !state.hasCompletedOnboarding -> "onboarding"
+            !state.hasSeenUnifiedDashboard -> "unified_dashboard"
+            else -> "unified_dashboard" // Default to unified experience
+        }
+    }
+    
+    /**
+     * Reset all user experience data (non-suspend version)
+     */
+    fun resetUserExperience() {
+        _userExperienceState.value = getUserExperienceState()
+        kotlinx.coroutines.GlobalScope.launch {
+            reset()
+        }
+    }
 }
 
 /**
