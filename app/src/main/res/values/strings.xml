@@ -118,15 +118,45 @@
     <!-- Health Connect -->
     <string name="health_connect">Health Connect</string>
     
-    <!-- Content Descriptions for Accessibility -->
-    <string name="icon_ai_trainer">KI Trainer Symbol</string>
-    <string name="icon_fitness_center">Fitness Center Symbol</string>
-    <string name="icon_restaurant">Restaurant Symbol</string>
+    <!-- Content Descriptions for icons and interactive elements -->
+    <string name="icon_home">Startseite Symbol</string>
+    <string name="icon_plan">Plan Symbol</string>
+    <string name="icon_nutrition">Ernährung Symbol</string>
+    <string name="icon_progress">Fortschritt Symbol</string>
     <string name="icon_analytics">Analytics Symbol</string>
-    <string name="icon_dashboard">Dashboard Symbol</string>
-    <string name="icon_insights">Insights Symbol</string>
-    <string name="icon_health_safety">Gesundheit und Sicherheit Symbol</string>
+    <string name="icon_training">Training Symbol</string>
+    <string name="icon_settings">Einstellungen Symbol</string>
+    <string name="icon_health_safety">Gesundheit Symbol</string>
     <string name="icon_timer">Timer Symbol</string>
     <string name="icon_psychology">Psychologie Symbol</string>
     <string name="icon_shopping_cart">Einkaufswagen Symbol</string>
+    <string name="icon_search">Suche Symbol</string>
+    <string name="icon_more_vert">Weitere Optionen Symbol</string>
+    <string name="icon_help">Hilfe Symbol</string>
+    <string name="icon_info">Info Symbol</string>
+    <string name="icon_menu">Menü Symbol</string>
+    <string name="icon_recipe">Rezept Symbol</string>
+    <string name="icon_ai_trainer">KI Trainer Symbol</string>
+    <string name="icon_hiit">HIIT Symbol</string>
+    <string name="icon_barcode">Barcode Symbol</string>
+    <string name="icon_fitness_center">Fitness Center Symbol</string>
+    <string name="icon_restaurant">Restaurant Symbol</string>
+    <string name="icon_dashboard">Dashboard Symbol</string>
+    <string name="icon_insights">Insights Symbol</string>
+    
+    <!-- Navigation Content Descriptions -->
+    <string name="navigate_to_dashboard">Zum Dashboard navigieren</string>
+    <string name="navigate_to_training">Zu Training navigieren</string>
+    <string name="navigate_to_nutrition">Zu Ernährung navigieren</string>
+    <string name="navigate_to_analytics">Zu Analytics navigieren</string>
+    <string name="navigate_to_settings">Zu Einstellungen navigieren</string>
+    <string name="navigate_to_recipes">Zu Rezepten navigieren</string>
+    <string name="navigate_to_shopping">Zur Einkaufsliste navigieren</string>
+    <string name="navigate_to_ai_trainer">Zum KI Trainer navigieren</string>
+    <string name="navigate_to_hiit">Zum HIIT Builder navigieren</string>
+    <string name="navigate_to_food_search">Zur Lebensmittelsuche navigieren</string>
+    
+    <!-- Menu and UI Labels -->
+    <string name="open_navigation_drawer">Navigationsmenü öffnen</string>
+    <string name="close_navigation_drawer">Navigationsmenü schließen</string>
 </resources>
