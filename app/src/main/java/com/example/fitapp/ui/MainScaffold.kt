@@ -33,10 +33,12 @@ fun MainScaffold(navController: NavHostController? = null) {
             !userExperienceState.hasCompletedOnboarding -> "onboarding"
             else -> "unified_dashboard"
         }
-    } { innerPadding ->
+    }
+    
+    Scaffold { innerPadding ->
         NavHost(
-            navController = navController,
-            startDestination = "unified_dashboard",
+            navController = nav,
+            startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("unified_dashboard") { 
