@@ -14,11 +14,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Repository for BMI and weight loss program management
  */
-class WeightLossRepository(private val database: AppDatabase) {
+@Singleton
+class WeightLossRepository @Inject constructor(private val database: AppDatabase) {
     // BMI History Management
 
     suspend fun saveBMIHistory(bmiHistory: BMIHistoryEntity): Long {

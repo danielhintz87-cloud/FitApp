@@ -2,33 +2,49 @@ package com.example.fitapp.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.composable
-import com.example.fitapp.core.navigation.NavigationRegistry
+import androidx.navigation.compose.rememberNavController
 
-@ExperimentalMaterial3Api
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScaffold(navController: NavHostController? = null) {
-    val nav = navController ?: rememberNavController()
-    val navigationRegistry = remember { NavigationRegistry.getInstance() }
+fun MainScaffold() {
+    val navController = rememberNavController()
     
-    Scaffold { paddingValues ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("FitApp") }
+            )
+        }
+    ) { innerPadding ->
         NavHost(
-            navController = nav,
-            startDestination = "home",
-            modifier = Modifier.padding(paddingValues)
+            navController = navController,
+            startDestination = "unified_dashboard",
+            modifier = Modifier.padding(innerPadding)
         ) {
-            composable("home") {
-                Text("FitApp Home - Navigation wird repariert")
+            composable("unified_dashboard") { 
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Text("Unified Dashboard")
+                }
             }
-            // Registriere Navigation Routes  
-            navigationRegistry.registerAllNavigations(this, nav)
+            composable("nutrition") { 
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Text("Nutrition")
+                }
+            }
+            composable("plan") { 
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Text("Plan")
+                }
+            }
+            composable("progress") { 
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Text("Progress")
+                }
+            }
         }
     }
 }

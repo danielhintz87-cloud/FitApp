@@ -28,7 +28,7 @@ fun WeightTrackingScreen(
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
-    val repo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val repo = remember { NutritionRepository(AppDatabase.get(ctx), ctx) }
 
     var weight by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
