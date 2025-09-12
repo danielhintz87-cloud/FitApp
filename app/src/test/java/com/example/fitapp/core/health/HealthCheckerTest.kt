@@ -26,7 +26,8 @@ class HealthCheckerTest {
         assertEquals("Provider name should match", "Test Provider", status.provider)
         assertEquals("Response time should match", 150L, status.responseTimeMs)
         assertNull("Error message should be null", status.errorMessage)
-        assertEquals("Status string should be OK", "OK", status.status)
+        assertEquals("Status string should be OK", "OK", status.statusString)
+        assertEquals("Status enum should be OK", HealthStatus.Status.OK, status.status)
     }
     
     @Test
@@ -39,7 +40,8 @@ class HealthCheckerTest {
         
         assertFalse("Status should be unhealthy", status.isHealthy)
         assertEquals("Error message should match", "Connection failed", status.errorMessage)
-        assertEquals("Status string should be ERROR", "ERROR", status.status)
+        assertEquals("Status string should be ERROR", "ERROR", status.statusString)
+        assertEquals("Status enum should be DOWN", HealthStatus.Status.DOWN, status.status)
     }
     
     @Test

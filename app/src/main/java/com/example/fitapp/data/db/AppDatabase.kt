@@ -67,9 +67,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         RecipeRatingEntity::class,
         ProFeatureEntity::class,
         RecipeCollectionEntity::class,
-        RecipeCollectionItemEntity::class
+        RecipeCollectionItemEntity::class,
+        // API Health Status
+        HealthStatusEntity::class
     ],
-    version = 17,
+    version = 18,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -120,6 +122,8 @@ abstract class AppDatabase : RoomDatabase() {
     // YAZIO-style Recipe and Meal Management DAOs
     abstract fun mealDao(): MealDao
     abstract fun groceryDao(): GroceryDao
+    // API Health Status DAO
+    abstract fun healthStatusDao(): HealthStatusDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -1243,6 +1247,29 @@ abstract class AppDatabase : RoomDatabase() {
                 android.util.Log.i("Migration", "Successfully migrated meal_entries to support recipes")
             }
         }
+
+        val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add health_status table for API health checking
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `health_status` (
+                        `provider` TEXT PRIMARY KEY NOT NULL,
+                        `isHealthy` INTEGER NOT NULL,
+                        `responseTimeMs` INTEGER,
+                        `errorMessage` TEXT,
+                        `lastChecked` INTEGER NOT NULL,
+                        `additionalData` TEXT
+                    )
+                """)
+                
+                // Create indices
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_health_status_provider` ON `health_status` (`provider`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_status_lastChecked` ON `health_status` (`lastChecked`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_status_isHealthy` ON `health_status` (`isHealthy`)")
+                
+                android.util.Log.i("Migration", "Successfully created health_status table")
+            }
+        }
         
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
@@ -1252,7 +1279,7 @@ abstract class AppDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): AppDatabase {
             return try {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
-                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18)
                     .apply {
                         // Only allow destructive migration in debug builds
                         if (com.example.fitapp.BuildConfig.DEBUG) {

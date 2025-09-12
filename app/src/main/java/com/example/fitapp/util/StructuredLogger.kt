@@ -46,7 +46,8 @@ object StructuredLogger {
         USER_ACTION("USER"),
         SYSTEM("SYS"),
         SECURITY("SEC"),
-        NUTRITION("NUTRITION")
+        NUTRITION("NUTRITION"),
+        HEALTH_CHECK("HEALTH")
     }
     
     // Structured log entry

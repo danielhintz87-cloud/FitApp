@@ -1139,3 +1139,68 @@ data class LeaderboardEntryEntity(
     val badge: String? = null, // badge earned for this ranking
     val lastUpdated: Long = System.currentTimeMillis() / 1000
 )
+
+// API Health Checking Entity
+@Entity(
+    tableName = "health_status",
+    indices = [
+        Index(value = ["provider"], unique = true),
+        Index(value = ["lastChecked"]),
+        Index(value = ["isHealthy"])
+    ]
+)
+data class HealthStatusEntity(
+    @PrimaryKey
+    val provider: String,
+    val isHealthy: Boolean,
+    val responseTimeMs: Long?,
+    val errorMessage: String?,
+    val lastChecked: Long,
+    val additionalData: String? = null // JSON string for additional data
+) {
+    /**
+     * Convert Room entity to domain model
+     */
+    fun toHealthStatus(): com.example.fitapp.core.health.HealthStatus {
+        val additionalDataMap = try {
+            additionalData?.let {
+                // Simple parsing for now - could use proper JSON serialization
+                emptyMap<String, Any>()
+            } ?: emptyMap()
+        } catch (e: Exception) {
+            emptyMap<String, Any>()
+        }
+
+        return com.example.fitapp.core.health.HealthStatus(
+            isHealthy = isHealthy,
+            provider = provider,
+            responseTimeMs = responseTimeMs,
+            errorMessage = errorMessage,
+            lastChecked = lastChecked,
+            additionalData = additionalDataMap
+        )
+    }
+
+    companion object {
+        /**
+         * Create Room entity from domain model
+         */
+        fun fromHealthStatus(status: com.example.fitapp.core.health.HealthStatus): HealthStatusEntity {
+            val additionalDataJson = if (status.additionalData.isNotEmpty()) {
+                // Simple serialization for now - could use proper JSON serialization
+                null
+            } else {
+                null
+            }
+
+            return HealthStatusEntity(
+                provider = status.provider,
+                isHealthy = status.isHealthy,
+                responseTimeMs = status.responseTimeMs,
+                errorMessage = status.errorMessage,
+                lastChecked = status.lastChecked,
+                additionalData = additionalDataJson
+            )
+        }
+    }
+}

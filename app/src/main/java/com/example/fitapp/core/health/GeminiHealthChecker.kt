@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import javax.inject.Inject
@@ -17,7 +18,7 @@ import javax.inject.Inject
  * Health checker for Gemini AI provider
  */
 class GeminiHealthChecker @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val httpClient: OkHttpClient,
     private val dispatchers: DispatcherProvider
 ) : HealthCheckable {
