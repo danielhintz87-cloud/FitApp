@@ -85,6 +85,13 @@ android {
         }
     }
 
+    lint {
+        baseline = file("lint-baseline.xml")
+        abortOnError = true
+        checkReleaseBuilds = false
+        disable += "GradleDependency"
+    }
+
     ksp {
         arg("room.schemaLocation", "$projectDir/schemas")
         arg("room.incremental", "true")
@@ -165,6 +172,9 @@ dependencies {
     debugImplementation(libs.bundles.debug)
     
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")
+    
+    // Compose Lint Checks for accessibility
+    lintChecks("androidx.compose.ui:ui-lint:1.7.8")
 }
 
 // Protobuf configuration
