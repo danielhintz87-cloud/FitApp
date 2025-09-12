@@ -23,35 +23,38 @@ fun AiKeyGate(
     modifier: Modifier = Modifier,
     onNavigateToApiKeys: () -> Unit,
     requireBothProviders: Boolean = true,
-    content: @Composable (isEnabled: Boolean) -> Unit
+    content: @Composable (isEnabled: Boolean) -> Unit,
 ) {
     val context = LocalContext.current
-    val isEnabled = if (requireBothProviders) {
-        ApiKeys.isPrimaryProviderAvailable(context)
-    } else {
-        ApiKeys.getGeminiKey(context).isNotBlank() || ApiKeys.getPerplexityKey(context).isNotBlank()
-    }
+    val isEnabled =
+        if (requireBothProviders) {
+            ApiKeys.isPrimaryProviderAvailable(context)
+        } else {
+            ApiKeys.getGeminiKey(context).isNotBlank() || ApiKeys.getPerplexityKey(context).isNotBlank()
+        }
 
     Column(modifier = modifier) {
         // Show warning banner when keys are not available
         if (!isEnabled) {
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Icon(
                         Icons.Filled.Warning,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(32.dp),
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
@@ -59,7 +62,7 @@ fun AiKeyGate(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onErrorContainer,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
@@ -70,15 +73,16 @@ fun AiKeyGate(
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onErrorContainer,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(12.dp))
                     Button(
                         onClick = onNavigateToApiKeys,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.onErrorContainer,
-                            contentColor = MaterialTheme.colorScheme.errorContainer
-                        )
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.onErrorContainer,
+                                contentColor = MaterialTheme.colorScheme.errorContainer,
+                            ),
                     ) {
                         Icon(Icons.Filled.Key, contentDescription = null)
                         Spacer(Modifier.width(8.dp))

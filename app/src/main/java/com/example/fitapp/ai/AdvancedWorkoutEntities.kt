@@ -12,14 +12,14 @@ enum class HeartRateZone(val range: IntRange, val color: Color, val displayName:
     RESTING(50..100, Color(0xFF2196F3), "Ruhezone"),
     FAT_BURN(100..140, Color(0xFF4CAF50), "Fettverbrennung"),
     CARDIO(140..170, Color(0xFFFF9800), "Cardio"),
-    PEAK(170..200, Color(0xFFF44336), "Höchstleistung")
+    PEAK(170..200, Color(0xFFF44336), "Höchstleistung"),
 }
 
 data class HeartRateReading(
     val bpm: Int,
     val timestamp: Long,
     val zone: HeartRateZone,
-    val confidence: Float
+    val confidence: Float,
 )
 
 // Session Metrics
@@ -30,7 +30,7 @@ data class SessionMetrics(
     val caloriesBurned: Int = 0,
     val personalRecords: Int = 0,
     val exercisesCompleted: Int = 0,
-    val totalExercises: Int = 0
+    val totalExercises: Int = 0,
 ) {
     val completionPercentage: Float
         get() = if (totalExercises > 0) (exercisesCompleted.toFloat() / totalExercises) * 100f else 0f
@@ -43,11 +43,14 @@ enum class CoachingTipType {
     PROGRESSION_SUGGESTION,
     MOTIVATION,
     SAFETY_WARNING,
-    TECHNIQUE_TIP
+    TECHNIQUE_TIP,
 }
 
 enum class Priority {
-    LOW, MEDIUM, HIGH, CRITICAL
+    LOW,
+    MEDIUM,
+    HIGH,
+    CRITICAL,
 }
 
 data class CoachingTip(
@@ -56,14 +59,14 @@ data class CoachingTip(
     val priority: Priority,
     val actionable: Boolean = false,
     val action: String? = null,
-    val timestamp: Long = System.currentTimeMillis() / 1000
+    val timestamp: Long = System.currentTimeMillis() / 1000,
 )
 
 // Movement Analysis
 data class MovementData(
     val accelerometer: Triple<Float, Float, Float>,
     val gyroscope: Triple<Float, Float, Float>,
-    val timestamp: Long
+    val timestamp: Long,
 )
 
 data class RepetitionAnalysis(
@@ -71,14 +74,14 @@ data class RepetitionAnalysis(
     val repQuality: Float,
     val rangeOfMotion: Float,
     val speed: Float,
-    val symmetry: Float
+    val symmetry: Float,
 )
 
 data class FormQualityAssessment(
     val overallQuality: Float, // 0.0-1.0
     val improvements: List<String>,
     val riskFactors: List<String>,
-    val positiveAspects: List<String>
+    val positiveAspects: List<String>,
 )
 
 // Workout Progression
@@ -91,7 +94,7 @@ data class ProgressionSuggestion(
     val recommendedReps: Int,
     val reason: String,
     val confidence: Float,
-    val alternatives: List<ProgressionAlternative>
+    val alternatives: List<ProgressionAlternative>,
 )
 
 data class ProgressionAlternative(
@@ -99,7 +102,7 @@ data class ProgressionAlternative(
     val description: String,
     val weight: Float?,
     val reps: Int?,
-    val difficulty: String // "easier", "same", "harder"
+    val difficulty: String, // "easier", "same", "harder"
 )
 
 // Performance Predictions
@@ -108,7 +111,7 @@ data class WorkoutPerformancePrediction(
     val expectedDuration: Int, // in minutes
     val fatigueForecast: String, // "low", "medium", "high"
     val recommendedRestAdjustment: Int, // seconds to add/subtract from rest
-    val confidence: Float
+    val confidence: Float,
 )
 
 // Enhanced Training State
@@ -122,7 +125,6 @@ data class AdvancedTrainingUiState(
     val isResting: Boolean = false,
     val restTimeRemaining: Int = 0,
     val guidedMode: Boolean = false,
-    
     // Advanced Performance State
     val currentHeartRate: Int? = null,
     val heartRateZone: HeartRateZone? = null,
@@ -130,25 +132,20 @@ data class AdvancedTrainingUiState(
     val isAutoCountingReps: Boolean = false,
     val formQuality: Float = 1.0f,
     val currentRPE: Int? = null, // Rate of Perceived Exertion 1-10
-    
     // Session State
     val sessionId: String? = null,
     val sessionMetrics: SessionMetrics = SessionMetrics(),
     val progressionSuggestions: List<ProgressionSuggestion> = emptyList(),
-    
     // AI State
     val isLoadingAIInsights: Boolean = false,
     val aiCoachingTips: List<CoachingTip> = emptyList(),
     val performancePrediction: WorkoutPerformancePrediction? = null,
-    
     // Sensor State
     val sensorDataAvailable: Boolean = false,
     val heartRateMonitorConnected: Boolean = false,
     val movementTrackingActive: Boolean = false,
-    
     // Error State
     val error: String? = null,
-    
     // Freeletics-style Adaptive Training State
     val currentWorkoutAdaptation: WorkoutAdaptation? = null,
     val adaptiveCoachingFeedback: AdaptiveCoachingFeedback? = null,
@@ -158,7 +155,7 @@ data class AdvancedTrainingUiState(
     val adaptiveRestCalculation: AdaptiveRestCalculation? = null,
     val sessionLearning: SessionLearningApplication? = null,
     val isAdaptiveTrainingEnabled: Boolean = true,
-    val adaptationHistory: List<WorkoutAdaptation> = emptyList()
+    val adaptationHistory: List<WorkoutAdaptation> = emptyList(),
 )
 
 // Workout Context for AI Analysis
@@ -167,7 +164,7 @@ data class WorkoutContext(
     val exerciseHistory: List<com.example.fitapp.data.db.WorkoutPerformanceEntity>,
     val sessionProgress: Float,
     val userFatigueLevel: String,
-    val environmentalFactors: Map<String, Any> = emptyMap()
+    val environmentalFactors: Map<String, Any> = emptyMap(),
 )
 
 // User Profile for Workout Customization
@@ -180,5 +177,5 @@ data class UserWorkoutProfile(
     val preferredIntensity: String, // "low", "moderate", "high"
     val availableEquipment: List<String>,
     val injuries: List<String> = emptyList(),
-    val preferences: Map<String, Any> = emptyMap()
+    val preferences: Map<String, Any> = emptyMap(),
 )

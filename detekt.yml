@@ -54,3 +54,19 @@ exceptions:
   SwallowedException:
     active: true
     ignoredExceptionTypes: [ 'InterruptedException', 'NumberFormatException' ]
+
+# Compose-specific accessibility rules
+comments:
+  CommentOverPrivateFunction:
+    active: false
+  UndocumentedPublicClass:
+    active: false
+  UndocumentedPublicFunction:
+    active: false
+
+# Additional rules to support accessibility best practices
+coroutines:
+  GlobalCoroutineUsage:
+    active: true
+  RedundantSuspendModifier:
+    active: true

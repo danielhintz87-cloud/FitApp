@@ -1,23 +1,21 @@
 package com.example.fitapp.ai
 
 import android.content.Context
-import android.graphics.Bitmap
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
-import org.junit.Assert.*
 import org.mockito.Mock
-import org.mockito.MockitoAnnotations
 import org.mockito.Mockito.`when`
+import org.mockito.MockitoAnnotations
 
 /**
  * Unit tests for AdvancedMLModels functionality
  */
 class AdvancedMLModelsTest {
-
     @Mock
     private lateinit var mockContext: Context
-    
+
     @Mock
     private lateinit var mockApplicationContext: Context
 
@@ -45,18 +43,19 @@ class AdvancedMLModelsTest {
     }
 
     @Test
-    fun testBatchProcessingEmptyList() = runBlocking {
-        // Test batch processing with empty list
-        val results = mlModels.analyzeBatch(emptyList())
-        assertTrue("Empty batch should return empty results", results.isEmpty())
-    }
+    fun testBatchProcessingEmptyList() =
+        runBlocking {
+            // Test batch processing with empty list
+            val results = mlModels.analyzeBatch(emptyList())
+            assertTrue("Empty batch should return empty results", results.isEmpty())
+        }
 
     @Test
     fun testPerformanceMetrics() {
         // Test that performance metrics are available
         val metrics = mlModels.getPerformanceMetrics()
         assertNotNull("Performance metrics should not be null", metrics)
-        
+
         // Test that metrics have reasonable default values
         assertTrue("Memory usage should be non-negative", metrics.memoryUsageMB >= 0)
         assertTrue("Average pose analysis time should be non-negative", metrics.avgPoseAnalysisTime >= 0)

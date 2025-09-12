@@ -33,7 +33,7 @@ fun DailyWorkoutScreen(
     goal: String,
     minutes: Int,
     onBackPressed: () -> Unit,
-    viewModel: DailyWorkoutViewModel = hiltViewModel()
+    viewModel: DailyWorkoutViewModel = hiltViewModel(),
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -41,7 +41,7 @@ fun DailyWorkoutScreen(
     val motivationRepo = remember { PersonalMotivationRepository(AppDatabase.get(ctx)) }
     val achievementManager = remember { PersonalAchievementManager(ctx, motivationRepo) }
     val streakManager = remember { PersonalStreakManager(ctx, motivationRepo) }
-    
+
     var workoutSteps by remember { mutableStateOf<List<String>>(emptyList()) }
     var currentStepIndex by remember { mutableIntStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
@@ -50,7 +50,7 @@ fun DailyWorkoutScreen(
     var keepScreenOn by remember { mutableStateOf(true) }
     var restTimer by remember { mutableIntStateOf(0) }
     var isResting by remember { mutableStateOf(false) }
-    
+
     // Keep screen on functionality
     DisposableEffect(keepScreenOn) {
         val activity = ctx as? Activity
@@ -61,7 +61,7 @@ fun DailyWorkoutScreen(
             activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
-    
+
     // Rest timer effect
     LaunchedEffect(isResting, restTimer) {
         if (isResting && restTimer > 0) {
@@ -71,7 +71,7 @@ fun DailyWorkoutScreen(
             isResting = false
         }
     }
-    
+
     // Generate workout on first load
     LaunchedEffect(Unit) {
         try {
@@ -81,19 +81,21 @@ fun DailyWorkoutScreen(
             result.fold(
                 onSuccess = { content ->
                     // Parse content into steps (format: "Exercise | Description")
-                    val steps = content.split("\n")
-                        .filter { it.isNotBlank() && it.contains("|") }
-                        .map { it.trim() }
+                    val steps =
+                        content.split("\n")
+                            .filter { it.isNotBlank() && it.contains("|") }
+                            .map { it.trim() }
 
                     workoutSteps = steps
 
                     // Save to database
                     val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-                    val workout = TodayWorkoutEntity(
-                        dateIso = today,
-                        content = content,
-                        status = "pending"
-                    )
+                    val workout =
+                        TodayWorkoutEntity(
+                            dateIso = today,
+                            content = content,
+                            status = "pending",
+                        )
                     workoutDao.upsert(workout)
 
                     isLoading = false
@@ -101,24 +103,24 @@ fun DailyWorkoutScreen(
                 onFailure = { e ->
                     error = e.message
                     isLoading = false
-                }
+                },
             )
         } catch (e: Exception) {
             error = e.message
             isLoading = false
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Column {
                         Text("Heutiges Training")
                         if (!isLoading && workoutSteps.isNotEmpty()) {
                             Text(
                                 "Schritt ${currentStepIndex + 1} von ${workoutSteps.size}",
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.bodySmall,
                             )
                         }
                     }
@@ -132,49 +134,52 @@ fun DailyWorkoutScreen(
                     // Screen on toggle
                     Switch(
                         checked = keepScreenOn,
-                        onCheckedChange = { keepScreenOn = it }
+                        onCheckedChange = { keepScreenOn = it },
                     )
-                }
+                },
             )
-        }
+        },
     ) { paddingValues ->
         Box(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
+            modifier =
+                Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize(),
         ) {
             when {
                 isLoading -> {
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         CircularProgressIndicator()
                         Spacer(Modifier.height(16.dp))
                         Text("Erstelle dein heutiges Training...")
                     }
                 }
-                
+
                 error != null -> {
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Text(
                             "Fehler beim Erstellen des Trainings:",
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.error,
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
                             error ?: "Unbekannter Fehler",
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                         Spacer(Modifier.height(16.dp))
                         Button(onClick = onBackPressed) {
@@ -182,31 +187,32 @@ fun DailyWorkoutScreen(
                         }
                     }
                 }
-                
+
                 isCompleted -> {
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Icon(
                             Icons.Default.Check,
                             contentDescription = null,
                             modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                         Spacer(Modifier.height(16.dp))
                         Text(
                             "Training abgeschlossen!",
                             style = MaterialTheme.typography.titleLarge,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
                             "Gut gemacht! Du hast dein heutiges Training erfolgreich beendet.",
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                         Spacer(Modifier.height(16.dp))
                         Button(onClick = onBackPressed) {
@@ -214,36 +220,37 @@ fun DailyWorkoutScreen(
                         }
                     }
                 }
-                
+
                 workoutSteps.isNotEmpty() -> {
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp)
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
                     ) {
                         // Progress bar
                         LinearProgressIndicator(
                             progress = { (currentStepIndex + 1).toFloat() / workoutSteps.size },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         )
-                        
+
                         Spacer(Modifier.height(24.dp))
-                        
+
                         if (isResting) {
                             // Rest timer display
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Text(
                                     "Pause",
-                                    style = MaterialTheme.typography.titleLarge
+                                    style = MaterialTheme.typography.titleLarge,
                                 )
                                 Spacer(Modifier.height(16.dp))
                                 Text(
                                     "$restTimer",
                                     style = MaterialTheme.typography.displayLarge,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = MaterialTheme.colorScheme.primary,
                                 )
                                 Spacer(Modifier.height(8.dp))
                                 Text("Sekunden")
@@ -254,41 +261,42 @@ fun DailyWorkoutScreen(
                             val parts = currentStep.split("|").map { it.trim() }
                             val exerciseName = parts.getOrNull(0) ?: "Übung"
                             val exerciseDescription = parts.getOrNull(1) ?: "Keine Beschreibung"
-                            
+
                             Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .verticalScroll(rememberScrollState())
-                                    .weight(1f)
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .verticalScroll(rememberScrollState())
+                                        .weight(1f),
                             ) {
                                 Text(
                                     exerciseName,
                                     style = MaterialTheme.typography.titleLarge,
                                     textAlign = TextAlign.Center,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
-                                
+
                                 Spacer(Modifier.height(16.dp))
-                                
+
                                 Card(
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
                                 ) {
                                     Text(
                                         exerciseDescription,
                                         style = MaterialTheme.typography.bodyLarge,
                                         textAlign = TextAlign.Center,
-                                        modifier = Modifier.padding(24.dp)
+                                        modifier = Modifier.padding(24.dp),
                                     )
                                 }
                             }
                         }
-                        
+
                         Spacer(Modifier.height(24.dp))
-                        
+
                         // Control buttons
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             // Back button
                             OutlinedButton(
@@ -299,11 +307,11 @@ fun DailyWorkoutScreen(
                                     }
                                 },
                                 enabled = currentStepIndex > 0 && !isResting,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
                             ) {
                                 Text("Zurück")
                             }
-                            
+
                             // Skip button
                             OutlinedButton(
                                 onClick = {
@@ -315,11 +323,11 @@ fun DailyWorkoutScreen(
                                         scope.launch {
                                             val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
                                             workoutDao.setStatus(
-                                                today, 
-                                                "completed", 
-                                                System.currentTimeMillis() / 1000
+                                                today,
+                                                "completed",
+                                                System.currentTimeMillis() / 1000,
                                             )
-                                            
+
                                             // Track achievement and streak progress
                                             achievementManager.trackWorkoutCompletion()
                                             streakManager.trackWorkoutCompletion()
@@ -328,13 +336,13 @@ fun DailyWorkoutScreen(
                                     }
                                 },
                                 enabled = !isResting,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
                             ) {
                                 Icon(Icons.Default.SkipNext, contentDescription = null)
                                 Spacer(Modifier.width(4.dp))
                                 Text("Weiter")
                             }
-                            
+
                             // Finish/Rest button
                             Button(
                                 onClick = {
@@ -344,7 +352,7 @@ fun DailyWorkoutScreen(
                                         val description = currentStep.split("|").getOrNull(1) ?: ""
                                         val timeMatch = Regex("(\\d+)\\s*[sS]").find(description)
                                         val seconds = timeMatch?.groupValues?.get(1)?.toIntOrNull() ?: 60
-                                        
+
                                         restTimer = seconds
                                         isResting = true
                                     } else if (currentStepIndex < workoutSteps.size - 1) {
@@ -354,11 +362,11 @@ fun DailyWorkoutScreen(
                                         scope.launch {
                                             val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
                                             workoutDao.setStatus(
-                                                today, 
-                                                "completed", 
-                                                System.currentTimeMillis() / 1000
+                                                today,
+                                                "completed",
+                                                System.currentTimeMillis() / 1000,
                                             )
-                                            
+
                                             // Track achievement and streak progress
                                             achievementManager.trackWorkoutCompletion()
                                             streakManager.trackWorkoutCompletion()
@@ -367,10 +375,10 @@ fun DailyWorkoutScreen(
                                     }
                                 },
                                 enabled = !isResting,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
                             ) {
                                 Text(
-                                    if (currentStepIndex < workoutSteps.size - 1) "Erledigt" else "Abschließen"
+                                    if (currentStepIndex < workoutSteps.size - 1) "Erledigt" else "Abschließen",
                                 )
                             }
                         }

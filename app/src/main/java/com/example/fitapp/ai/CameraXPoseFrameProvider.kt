@@ -30,9 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class CameraXPoseFrameProvider(
     private val context: Context,
-    private val modelService: AdvancedMLModels
+    private val modelService: AdvancedMLModels,
 ) : PoseFrameProvider {
-
     companion object {
         private const val TAG = "CameraXPoseFrameProvider"
     }
@@ -54,7 +53,10 @@ class CameraXPoseFrameProvider(
      * Initialisiert CameraX & startet den Analyse-Stream.
      * @param lifecycleOwner muss ein aktives Lifecycle besitzen (z.B. Activity oder Fragment)
      */
-    fun start(lifecycleOwner: LifecycleOwner, previewView: PreviewView? = null) {
+    fun start(
+        lifecycleOwner: LifecycleOwner,
+        previewView: PreviewView? = null,
+    ) {
         if (!started.compareAndSet(false, true)) return
         this.previewView = previewView
         val future = ProcessCameraProvider.getInstance(context)
@@ -73,17 +75,19 @@ class CameraXPoseFrameProvider(
         if (!started.compareAndSet(true, false)) return
         try {
             cameraProvider?.unbindAll()
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
         analysis = null
         preview = null
         camera = null
         latestBitmap = null
     }
 
-    private fun targetSize(): Int = when (modelService.getCurrentModelType()) {
-        AdvancedMLModels.PoseModelType.MOVENET_LIGHTNING -> 192
-        else -> 256 // Thunder / BlazePose aktuell 256
-    }
+    private fun targetSize(): Int =
+        when (modelService.getCurrentModelType()) {
+            AdvancedMLModels.PoseModelType.MOVENET_LIGHTNING -> 192
+            else -> 256 // Thunder / BlazePose aktuell 256
+        }
 
     @SuppressLint("UnsafeOptInUsageError")
     private fun bindUseCases(lifecycleOwner: LifecycleOwner) {
@@ -95,29 +99,31 @@ class CameraXPoseFrameProvider(
         val size = targetSize()
 
         @Suppress("DEPRECATION")
-        preview = Preview.Builder()
-            .setTargetResolution(android.util.Size(size, size))
-            .setTargetRotation(rotation)
-            .build().also { p ->
-                previewView?.let { pv -> p.setSurfaceProvider(pv.surfaceProvider) }
-            }
+        preview =
+            Preview.Builder()
+                .setTargetResolution(android.util.Size(size, size))
+                .setTargetRotation(rotation)
+                .build().also { p ->
+                    previewView?.let { pv -> p.setSurfaceProvider(pv.surfaceProvider) }
+                }
 
         @Suppress("DEPRECATION")
-        analysis = ImageAnalysis.Builder()
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .setTargetResolution(android.util.Size(size, size))
-            .setTargetRotation(rotation)
-            .build().also { ia ->
-                ia.setAnalyzer(executor) { image ->
-                    try {
-                        latestBitmap = image.toBitmap()
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Frame Konvertierung fehlgeschlagen", e)
-                    } finally {
-                        image.close()
+        analysis =
+            ImageAnalysis.Builder()
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setTargetResolution(android.util.Size(size, size))
+                .setTargetRotation(rotation)
+                .build().also { ia ->
+                    ia.setAnalyzer(executor) { image ->
+                        try {
+                            latestBitmap = image.toBitmap()
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Frame Konvertierung fehlgeschlagen", e)
+                        } finally {
+                            image.close()
+                        }
                     }
                 }
-            }
 
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
         try {
@@ -152,7 +158,7 @@ private fun ImageProxy.toBitmap(): Bitmap? {
     yuvImage.compressToJpeg(Rect(0, 0, width, height), 75, out)
     val jpeg = out.toByteArray()
     val bitmap = android.graphics.BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size)
-    
+
     // Use the image rotation from ImageProxy
     val rotationDegrees = imageInfo.rotationDegrees
     if (rotationDegrees != 0) {

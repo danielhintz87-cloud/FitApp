@@ -4,13 +4,12 @@ package com.example.fitapp.ui.nutrition
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,14 +19,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.SavedRecipeEntity
-import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.data.prefs.UserPreferencesRepository
+import com.example.fitapp.data.repo.NutritionRepository
 import com.example.fitapp.services.ShoppingListManager
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -42,7 +39,7 @@ fun RecipeDetailScreen(
     onBackPressed: () -> Unit,
     onCookRecipe: () -> Unit,
     onEditRecipe: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.get(context) }
@@ -50,21 +47,22 @@ fun RecipeDetailScreen(
     val nutritionRepo = remember { NutritionRepository(db, context) }
     val shoppingManager = remember { ShoppingListManager(db, preferencesRepository) }
     val scope = rememberCoroutineScope()
-    
+
     // UI State
     var servings by remember { mutableStateOf(recipe.servings ?: 1) }
     var isFavorite by remember { mutableStateOf(recipe.isFavorite) }
     var showAddToMealDialog by remember { mutableStateOf(false) }
     var showShareSheet by remember { mutableStateOf(false) }
-    
+
     // Calculate nutrition per serving
-    val caloriesPerServing = remember(recipe.calories, servings, recipe.servings) {
-        recipe.calories?.let { total ->
-            val originalServings = recipe.servings ?: 1
-            (total.toFloat() / originalServings * servings).toInt()
+    val caloriesPerServing =
+        remember(recipe.calories, servings, recipe.servings) {
+            recipe.calories?.let { total ->
+                val originalServings = recipe.servings ?: 1
+                (total.toFloat() / originalServings * servings).toInt()
+            }
         }
-    }
-    
+
     Column(modifier = modifier.fillMaxSize()) {
         // Top App Bar
         TopAppBar(
@@ -81,12 +79,12 @@ fun RecipeDetailScreen(
                             db.savedRecipeDao().setFavorite(recipe.id, !isFavorite)
                             isFavorite = !isFavorite
                         }
-                    }
+                    },
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = if (isFavorite) "Aus Favoriten entfernen" else "Zu Favoriten hinzufügen",
-                        tint = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 IconButton(onClick = { showShareSheet = true }) {
@@ -95,13 +93,13 @@ fun RecipeDetailScreen(
                 IconButton(onClick = onEditRecipe) {
                     Icon(Icons.Default.Edit, contentDescription = "Bearbeiten")
                 }
-            }
+            },
         )
-        
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(16.dp)
+            contentPadding = PaddingValues(16.dp),
         ) {
             // Recipe Header with Image
             item {
@@ -109,19 +107,19 @@ fun RecipeDetailScreen(
                     recipe = recipe,
                     servings = servings,
                     onServingsChange = { servings = it },
-                    caloriesPerServing = caloriesPerServing
+                    caloriesPerServing = caloriesPerServing,
                 )
             }
-            
+
             // Nutrition Information Card
             item {
                 NutritionInfoCard(
                     recipe = recipe,
                     servings = servings,
-                    caloriesPerServing = caloriesPerServing
+                    caloriesPerServing = caloriesPerServing,
                 )
             }
-            
+
             // Ingredients Section
             item {
                 IngredientsCard(
@@ -135,7 +133,7 @@ fun RecipeDetailScreen(
                                 ingredients.forEach { ingredient ->
                                     shoppingManager.addIngredientFromText(
                                         ingredientText = ingredient,
-                                        fromRecipe = recipe.title
+                                        fromRecipe = recipe.title,
                                     )
                                 }
                                 // Show success message
@@ -143,15 +141,15 @@ fun RecipeDetailScreen(
                                 // Show error message
                             }
                         }
-                    }
+                    },
                 )
             }
-            
+
             // Instructions Section
             item {
                 InstructionsCard(recipe = recipe)
             }
-            
+
             // Action Buttons
             item {
                 ActionButtonsCard(
@@ -163,16 +161,16 @@ fun RecipeDetailScreen(
                             ingredients.forEach { ingredient ->
                                 shoppingManager.addIngredientFromText(
                                     ingredientText = ingredient,
-                                    fromRecipe = recipe.title
+                                    fromRecipe = recipe.title,
                                 )
                             }
                         }
-                    }
+                    },
                 )
             }
         }
     }
-    
+
     // Add to Meal Dialog
     if (showAddToMealDialog) {
         AddToMealDialog(
@@ -186,13 +184,13 @@ fun RecipeDetailScreen(
                         nutritionRepo.logIntake(
                             kcal = calories,
                             label = "${recipe.title} ($servings Portionen)",
-                            source = "RECIPE"
+                            source = "RECIPE",
                         )
                         nutritionRepo.adjustDailyGoal(LocalDate.now())
                     }
                     showAddToMealDialog = false
                 }
-            }
+            },
         )
     }
 }
@@ -202,13 +200,14 @@ private fun RecipeHeaderCard(
     recipe: SavedRecipeEntity,
     servings: Int,
     onServingsChange: (Int) -> Unit,
-    caloriesPerServing: Int?
+    caloriesPerServing: Int?,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+            ),
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             // Recipe Image
@@ -216,113 +215,115 @@ private fun RecipeHeaderCard(
                 AsyncImage(
                     model = recipe.imageUrl,
                     contentDescription = recipe.title,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop,
                 )
                 Spacer(Modifier.height(16.dp))
             }
-            
+
             // Recipe Title
             Text(
                 text = recipe.title,
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
-            
+
             // Description from markdown
-            val description = recipe.markdown.lines().firstOrNull { 
-                it.isNotBlank() && !it.startsWith("#") 
-            }?.take(200)
-            
+            val description =
+                recipe.markdown.lines().firstOrNull {
+                    it.isNotBlank() && !it.startsWith("#")
+                }?.take(200)
+
             if (description?.isNotBlank() == true) {
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                 )
             }
-            
+
             Spacer(Modifier.height(16.dp))
-            
+
             // Servings Selector
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "Portionen:",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
-                
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
                         onClick = { if (servings > 1) onServingsChange(servings - 1) },
-                        enabled = servings > 1
+                        enabled = servings > 1,
                     ) {
                         Icon(Icons.Default.Remove, contentDescription = "Weniger Portionen")
                     }
-                    
+
                     Text(
                         text = servings.toString(),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
-                    
+
                     IconButton(
                         onClick = { if (servings < 10) onServingsChange(servings + 1) },
-                        enabled = servings < 10
+                        enabled = servings < 10,
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Mehr Portionen")
                     }
                 }
             }
-            
+
             // Quick Stats
             Spacer(Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 caloriesPerServing?.let { calories ->
                     QuickStatItem(
                         icon = Icons.Default.LocalFireDepartment,
                         value = "$calories",
                         label = "kcal/Portion",
-                        color = MaterialTheme.colorScheme.tertiary
+                        color = MaterialTheme.colorScheme.tertiary,
                     )
                 }
-                
+
                 recipe.prepTime?.let { prepTime ->
                     QuickStatItem(
                         icon = Icons.Default.AccessTime,
                         value = "$prepTime",
                         label = "Minuten",
-                        color = MaterialTheme.colorScheme.secondary
+                        color = MaterialTheme.colorScheme.secondary,
                     )
                 }
-                
+
                 QuickStatItem(
                     icon = Icons.Default.Restaurant,
                     value = recipe.difficulty ?: "medium",
                     label = "Schwierigkeit",
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
-            
+
             // Tags
             if (recipe.tags.isNotBlank()) {
                 Spacer(Modifier.height(12.dp))
                 Text(
                     text = recipe.tags.replace(",", " • "),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
@@ -334,21 +335,21 @@ private fun QuickStatItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     value: String,
     label: String,
-    color: Color
+    color: Color,
 ) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = color.copy(alpha = 0.1f),
-            modifier = Modifier.padding(4.dp)
+            modifier = Modifier.padding(4.dp),
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.padding(8.dp),
-                tint = color
+                tint = color,
             )
         }
         Spacer(Modifier.height(4.dp))
@@ -356,12 +357,12 @@ private fun QuickStatItem(
             text = value,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
-            color = color
+            color = color,
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -370,64 +371,64 @@ private fun QuickStatItem(
 private fun NutritionInfoCard(
     recipe: SavedRecipeEntity,
     servings: Int,
-    caloriesPerServing: Int?
+    caloriesPerServing: Int?,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     Icons.Default.BarChart,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = "Nährwerte pro Portion",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
-            
+
             Spacer(Modifier.height(12.dp))
-            
+
             caloriesPerServing?.let { calories ->
                 NutritionRow(
                     label = "Kalorien",
                     value = "$calories kcal",
-                    color = MaterialTheme.colorScheme.tertiary
+                    color = MaterialTheme.colorScheme.tertiary,
                 )
             }
-            
-            // Note: For now, we'll show placeholder values since the current SavedRecipeEntity 
+
+            // Note: For now, we'll show placeholder values since the current SavedRecipeEntity
             // doesn't have detailed macro information. In a full implementation, this would
             // be calculated from the actual ingredients.
             NutritionRow(
                 label = "Kohlenhydrate",
                 value = "~ g", // Would be calculated from ingredients
-                color = MaterialTheme.colorScheme.secondary
+                color = MaterialTheme.colorScheme.secondary,
             )
             NutritionRow(
                 label = "Protein",
                 value = "~ g", // Would be calculated from ingredients
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
             NutritionRow(
                 label = "Fett",
                 value = "~ g", // Would be calculated from ingredients
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.error,
             )
-            
+
             Spacer(Modifier.height(8.dp))
             Text(
                 text = "Detaillierte Nährwerte werden aus den Zutaten berechnet",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -437,31 +438,32 @@ private fun NutritionInfoCard(
 private fun NutritionRow(
     label: String,
     value: String,
-    color: Color
+    color: Color,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(
                 shape = RoundedCornerShape(4.dp),
                 color = color.copy(alpha = 0.2f),
-                modifier = Modifier.size(12.dp)
+                modifier = Modifier.size(12.dp),
             ) {}
             Spacer(Modifier.width(8.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
         )
     }
 }
@@ -470,44 +472,44 @@ private fun NutritionRow(
 private fun IngredientsCard(
     recipe: SavedRecipeEntity,
     servings: Int,
-    onAddToShoppingList: () -> Unit
+    onAddToShoppingList: () -> Unit,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.AutoMirrored.Filled.ListAlt,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = "Zutaten",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
-                
+
                 IconButton(onClick = onAddToShoppingList) {
                     Icon(
                         Icons.Default.ShoppingCart,
                         contentDescription = "Zur Einkaufsliste hinzufügen",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
-            
+
             Spacer(Modifier.height(12.dp))
-            
+
             val ingredients = parseIngredientsFromMarkdown(recipe.markdown, servings)
             if (ingredients.isNotEmpty()) {
                 ingredients.forEach { ingredient ->
@@ -517,7 +519,7 @@ private fun IngredientsCard(
                 Text(
                     text = "Siehe Anleitung für Zutatendetails",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -527,22 +529,23 @@ private fun IngredientsCard(
 @Composable
 private fun IngredientItem(ingredient: String) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Surface(
             shape = RoundedCornerShape(50),
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-            modifier = Modifier.size(6.dp)
+            modifier = Modifier.size(6.dp),
         ) {}
-        
+
         Spacer(Modifier.width(12.dp))
-        
+
         Text(
             text = ingredient,
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
         )
     }
 }
@@ -550,33 +553,33 @@ private fun IngredientItem(ingredient: String) {
 @Composable
 private fun InstructionsCard(recipe: SavedRecipeEntity) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.AutoMirrored.Filled.MenuBook,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = "Zubereitung",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
-            
+
             Spacer(Modifier.height(12.dp))
-            
+
             val steps = parseStepsFromMarkdown(recipe.markdown)
             if (steps.isNotEmpty()) {
                 steps.forEachIndexed { index, step ->
                     InstructionStep(
                         stepNumber = index + 1,
-                        instruction = step
+                        instruction = step,
                     )
                     if (index < steps.lastIndex) {
                         Spacer(Modifier.height(8.dp))
@@ -585,7 +588,7 @@ private fun InstructionsCard(recipe: SavedRecipeEntity) {
             } else {
                 Text(
                     text = recipe.markdown,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }
@@ -595,36 +598,36 @@ private fun InstructionsCard(recipe: SavedRecipeEntity) {
 @Composable
 private fun InstructionStep(
     stepNumber: Int,
-    instruction: String
+    instruction: String,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.Top,
     ) {
         Surface(
             shape = RoundedCornerShape(50),
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(24.dp),
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = stepNumber.toString(),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
         }
-        
+
         Spacer(Modifier.width(12.dp))
-        
+
         Text(
             text = instruction,
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
     }
 }
@@ -633,42 +636,42 @@ private fun InstructionStep(
 private fun ActionButtonsCard(
     onCookRecipe: () -> Unit,
     onAddToMeal: () -> Unit,
-    onAddToShoppingList: () -> Unit
+    onAddToShoppingList: () -> Unit,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             // Primary action
             Button(
                 onClick = onCookRecipe,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Default.Restaurant, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text("Kochen starten")
             }
-            
+
             // Secondary actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OutlinedButton(
                     onClick = onAddToMeal,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Default.AddCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
                     Text("Zu Mahlzeiten")
                 }
-                
+
                 OutlinedButton(
                     onClick = onAddToShoppingList,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
@@ -685,7 +688,7 @@ private fun AddToMealDialog(
     servings: Int,
     caloriesPerServing: Int?,
     onDismiss: () -> Unit,
-    onAddToMeal: (String) -> Unit
+    onAddToMeal: (String) -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -698,7 +701,7 @@ private fun AddToMealDialog(
                     Text(
                         "Kalorien: ${it * servings} kcal",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
             }
@@ -712,20 +715,23 @@ private fun AddToMealDialog(
             TextButton(onClick = onDismiss) {
                 Text("Abbrechen")
             }
-        }
+        },
     )
 }
 
 // Helper functions for parsing recipe content
-private fun parseIngredientsFromMarkdown(markdown: String, servings: Int): List<String> {
+private fun parseIngredientsFromMarkdown(
+    markdown: String,
+    servings: Int,
+): List<String> {
     val lines = markdown.lines()
     val ingredients = mutableListOf<String>()
     var inIngredientsSection = false
-    
+
     for (line in lines) {
         when {
-            line.contains("Zutaten", ignoreCase = true) || 
-            line.contains("Ingredients", ignoreCase = true) -> {
+            line.contains("Zutaten", ignoreCase = true) ||
+                line.contains("Ingredients", ignoreCase = true) -> {
                 inIngredientsSection = true
             }
             line.startsWith("##") && inIngredientsSection -> {
@@ -740,7 +746,7 @@ private fun parseIngredientsFromMarkdown(markdown: String, servings: Int): List<
             }
         }
     }
-    
+
     return if (ingredients.isNotEmpty()) {
         ingredients.map { adjustIngredientQuantity(it, servings) }
     } else {
@@ -753,12 +759,12 @@ private fun parseStepsFromMarkdown(markdown: String): List<String> {
     val lines = markdown.lines()
     val steps = mutableListOf<String>()
     var inInstructionsSection = false
-    
+
     for (line in lines) {
         when {
-            line.contains("Zubereitung", ignoreCase = true) || 
-            line.contains("Instructions", ignoreCase = true) ||
-            line.contains("Anleitung", ignoreCase = true) -> {
+            line.contains("Zubereitung", ignoreCase = true) ||
+                line.contains("Instructions", ignoreCase = true) ||
+                line.contains("Anleitung", ignoreCase = true) -> {
                 inInstructionsSection = true
             }
             line.startsWith("###") && inInstructionsSection -> {
@@ -768,8 +774,8 @@ private fun parseStepsFromMarkdown(markdown: String): List<String> {
                     steps.add(step)
                 }
             }
-            inInstructionsSection && line.trim().isNotEmpty() && 
-            !line.startsWith("#") && !line.startsWith(">") -> {
+            inInstructionsSection && line.trim().isNotEmpty() &&
+                !line.startsWith("#") && !line.startsWith(">") -> {
                 if (steps.isNotEmpty()) {
                     // Add to last step
                     val lastIndex = steps.lastIndex
@@ -780,11 +786,14 @@ private fun parseStepsFromMarkdown(markdown: String): List<String> {
             }
         }
     }
-    
+
     return steps.ifEmpty { listOf(markdown) }
 }
 
-private fun adjustIngredientQuantity(ingredient: String, servings: Int): String {
+private fun adjustIngredientQuantity(
+    ingredient: String,
+    servings: Int,
+): String {
     // Simple quantity adjustment - in a real implementation, this would be more sophisticated
     val numbers = Regex("\\d+").findAll(ingredient).map { it.value.toInt() }.toList()
     if (numbers.isNotEmpty() && servings != 1) {

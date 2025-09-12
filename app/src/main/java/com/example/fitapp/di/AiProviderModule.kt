@@ -17,13 +17,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class AiProviderModule {
-    
     @Binds
     @IntoMap
     @StringKey("Gemini")
     @Singleton
     abstract fun bindGeminiProvider(geminiProvider: GeminiAiProvider): AiProvider
-    
+
     @Binds
     @IntoMap
     @StringKey("Perplexity")

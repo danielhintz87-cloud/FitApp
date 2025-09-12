@@ -17,7 +17,7 @@ data class BMIHistoryEntity(
     val category: String, // BMICategory name
     val notes: String? = null,
     val goalWeightKg: Float? = null,
-    val timeframeWeeks: Int? = null
+    val timeframeWeeks: Int? = null,
 )
 
 /**
@@ -39,7 +39,7 @@ data class WeightLossProgressEntity(
     val notes: String? = null,
     val sleepHours: Float? = null,
     val waterIntakeLiters: Float? = null,
-    val exerciseMinutes: Int? = null
+    val exerciseMinutes: Int? = null,
 )
 
 /**
@@ -57,7 +57,7 @@ data class BehavioralCheckInEntity(
     val triggers: String, // Comma-separated list of EmotionalTrigger names
     val copingStrategy: String? = null,
     val mealContext: String? = null, // "breakfast", "lunch", "dinner", "snack"
-    val socialContext: String? = null // "alone", "family", "friends", "work"
+    val socialContext: String? = null, // "alone", "family", "friends", "work"
 )
 
 /**
@@ -78,7 +78,7 @@ data class WeightLossChallengeEntity(
     val difficulty: String, // ChallengeDifficulty name
     val rewardDescription: String? = null,
     val streakDays: Int = 0,
-    val category: String // "nutrition", "exercise", "behavioral", "hydration"
+    val category: String, // "nutrition", "exercise", "behavioral", "hydration"
 )
 
 /**
@@ -92,7 +92,7 @@ enum class EmotionalTrigger(val germanName: String) {
     SOCIAL_PRESSURE("Sozialer Druck"),
     FATIGUE("Müdigkeit"),
     ANXIETY("Angst"),
-    HAPPINESS("Freude")
+    HAPPINESS("Freude"),
 }
 
 /**
@@ -108,7 +108,7 @@ enum class ChallengeMetric(val germanName: String, val unit: String) {
     EXERCISE_MINUTES("Trainingsminuten", "min"),
     SLEEP_HOURS("Schlafstunden", "h"),
     MINDFUL_MEALS("Achtsame Mahlzeiten", "Anzahl"),
-    WEIGHT_LOSS("Gewichtsverlust", "kg")
+    WEIGHT_LOSS("Gewichtsverlust", "kg"),
 }
 
 /**
@@ -118,7 +118,7 @@ enum class ChallengeDifficulty(val germanName: String, val multiplier: Float) {
     EASY("Einfach", 1.0f),
     MEDIUM("Mittel", 1.5f),
     HARD("Schwer", 2.0f),
-    EXTREME("Extrem", 3.0f)
+    EXTREME("Extrem", 3.0f),
 }
 
 /**
@@ -133,7 +133,7 @@ data class WeightLossProgram(
     val recommendedExerciseMinutes: Int,
     val milestones: List<WeightLossMilestone>,
     val behavioralStrategies: List<String>,
-    val duration: Int // weeks
+    val duration: Int, // weeks
 )
 
 /**
@@ -145,7 +145,7 @@ data class MacroTargets(
     val fatGrams: Int,
     val proteinPercentage: Float = 25f, // Higher for satiety
     val carbsPercentage: Float = 45f,
-    val fatPercentage: Float = 30f
+    val fatPercentage: Float = 30f,
 )
 
 /**
@@ -158,5 +158,5 @@ data class WeightLossMilestone(
     val targetWeightLoss: Float, // kg lost
     val targetDate: String,
     val rewardTitle: String,
-    val isCompleted: Boolean = false
+    val isCompleted: Boolean = false,
 )

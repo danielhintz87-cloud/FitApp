@@ -2,9 +2,6 @@ package com.example.fitapp.ai
 
 import android.content.Context
 import com.example.fitapp.data.db.WeightLossProgramEntity
-import com.example.fitapp.data.db.BMIHistoryEntity
-import com.example.fitapp.data.db.BehavioralCheckInEntity
-import com.example.fitapp.domain.ActivityLevel
 import com.example.fitapp.domain.BMICategory
 import com.example.fitapp.domain.entities.*
 
@@ -23,7 +20,7 @@ data class WeightLossAiRequest(
     val currentWeight: Float,
     val targetWeight: Float,
     val age: Int,
-    val isMale: Boolean
+    val isMale: Boolean,
 )
 
 /**
@@ -33,7 +30,7 @@ data class PersonalizedTipsRequest(
     val progressData: List<WeightLossProgressData>,
     val adherencePattern: AdherencePattern,
     val strugglingAreas: List<String>,
-    val currentProgram: WeightLossProgramEntity?
+    val currentProgram: WeightLossProgramEntity?,
 )
 
 /**
@@ -48,7 +45,7 @@ data class WeightLossProgressData(
     val adherenceScore: Float, // 0.0-1.0
     val moodScore: Int?, // 1-10
     val stressLevel: Int?, // 1-10
-    val exerciseMinutes: Int?
+    val exerciseMinutes: Int?,
 )
 
 /**
@@ -59,7 +56,7 @@ data class AdherencePattern(
     val weeklyTrend: String, // "improving", "declining", "stable"
     val bestDays: List<String>, // days of week
     val challengingDays: List<String>,
-    val motivationalFactors: List<String>
+    val motivationalFactors: List<String>,
 )
 
 /**
@@ -74,7 +71,7 @@ data class WeightLossPlan(
     val behavioralTips: List<String>,
     val weeklyGoals: List<String>,
     val potentialChallenges: List<String>,
-    val motivationalStrategies: List<String>
+    val motivationalStrategies: List<String>,
 )
 
 /**
@@ -86,7 +83,7 @@ data class PersonalizedTip(
     val description: String,
     val actionSteps: List<String>,
     val expectedBenefit: String,
-    val difficultyLevel: String // "easy", "medium", "hard"
+    val difficultyLevel: String, // "easy", "medium", "hard"
 )
 
 /**
@@ -98,7 +95,7 @@ data class WeightLossInsights(
     val improvementAreas: List<String>,
     val predictedTimeToGoal: String,
     val motivationalMessage: String,
-    val nextWeekFocus: String
+    val nextWeekFocus: String,
 )
 
 /**
@@ -106,17 +103,21 @@ data class WeightLossInsights(
  */
 suspend fun AppAi.generateWeightLossPlan(
     context: Context,
-    request: WeightLossAiRequest
+    request: WeightLossAiRequest,
 ): Result<WeightLossPlan> {
     return try {
-        val response = planWithOptimalProvider(context, PlanRequest(
-            goal = "Gesunden Gewichtsverlust erreichen: ${request.currentWeight}kg → ${request.targetWeight}kg",
-            weeks = request.timeframeWeeks,
-            sessionsPerWeek = getRecommendedSessionsPerWeek(request.activityLevel),
-            minutesPerSession = getRecommendedMinutesPerSession(request.activityLevel),
-            equipment = request.preferredExerciseTypes
-        ))
-        
+        val response =
+            planWithOptimalProvider(
+                context,
+                PlanRequest(
+                    goal = "Gesunden Gewichtsverlust erreichen: ${request.currentWeight}kg → ${request.targetWeight}kg",
+                    weeks = request.timeframeWeeks,
+                    sessionsPerWeek = getRecommendedSessionsPerWeek(request.activityLevel),
+                    minutesPerSession = getRecommendedMinutesPerSession(request.activityLevel),
+                    equipment = request.preferredExerciseTypes,
+                ),
+            )
+
         response.map { parseWeightLossPlan(it) }
     } catch (e: Exception) {
         Result.failure(e)
@@ -125,17 +126,23 @@ suspend fun AppAi.generateWeightLossPlan(
 
 suspend fun AppAi.generatePersonalizedTips(
     context: Context,
-    request: PersonalizedTipsRequest
+    request: PersonalizedTipsRequest,
 ): Result<List<PersonalizedTip>> {
     return try {
-        val response = planWithOptimalProvider(context, PlanRequest(
-            goal = "Personalisierte Abnehm-Tipps für ${request.strugglingAreas.joinToString(", ").ifEmpty { "allgemeine Bereiche" }}",
-            weeks = 1,
-            sessionsPerWeek = 3,
-            minutesPerSession = 30,
-            equipment = emptyList()
-        ))
-        
+        val response =
+            planWithOptimalProvider(
+                context,
+                PlanRequest(
+                    goal = "Personalisierte Abnehm-Tipps für ${request.strugglingAreas.joinToString(
+                        ", ",
+                    ).ifEmpty { "allgemeine Bereiche" }}",
+                    weeks = 1,
+                    sessionsPerWeek = 3,
+                    minutesPerSession = 30,
+                    equipment = emptyList(),
+                ),
+            )
+
         response.map { parsePersonalizedTips(it) }
     } catch (e: Exception) {
         Result.failure(e)
@@ -145,20 +152,24 @@ suspend fun AppAi.generatePersonalizedTips(
 suspend fun AppAi.generateWeightLossInsights(
     context: Context,
     progressData: List<WeightLossProgressData>,
-    currentProgram: WeightLossProgramEntity?
+    currentProgram: WeightLossProgramEntity?,
 ): Result<WeightLossInsights> {
     val programInfo = currentProgram?.let { "Programm: ${it.startWeight}kg → ${it.targetWeight}kg" } ?: "Kein Programm"
     val dataPoints = progressData.size
-    
+
     return try {
-        val response = planWithOptimalProvider(context, PlanRequest(
-            goal = "Gewichtsverlust-Insights für $dataPoints Datenpunkte, $programInfo",
-            weeks = 1,
-            sessionsPerWeek = 1,
-            minutesPerSession = 15,
-            equipment = emptyList()
-        ))
-        
+        val response =
+            planWithOptimalProvider(
+                context,
+                PlanRequest(
+                    goal = "Gewichtsverlust-Insights für $dataPoints Datenpunkte, $programInfo",
+                    weeks = 1,
+                    sessionsPerWeek = 1,
+                    minutesPerSession = 15,
+                    equipment = emptyList(),
+                ),
+            )
+
         response.map { parseWeightLossInsights(it) }
     } catch (e: Exception) {
         Result.failure(e)
@@ -196,81 +207,83 @@ private fun buildWeightLossPlanPrompt(request: WeightLossAiRequest): String {
         7. Motivations- und Durchhalte-Strategien
         
         Berücksichtige deutsche Essgewohnheiten und verfügbare Lebensmittel.
-    """.trimIndent()
+        """.trimIndent()
 }
 
 private fun buildPersonalizedTipsPrompt(request: PersonalizedTipsRequest): String {
-    val programInfo = request.currentProgram?.let {
-        "Aktuelles Programm: ${it.dailyCalorieTarget}kcal/Tag, Ziel: ${it.weeklyWeightLossGoal}kg/Woche"
-    } ?: "Kein aktives Programm"
-    
+    val programInfo =
+        request.currentProgram?.let {
+            "Aktuelles Programm: ${it.dailyCalorieTarget}kcal/Tag, Ziel: ${it.weeklyWeightLossGoal}kg/Woche"
+        } ?: "Kein aktives Programm"
+
     return """
-        Analysiere das Gewichtsverlust-Verhalten und erstelle personalisierte Verbesserungstipps:
-        
-        $programInfo
-        
-        Einhaltungsverhalten:
-        - Durchschnittliche Einhaltung: ${(request.adherencePattern.averageAdherence * 100).toInt()}%
-        - Trend: ${request.adherencePattern.weeklyTrend}
-        - Beste Tage: ${request.adherencePattern.bestDays.joinToString(", ")}
-        - Schwierige Tage: ${request.adherencePattern.challengingDays.joinToString(", ")}
-        - Motivationsfaktoren: ${request.adherencePattern.motivationalFactors.joinToString(", ")}
-        
-        Problembereiche: ${request.strugglingAreas.joinToString(", ")}
-        
-        Fortschrittsdaten der letzten Wochen:
-        ${request.progressData.takeLast(7).joinToString("\n") { data ->
-            "${data.date}: ${data.weight}kg, BMI ${data.bmi}, Einhaltung ${(data.adherenceScore * 100).toInt()}%"
-        }}
-        
-        Erstelle 5-7 spezifische, umsetzbare Tipps in den Kategorien:
-        - Ernährung
-        - Training
-        - Mindset/Motivation
-        - Gewohnheiten
-        
-        Jeder Tipp sollte enthalten:
-        - Kurzen Titel
-        - Beschreibung des Problems/der Chance
-        - 2-3 konkrete Handlungsschritte
-        - Erwarteten Nutzen
-        - Schwierigkeitsgrad
-    """.trimIndent()
+                    Analysiere das Gewichtsverlust-Verhalten und erstelle personalisierte Verbesserungstipps:
+                    
+                    $programInfo
+                    
+                    Einhaltungsverhalten:
+                    - Durchschnittliche Einhaltung: ${(request.adherencePattern.averageAdherence * 100).toInt()}%
+                    - Trend: ${request.adherencePattern.weeklyTrend}
+                    - Beste Tage: ${request.adherencePattern.bestDays.joinToString(", ")}
+                    - Schwierige Tage: ${request.adherencePattern.challengingDays.joinToString(", ")}
+                    - Motivationsfaktoren: ${request.adherencePattern.motivationalFactors.joinToString(", ")}
+                    
+                    Problembereiche: ${request.strugglingAreas.joinToString(", ")}
+                    
+                    Fortschrittsdaten der letzten Wochen:
+                    ${request.progressData.takeLast(7).joinToString("\n") { data ->
+        "${data.date}: ${data.weight}kg, BMI ${data.bmi}, Einhaltung ${(data.adherenceScore * 100).toInt()}%"
+    }}
+                    
+                    Erstelle 5-7 spezifische, umsetzbare Tipps in den Kategorien:
+                    - Ernährung
+                    - Training
+                    - Mindset/Motivation
+                    - Gewohnheiten
+                    
+                    Jeder Tipp sollte enthalten:
+                    - Kurzen Titel
+                    - Beschreibung des Problems/der Chance
+                    - 2-3 konkrete Handlungsschritte
+                    - Erwarteten Nutzen
+                    - Schwierigkeitsgrad
+        """.trimIndent()
 }
 
 private fun buildInsightsPrompt(
     progressData: List<WeightLossProgressData>,
-    currentProgram: WeightLossProgramEntity?
+    currentProgram: WeightLossProgramEntity?,
 ): String {
     val recentData = progressData.takeLast(14)
-    val programInfo = currentProgram?.let {
-        "Programm: ${it.startWeight}kg → ${it.targetWeight}kg, ${it.dailyCalorieTarget}kcal/Tag"
-    } ?: "Kein aktives Programm"
-    
+    val programInfo =
+        currentProgram?.let {
+            "Programm: ${it.startWeight}kg → ${it.targetWeight}kg, ${it.dailyCalorieTarget}kcal/Tag"
+        } ?: "Kein aktives Programm"
+
     return """
-        Analysiere den Gewichtsverlust-Fortschritt und erstelle aufschlussreiche Insights:
-        
-        $programInfo
-        
-        Fortschrittsdaten der letzten 2 Wochen:
-        ${recentData.joinToString("\n") { data ->
-            "${data.date}: ${data.weight}kg (BMI ${data.bmi}), " +
+                    Analysiere den Gewichtsverlust-Fortschritt und erstelle aufschlussreiche Insights:
+                    
+                    $programInfo
+                    
+                    Fortschrittsdaten der letzten 2 Wochen:
+                    ${recentData.joinToString("\n") { data ->
+        "${data.date}: ${data.weight}kg (BMI ${data.bmi}), " +
             "Kalorien: ${data.caloriesConsumed}/${data.caloriesTarget}, " +
             "Einhaltung: ${(data.adherenceScore * 100).toInt()}%, " +
             "Stimmung: ${data.moodScore ?: "k.A."}/10, " +
             "Stress: ${data.stressLevel ?: "k.A."}/10"
-        }}
-        
-        Bitte analysiere und erstelle:
-        1. Zusammenfassung des Fortschritts
-        2. Erfolgsfaktoren identifizieren
-        3. Verbesserungsbereiche
-        4. Realistische Prognose für Zielerreichung
-        5. Motivierende Botschaft
-        6. Fokus für die nächste Woche
-        
-        Sei ehrlich aber motivierend. Erkenne Fortschritte an, auch wenn sie klein sind.
-    """.trimIndent()
+    }}
+                    
+                    Bitte analysiere und erstelle:
+                    1. Zusammenfassung des Fortschritts
+                    2. Erfolgsfaktoren identifizieren
+                    3. Verbesserungsbereiche
+                    4. Realistische Prognose für Zielerreichung
+                    5. Motivierende Botschaft
+                    6. Fokus für die nächste Woche
+                    
+                    Sei ehrlich aber motivierend. Erkenne Fortschritte an, auch wenn sie klein sind.
+        """.trimIndent()
 }
 
 /**
@@ -279,7 +292,7 @@ private fun buildInsightsPrompt(
 private fun parseWeightLossPlan(response: String): WeightLossPlan {
     // Simple parsing - in a real implementation, this would be more sophisticated
     val sections = response.split("\n\n")
-    
+
     return WeightLossPlan(
         summary = sections.firstOrNull() ?: "Individueller Gewichtsverlust-Plan erstellt",
         dailyCalorieTarget = extractCalorieTarget(response),
@@ -289,7 +302,7 @@ private fun parseWeightLossPlan(response: String): WeightLossPlan {
         behavioralTips = extractListItems(response, "tipp", "verhalten"),
         weeklyGoals = extractListItems(response, "ziel", "woche"),
         potentialChallenges = extractListItems(response, "hindernis", "herausforderung"),
-        motivationalStrategies = extractListItems(response, "motivation", "strategie")
+        motivationalStrategies = extractListItems(response, "motivation", "strategie"),
     )
 }
 
@@ -297,9 +310,9 @@ private fun parsePersonalizedTips(response: String): List<PersonalizedTip> {
     // Simple parsing - extract tips from response
     val tips = mutableListOf<PersonalizedTip>()
     val sections = response.split("\n")
-    
+
     var currentTip: MutableMap<String, String>? = null
-    
+
     sections.forEach { line ->
         when {
             line.contains("Tipp") && line.contains(":") -> {
@@ -315,16 +328,18 @@ private fun parsePersonalizedTips(response: String): List<PersonalizedTip> {
                     content.contains("Beschreibung") -> currentTip!!["description"] = content.substringAfter(":").trim()
                     content.contains("Schritte") -> currentTip!!["actionSteps"] = content.substringAfter(":").trim()
                     content.contains("Nutzen") -> currentTip!!["expectedBenefit"] = content.substringAfter(":").trim()
-                    content.contains("Schwierigkeit") -> currentTip!!["difficultyLevel"] = content.substringAfter(":").trim()
+                    content.contains(
+                        "Schwierigkeit",
+                    ) -> currentTip!!["difficultyLevel"] = content.substringAfter(":").trim()
                 }
             }
         }
     }
-    
+
     currentTip?.let { tip ->
         tips.add(createTipFromMap(tip))
     }
-    
+
     return tips.ifEmpty {
         // Fallback tips if parsing fails
         listOf(
@@ -334,24 +349,28 @@ private fun parsePersonalizedTips(response: String): List<PersonalizedTip> {
                 description = "Halte feste Essenszeiten ein",
                 actionSteps = listOf("3 Hauptmahlzeiten planen", "Snacks begrenzen"),
                 expectedBenefit = "Bessere Kalorienkontrolle",
-                difficultyLevel = "easy"
-            )
+                difficultyLevel = "easy",
+            ),
         )
     }
 }
 
 private fun parseWeightLossInsights(response: String): WeightLossInsights {
     return WeightLossInsights(
-        progressSummary = extractSection(response, "fortschritt", "zusammenfassung") 
-            ?: "Dein Gewichtsverlust-Journey zeigt positive Entwicklungen.",
+        progressSummary =
+            extractSection(response, "fortschritt", "zusammenfassung")
+                ?: "Dein Gewichtsverlust-Journey zeigt positive Entwicklungen.",
         keySuccessFactors = extractListItems(response, "erfolg", "faktor"),
         improvementAreas = extractListItems(response, "verbesserung", "bereich"),
-        predictedTimeToGoal = extractSection(response, "prognose", "ziel") 
-            ?: "Bleibe konsequent für beste Ergebnisse",
-        motivationalMessage = extractSection(response, "motivation", "botschaft") 
-            ?: "Du machst großartige Fortschritte! Weiter so!",
-        nextWeekFocus = extractSection(response, "fokus", "woche") 
-            ?: "Konzentriere dich auf Konsistenz bei Kalorienziel und Training"
+        predictedTimeToGoal =
+            extractSection(response, "prognose", "ziel")
+                ?: "Bleibe konsequent für beste Ergebnisse",
+        motivationalMessage =
+            extractSection(response, "motivation", "botschaft")
+                ?: "Du machst großartige Fortschritte! Weiter so!",
+        nextWeekFocus =
+            extractSection(response, "fokus", "woche")
+                ?: "Konzentriere dich auf Konsistenz bei Kalorienziel und Training",
     )
 }
 
@@ -363,11 +382,14 @@ private fun extractCalorieTarget(text: String): Int {
     return regex.find(text)?.groupValues?.get(1)?.toIntOrNull() ?: 1500
 }
 
-private fun extractSection(text: String, vararg keywords: String): String? {
+private fun extractSection(
+    text: String,
+    vararg keywords: String,
+): String? {
     val lines = text.split("\n")
     var inSection = false
     val sectionContent = mutableListOf<String>()
-    
+
     lines.forEach { line ->
         if (keywords.any { line.lowercase().contains(it) }) {
             inSection = true
@@ -378,14 +400,17 @@ private fun extractSection(text: String, vararg keywords: String): String? {
             sectionContent.add(line)
         }
     }
-    
+
     return sectionContent.joinToString("\n").takeIf { it.isNotBlank() }
 }
 
-private fun extractListItems(text: String, vararg keywords: String): List<String> {
+private fun extractListItems(
+    text: String,
+    vararg keywords: String,
+): List<String> {
     val lines = text.split("\n")
     val items = mutableListOf<String>()
-    
+
     lines.forEach { line ->
         if (line.startsWith("-") || line.startsWith("•") || line.startsWith("*")) {
             val item = line.substring(1).trim()
@@ -394,7 +419,7 @@ private fun extractListItems(text: String, vararg keywords: String): List<String
             }
         }
     }
-    
+
     return items.take(5) // Limit to 5 items
 }
 
@@ -405,7 +430,7 @@ private fun createTipFromMap(tipMap: Map<String, String>): PersonalizedTip {
         description = tipMap["description"] ?: "Verbesserungsvorschlag",
         actionSteps = tipMap["actionSteps"]?.split(",")?.map { it.trim() } ?: listOf("Umsetzen"),
         expectedBenefit = tipMap["expectedBenefit"] ?: "Positive Auswirkung",
-        difficultyLevel = tipMap["difficultyLevel"] ?: "medium"
+        difficultyLevel = tipMap["difficultyLevel"] ?: "medium",
     )
 }
 
@@ -437,17 +462,21 @@ private fun getRecommendedMinutesPerSession(activityLevel: String): Int {
 
 suspend fun AppAi.generatePersonalizedWorkout(
     context: Context,
-    request: AIPersonalTrainerRequest
+    request: AIPersonalTrainerRequest,
 ): Result<WorkoutPlan> {
     return try {
-        val response = planWithOptimalProvider(context, PlanRequest(
-            goal = "Personalisiertes Workout für ${request.userProfile.fitnessGoals.joinToString(", ")}",
-            weeks = 1,
-            sessionsPerWeek = 3,
-            minutesPerSession = request.availableTime,
-            equipment = request.equipment
-        ))
-        
+        val response =
+            planWithOptimalProvider(
+                context,
+                PlanRequest(
+                    goal = "Personalisiertes Workout für ${request.userProfile.fitnessGoals.joinToString(", ")}",
+                    weeks = 1,
+                    sessionsPerWeek = 3,
+                    minutesPerSession = request.availableTime,
+                    equipment = request.equipment,
+                ),
+            )
+
         response.map { parseWorkoutPlan(it, request.availableTime) }
     } catch (e: Exception) {
         Result.failure(e)
@@ -457,17 +486,23 @@ suspend fun AppAi.generatePersonalizedWorkout(
 suspend fun AppAi.generateNutritionAdvice(
     context: Context,
     userProfile: UserProfile,
-    goals: List<String>
+    goals: List<String>,
 ): Result<PersonalizedMealPlan> {
     return try {
-        val response = planWithOptimalProvider(context, PlanRequest(
-            goal = "Ernährungsplan für ${goals.joinToString(", ")} - ${userProfile.currentWeight}kg → ${userProfile.targetWeight}kg",
-            weeks = 1,
-            sessionsPerWeek = 7, // Daily meals
-            minutesPerSession = 30,
-            equipment = emptyList()
-        ))
-        
+        val response =
+            planWithOptimalProvider(
+                context,
+                PlanRequest(
+                    goal = "Ernährungsplan für ${goals.joinToString(
+                        ", ",
+                    )} - ${userProfile.currentWeight}kg → ${userProfile.targetWeight}kg",
+                    weeks = 1,
+                    sessionsPerWeek = 7, // Daily meals
+                    minutesPerSession = 30,
+                    equipment = emptyList(),
+                ),
+            )
+
         response.map { parseNutritionPlan(it, userProfile) }
     } catch (e: Exception) {
         Result.failure(e)
@@ -477,17 +512,21 @@ suspend fun AppAi.generateNutritionAdvice(
 suspend fun AppAi.analyzeProgress(
     context: Context,
     progressData: List<WeightEntry>,
-    userProfile: UserProfile
+    userProfile: UserProfile,
 ): Result<ProgressAnalysis> {
     return try {
-        val response = planWithOptimalProvider(context, PlanRequest(
-            goal = "Fortschritts-Analyse für ${progressData.size} Gewichtsmessungen",
-            weeks = 1,
-            sessionsPerWeek = 1,
-            minutesPerSession = 15,
-            equipment = emptyList()
-        ))
-        
+        val response =
+            planWithOptimalProvider(
+                context,
+                PlanRequest(
+                    goal = "Fortschritts-Analyse für ${progressData.size} Gewichtsmessungen",
+                    weeks = 1,
+                    sessionsPerWeek = 1,
+                    minutesPerSession = 15,
+                    equipment = emptyList(),
+                ),
+            )
+
         response.map { parseProgressAnalysis(it, progressData) }
     } catch (e: Exception) {
         Result.failure(e)
@@ -497,17 +536,21 @@ suspend fun AppAi.analyzeProgress(
 suspend fun AppAi.generateMotivation(
     context: Context,
     userProfile: UserProfile,
-    recentProgress: List<WeightEntry>
+    recentProgress: List<WeightEntry>,
 ): Result<MotivationalMessage> {
     return try {
-        val response = planWithOptimalProvider(context, PlanRequest(
-            goal = "Motivationsnachricht für Fitness-Journey",
-            weeks = 1,
-            sessionsPerWeek = 1,
-            minutesPerSession = 5,
-            equipment = emptyList()
-        ))
-        
+        val response =
+            planWithOptimalProvider(
+                context,
+                PlanRequest(
+                    goal = "Motivationsnachricht für Fitness-Journey",
+                    weeks = 1,
+                    sessionsPerWeek = 1,
+                    minutesPerSession = 5,
+                    equipment = emptyList(),
+                ),
+            )
+
         response.map { parseMotivationalMessage(it) }
     } catch (e: Exception) {
         Result.failure(e)
@@ -516,28 +559,34 @@ suspend fun AppAi.generateMotivation(
 
 suspend fun AppAi.getPersonalizedRecommendations(
     context: Context,
-    userContext: UserContext
+    userContext: UserContext,
 ): Result<AIPersonalTrainerResponse> {
     return try {
-        val workoutResult = generatePersonalizedWorkout(context, AIPersonalTrainerRequest(
-            userProfile = userContext.profile,
-            fitnessLevel = userContext.fitnessLevel,
-            availableTime = 45,
-            equipment = userContext.availableEquipment,
-            goals = userContext.currentGoals
-        ))
-        
+        val workoutResult =
+            generatePersonalizedWorkout(
+                context,
+                AIPersonalTrainerRequest(
+                    userProfile = userContext.profile,
+                    fitnessLevel = userContext.fitnessLevel,
+                    availableTime = 45,
+                    equipment = userContext.availableEquipment,
+                    goals = userContext.currentGoals,
+                ),
+            )
+
         val nutritionResult = generateNutritionAdvice(context, userContext.profile, userContext.currentGoals)
         val progressResult = analyzeProgress(context, userContext.recentProgress, userContext.profile)
         val motivationResult = generateMotivation(context, userContext.profile, userContext.recentProgress)
-        
-        Result.success(AIPersonalTrainerResponse(
-            workoutPlan = workoutResult.getOrNull(),
-            mealPlan = nutritionResult.getOrNull(),
-            progressAnalysis = progressResult.getOrNull(),
-            motivation = motivationResult.getOrNull(),
-            recommendations = generateBasicRecommendations()
-        ))
+
+        Result.success(
+            AIPersonalTrainerResponse(
+                workoutPlan = workoutResult.getOrNull(),
+                mealPlan = nutritionResult.getOrNull(),
+                progressAnalysis = progressResult.getOrNull(),
+                motivation = motivationResult.getOrNull(),
+                recommendations = generateBasicRecommendations(),
+            ),
+        )
     } catch (e: Exception) {
         Result.failure(e)
     }
@@ -547,7 +596,10 @@ suspend fun AppAi.getPersonalizedRecommendations(
  * Parsing Functions for AI Personal Trainer
  */
 
-private fun parseWorkoutPlan(response: String, duration: Int): WorkoutPlan {
+private fun parseWorkoutPlan(
+    response: String,
+    duration: Int,
+): WorkoutPlan {
     val exercises = extractExercises(response)
     return WorkoutPlan(
         title = "Personalisiertes Workout",
@@ -555,26 +607,32 @@ private fun parseWorkoutPlan(response: String, duration: Int): WorkoutPlan {
         exercises = exercises,
         estimatedDuration = duration,
         difficulty = extractDifficulty(response),
-        equipment = extractEquipment(response)
+        equipment = extractEquipment(response),
     )
 }
 
-private fun parseNutritionPlan(response: String, userProfile: UserProfile): PersonalizedMealPlan {
+private fun parseNutritionPlan(
+    response: String,
+    userProfile: UserProfile,
+): PersonalizedMealPlan {
     val targetCalories = calculateTargetCalories(userProfile)
     return PersonalizedMealPlan(
         title = "Personalisierter Ernährungsplan",
         dailyCalories = targetCalories,
         macroTargets = calculateMacros(targetCalories),
-        meals = extractMeals(response)
+        meals = extractMeals(response),
     )
 }
 
-private fun parseProgressAnalysis(response: String, progressData: List<WeightEntry>): ProgressAnalysis {
+private fun parseProgressAnalysis(
+    response: String,
+    progressData: List<WeightEntry>,
+): ProgressAnalysis {
     return ProgressAnalysis(
         weightTrend = determineWeightTrend(progressData),
         adherenceScore = 0.8f, // Simplified for now
         insights = extractListItems(response, "insight", "erkenntnis"),
-        recommendations = extractListItems(response, "empfehlung", "tipp")
+        recommendations = extractListItems(response, "empfehlung", "tipp"),
     )
 }
 
@@ -583,7 +641,7 @@ private fun parseMotivationalMessage(response: String): MotivationalMessage {
         title = "Deine tägliche Motivation",
         message = extractSection(response, "motivation") ?: "Du machst großartige Fortschritte! Weiter so!",
         type = "encouragement",
-        actionSuggestion = extractSection(response, "aktion")
+        actionSuggestion = extractSection(response, "aktion"),
     )
 }
 
@@ -594,27 +652,29 @@ private fun parseMotivationalMessage(response: String): MotivationalMessage {
 private fun extractExercises(text: String): List<Exercise> {
     val exercises = mutableListOf<Exercise>()
     val lines = text.split("\n")
-    
+
     lines.forEach { line ->
         if (line.contains("Übung") || line.contains("Exercise") || line.startsWith("-")) {
             val exerciseName = line.replace(Regex("^-\\s*"), "").split(":").first().trim()
             if (exerciseName.isNotBlank()) {
-                exercises.add(Exercise(
-                    name = exerciseName,
-                    sets = 3,
-                    reps = "10-12",
-                    restTime = "60 Sekunden",
-                    instructions = "Führe die Übung kontrolliert aus"
-                ))
+                exercises.add(
+                    Exercise(
+                        name = exerciseName,
+                        sets = 3,
+                        reps = "10-12",
+                        restTime = "60 Sekunden",
+                        instructions = "Führe die Übung kontrolliert aus",
+                    ),
+                )
             }
         }
     }
-    
+
     return exercises.ifEmpty {
         listOf(
             Exercise("Liegestütze", 3, "8-12", "60 Sekunden", "Klassische Liegestütze für Oberkörper"),
             Exercise("Kniebeugen", 3, "12-15", "60 Sekunden", "Grundlegende Beinübung"),
-            Exercise("Plank", 3, "30-60 Sekunden", "30 Sekunden", "Halte die Position stabil")
+            Exercise("Plank", 3, "30-60 Sekunden", "30 Sekunden", "Halte die Position stabil"),
         )
     }
 }
@@ -640,50 +700,52 @@ private fun extractMeals(text: String): List<MealPlan> {
         MealPlan("breakfast", "Protein-Frühstück", 400, "Haferflocken mit Beeren und Joghurt"),
         MealPlan("lunch", "Ausgewogenes Mittagessen", 500, "Hähnchen mit Gemüse und Reis"),
         MealPlan("dinner", "Leichtes Abendessen", 450, "Fisch mit gedünstetem Gemüse"),
-        MealPlan("snack", "Gesunder Snack", 200, "Nüsse oder Obst")
+        MealPlan("snack", "Gesunder Snack", 200, "Nüsse oder Obst"),
     )
 }
 
 private fun calculateTargetCalories(userProfile: UserProfile): Int {
     // Simplified BMR calculation
-    val bmr = if (userProfile.gender.lowercase() == "male") {
-        88.362 + (13.397 * userProfile.currentWeight) + (4.799 * userProfile.height) - (5.677 * userProfile.age)
-    } else {
-        447.593 + (9.247 * userProfile.currentWeight) + (3.098 * userProfile.height) - (4.330 * userProfile.age)
-    }
-    
-    val activityMultiplier = when (userProfile.activityLevel.lowercase()) {
-        "sedentary" -> 1.2
-        "lightly_active" -> 1.375
-        "moderately_active" -> 1.55
-        "very_active" -> 1.725
-        "extra_active" -> 1.9
-        else -> 1.55
-    }
-    
+    val bmr =
+        if (userProfile.gender.lowercase() == "male") {
+            88.362 + (13.397 * userProfile.currentWeight) + (4.799 * userProfile.height) - (5.677 * userProfile.age)
+        } else {
+            447.593 + (9.247 * userProfile.currentWeight) + (3.098 * userProfile.height) - (4.330 * userProfile.age)
+        }
+
+    val activityMultiplier =
+        when (userProfile.activityLevel.lowercase()) {
+            "sedentary" -> 1.2
+            "lightly_active" -> 1.375
+            "moderately_active" -> 1.55
+            "very_active" -> 1.725
+            "extra_active" -> 1.9
+            else -> 1.55
+        }
+
     val tdee = bmr * activityMultiplier
     val deficit = if (userProfile.targetWeight < userProfile.currentWeight) 500 else 0
-    
+
     return (tdee - deficit).toInt()
 }
 
 private fun calculateMacros(calories: Int): MacroTargets {
     val protein = (calories * 0.3 / 4).toInt() // 30% protein
-    val carbs = (calories * 0.4 / 4).toInt()   // 40% carbs
-    val fat = (calories * 0.3 / 9).toInt()     // 30% fat
-    
+    val carbs = (calories * 0.4 / 4).toInt() // 40% carbs
+    val fat = (calories * 0.3 / 9).toInt() // 30% fat
+
     return MacroTargets(protein, carbs, fat)
 }
 
 private fun determineWeightTrend(progressData: List<WeightEntry>): String {
     if (progressData.size < 2) return "insufficient_data"
-    
+
     val recent = progressData.takeLast(3).map { it.weight }
     val older = progressData.take(3).map { it.weight }
-    
+
     val recentAvg = recent.average()
     val olderAvg = older.average()
-    
+
     return when {
         recentAvg < olderAvg - 0.5 -> "decreasing"
         recentAvg > olderAvg + 0.5 -> "increasing"
@@ -697,20 +759,20 @@ private fun generateBasicRecommendations(): List<AIRecommendation> {
             title = "Tägliches Workout",
             description = "Bleibe mit deinem Trainingsplan konsistent",
             type = "workout",
-            priority = "high"
+            priority = "high",
         ),
         AIRecommendation(
             title = "Hydration Check",
             description = "Trinke mindestens 2 Liter Wasser täglich",
             type = "habit",
-            priority = "medium"
+            priority = "medium",
         ),
         AIRecommendation(
             title = "Schlaf Optimierung",
             description = "7-9 Stunden Schlaf für beste Erholung",
             type = "habit",
-            priority = "high"
-        )
+            priority = "high",
+        ),
     )
 }
 
@@ -723,14 +785,14 @@ suspend fun AppAi.generateWorkoutProgression(
     context: Context,
     exercise: com.example.fitapp.ui.screens.ExerciseStep,
     performanceHistory: List<com.example.fitapp.data.db.WorkoutPerformanceEntity>,
-    userProfile: com.example.fitapp.ai.UserWorkoutProfile
+    userProfile: com.example.fitapp.ai.UserWorkoutProfile,
 ): Result<com.example.fitapp.ai.ProgressionSuggestion> {
-    
     if (performanceHistory.isEmpty()) {
         return Result.success(createDefaultProgression(exercise, userProfile))
     }
-    
-    val prompt = """
+
+    val prompt =
+        """
         Als erfahrener Personal Trainer analysiere die Trainingsleistung und erstelle eine optimale Progression.
         
         Übung: ${exercise.name}
@@ -768,16 +830,20 @@ suspend fun AppAi.generateWorkoutProgression(
         SICHERHEIT:
         - [Hinweis 1]
         - [Hinweis 2]
-    """.trimIndent()
-    
+        """.trimIndent()
+
     return try {
-        val response = planWithOptimalProvider(context, PlanRequest(
-            goal = "Workout Progression für ${exercise.name}",
-            weeks = 1,
-            sessionsPerWeek = 3,
-            minutesPerSession = 30,
-            equipment = userProfile.availableEquipment
-        ))
+        val response =
+            planWithOptimalProvider(
+                context,
+                PlanRequest(
+                    goal = "Workout Progression für ${exercise.name}",
+                    weeks = 1,
+                    sessionsPerWeek = 3,
+                    minutesPerSession = 30,
+                    equipment = userProfile.availableEquipment,
+                ),
+            )
         Result.success(parseProgressionResponse(response.getOrThrow(), exercise, performanceHistory))
     } catch (e: Exception) {
         Result.failure(e)
@@ -790,10 +856,10 @@ suspend fun AppAi.generateWorkoutProgression(
 suspend fun AppAi.analyzeFormQuality(
     context: Context,
     sensorData: com.example.fitapp.ai.MovementData,
-    exerciseType: String
+    exerciseType: String,
 ): Result<com.example.fitapp.ai.FormQualityAssessment> {
-    
-    val prompt = """
+    val prompt =
+        """
         Als Bewegungsanalyst bewerte die Übungsausführung basierend auf Sensordaten.
         
         Übung: $exerciseType
@@ -823,16 +889,20 @@ suspend fun AppAi.analyzeFormQuality(
         POSITIV:
         - [Aspekt 1]
         - [Aspekt 2]
-    """.trimIndent()
-    
+        """.trimIndent()
+
     return try {
-        val response = planWithOptimalProvider(context, PlanRequest(
-            goal = "Form Analysis für $exerciseType",
-            weeks = 1,
-            sessionsPerWeek = 1,
-            minutesPerSession = 10,
-            equipment = listOf("Sensoren")
-        ))
+        val response =
+            planWithOptimalProvider(
+                context,
+                PlanRequest(
+                    goal = "Form Analysis für $exerciseType",
+                    weeks = 1,
+                    sessionsPerWeek = 1,
+                    minutesPerSession = 10,
+                    equipment = listOf("Sensoren"),
+                ),
+            )
         Result.success(parseFormAnalysisResponse(response.getOrThrow()))
     } catch (e: Exception) {
         Result.failure(e)
@@ -845,10 +915,10 @@ suspend fun AppAi.analyzeFormQuality(
 suspend fun AppAi.generateCoachingTips(
     context: Context,
     currentPerformance: com.example.fitapp.data.db.WorkoutPerformanceEntity,
-    exerciseContext: com.example.fitapp.ai.WorkoutContext
+    exerciseContext: com.example.fitapp.ai.WorkoutContext,
 ): Result<List<com.example.fitapp.ai.CoachingTip>> {
-    
-    val prompt = """
+    val prompt =
+        """
         Als Personal Trainer gib sofortige Coaching-Tipps für die aktuelle Übung.
         
         Aktuelle Übung: ${exerciseContext.currentExercise?.name}
@@ -869,16 +939,20 @@ suspend fun AppAi.generateCoachingTips(
         PRIORITÄT: [LOW/MEDIUM/HIGH/CRITICAL]
         NACHRICHT: [Kurzer, präziser Tipp]
         AKTION: [Optionale konkrete Handlung]
-    """.trimIndent()
-    
+        """.trimIndent()
+
     return try {
-        val response = planWithOptimalProvider(context, PlanRequest(
-            goal = "Coaching Tips für ${exerciseContext.currentExercise?.name}",
-            weeks = 1,
-            sessionsPerWeek = 1,
-            minutesPerSession = 5,
-            equipment = emptyList()
-        ))
+        val response =
+            planWithOptimalProvider(
+                context,
+                PlanRequest(
+                    goal = "Coaching Tips für ${exerciseContext.currentExercise?.name}",
+                    weeks = 1,
+                    sessionsPerWeek = 1,
+                    minutesPerSession = 5,
+                    equipment = emptyList(),
+                ),
+            )
         Result.success(parseCoachingTipsResponse(response.getOrThrow()))
     } catch (e: Exception) {
         Result.failure(e)
@@ -891,10 +965,10 @@ suspend fun AppAi.generateCoachingTips(
 suspend fun AppAi.predictWorkoutOutcome(
     context: Context,
     currentSession: com.example.fitapp.data.db.WorkoutSessionEntity,
-    userHistory: com.example.fitapp.ai.UserWorkoutProfile
+    userHistory: com.example.fitapp.ai.UserWorkoutProfile,
 ): Result<com.example.fitapp.ai.PerformancePrediction> {
-    
-    val prompt = """
+    val prompt =
+        """
         Als Trainingsanalyst prognostiziere das Workout-Ergebnis basierend auf aktuellen Daten.
         
         Aktuelle Session:
@@ -922,16 +996,20 @@ suspend fun AppAi.predictWorkoutOutcome(
         OPTIMIERUNGEN:
         - [Empfehlung 1]
         - [Empfehlung 2]
-    """.trimIndent()
-    
+        """.trimIndent()
+
     return try {
-        val response = planWithOptimalProvider(context, PlanRequest(
-            goal = "Performance Prediction für Training",
-            weeks = 1,
-            sessionsPerWeek = 1,
-            minutesPerSession = 60,
-            equipment = emptyList()
-        ))
+        val response =
+            planWithOptimalProvider(
+                context,
+                PlanRequest(
+                    goal = "Performance Prediction für Training",
+                    weeks = 1,
+                    sessionsPerWeek = 1,
+                    minutesPerSession = 60,
+                    equipment = emptyList(),
+                ),
+            )
         Result.success(parsePerformancePredictionResponse(response.getOrThrow()))
     } catch (e: Exception) {
         Result.failure(e)
@@ -942,45 +1020,47 @@ suspend fun AppAi.predictWorkoutOutcome(
 
 private fun createDefaultProgression(
     exercise: com.example.fitapp.ui.screens.ExerciseStep,
-    userProfile: com.example.fitapp.ai.UserWorkoutProfile
+    userProfile: com.example.fitapp.ai.UserWorkoutProfile,
 ): com.example.fitapp.ai.ProgressionSuggestion {
     return com.example.fitapp.ai.ProgressionSuggestion(
         exerciseId = exercise.name,
         exerciseName = exercise.name,
         currentWeight = 0f,
-        recommendedWeight = when (userProfile.fitnessLevel) {
-            "beginner" -> 5f
-            "intermediate" -> 10f
-            "advanced" -> 15f
-            else -> 8f
-        },
+        recommendedWeight =
+            when (userProfile.fitnessLevel) {
+                "beginner" -> 5f
+                "intermediate" -> 10f
+                "advanced" -> 15f
+                else -> 8f
+            },
         currentReps = 8,
         recommendedReps = 10,
         reason = "Basis-Progression für ${userProfile.fitnessLevel} Level",
         confidence = 0.7f,
-        alternatives = listOf(
-            com.example.fitapp.ai.ProgressionAlternative(
-                type = "rep_increase",
-                description = "Erhöhe Wiederholungen statt Gewicht",
-                weight = null,
-                reps = 12,
-                difficulty = "easier"
-            )
-        )
+        alternatives =
+            listOf(
+                com.example.fitapp.ai.ProgressionAlternative(
+                    type = "rep_increase",
+                    description = "Erhöhe Wiederholungen statt Gewicht",
+                    weight = null,
+                    reps = 12,
+                    difficulty = "easier",
+                ),
+            ),
     )
 }
 
 private fun parseProgressionResponse(
     response: String,
     exercise: com.example.fitapp.ui.screens.ExerciseStep,
-    history: List<com.example.fitapp.data.db.WorkoutPerformanceEntity>
+    history: List<com.example.fitapp.data.db.WorkoutPerformanceEntity>,
 ): com.example.fitapp.ai.ProgressionSuggestion {
     val lines = response.lines()
-    
+
     var recommendedWeight = history.lastOrNull()?.weight ?: 5f
     var recommendedReps = history.lastOrNull()?.reps ?: 10
     var reason = "AI-basierte Progression"
-    
+
     for (line in lines) {
         when {
             line.startsWith("Gewicht:") -> {
@@ -994,7 +1074,7 @@ private fun parseProgressionResponse(
             }
         }
     }
-    
+
     return com.example.fitapp.ai.ProgressionSuggestion(
         exerciseId = exercise.name,
         exerciseName = exercise.name,
@@ -1004,20 +1084,20 @@ private fun parseProgressionResponse(
         recommendedReps = recommendedReps,
         reason = reason,
         confidence = 0.85f,
-        alternatives = parseAlternatives(response)
+        alternatives = parseAlternatives(response),
     )
 }
 
 private fun parseFormAnalysisResponse(response: String): com.example.fitapp.ai.FormQualityAssessment {
     val lines = response.lines()
-    
+
     var overallQuality = 0.8f
     val improvements = mutableListOf<String>()
     val risks = mutableListOf<String>()
     val positives = mutableListOf<String>()
-    
+
     var currentSection = ""
-    
+
     for (line in lines) {
         when {
             line.startsWith("BEWERTUNG:") -> {
@@ -1037,21 +1117,21 @@ private fun parseFormAnalysisResponse(response: String): com.example.fitapp.ai.F
             }
         }
     }
-    
+
     return com.example.fitapp.ai.FormQualityAssessment(
         overallQuality = overallQuality,
         improvements = improvements,
         riskFactors = risks,
-        positiveAspects = positives
+        positiveAspects = positives,
     )
 }
 
 private fun parseCoachingTipsResponse(response: String): List<com.example.fitapp.ai.CoachingTip> {
     val tips = mutableListOf<com.example.fitapp.ai.CoachingTip>()
     val lines = response.lines()
-    
+
     var currentTip: MutableMap<String, String> = mutableMapOf()
-    
+
     for (line in lines) {
         when {
             line.startsWith("TYP:") -> {
@@ -1066,58 +1146,60 @@ private fun parseCoachingTipsResponse(response: String): List<com.example.fitapp
             line.startsWith("AKTION:") -> currentTip["action"] = line.substringAfter(":").trim()
         }
     }
-    
+
     if (currentTip.isNotEmpty()) {
         tips.add(createCoachingTip(currentTip))
     }
-    
+
     return tips.ifEmpty {
         listOf(
             com.example.fitapp.ai.CoachingTip(
                 type = com.example.fitapp.ai.CoachingTipType.MOTIVATION,
                 message = "Du machst das großartig! Bleib fokussiert.",
-                priority = com.example.fitapp.ai.Priority.MEDIUM
-            )
+                priority = com.example.fitapp.ai.Priority.MEDIUM,
+            ),
         )
     }
 }
 
 private fun createCoachingTip(tipData: Map<String, String>): com.example.fitapp.ai.CoachingTip {
-    val type = when (tipData["type"]?.uppercase()) {
-        "FORM_IMPROVEMENT" -> com.example.fitapp.ai.CoachingTipType.FORM_IMPROVEMENT
-        "REST_OPTIMIZATION" -> com.example.fitapp.ai.CoachingTipType.REST_OPTIMIZATION
-        "MOTIVATION" -> com.example.fitapp.ai.CoachingTipType.MOTIVATION
-        "SAFETY_WARNING" -> com.example.fitapp.ai.CoachingTipType.SAFETY_WARNING
-        "TECHNIQUE_TIP" -> com.example.fitapp.ai.CoachingTipType.TECHNIQUE_TIP
-        else -> com.example.fitapp.ai.CoachingTipType.MOTIVATION
-    }
-    
-    val priority = when (tipData["priority"]?.uppercase()) {
-        "LOW" -> com.example.fitapp.ai.Priority.LOW
-        "MEDIUM" -> com.example.fitapp.ai.Priority.MEDIUM
-        "HIGH" -> com.example.fitapp.ai.Priority.HIGH
-        "CRITICAL" -> com.example.fitapp.ai.Priority.CRITICAL
-        else -> com.example.fitapp.ai.Priority.MEDIUM
-    }
-    
+    val type =
+        when (tipData["type"]?.uppercase()) {
+            "FORM_IMPROVEMENT" -> com.example.fitapp.ai.CoachingTipType.FORM_IMPROVEMENT
+            "REST_OPTIMIZATION" -> com.example.fitapp.ai.CoachingTipType.REST_OPTIMIZATION
+            "MOTIVATION" -> com.example.fitapp.ai.CoachingTipType.MOTIVATION
+            "SAFETY_WARNING" -> com.example.fitapp.ai.CoachingTipType.SAFETY_WARNING
+            "TECHNIQUE_TIP" -> com.example.fitapp.ai.CoachingTipType.TECHNIQUE_TIP
+            else -> com.example.fitapp.ai.CoachingTipType.MOTIVATION
+        }
+
+    val priority =
+        when (tipData["priority"]?.uppercase()) {
+            "LOW" -> com.example.fitapp.ai.Priority.LOW
+            "MEDIUM" -> com.example.fitapp.ai.Priority.MEDIUM
+            "HIGH" -> com.example.fitapp.ai.Priority.HIGH
+            "CRITICAL" -> com.example.fitapp.ai.Priority.CRITICAL
+            else -> com.example.fitapp.ai.Priority.MEDIUM
+        }
+
     return com.example.fitapp.ai.CoachingTip(
         type = type,
         message = tipData["message"] ?: "Bleib dran!",
         priority = priority,
         actionable = tipData["action"]?.isNotBlank() == true,
-        action = tipData["action"]
+        action = tipData["action"],
     )
 }
 
 private fun parsePerformancePredictionResponse(response: String): com.example.fitapp.ai.PerformancePrediction {
     val lines = response.lines()
-    
+
     var expectedVolume = 0f
     var expectedDuration = 60
     var fatigueForecast = "medium"
     var restAdjustment = 0
     var confidence = 0.75f
-    
+
     for (line in lines) {
         when {
             line.startsWith("ERWARTETES_VOLUME:") -> {
@@ -1139,27 +1221,42 @@ private fun parsePerformancePredictionResponse(response: String): com.example.fi
             }
         }
     }
-    
+
     return com.example.fitapp.ai.PerformancePrediction(
         expectedPerformanceChange = expectedVolume / 100f, // Convert volume to performance change percentage
-        plateauRisk = if (fatigueForecast == "high") 0.8f else if (fatigueForecast == "medium") 0.5f else 0.2f,
-        injuryRisk = if (restAdjustment > 120) 0.7f else if (restAdjustment > 60) 0.4f else 0.1f,
-        recommendedActions = listOf(
-            "Adjust training volume to ${expectedVolume}%",
-            "Target duration: ${expectedDuration} minutes",
-            if (restAdjustment > 0) "Increase rest by ${restAdjustment} seconds" else "Maintain current rest intervals"
-        ).filter { it.isNotEmpty() },
+        plateauRisk =
+            if (fatigueForecast == "high") {
+                0.8f
+            } else if (fatigueForecast == "medium") {
+                0.5f
+            } else {
+                0.2f
+            },
+        injuryRisk =
+            if (restAdjustment > 120) {
+                0.7f
+            } else if (restAdjustment > 60) {
+                0.4f
+            } else {
+                0.1f
+            },
+        recommendedActions =
+            listOf(
+                "Adjust training volume to $expectedVolume%",
+                "Target duration: $expectedDuration minutes",
+                if (restAdjustment > 0) "Increase rest by $restAdjustment seconds" else "Maintain current rest intervals",
+            ).filter { it.isNotEmpty() },
         confidence = confidence,
-        timeframe = "1-2 weeks"
+        timeframe = "1-2 weeks",
     )
 }
 
 private fun parseAlternatives(response: String): List<com.example.fitapp.ai.ProgressionAlternative> {
     val alternatives = mutableListOf<com.example.fitapp.ai.ProgressionAlternative>()
     val lines = response.lines()
-    
+
     var inAlternativesSection = false
-    
+
     for (line in lines) {
         when {
             line.startsWith("ALTERNATIVEN:") -> inAlternativesSection = true
@@ -1171,13 +1268,13 @@ private fun parseAlternatives(response: String): List<com.example.fitapp.ai.Prog
                         description = description,
                         weight = null,
                         reps = null,
-                        difficulty = "same"
-                    )
+                        difficulty = "same",
+                    ),
                 )
             }
             line.startsWith("SICHERHEIT:") -> inAlternativesSection = false
         }
     }
-    
+
     return alternatives
 }

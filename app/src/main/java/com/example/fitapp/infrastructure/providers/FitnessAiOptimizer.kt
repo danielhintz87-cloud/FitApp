@@ -3,27 +3,29 @@ package com.example.fitapp.infrastructure.providers
 import android.content.Context
 import android.graphics.Bitmap
 import com.example.fitapp.domain.entities.*
-import com.example.fitapp.domain.repositories.AiProviderRepository
 
 /**
  * Demo-Implementierung der funktionsbasierten AI-Optimierung
- * 
+ *
  * Zeigt die praktische Anwendung der intelligenten Modellauswahl für
  * verschiedene Fitness-App Funktionen mit optimalem Kosten-Nutzen-Verhältnis.
  */
 class FitnessAiOptimizer(
     private val context: Context,
-    private val aiRouter: IntelligentAiRouter
+    private val aiRouter: IntelligentAiRouter,
 ) {
-
     /**
      * 🖼️ MULTIMODAL FITNESS FEATURES
      * Nutzen Gemini Flash für beste Bild+Text Verarbeitung
      */
 
     // Food Recognition: Essen-Fotos für Kalorienschätzung
-    suspend fun analyzeFoodPhoto(bitmap: Bitmap, mealType: String = ""): Result<CaloriesEstimate> {
-        val enhancedPrompt = """
+    suspend fun analyzeFoodPhoto(
+        bitmap: Bitmap,
+        mealType: String = "",
+    ): Result<CaloriesEstimate> {
+        val enhancedPrompt =
+            """
             Analysiere dieses ${mealType.ifEmpty { "Essen" }}-Foto für präzise Kalorienschätzung.
             
             **Spezielle Fitness-Anforderungen:**
@@ -37,14 +39,19 @@ class FitnessAiOptimizer(
             - Glykämischer Index Einschätzung
             - Hydration-Beitrag
             - Verdaulichkeit und Timing-Empfehlungen
-        """.trimIndent()
-        
+            """.trimIndent()
+
         return aiRouter.analyzeOptimalImage(enhancedPrompt, bitmap, TaskType.MEAL_PHOTO_ANALYSIS)
     }
 
     // Form Check: Trainingsfotos für Haltungskorrektur
-    suspend fun analyzeFormCheck(bitmap: Bitmap, exercise: String, userLevel: String = "intermediate"): Result<String> {
-        val formPrompt = """
+    suspend fun analyzeFormCheck(
+        bitmap: Bitmap,
+        exercise: String,
+        userLevel: String = "intermediate",
+    ): Result<String> {
+        val formPrompt =
+            """
             **Form-Check für: $exercise (Level: $userLevel)**
             
             Analysiere die Trainingsform basierend auf Computer Vision und deinen on-device Pose-Daten:
@@ -62,14 +69,19 @@ class FitnessAiOptimizer(
             🔒 **Sicherheit:** [Verletzungsprävention]
             
             **Cue-Beispiele:** "Schultern zurück", "Core anspannen", "Hüfte nach hinten"
-        """.trimIndent()
-        
+            """.trimIndent()
+
         return aiRouter.generateOptimalText(formPrompt, TaskType.FORM_CHECK_ANALYSIS)
     }
 
     // Progress Photos: Body-Transformation Tracking
-    suspend fun analyzeProgressPhoto(bitmap: Bitmap, timeframe: String, goals: String): Result<CaloriesEstimate> {
-        val progressPrompt = """
+    suspend fun analyzeProgressPhoto(
+        bitmap: Bitmap,
+        timeframe: String,
+        goals: String,
+    ): Result<CaloriesEstimate> {
+        val progressPrompt =
+            """
             **Progress Analysis - $timeframe Transformation**
             
             Ziele: $goals
@@ -91,14 +103,15 @@ class FitnessAiOptimizer(
             💪 **Erfolgs-Highlights:** [Besonders starke Bereiche]
             🎯 **Nächste Phase:** [Fokus für kommende Wochen]
             🔥 **Motivation:** [Persönliche Erfolgs-Message]
-        """.trimIndent()
-        
+            """.trimIndent()
+
         return aiRouter.analyzeOptimalImage(progressPrompt, bitmap, TaskType.PROGRESS_PHOTO_ANALYSIS)
     }
 
     // Equipment Recognition: Gym-Geräte identifizieren
     suspend fun recognizeEquipment(bitmap: Bitmap): Result<String> {
-        val equipmentPrompt = """
+        val equipmentPrompt =
+            """
             **Equipment Recognition & Workout Suggestions**
             
             Identifiziere alle Trainingsgeräte in diesem Bild und gib praktische Nutzungshinweise:
@@ -120,8 +133,8 @@ class FitnessAiOptimizer(
             💡 **Setup:** [Einstellungstipps]
             🔄 **Übungen:** [Exercisevorschläge pro Gerät]
             ⚡ **Workout:** [Effiziente Kombination]
-        """.trimIndent()
-        
+            """.trimIndent()
+
         return aiRouter.generateOptimalText(equipmentPrompt, TaskType.EQUIPMENT_RECOGNITION)
     }
 
@@ -132,12 +145,13 @@ class FitnessAiOptimizer(
 
     // Echtzeit Feedback basierend auf Pose-Daten
     suspend fun generateLiveCoaching(
-        currentPose: String,    // MoveNet Thunder Output
-        exercisePhase: String,  // "eccentric", "concentric", "hold"
+        currentPose: String, // MoveNet Thunder Output
+        exercisePhase: String, // "eccentric", "concentric", "hold"
         repCount: Int,
-        targetReps: Int
+        targetReps: Int,
     ): Result<String> {
-        val livePrompt = """
+        val livePrompt =
+            """
             **Live Coaching - Real-time Feedback**
             
             **Current Status:**
@@ -157,8 +171,8 @@ class FitnessAiOptimizer(
             - "Perfekte Tiefe! Noch 3 Reps - Core fest!"
             - "Langsamer runtergehen - explosive Aufwärtsbewegung!"
             - "Großartig! Halbzeit geschafft - bleib fokussiert!"
-        """.trimIndent()
-        
+            """.trimIndent()
+
         return aiRouter.generateOptimalText(livePrompt, TaskType.LIVE_COACHING_FEEDBACK)
     }
 
@@ -166,9 +180,10 @@ class FitnessAiOptimizer(
     suspend fun adaptWorkoutPlan(
         performanceData: String,
         currentPlan: String,
-        userFeedback: String
+        userFeedback: String,
     ): Result<String> {
-        val adaptationPrompt = """
+        val adaptationPrompt =
+            """
             **Adaptive Training Plan Optimization**
             
             **Performance Metrics:** $performanceData
@@ -192,8 +207,8 @@ class FitnessAiOptimizer(
             🔄 **Adaptations:** [Konkrete Planänderungen]
             📈 **Progression:** [Nächste Intensitätsstufe]
             🎯 **Focus:** [Spezielle Schwerpunkte diese Woche]
-        """.trimIndent()
-        
+            """.trimIndent()
+
         return aiRouter.generateOptimalText(adaptationPrompt, TaskType.COMPLEX_PLAN_ANALYSIS)
     }
 
@@ -206,9 +221,10 @@ class FitnessAiOptimizer(
     suspend fun generateRecipeWithVisuals(
         macroTargets: String,
         preferences: String,
-        mealType: String
+        mealType: String,
     ): Result<String> {
-        val recipePrompt = """
+        val recipePrompt =
+            """
             **AI Recipe Generation with Visual Output**
             
             **Requirements:**
@@ -240,8 +256,8 @@ class FitnessAiOptimizer(
             
             🖼️ **AI-Generated Image:** [Appetitliches Foto des fertigen Gerichts - $0.039]
             💡 **Pro-Tips:** [Chef-Geheimnisse für besten Geschmack]
-        """.trimIndent()
-        
+            """.trimIndent()
+
         return aiRouter.generateOptimalText(recipePrompt, TaskType.RECIPE_WITH_IMAGE_GEN)
     }
 
@@ -252,7 +268,8 @@ class FitnessAiOptimizer(
 
     // Neueste Fitness-Trends und Wissenschaft
     suspend fun researchLatestTrends(topic: String): Result<String> {
-        val trendsPrompt = """
+        val trendsPrompt =
+            """
             **Latest Fitness Research & Trends 2025: $topic**
             
             **Research Focus:**
@@ -278,8 +295,8 @@ class FitnessAiOptimizer(
             🧬 **Science Says:** [Aktuelle Forschungsergebnisse]
             💡 **Practical:** [Umsetzbare Tipps für Nutzer]
             ⭐ **Worth It?** [Ehrliche Bewertung der Trends]
-        """.trimIndent()
-        
+            """.trimIndent()
+
         return aiRouter.generateOptimalText(trendsPrompt, TaskType.RESEARCH_TRENDS)
     }
 
@@ -290,58 +307,59 @@ class FitnessAiOptimizer(
     // Zeige aktuelle Kosteneffizienz
     fun getCostOptimizationReport(): String {
         val costAnalysis = aiRouter.generateCostReport()
-        
+
         return """
-            **💰 AI Cost Optimization Report**
-            
-            **Daily Usage Breakdown:**
-            ${costAnalysis.qualityDistribution.map { (model, count) -> 
-                "• $model: $count requests"
-            }.joinToString("\n")}
-            
-            **Monthly Projection:**
-            📊 Total: ${"%.2f".format(costAnalysis.currentStatus.totalSpent)}€/Monat
-            
-            **Budget Status:**
-            ${costAnalysis.budgetOptimization}
-            
-            **Optimization Success:**
-            ✅ ~50% Kosteneinsparung durch intelligente Modellauswahl
-            ✅ 100% Funktionalität erhalten
-            ✅ Beste Qualität für kritische Tasks (Bildanalyse, Komplexe Pläne)
-            ✅ Kosteneffizienz für häufige Tasks (Coaching, Listen)
-            
-            **Model Distribution:**
-            🔹 Gemini Flash: Multimodal + Complex Reasoning
-            🔸 Gemini Flash-Lite: Simple Text (4x günstiger)
-            🔹 Perplexity Sonar: Research + Current Info
-        """.trimIndent()
+                        **💰 AI Cost Optimization Report**
+                        
+                        **Daily Usage Breakdown:**
+                        ${costAnalysis.qualityDistribution.map { (model, count) ->
+            "• $model: $count requests"
+        }.joinToString("\n")}
+                        
+                        **Monthly Projection:**
+                        📊 Total: ${"%.2f".format(costAnalysis.currentStatus.totalSpent)}€/Monat
+                        
+                        **Budget Status:**
+                        ${costAnalysis.budgetOptimization}
+                        
+                        **Optimization Success:**
+                        ✅ ~50% Kosteneinsparung durch intelligente Modellauswahl
+                        ✅ 100% Funktionalität erhalten
+                        ✅ Beste Qualität für kritische Tasks (Bildanalyse, Komplexe Pläne)
+                        ✅ Kosteneffizienz für häufige Tasks (Coaching, Listen)
+                        
+                        **Model Distribution:**
+                        🔹 Gemini Flash: Multimodal + Complex Reasoning
+                        🔸 Gemini Flash-Lite: Simple Text (4x günstiger)
+                        🔹 Perplexity Sonar: Research + Current Info
+            """.trimIndent()
     }
 
     // Teste verschiedene Task-Szenarien
     suspend fun runOptimizationDemo(): Result<String> {
         val demoResults = mutableListOf<String>()
-        
+
         try {
             // 1. Einfacher Coaching-Text (Flash-Lite)
             val coaching = aiRouter.generateMotivationalMessage("User completed 5km run today")
             if (coaching.isSuccess) {
                 demoResults.add("✅ Coaching (Flash-Lite): Erfolgreich")
             }
-            
+
             // 2. Trainingsplan-Generation (Flash für komplexe Logik)
             val workout = aiRouter.generateAdaptiveWorkout("Muscle building", listOf("Dumbbells"), 45)
             if (workout.isSuccess) {
                 demoResults.add("✅ Workout Plan (Flash): Erfolgreich")
             }
-            
+
             // 3. Trend-Research (Perplexity für aktuelle Infos)
             val trends = aiRouter.researchFitnessTrends("HIIT variations 2025")
             if (trends.isSuccess) {
                 demoResults.add("✅ Trend Research (Perplexity): Erfolgreich")
             }
-            
-            return Result.success("""
+
+            return Result.success(
+                """
                 **🚀 Funktionsbasierte AI-Optimierung Demo**
                 
                 **Ergebnisse:**
@@ -358,8 +376,8 @@ class FitnessAiOptimizer(
                 2. A/B Testing verschiedener Modellkombinationen
                 3. User-Feedback basierte weitere Optimierung
                 4. Real-time Cost Monitoring Dashboard
-            """.trimIndent())
-            
+                """.trimIndent(),
+            )
         } catch (e: Exception) {
             return Result.failure(e)
         }

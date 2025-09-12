@@ -16,24 +16,25 @@ import javax.inject.Inject
  * Manages equipment selection for today's training recommendations
  */
 @HiltViewModel
-class TodayTrainingViewModel @Inject constructor(
-    private val userPreferencesRepository: UserPreferencesRepository
-) : ViewModel() {
-    
-    private val _selectedEquipment = MutableStateFlow<Set<String>>(emptySet())
-    val selectedEquipment: StateFlow<Set<String>> = _selectedEquipment.asStateFlow()
-    
-    init {
-        loadEquipment()
-    }
-    
-    private fun loadEquipment() {
-        viewModelScope.launch {
-            _selectedEquipment.value = userPreferencesRepository.selectedEquipment.first()
+class TodayTrainingViewModel
+    @Inject
+    constructor(
+        private val userPreferencesRepository: UserPreferencesRepository,
+    ) : ViewModel() {
+        private val _selectedEquipment = MutableStateFlow<Set<String>>(emptySet())
+        val selectedEquipment: StateFlow<Set<String>> = _selectedEquipment.asStateFlow()
+
+        init {
+            loadEquipment()
+        }
+
+        private fun loadEquipment() {
+            viewModelScope.launch {
+                _selectedEquipment.value = userPreferencesRepository.selectedEquipment.first()
+            }
+        }
+
+        suspend fun getEquipmentList(): List<String> {
+            return userPreferencesRepository.selectedEquipment.first().toList()
         }
     }
-    
-    suspend fun getEquipmentList(): List<String> {
-        return userPreferencesRepository.selectedEquipment.first().toList()
-    }
-}

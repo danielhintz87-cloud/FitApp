@@ -12,11 +12,10 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * 🚀 User Experience Manager
- * 
+ *
  * Manages user onboarding, preferences, and first-time experience
  */
 class UserExperienceManager(private val context: Context) {
-    
     companion object {
         private const val PREFS_NAME = "fitapp_user_experience"
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
@@ -24,32 +23,32 @@ class UserExperienceManager(private val context: Context) {
         private const val KEY_UNIFIED_DASHBOARD_SHOWN = "unified_dashboard_shown"
         private const val KEY_FEATURES_DISCOVERED = "features_discovered"
         private const val KEY_APP_VERSION_SEEN = "app_version_seen"
-        
+
         @Volatile
         private var INSTANCE: UserExperienceManager? = null
-        
+
         fun getInstance(context: Context): UserExperienceManager {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: UserExperienceManager(context.applicationContext).also { INSTANCE = it }
             }
         }
     }
-    
+
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    
+
     private val _userExperienceState = MutableStateFlow(getUserExperienceState())
     val userExperienceState: StateFlow<UserExperienceState> = _userExperienceState.asStateFlow()
-    
+
     private fun getUserExperienceState(): UserExperienceState {
         return UserExperienceState(
             isFirstLaunch = prefs.getBoolean(KEY_FIRST_LAUNCH, true),
             hasCompletedOnboarding = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false),
             hasSeenUnifiedDashboard = prefs.getBoolean(KEY_UNIFIED_DASHBOARD_SHOWN, false),
             discoveredFeatures = prefs.getStringSet(KEY_FEATURES_DISCOVERED, emptySet()) ?: emptySet(),
-            lastSeenAppVersion = prefs.getString(KEY_APP_VERSION_SEEN, "1.0.0") ?: "1.0.0"
+            lastSeenAppVersion = prefs.getString(KEY_APP_VERSION_SEEN, "1.0.0") ?: "1.0.0",
         )
     }
-    
+
     /**
      * Mark onboarding as completed
      */
@@ -58,10 +57,10 @@ class UserExperienceManager(private val context: Context) {
             .putBoolean(KEY_ONBOARDING_COMPLETED, true)
             .putBoolean(KEY_FIRST_LAUNCH, false)
             .apply()
-        
+
         _userExperienceState.value = getUserExperienceState()
     }
-    
+
     /**
      * Mark unified dashboard as seen
      */
@@ -69,52 +68,52 @@ class UserExperienceManager(private val context: Context) {
         prefs.edit()
             .putBoolean(KEY_UNIFIED_DASHBOARD_SHOWN, true)
             .apply()
-        
+
         _userExperienceState.value = getUserExperienceState()
     }
-    
+
     /**
      * Track discovered features for personalization
      */
     fun markFeatureDiscovered(feature: String) {
         val currentFeatures = prefs.getStringSet(KEY_FEATURES_DISCOVERED, emptySet())?.toMutableSet() ?: mutableSetOf()
         currentFeatures.add(feature)
-        
+
         prefs.edit()
             .putStringSet(KEY_FEATURES_DISCOVERED, currentFeatures)
             .apply()
-        
+
         _userExperienceState.value = getUserExperienceState()
     }
-    
+
     /**
      * Check if user should see onboarding
      */
     fun shouldShowOnboarding(): Boolean {
         return !prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
     }
-    
+
     /**
      * Check if this is a first launch
      */
     fun isFirstLaunch(): Boolean {
         return prefs.getBoolean(KEY_FIRST_LAUNCH, true)
     }
-    
+
     /**
      * Get user's preferred starting screen
      */
     fun getPreferredStartScreen(): String {
         val hasSeenUnified = prefs.getBoolean(KEY_UNIFIED_DASHBOARD_SHOWN, false)
         val hasCompletedOnboarding = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
-        
+
         return when {
             !hasCompletedOnboarding -> "onboarding"
             !hasSeenUnified -> "unified_dashboard"
             else -> "unified_dashboard" // Default to unified experience
         }
     }
-    
+
     /**
      * Reset all user experience data (for testing/debugging)
      */
@@ -122,14 +121,14 @@ class UserExperienceManager(private val context: Context) {
         prefs.edit().clear().apply()
         _userExperienceState.value = getUserExperienceState()
     }
-    
+
     /**
      * Get personalized recommendations based on discovered features
      */
     fun getPersonalizedRecommendations(): List<FeatureRecommendation> {
         val discoveredFeatures = prefs.getStringSet(KEY_FEATURES_DISCOVERED, emptySet()) ?: emptySet()
         val recommendations = mutableListOf<FeatureRecommendation>()
-        
+
         // Recommend based on what user hasn't discovered yet
         if (!discoveredFeatures.contains("bmi_calculator")) {
             recommendations.add(
@@ -137,55 +136,55 @@ class UserExperienceManager(private val context: Context) {
                     feature = "bmi_calculator",
                     title = "BMI Calculator entdecken",
                     description = "Verfolge deine Gewichtsziele mit unserem smarten BMI Rechner",
-                    priority = 8
-                )
+                    priority = 8,
+                ),
             )
         }
-        
+
         if (!discoveredFeatures.contains("intervallfasten")) {
             recommendations.add(
                 FeatureRecommendation(
                     feature = "fasting",
                     title = "Intervallfasten ausprobieren",
                     description = "6 professionelle Fasten-Protokolle für optimale Gesundheit",
-                    priority = 9
-                )
+                    priority = 9,
+                ),
             )
         }
-        
+
         if (!discoveredFeatures.contains("ai_personal_trainer")) {
             recommendations.add(
                 FeatureRecommendation(
                     feature = "ai_personal_trainer",
                     title = "AI Personal Trainer",
                     description = "Personalisierte Trainingspläne powered by KI",
-                    priority = 10
-                )
+                    priority = 10,
+                ),
             )
         }
-        
+
         if (!discoveredFeatures.contains("barcode_scanner")) {
             recommendations.add(
                 FeatureRecommendation(
                     feature = "barcode_scanner",
                     title = "Barcode Scanner nutzen",
                     description = "Scanne Produkte für instant Nährwert-Information",
-                    priority = 7
-                )
+                    priority = 7,
+                ),
             )
         }
-        
+
         if (!discoveredFeatures.contains("recipes")) {
             recommendations.add(
                 FeatureRecommendation(
                     feature = "recipes",
                     title = "Gesunde Rezepte",
                     description = "AI-generierte Rezepte passend zu deinen Zielen",
-                    priority = 6
-                )
+                    priority = 6,
+                ),
             )
         }
-        
+
         return recommendations.sortedByDescending { it.priority }
     }
 }
@@ -198,7 +197,7 @@ data class UserExperienceState(
     val hasCompletedOnboarding: Boolean = false,
     val hasSeenUnifiedDashboard: Boolean = false,
     val discoveredFeatures: Set<String> = emptySet(),
-    val lastSeenAppVersion: String = "1.0.0"
+    val lastSeenAppVersion: String = "1.0.0",
 ) {
     /**
      * Calculate user engagement level based on discovered features
@@ -212,7 +211,7 @@ data class UserExperienceState(
             else -> UserEngagementLevel.POWER_USER
         }
     }
-    
+
     /**
      * Get completion percentage for feature discovery
      */
@@ -227,10 +226,10 @@ data class UserExperienceState(
  */
 enum class UserEngagementLevel {
     NEW,
-    EXPLORING, 
+    EXPLORING,
     ACTIVE,
     ENGAGED,
-    POWER_USER
+    POWER_USER,
 }
 
 /**
@@ -240,7 +239,7 @@ data class FeatureRecommendation(
     val feature: String,
     val title: String,
     val description: String,
-    val priority: Int
+    val priority: Int,
 )
 
 /**

@@ -33,7 +33,6 @@ annotation class PerplexityRetrofit
 @Module
 @InstallIn(SingletonComponent::class)
 object AiApiModule {
-    
     @Provides
     @Singleton
     fun provideAiHttpClient(): OkHttpClient {
@@ -43,7 +42,7 @@ object AiApiModule {
             .readTimeout(60, TimeUnit.SECONDS)
             .build()
     }
-    
+
     @Provides
     @Singleton
     @GeminiRetrofit
@@ -54,7 +53,7 @@ object AiApiModule {
             .addConverterFactory(MoshiConverterFactory.create())
             .build()
     }
-    
+
     @Provides
     @Singleton
     @PerplexityRetrofit
@@ -65,16 +64,20 @@ object AiApiModule {
             .addConverterFactory(MoshiConverterFactory.create())
             .build()
     }
-    
+
     @Provides
     @Singleton
-    fun provideGeminiApiService(@GeminiRetrofit retrofit: Retrofit): GeminiApiService {
+    fun provideGeminiApiService(
+        @GeminiRetrofit retrofit: Retrofit,
+    ): GeminiApiService {
         return retrofit.create(GeminiApiService::class.java)
     }
-    
+
     @Provides
     @Singleton
-    fun providePerplexityApiService(@PerplexityRetrofit retrofit: Retrofit): PerplexityApiService {
+    fun providePerplexityApiService(
+        @PerplexityRetrofit retrofit: Retrofit,
+    ): PerplexityApiService {
         return retrofit.create(PerplexityApiService::class.java)
     }
 }

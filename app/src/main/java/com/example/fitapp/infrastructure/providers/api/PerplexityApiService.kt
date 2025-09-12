@@ -11,11 +11,10 @@ import retrofit2.http.POST
  * Retrofit service interface for Perplexity AI API
  */
 interface PerplexityApiService {
-    
     @POST("chat/completions")
     suspend fun createChatCompletion(
         @Header("Authorization") authorization: String,
         @Header("User-Agent") userAgent: String = "fitapp/1.0",
-        @Body body: RequestBody
+        @Body body: RequestBody,
     ): Response<ResponseBody>
 }

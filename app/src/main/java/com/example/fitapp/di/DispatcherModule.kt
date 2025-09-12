@@ -39,22 +39,19 @@ annotation class DefaultDispatcher
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class DispatcherModule {
-    
     @Binds
     @Singleton
-    abstract fun bindDispatcherProvider(
-        defaultDispatcherProvider: DefaultDispatcherProvider
-    ): DispatcherProvider
-    
+    abstract fun bindDispatcherProvider(defaultDispatcherProvider: DefaultDispatcherProvider): DispatcherProvider
+
     companion object {
         @Provides
         @IoDispatcher
         fun providesIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
-        
+
         @Provides
         @MainDispatcher
         fun providesMainDispatcher(): CoroutineDispatcher = Dispatchers.Main
-        
+
         @Provides
         @DefaultDispatcher
         fun providesDefaultDispatcher(): CoroutineDispatcher = Dispatchers.Default

@@ -3,7 +3,6 @@ package com.example.fitapp.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -22,11 +21,11 @@ import com.example.fitapp.services.WorkoutManager
 @Composable
 fun HIITBuilderScreen(
     onBackPressed: () -> Unit,
-    onWorkoutCreated: (HIITWorkout) -> Unit
+    onWorkoutCreated: (HIITWorkout) -> Unit,
 ) {
     val context = LocalContext.current
     val workoutManager = remember { WorkoutManager(context) }
-    
+
     var availableExercises by remember { mutableStateOf<List<BodyweightExercise>>(emptyList()) }
     var selectedExercises by remember { mutableStateOf<List<BodyweightExercise>>(emptyList()) }
     var workInterval by remember { mutableIntStateOf(30) }
@@ -35,12 +34,12 @@ fun HIITBuilderScreen(
     var difficulty by remember { mutableStateOf(HIITDifficulty.BEGINNER) }
     var workoutName by remember { mutableStateOf("") }
     var showCreateDialog by remember { mutableStateOf(false) }
-    
+
     // Load available exercises
     LaunchedEffect(Unit) {
         availableExercises = workoutManager.getDefaultBodyweightExercises()
     }
-    
+
     // Update intervals based on difficulty
     LaunchedEffect(difficulty) {
         when (difficulty) {
@@ -62,7 +61,7 @@ fun HIITBuilderScreen(
             }
         }
     }
-    
+
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("HIIT Builder") },
@@ -74,17 +73,17 @@ fun HIITBuilderScreen(
             actions = {
                 IconButton(
                     onClick = { showCreateDialog = true },
-                    enabled = selectedExercises.isNotEmpty()
+                    enabled = selectedExercises.isNotEmpty(),
                 ) {
                     Icon(Icons.Filled.PlayArrow, contentDescription = "Workout erstellen")
                 }
-            }
+            },
         )
-        
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // HIIT Configuration Section
             item {
@@ -96,10 +95,10 @@ fun HIITBuilderScreen(
                     restInterval = restInterval,
                     onRestIntervalChange = { restInterval = it },
                     rounds = rounds,
-                    onRoundsChange = { rounds = it }
+                    onRoundsChange = { rounds = it },
                 )
             }
-            
+
             // Selected Exercises Section
             if (selectedExercises.isNotEmpty()) {
                 item {
@@ -110,20 +109,20 @@ fun HIITBuilderScreen(
                         },
                         workInterval = workInterval,
                         restInterval = restInterval,
-                        rounds = rounds
+                        rounds = rounds,
                     )
                 }
             }
-            
+
             // Available Exercises Section
             item {
                 Text(
                     text = "Übungen auswählen",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
-            
+
             items(availableExercises.groupBy { it.category }.toList()) { (category, exercises) ->
                 ExerciseCategoryCard(
                     category = category,
@@ -133,12 +132,12 @@ fun HIITBuilderScreen(
                         if (exercise !in selectedExercises) {
                             selectedExercises = selectedExercises + exercise
                         }
-                    }
+                    },
                 )
             }
         }
     }
-    
+
     // Create Workout Dialog
     if (showCreateDialog) {
         CreateWorkoutDialog(
@@ -146,17 +145,18 @@ fun HIITBuilderScreen(
             onWorkoutNameChange = { workoutName = it },
             onDismiss = { showCreateDialog = false },
             onConfirm = {
-                val builder = HIITBuilder(
-                    selectedExercises = selectedExercises,
-                    workInterval = workInterval,
-                    restInterval = restInterval,
-                    rounds = rounds,
-                    difficulty = difficulty
-                )
+                val builder =
+                    HIITBuilder(
+                        selectedExercises = selectedExercises,
+                        workInterval = workInterval,
+                        restInterval = restInterval,
+                        rounds = rounds,
+                        difficulty = difficulty,
+                    )
                 val workout = builder.generateWorkout(workoutName.ifEmpty { "Custom HIIT Workout" })
                 onWorkoutCreated(workout)
                 showCreateDialog = false
-            }
+            },
         )
     }
 }
@@ -170,46 +170,46 @@ private fun HIITConfigurationCard(
     restInterval: Int,
     onRestIntervalChange: (Int) -> Unit,
     rounds: Int,
-    onRoundsChange: (Int) -> Unit
+    onRoundsChange: (Int) -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
                 text = "HIIT Konfiguration",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
-            
+
             // Difficulty Selection
             Text(
                 text = "Schwierigkeitsgrad",
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 HIITDifficulty.entries.forEach { diff ->
                     FilterChip(
                         selected = difficulty == diff,
                         onClick = { onDifficultyChange(diff) },
                         label = { Text(diff.name) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
-            
+
             // Intervals Configuration
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Arbeitszeit", style = MaterialTheme.typography.bodyMedium)
@@ -242,50 +242,50 @@ private fun SelectedExercisesCard(
     onRemoveExercise: (BodyweightExercise) -> Unit,
     workInterval: Int,
     restInterval: Int,
-    rounds: Int
+    rounds: Int,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "Ausgewählte Übungen (${selectedExercises.size})",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
-                
+
                 val totalTime = (selectedExercises.size * workInterval + selectedExercises.size * restInterval) * rounds / 60
                 Text(
                     text = "~${totalTime}min",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             selectedExercises.forEachIndexed { index, exercise ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "${index + 1}. ${exercise.name}",
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
                         )
                         Text(
                             text = exercise.category.name,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
+                            color = MaterialTheme.colorScheme.outline,
                         )
                     }
                     IconButton(onClick = { onRemoveExercise(exercise) }) {
@@ -302,60 +302,61 @@ private fun ExerciseCategoryCard(
     category: BodyweightCategory,
     exercises: List<BodyweightExercise>,
     selectedExercises: List<BodyweightExercise>,
-    onExerciseSelected: (BodyweightExercise) -> Unit
+    onExerciseSelected: (BodyweightExercise) -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = getCategoryDisplayName(category),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             exercises.forEach { exercise ->
                 val isSelected = exercise in selectedExercises
-                
+
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = isSelected,
-                            onClick = { if (!isSelected) onExerciseSelected(exercise) }
-                        )
-                        .padding(vertical = 4.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = isSelected,
+                                onClick = { if (!isSelected) onExerciseSelected(exercise) },
+                            )
+                            .padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = exercise.name,
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         )
                         Text(
                             text = exercise.description,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
+                            color = MaterialTheme.colorScheme.outline,
                         )
                     }
-                    
+
                     if (isSelected) {
                         Icon(
                             Icons.Filled.CheckCircle,
                             contentDescription = "Ausgewählt",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     } else {
                         Icon(
                             Icons.Filled.Add,
                             contentDescription = "Hinzufügen",
-                            tint = MaterialTheme.colorScheme.outline
+                            tint = MaterialTheme.colorScheme.outline,
                         )
                     }
                 }
@@ -369,7 +370,7 @@ private fun CreateWorkoutDialog(
     workoutName: String,
     onWorkoutNameChange: (String) -> Unit,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -382,7 +383,7 @@ private fun CreateWorkoutDialog(
                     value = workoutName,
                     onValueChange = onWorkoutNameChange,
                     label = { Text("Workout Name") },
-                    singleLine = true
+                    singleLine = true,
                 )
             }
         },
@@ -395,7 +396,7 @@ private fun CreateWorkoutDialog(
             TextButton(onClick = onDismiss) {
                 Text("Abbrechen")
             }
-        }
+        },
     )
 }
 

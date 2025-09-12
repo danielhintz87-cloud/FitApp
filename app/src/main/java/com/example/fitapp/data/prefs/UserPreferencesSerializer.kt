@@ -11,7 +11,7 @@ import java.io.OutputStream
  */
 object UserPreferencesSerializer : Serializer<UserPreferencesProto> {
     override val defaultValue: UserPreferencesProto = UserPreferencesProto.getDefaultInstance()
-    
+
     override suspend fun readFrom(input: InputStream): UserPreferencesProto {
         try {
             return UserPreferencesProto.parseFrom(input)
@@ -19,6 +19,9 @@ object UserPreferencesSerializer : Serializer<UserPreferencesProto> {
             throw CorruptionException("Cannot read proto.", exception)
         }
     }
-    
-    override suspend fun writeTo(t: UserPreferencesProto, output: OutputStream) = t.writeTo(output)
+
+    override suspend fun writeTo(
+        t: UserPreferencesProto,
+        output: OutputStream,
+    ) = t.writeTo(output)
 }
