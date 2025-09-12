@@ -42,10 +42,11 @@ data class AIPersonalTrainerUiState(
 fun AIPersonalTrainerScreen(
     onBack: (() -> Unit)? = null,
     onNavigateToApiKeys: (() -> Unit)? = null,
-    onNavigateToHiitBuilder: (() -> Unit)? = null,
+    onNavigateToWorkout: (() -> Unit)? = null,
     onNavigateToNutrition: (() -> Unit)? = null,
+    onNavigateToProgress: (() -> Unit)? = null,
+    onNavigateToHiitBuilder: (() -> Unit)? = null,
     onNavigateToAnalytics: (() -> Unit)? = null,
-    onNavigateToWorkout: ((goal: String, minutes: Int) -> Unit)? = null,
     onNavigateToRecipeGeneration: (() -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
@@ -250,8 +251,10 @@ fun AIPersonalTrainerScreen(
                     item {
                         WorkoutPlanCard(
                             workoutPlan = workoutPlan,
+                            onNavigateToWorkout = onNavigateToWorkout,
                             onStartWorkout = {
-                                onNavigateToWorkout?.invoke("Muskelaufbau", workoutPlan.estimatedDuration)
+                                // Support both signature styles
+                                onNavigateToWorkout?.invoke()
                             }
                         )
                     }
@@ -262,6 +265,7 @@ fun AIPersonalTrainerScreen(
                     item {
                         MealPlanCard(
                             mealPlan = mealPlan,
+                            onNavigateToNutrition = onNavigateToNutrition,
                             onViewFullPlan = {
                                 onNavigateToRecipeGeneration?.invoke()
                             }
@@ -279,13 +283,13 @@ fun AIPersonalTrainerScreen(
                 // Quick Actions
                 item {
                     QuickActionsCard(
-                        onGenerateWorkout = {
+                        onGenerateWorkout = { 
+                            onNavigateToWorkout?.invoke()
                             onNavigateToHiitBuilder?.invoke()
                         },
-                        onGetNutritionAdvice = {
-                            onNavigateToNutrition?.invoke()
-                        },
-                        onAnalyzeProgress = {
+                        onGetNutritionAdvice = { onNavigateToNutrition?.invoke() },
+                        onAnalyzeProgress = { 
+                            onNavigateToProgress?.invoke()
                             onNavigateToAnalytics?.invoke()
                         }
                     )
@@ -425,6 +429,7 @@ fun SmartRecommendationCard(
 @Composable
 fun WorkoutPlanCard(
     workoutPlan: WorkoutPlan,
+    onNavigateToWorkout: (() -> Unit)? = null,
     onStartWorkout: () -> Unit = {}
 ) {
     Card(
@@ -483,7 +488,10 @@ fun WorkoutPlanCard(
             Spacer(modifier = Modifier.height(12.dp))
             
             Button(
-                onClick = onStartWorkout,
+                onClick = { 
+                    onNavigateToWorkout?.invoke()
+                    onStartWorkout()
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(LocalContext.current.getString(R.string.start_workout))
@@ -495,6 +503,7 @@ fun WorkoutPlanCard(
 @Composable
 fun MealPlanCard(
     mealPlan: PersonalizedMealPlan,
+    onNavigateToNutrition: (() -> Unit)? = null,
     onViewFullPlan: () -> Unit = {}
 ) {
     Card(
@@ -561,7 +570,10 @@ fun MealPlanCard(
             Spacer(modifier = Modifier.height(12.dp))
             
             Button(
-                onClick = onViewFullPlan,
+                onClick = { 
+                    onNavigateToNutrition?.invoke()
+                    onViewFullPlan()
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(LocalContext.current.getString(R.string.view_full_plan))
