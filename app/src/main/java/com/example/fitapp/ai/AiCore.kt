@@ -303,7 +303,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 .post(body)
                 .build()
 
-            http.newCall(req).execute().use { resp ->
+            http.newCall(req).executeSuspending().use { resp ->
                 if (!resp.isSuccessful) {
                     val bodyStr = resp.body?.string().orEmpty()
                     val errorMsg = when (resp.code) {
@@ -393,7 +393,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 .post(body)
                 .build()
 
-            http.newCall(req).execute().use { resp ->
+            http.newCall(req).executeSuspending().use { resp ->
                 if (!resp.isSuccessful) {
                     val bodyStr = resp.body?.string().orEmpty()
                     val errorMsg = when (resp.code) {
@@ -475,7 +475,7 @@ class AiCore(private val context: Context, private val logDao: AiLogDao) {
                 .post(body)
                 .build()
 
-            http.newCall(req).execute().use { resp ->
+            http.newCall(req).executeSuspending().use { resp ->
                 if (!resp.isSuccessful) {
                     val bodyStr = resp.body?.string().orEmpty()
                     val errorMsg = when (resp.code) {

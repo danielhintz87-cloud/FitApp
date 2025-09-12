@@ -1,5 +1,6 @@
 package com.example.fitapp.core.health
 
+import com.example.fitapp.ai.executeSuspending
 import com.example.fitapp.core.threading.DispatcherProvider
 import com.example.fitapp.data.prefs.ApiKeys
 import kotlinx.coroutines.flow.Flow
@@ -44,7 +45,7 @@ class GeminiHealthChecker @Inject constructor(
                     .get()
                     .build()
                 
-                httpClient.newCall(request).execute().use { response ->
+                httpClient.newCall(request).executeSuspending().use { response ->
                     response.isSuccessful
                 }
             }
