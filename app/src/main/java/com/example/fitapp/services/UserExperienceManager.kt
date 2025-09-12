@@ -9,11 +9,16 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
 import com.example.fitapp.data.prefs.UserPreferencesProto
 import com.example.fitapp.data.prefs.UserPreferencesSerializer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 /**
  * 🚀 User Experience Manager
@@ -100,7 +105,7 @@ class UserExperienceManager(private val context: Context) {
             isFirstLaunch = false
         )
         // Launch coroutine to persist changes
-        kotlinx.coroutines.GlobalScope.launch {
+        GlobalScope.launch {
             markOnboardingCompleted()
         }
     }
@@ -118,9 +123,9 @@ class UserExperienceManager(private val context: Context) {
     }
     
     /**
-     * Mark unified dashboard as seen
+     * Mark unified dashboard as seen (suspend version)
      */
-    suspend fun markUnifiedDashboardSeen() {
+    suspend fun markUnifiedDashboardSeenSuspend() {
         context.dataStore.updateData { prefs ->
             prefs.toBuilder()
                 .setUnifiedDashboardShown(true)
@@ -182,25 +187,25 @@ class UserExperienceManager(private val context: Context) {
     val hasSeenUnifiedDashboardFlow = context.dataStore.data.map { it.unifiedDashboardShown }
 
     /**
-     * Check if user should see onboarding (suspending function)
+     * Check if user should see onboarding (suspend version)
      */
-    suspend fun shouldShowOnboarding(): Boolean {
+    suspend fun shouldShowOnboardingSuspend(): Boolean {
         val prefs = context.dataStore.data.first()
         return !prefs.onboardingCompleted
     }
 
     /**
-     * Check if this is a first launch (suspending function)
+     * Check if this is a first launch (suspend version)
      */
-    suspend fun isFirstLaunch(): Boolean {
+    suspend fun isFirstLaunchSuspend(): Boolean {
         val prefs = context.dataStore.data.first()
         return prefs.firstLaunch
     }
 
     /**
-     * Get user's preferred starting screen
+     * Get user's preferred starting screen (suspend version)
      */
-    suspend fun getPreferredStartScreen(): String {
+    suspend fun getPreferredStartScreenSuspend(): String {
         val prefs = context.dataStore.data.first()
         
         return when {
@@ -282,19 +287,8 @@ class UserExperienceManager(private val context: Context) {
      */
     fun markUnifiedDashboardSeen() {
         _userExperienceState.value = _userExperienceState.value.copy(hasSeenUnifiedDashboard = true)
-        kotlinx.coroutines.GlobalScope.launch {
+        GlobalScope.launch {
             markUnifiedDashboardSeenSuspend()
-        }
-    }
-    
-    /**
-     * Mark unified dashboard as seen (suspend version)
-     */
-    private suspend fun markUnifiedDashboardSeenSuspend() {
-        context.dataStore.updateData { prefs ->
-            prefs.toBuilder()
-                .setUnifiedDashboardShown(true)
-                .build()
         }
     }
     
@@ -308,7 +302,7 @@ class UserExperienceManager(private val context: Context) {
             _userExperienceState.value = _userExperienceState.value.copy(
                 discoveredFeatures = newFeatures
             )
-            kotlinx.coroutines.GlobalScope.launch {
+            GlobalScope.launch {
                 addDiscoveredFeature(feature)
             }
         }
@@ -345,7 +339,7 @@ class UserExperienceManager(private val context: Context) {
      */
     fun resetUserExperience() {
         _userExperienceState.value = getUserExperienceState()
-        kotlinx.coroutines.GlobalScope.launch {
+        GlobalScope.launch {
             reset()
         }
     }

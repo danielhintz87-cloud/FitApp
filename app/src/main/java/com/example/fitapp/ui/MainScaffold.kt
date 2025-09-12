@@ -18,6 +18,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -70,7 +72,7 @@ import java.time.LocalDate
 @OptIn(ExperimentalMaterial3Api::class)
 @ExperimentalGetImage
 @Composable
-fun MainScaffold(navController: NavController? = null) {
+fun MainScaffold(navController: NavHostController? = null) {
     val nav = navController ?: rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -82,7 +84,7 @@ fun MainScaffold(navController: NavController? = null) {
     val userExperienceState by userExperienceManager.userExperienceState.collectAsState()
     
     // Determine start destination based on user experience
-    val startDestination = remember(userExperienceState) {
+    val startDestination: String = remember(userExperienceState) {
         when {
             !userExperienceState.hasCompletedOnboarding -> "onboarding"
             else -> "unified_dashboard"
