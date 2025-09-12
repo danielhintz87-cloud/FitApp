@@ -23,6 +23,7 @@ class HydrationViewModel @Inject constructor(
      */
     val hydrationStatus: StateFlow<HydrationStatus?> = hydrationGoalUseCase
         .hydrationStatus
+        .map<HydrationStatus, HydrationStatus?> { it } // Convert to nullable flow
         .catch { emit(null) } // Handle errors gracefully in UI
         .stateIn(
             scope = viewModelScope,
