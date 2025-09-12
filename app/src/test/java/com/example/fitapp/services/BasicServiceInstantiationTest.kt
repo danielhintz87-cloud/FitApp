@@ -2,8 +2,8 @@ package com.example.fitapp.services
 
 import android.content.Context
 import com.example.fitapp.data.db.AppDatabase
-import org.junit.Test
 import org.junit.Assert.*
+import org.junit.Test
 import org.mockito.Mockito.mock
 
 /**
@@ -11,7 +11,6 @@ import org.mockito.Mockito.mock
  * This establishes a baseline for test coverage
  */
 class BasicServiceInstantiationTest {
-
     @Test
     fun `should instantiate MacroCalculator`() {
         val context = mock(Context::class.java)

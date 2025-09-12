@@ -4,9 +4,9 @@ import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.ui.screens.ExerciseStep
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
-import org.junit.Assert.*
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.*
@@ -16,7 +16,6 @@ import org.mockito.kotlin.*
  * Tests workout execution flow, set tracking, and performance analytics
  */
 class WorkoutExecutionManagerTest {
-
     @Mock
     private lateinit var database: AppDatabase
 
@@ -37,47 +36,51 @@ class WorkoutExecutionManagerTest {
     }
 
     @Test
-    fun `should start with no active workout`() = runTest {
-        // When: Getting initial workout state
-        val isInWorkout = workoutExecutionManager.isInWorkout.first()
+    fun `should start with no active workout`() =
+        runTest {
+            // When: Getting initial workout state
+            val isInWorkout = workoutExecutionManager.isInWorkout.first()
 
-        // Then: Should not be in workout
-        assertFalse("Should not be in workout initially", isInWorkout)
-    }
-
-    @Test
-    fun `should start with null workout flow`() = runTest {
-        // When: Getting initial workout flow
-        val workoutFlow = workoutExecutionManager.workoutFlow.first()
-
-        // Then: Should be null
-        assertNull("Initial workout flow should be null", workoutFlow)
-    }
+            // Then: Should not be in workout
+            assertFalse("Should not be in workout initially", isInWorkout)
+        }
 
     @Test
-    fun `should start with null current step`() = runTest {
-        // When: Getting initial current step
-        val currentStep = workoutExecutionManager.currentStep.first()
+    fun `should start with null workout flow`() =
+        runTest {
+            // When: Getting initial workout flow
+            val workoutFlow = workoutExecutionManager.workoutFlow.first()
 
-        // Then: Should be null
-        assertNull("Initial current step should be null", currentStep)
-    }
+            // Then: Should be null
+            assertNull("Initial workout flow should be null", workoutFlow)
+        }
+
+    @Test
+    fun `should start with null current step`() =
+        runTest {
+            // When: Getting initial current step
+            val currentStep = workoutExecutionManager.currentStep.first()
+
+            // Then: Should be null
+            assertNull("Initial current step should be null", currentStep)
+        }
 
     @Test
     fun `should create WorkoutStep with all properties`() {
         // Given: Mock exercise step
         val exerciseStep = mock<ExerciseStep>()
-        val sets = listOf(
-            WorkoutExecutionManager.WorkoutSet(
-                setNumber = 1,
-                targetReps = 10,
-                actualReps = 10,
-                targetWeight = 50.0f,
-                actualWeight = 50.0f,
-                restTime = 60,
-                isCompleted = true
+        val sets =
+            listOf(
+                WorkoutExecutionManager.WorkoutSet(
+                    setNumber = 1,
+                    targetReps = 10,
+                    actualReps = 10,
+                    targetWeight = 50.0f,
+                    actualWeight = 50.0f,
+                    restTime = 60,
+                    isCompleted = true,
+                ),
             )
-        )
         val currentSet = 1
         val restTime = 60
         val instructions = "Keep your back straight"
@@ -87,17 +90,18 @@ class WorkoutExecutionManagerTest {
         val autoWeightSuggestion = 52.5f
 
         // When: Creating workout step
-        val workoutStep = WorkoutExecutionManager.WorkoutStep(
-            exercise = exerciseStep,
-            sets = sets,
-            currentSet = currentSet,
-            restTime = restTime,
-            instructions = instructions,
-            videoReference = videoReference,
-            formTips = formTips,
-            progressionHint = progressionHint,
-            autoWeightSuggestion = autoWeightSuggestion
-        )
+        val workoutStep =
+            WorkoutExecutionManager.WorkoutStep(
+                exercise = exerciseStep,
+                sets = sets,
+                currentSet = currentSet,
+                restTime = restTime,
+                instructions = instructions,
+                videoReference = videoReference,
+                formTips = formTips,
+                progressionHint = progressionHint,
+                autoWeightSuggestion = autoWeightSuggestion,
+            )
 
         // Then: All properties should be set correctly
         assertEquals("Exercise should match", exerciseStep, workoutStep.exercise)
@@ -121,13 +125,14 @@ class WorkoutExecutionManagerTest {
         val instructions = "Basic instructions"
 
         // When: Creating workout step with minimal data
-        val workoutStep = WorkoutExecutionManager.WorkoutStep(
-            exercise = exerciseStep,
-            sets = sets,
-            currentSet = currentSet,
-            restTime = restTime,
-            instructions = instructions
-        )
+        val workoutStep =
+            WorkoutExecutionManager.WorkoutStep(
+                exercise = exerciseStep,
+                sets = sets,
+                currentSet = currentSet,
+                restTime = restTime,
+                instructions = instructions,
+            )
 
         // Then: Should have default values for optional properties
         assertNull("Video reference should be null by default", workoutStep.videoReference)
@@ -149,16 +154,17 @@ class WorkoutExecutionManagerTest {
         val rpe = 8
 
         // When: Creating workout set
-        val workoutSet = WorkoutExecutionManager.WorkoutSet(
-            setNumber = setNumber,
-            targetWeight = targetWeight,
-            targetReps = targetReps,
-            actualWeight = actualWeight,
-            actualReps = actualReps,
-            rpe = rpe,
-            restTime = restTime,
-            isCompleted = isCompleted
-        )
+        val workoutSet =
+            WorkoutExecutionManager.WorkoutSet(
+                setNumber = setNumber,
+                targetWeight = targetWeight,
+                targetReps = targetReps,
+                actualWeight = actualWeight,
+                actualReps = actualReps,
+                rpe = rpe,
+                restTime = restTime,
+                isCompleted = isCompleted,
+            )
 
         // Then: All properties should be set correctly
         assertEquals("Set number should match", setNumber, workoutSet.setNumber)
@@ -174,15 +180,16 @@ class WorkoutExecutionManagerTest {
     @Test
     fun `should create WorkoutSet with default values`() {
         // When: Creating set with minimal properties
-        val workoutSet = WorkoutExecutionManager.WorkoutSet(
-            setNumber = 1,
-            targetReps = 10,
-            actualReps = 10,
-            targetWeight = 50.0f,
-            actualWeight = 50.0f,
-            restTime = 60,
-            isCompleted = false
-        )
+        val workoutSet =
+            WorkoutExecutionManager.WorkoutSet(
+                setNumber = 1,
+                targetReps = 10,
+                actualReps = 10,
+                targetWeight = 50.0f,
+                actualWeight = 50.0f,
+                restTime = 60,
+                isCompleted = false,
+            )
 
         // Then: Should have default values for optional properties
         assertNull("RPE should be null by default", workoutSet.rpe)
@@ -191,25 +198,27 @@ class WorkoutExecutionManagerTest {
 
     @Test
     fun `should handle different rep ranges correctly`() {
-        val repRanges = listOf(
-            Pair(1, 1),     // Heavy singles
-            Pair(5, 5),     // Strength
-            Pair(8, 12),    // Hypertrophy
-            Pair(15, 20),   // Endurance
-            Pair(30, 30)    // High endurance
-        )
+        val repRanges =
+            listOf(
+                Pair(1, 1), // Heavy singles
+                Pair(5, 5), // Strength
+                Pair(8, 12), // Hypertrophy
+                Pair(15, 20), // Endurance
+                Pair(30, 30), // High endurance
+            )
 
         for ((targetReps, actualReps) in repRanges) {
             // When: Creating set with different rep ranges
-            val workoutSet = WorkoutExecutionManager.WorkoutSet(
-                setNumber = 1,
-                targetReps = targetReps,
-                actualReps = actualReps,
-                targetWeight = 50.0f,
-                actualWeight = 50.0f,
-                restTime = 60,
-                isCompleted = true
-            )
+            val workoutSet =
+                WorkoutExecutionManager.WorkoutSet(
+                    setNumber = 1,
+                    targetReps = targetReps,
+                    actualReps = actualReps,
+                    targetWeight = 50.0f,
+                    actualWeight = 50.0f,
+                    restTime = 60,
+                    isCompleted = true,
+                )
 
             // Then: Reps should be set correctly
             assertEquals("Target reps should match for $targetReps", targetReps, workoutSet.targetReps)
@@ -223,15 +232,16 @@ class WorkoutExecutionManagerTest {
 
         for (weight in weights) {
             // When: Creating set with different weights
-            val workoutSet = WorkoutExecutionManager.WorkoutSet(
-                setNumber = 1,
-                targetWeight = weight,
-                targetReps = 10,
-                actualWeight = weight,
-                actualReps = 10,
-                restTime = 60,
-                isCompleted = true
-            )
+            val workoutSet =
+                WorkoutExecutionManager.WorkoutSet(
+                    setNumber = 1,
+                    targetWeight = weight,
+                    targetReps = 10,
+                    actualWeight = weight,
+                    actualReps = 10,
+                    restTime = 60,
+                    isCompleted = true,
+                )
 
             // Then: Weights should be set correctly
             assertEquals("Target weight should match for $weight", weight, workoutSet.targetWeight)
@@ -245,15 +255,16 @@ class WorkoutExecutionManagerTest {
 
         for (restTime in restTimes) {
             // When: Creating set with different rest times
-            val workoutSet = WorkoutExecutionManager.WorkoutSet(
-                setNumber = 1,
-                targetReps = 10,
-                actualReps = 10,
-                targetWeight = 50.0f,
-                actualWeight = 50.0f,
-                restTime = restTime,
-                isCompleted = true
-            )
+            val workoutSet =
+                WorkoutExecutionManager.WorkoutSet(
+                    setNumber = 1,
+                    targetReps = 10,
+                    actualReps = 10,
+                    targetWeight = 50.0f,
+                    actualWeight = 50.0f,
+                    restTime = restTime,
+                    isCompleted = true,
+                )
 
             // Then: Rest time should be set correctly
             assertEquals("Rest time should match for $restTime", restTime, workoutSet.restTime)
@@ -266,16 +277,17 @@ class WorkoutExecutionManagerTest {
 
         for (rpe in rpeValues) {
             // When: Creating set with different RPE values
-            val workoutSet = WorkoutExecutionManager.WorkoutSet(
-                setNumber = 1,
-                targetReps = 10,
-                actualReps = 10,
-                targetWeight = 50.0f,
-                actualWeight = 50.0f,
-                restTime = 60,
-                isCompleted = true,
-                rpe = rpe
-            )
+            val workoutSet =
+                WorkoutExecutionManager.WorkoutSet(
+                    setNumber = 1,
+                    targetReps = 10,
+                    actualReps = 10,
+                    targetWeight = 50.0f,
+                    actualWeight = 50.0f,
+                    restTime = 60,
+                    isCompleted = true,
+                    rpe = rpe,
+                )
 
             // Then: RPE should be set correctly
             assertEquals("RPE should match for $rpe", rpe, workoutSet.rpe)
@@ -285,38 +297,41 @@ class WorkoutExecutionManagerTest {
     @Test
     fun `should handle completion status correctly`() {
         // Test completed set
-        val completedSet = WorkoutExecutionManager.WorkoutSet(
-            setNumber = 1,
-            targetReps = 10,
-            actualReps = 10,
-            targetWeight = 50.0f,
-            actualWeight = 50.0f,
-            restTime = 60,
-            isCompleted = true
-        )
+        val completedSet =
+            WorkoutExecutionManager.WorkoutSet(
+                setNumber = 1,
+                targetReps = 10,
+                actualReps = 10,
+                targetWeight = 50.0f,
+                actualWeight = 50.0f,
+                restTime = 60,
+                isCompleted = true,
+            )
         assertTrue("Set should be completed", completedSet.isCompleted)
 
         // Test incomplete set
-        val incompleteSet = WorkoutExecutionManager.WorkoutSet(
-            setNumber = 1,
-            targetReps = 10,
-            actualReps = 10,
-            targetWeight = 50.0f,
-            actualWeight = 50.0f,
-            restTime = 60,
-            isCompleted = false
-        )
+        val incompleteSet =
+            WorkoutExecutionManager.WorkoutSet(
+                setNumber = 1,
+                targetReps = 10,
+                actualReps = 10,
+                targetWeight = 50.0f,
+                actualWeight = 50.0f,
+                restTime = 60,
+                isCompleted = false,
+            )
         assertFalse("Set should not be completed", incompleteSet.isCompleted)
     }
 
     @Test
     fun `should handle workout set notes concept`() {
-        val noteExamples = listOf(
-            "Perfect form",
-            "Struggled with last 2 reps",
-            "Felt lighter than usual",
-            "Need to increase weight next time"
-        )
+        val noteExamples =
+            listOf(
+                "Perfect form",
+                "Struggled with last 2 reps",
+                "Felt lighter than usual",
+                "Need to increase weight next time",
+            )
 
         for (notes in noteExamples) {
             // When: Testing workout set notes concept
@@ -329,11 +344,12 @@ class WorkoutExecutionManagerTest {
     @Test
     fun `should handle multiple sets in workout step`() {
         // Given: Multiple sets data
-        val setsData = listOf(
-            Triple(1, 10, 10),
-            Triple(2, 10, 9),
-            Triple(3, 10, 8)
-        )
+        val setsData =
+            listOf(
+                Triple(1, 10, 10),
+                Triple(2, 10, 9),
+                Triple(3, 10, 8),
+            )
 
         // When: Testing multiple sets concept
         // Then: Should handle multiple sets correctly
@@ -344,15 +360,16 @@ class WorkoutExecutionManagerTest {
     }
 
     @Test
-    fun `should record duration and rest time non negative`() = runTest {
-        // Given
-        val exerciseStep = ExerciseStep(name = "pushup", sets = 1, reps = 10, restSeconds = 30)
-        // start flow (mocked db so insertion is no-op)
-        workoutExecutionManager.startWorkoutFlow(1L, listOf(exerciseStep))
-        // When
-        workoutExecutionManager.logSet(weight = 0.0, reps = 10, rpe = 5)
-        workoutExecutionManager.startRestTimer(30)
-        // Then (cannot access private performance insert without real DB; just ensure no exceptions)
-        assertTrue(true)
-    }
+    fun `should record duration and rest time non negative`() =
+        runTest {
+            // Given
+            val exerciseStep = ExerciseStep(name = "pushup", sets = 1, reps = 10, restSeconds = 30)
+            // start flow (mocked db so insertion is no-op)
+            workoutExecutionManager.startWorkoutFlow(1L, listOf(exerciseStep))
+            // When
+            workoutExecutionManager.logSet(weight = 0.0, reps = 10, rpe = 5)
+            workoutExecutionManager.startRestTimer(30)
+            // Then (cannot access private performance insert without real DB; just ensure no exceptions)
+            assertTrue(true)
+        }
 }

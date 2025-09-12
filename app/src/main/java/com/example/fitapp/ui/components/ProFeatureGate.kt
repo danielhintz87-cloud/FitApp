@@ -21,7 +21,7 @@ fun ProFeatureGate(
     description: String,
     onUpgradeClick: () -> Unit,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     if (isPro) {
         content()
@@ -30,7 +30,7 @@ fun ProFeatureGate(
             featureName = featureName,
             description = description,
             onUpgradeClick = onUpgradeClick,
-            modifier = modifier
+            modifier = modifier,
         )
     }
 }
@@ -40,54 +40,56 @@ fun ProUpgradePrompt(
     featureName: String,
     description: String,
     onUpgradeClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            ),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
                 Icons.Filled.Star,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
             )
-            
+
             Spacer(Modifier.height(16.dp))
-            
+
             Text(
                 text = "$featureName - PRO Feature",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
-            
+
             Spacer(Modifier.height(8.dp))
-            
+
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            
+
             Spacer(Modifier.height(20.dp))
-            
+
             Button(
                 onClick = onUpgradeClick,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(
                     Icons.Filled.Upgrade,
-                    contentDescription = null
+                    contentDescription = null,
                 )
                 Spacer(Modifier.width(8.dp))
                 Text("Upgrade to PRO")
@@ -116,7 +118,7 @@ object ProFeatureManager {
             ProFeature.RECIPE_COLLECTIONS -> false // PRO
         }
     }
-    
+
     fun getFeatureDescription(feature: ProFeature): String {
         return when (feature) {
             ProFeature.OFFICIAL_RECIPE_DATABASE -> "Access to 2,900+ expert-curated recipes with weekly updates"
@@ -141,5 +143,5 @@ enum class ProFeature {
     DETAILED_NUTRITION_ANALYSIS,
     STEP_BY_STEP_COOKING_MODE,
     WEEKLY_RECIPE_UPDATES,
-    RECIPE_COLLECTIONS
+    RECIPE_COLLECTIONS,
 }

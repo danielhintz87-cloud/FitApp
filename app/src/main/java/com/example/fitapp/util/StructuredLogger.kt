@@ -6,7 +6,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
@@ -19,11 +18,10 @@ import java.util.concurrent.ConcurrentLinkedQueue
  * Provides crash prevention, performance tracking, and debugging support
  */
 object StructuredLogger {
-    
     private const val TAG = "FitApp_Logger"
     private const val MAX_LOG_ENTRIES = 1000
     private const val LOG_FILE_NAME = "fitapp_logs.txt"
-    
+
     // Log levels
     enum class LogLevel(val value: Int, val prefix: String) {
         VERBOSE(1, "V"),
@@ -31,9 +29,9 @@ object StructuredLogger {
         INFO(3, "I"),
         WARNING(4, "W"),
         ERROR(5, "E"),
-        CRITICAL(6, "C")
+        CRITICAL(6, "C"),
     }
-    
+
     // Log categories for better organization
     enum class LogCategory(val category: String) {
         UI("UI"),
@@ -46,9 +44,9 @@ object StructuredLogger {
         USER_ACTION("USER"),
         SYSTEM("SYS"),
         SECURITY("SEC"),
-        NUTRITION("NUTRITION")
+        NUTRITION("NUTRITION"),
     }
-    
+
     // Structured log entry
     data class LogEntry(
         val timestamp: Long,
@@ -57,9 +55,9 @@ object StructuredLogger {
         val tag: String,
         val message: String,
         val metadata: Map<String, Any> = emptyMap(),
-        val exception: Throwable? = null
+        val exception: Throwable? = null,
     )
-    
+
     // In-memory log buffer
     private val logBuffer = ConcurrentLinkedQueue<LogEntry>()
     private val mutex = Mutex()
@@ -67,18 +65,22 @@ object StructuredLogger {
     private var logToFile = false
     private var minLogLevel = LogLevel.INFO
     private lateinit var appContext: Context
-    
+
     /**
      * Initialize the logging system
      */
-    fun initialize(context: Context, enableFileLogging: Boolean = true, minimumLevel: LogLevel = LogLevel.INFO) {
+    fun initialize(
+        context: Context,
+        enableFileLogging: Boolean = true,
+        minimumLevel: LogLevel = LogLevel.INFO,
+    ) {
         if (isInitialized) return
-        
+
         appContext = context.applicationContext
         logToFile = enableFileLogging
         minLogLevel = minimumLevel
         isInitialized = true
-        
+
         if (logToFile) {
             try {
                 val logDir = File(appContext.filesDir, "logs")
@@ -90,163 +92,235 @@ object StructuredLogger {
                 logToFile = false
             }
         }
-        
-        info(LogCategory.SYSTEM, "StructuredLogger", "Logging system initialized", 
-            mapOf("fileLogging" to logToFile, "minLevel" to minimumLevel.name))
+
+        info(
+            LogCategory.SYSTEM,
+            "StructuredLogger",
+            "Logging system initialized",
+            mapOf("fileLogging" to logToFile, "minLevel" to minimumLevel.name),
+        )
     }
-    
+
     /**
      * Log verbose message
      */
-    fun verbose(category: LogCategory, tag: String, message: String, metadata: Map<String, Any> = emptyMap()) {
+    fun verbose(
+        category: LogCategory,
+        tag: String,
+        message: String,
+        metadata: Map<String, Any> = emptyMap(),
+    ) {
         log(LogLevel.VERBOSE, category, tag, message, metadata)
     }
-    
+
     /**
      * Log debug message
      */
-    fun debug(category: LogCategory, tag: String, message: String, metadata: Map<String, Any> = emptyMap()) {
+    fun debug(
+        category: LogCategory,
+        tag: String,
+        message: String,
+        metadata: Map<String, Any> = emptyMap(),
+    ) {
         log(LogLevel.DEBUG, category, tag, message, metadata)
     }
-    
+
     /**
      * Log info message
      */
-    fun info(category: LogCategory, tag: String, message: String, metadata: Map<String, Any> = emptyMap()) {
+    fun info(
+        category: LogCategory,
+        tag: String,
+        message: String,
+        metadata: Map<String, Any> = emptyMap(),
+    ) {
         log(LogLevel.INFO, category, tag, message, metadata)
     }
-    
+
     /**
      * Log warning message
      */
-    fun warning(category: LogCategory, tag: String, message: String, metadata: Map<String, Any> = emptyMap(), exception: Throwable? = null) {
+    fun warning(
+        category: LogCategory,
+        tag: String,
+        message: String,
+        metadata: Map<String, Any> = emptyMap(),
+        exception: Throwable? = null,
+    ) {
         log(LogLevel.WARNING, category, tag, message, metadata, exception)
     }
-    
+
     /**
      * Log error message
      */
-    fun error(category: LogCategory, tag: String, message: String, metadata: Map<String, Any> = emptyMap(), exception: Throwable? = null) {
+    fun error(
+        category: LogCategory,
+        tag: String,
+        message: String,
+        metadata: Map<String, Any> = emptyMap(),
+        exception: Throwable? = null,
+    ) {
         log(LogLevel.ERROR, category, tag, message, metadata, exception)
     }
-    
+
     /**
      * Log critical error that might crash the app
      */
-    fun critical(category: LogCategory, tag: String, message: String, metadata: Map<String, Any> = emptyMap(), exception: Throwable? = null) {
+    fun critical(
+        category: LogCategory,
+        tag: String,
+        message: String,
+        metadata: Map<String, Any> = emptyMap(),
+        exception: Throwable? = null,
+    ) {
         log(LogLevel.CRITICAL, category, tag, message, metadata, exception)
     }
-    
+
     /**
      * Log user action for analytics and debugging
      */
-    fun logUserAction(action: String, screen: String, metadata: Map<String, Any> = emptyMap()) {
-        val actionMetadata = mutableMapOf<String, Any>(
-            "action" to action,
-            "screen" to screen,
-            "timestamp" to System.currentTimeMillis()
-        )
+    fun logUserAction(
+        action: String,
+        screen: String,
+        metadata: Map<String, Any> = emptyMap(),
+    ) {
+        val actionMetadata =
+            mutableMapOf<String, Any>(
+                "action" to action,
+                "screen" to screen,
+                "timestamp" to System.currentTimeMillis(),
+            )
         actionMetadata.putAll(metadata)
-        
+
         info(LogCategory.USER_ACTION, "UserAction", action, actionMetadata)
     }
-    
+
     /**
      * Log performance metrics
      */
-    fun logPerformance(operation: String, durationMs: Long, metadata: Map<String, Any> = emptyMap()) {
-        val perfMetadata = mutableMapOf<String, Any>(
-            "operation" to operation,
-            "duration_ms" to durationMs,
-            "timestamp" to System.currentTimeMillis()
-        )
+    fun logPerformance(
+        operation: String,
+        durationMs: Long,
+        metadata: Map<String, Any> = emptyMap(),
+    ) {
+        val perfMetadata =
+            mutableMapOf<String, Any>(
+                "operation" to operation,
+                "duration_ms" to durationMs,
+                "timestamp" to System.currentTimeMillis(),
+            )
         perfMetadata.putAll(metadata)
-        
-        val level = when {
-            durationMs > 5000 -> LogLevel.WARNING
-            durationMs > 1000 -> LogLevel.INFO
-            else -> LogLevel.DEBUG
-        }
-        
+
+        val level =
+            when {
+                durationMs > 5000 -> LogLevel.WARNING
+                durationMs > 1000 -> LogLevel.INFO
+                else -> LogLevel.DEBUG
+            }
+
         log(level, LogCategory.PERFORMANCE, "Performance", operation, perfMetadata)
     }
-    
+
     /**
      * Log API call for monitoring
      */
-    fun logApiCall(provider: String, endpoint: String, success: Boolean, durationMs: Long, statusCode: Int? = null) {
-        val apiMetadata = mapOf(
-            "provider" to provider,
-            "endpoint" to endpoint,
-            "success" to success,
-            "duration_ms" to durationMs,
-            "status_code" to (statusCode ?: "unknown"),
-            "timestamp" to System.currentTimeMillis()
-        )
-        
+    fun logApiCall(
+        provider: String,
+        endpoint: String,
+        success: Boolean,
+        durationMs: Long,
+        statusCode: Int? = null,
+    ) {
+        val apiMetadata =
+            mapOf(
+                "provider" to provider,
+                "endpoint" to endpoint,
+                "success" to success,
+                "duration_ms" to durationMs,
+                "status_code" to (statusCode ?: "unknown"),
+                "timestamp" to System.currentTimeMillis(),
+            )
+
         val level = if (success) LogLevel.INFO else LogLevel.ERROR
         log(level, LogCategory.NETWORK, "ApiCall", "$provider.$endpoint", apiMetadata)
     }
-    
+
     /**
      * Log database operation
      */
-    fun logDatabaseOperation(operation: String, tableName: String, success: Boolean, durationMs: Long, affectedRows: Int? = null) {
-        val dbMetadata = mutableMapOf<String, Any>(
-            "operation" to operation,
-            "table" to tableName,
-            "success" to success,
-            "duration_ms" to durationMs,
-            "timestamp" to System.currentTimeMillis()
-        )
-        
+    fun logDatabaseOperation(
+        operation: String,
+        tableName: String,
+        success: Boolean,
+        durationMs: Long,
+        affectedRows: Int? = null,
+    ) {
+        val dbMetadata =
+            mutableMapOf<String, Any>(
+                "operation" to operation,
+                "table" to tableName,
+                "success" to success,
+                "duration_ms" to durationMs,
+                "timestamp" to System.currentTimeMillis(),
+            )
+
         affectedRows?.let { dbMetadata["affected_rows"] = it }
-        
+
         val level = if (success) LogLevel.DEBUG else LogLevel.ERROR
         log(level, LogCategory.DATABASE, "DatabaseOp", "$operation.$tableName", dbMetadata)
     }
-    
+
     /**
      * Get recent log entries for debugging
      */
-    fun getRecentLogs(count: Int = 100, minLevel: LogLevel = LogLevel.INFO): List<LogEntry> {
+    fun getRecentLogs(
+        count: Int = 100,
+        minLevel: LogLevel = LogLevel.INFO,
+    ): List<LogEntry> {
         return logBuffer
             .filter { it.level.value >= minLevel.value }
             .takeLast(count)
     }
-    
+
     /**
      * Get logs by category
      */
-    fun getLogsByCategory(category: LogCategory, count: Int = 50): List<LogEntry> {
+    fun getLogsByCategory(
+        category: LogCategory,
+        count: Int = 50,
+    ): List<LogEntry> {
         return logBuffer
             .filter { it.category == category }
             .takeLast(count)
     }
-    
+
     /**
      * Export logs to string format
      */
     fun exportLogs(minLevel: LogLevel = LogLevel.INFO): String {
         val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
         val logs = getRecentLogs(500, minLevel)
-        
+
         return buildString {
             appendLine("=== FitApp Log Export ===")
             appendLine("Generated: ${formatter.format(Date())}")
             appendLine("Total entries: ${logs.size}")
             appendLine("Min level: ${minLevel.name}")
             appendLine()
-            
+
             logs.forEach { entry ->
-                appendLine("${formatter.format(Date(entry.timestamp))} ${entry.level.prefix}/${entry.category.category}/${entry.tag}: ${entry.message}")
-                
+                appendLine(
+                    "${formatter.format(
+                        Date(entry.timestamp),
+                    )} ${entry.level.prefix}/${entry.category.category}/${entry.tag}: ${entry.message}",
+                )
+
                 if (entry.metadata.isNotEmpty()) {
                     entry.metadata.forEach { (key, value) ->
                         appendLine("  $key: $value")
                     }
                 }
-                
+
                 entry.exception?.let { ex ->
                     appendLine("  Exception: ${ex.javaClass.simpleName}: ${ex.message}")
                     ex.stackTrace.take(5).forEach { stackElement ->
@@ -257,7 +331,7 @@ object StructuredLogger {
             }
         }
     }
-    
+
     /**
      * Clear all logs
      */
@@ -265,58 +339,61 @@ object StructuredLogger {
         logBuffer.clear()
         info(LogCategory.SYSTEM, "StructuredLogger", "Logs cleared")
     }
-    
+
     /**
      * Get log statistics
      */
     fun getLogStatistics(): Map<String, Any> {
         val logs = logBuffer.toList()
-        val levelCounts = LogLevel.entries.associateWith { level ->
-            logs.count { it.level == level }
-        }
-        val categoryCounts = LogCategory.entries.associateWith { category ->
-            logs.count { it.category == category }
-        }
-        
+        val levelCounts =
+            LogLevel.entries.associateWith { level ->
+                logs.count { it.level == level }
+            }
+        val categoryCounts =
+            LogCategory.entries.associateWith { category ->
+                logs.count { it.category == category }
+            }
+
         return mapOf(
             "total_logs" to logs.size,
             "level_counts" to levelCounts.mapKeys { it.key.name },
             "category_counts" to categoryCounts.mapKeys { it.key.name },
             "oldest_log" to (logs.minByOrNull { it.timestamp }?.timestamp ?: 0),
-            "newest_log" to (logs.maxByOrNull { it.timestamp }?.timestamp ?: 0)
+            "newest_log" to (logs.maxByOrNull { it.timestamp }?.timestamp ?: 0),
         )
     }
-    
+
     // Private implementation
-    
+
     private fun log(
         level: LogLevel,
         category: LogCategory,
         tag: String,
         message: String,
         metadata: Map<String, Any> = emptyMap(),
-        exception: Throwable? = null
+        exception: Throwable? = null,
     ) {
         if (!isInitialized || level.value < minLogLevel.value) return
-        
-        val entry = LogEntry(
-            timestamp = System.currentTimeMillis(),
-            level = level,
-            category = category,
-            tag = tag,
-            message = message,
-            metadata = metadata,
-            exception = exception
-        )
-        
+
+        val entry =
+            LogEntry(
+                timestamp = System.currentTimeMillis(),
+                level = level,
+                category = category,
+                tag = tag,
+                message = message,
+                metadata = metadata,
+                exception = exception,
+            )
+
         // Add to buffer
         logBuffer.offer(entry)
-        
+
         // Maintain buffer size
         while (logBuffer.size > MAX_LOG_ENTRIES) {
             logBuffer.poll()
         }
-        
+
         // Log to Android Log
         val logMessage = buildLogMessage(entry)
         when (level) {
@@ -327,33 +404,35 @@ object StructuredLogger {
             LogLevel.ERROR -> Log.e("${category.category}/$tag", logMessage, exception)
             LogLevel.CRITICAL -> Log.wtf("${category.category}/$tag", logMessage, exception)
         }
-        
+
         // Write to file if enabled
         if (logToFile) {
             writeToFile(entry)
         }
     }
-    
+
     private fun buildLogMessage(entry: LogEntry): String {
         val message = StringBuilder(entry.message)
-        
+
         if (entry.metadata.isNotEmpty()) {
             message.append(" [")
             entry.metadata.entries.joinToString(", ") { "${it.key}=${it.value}" }
                 .let { message.append(it) }
             message.append("]")
         }
-        
+
         return message.toString()
     }
-    
+
     private fun writeToFile(entry: LogEntry) {
         // Note: This is a simple implementation. In production, you might want to use
         // a more sophisticated file logging solution with rotation, compression, etc.
         try {
             val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
-            val logLine = "${formatter.format(Date(entry.timestamp))} ${entry.level.prefix}/${entry.category.category}/${entry.tag}: ${buildLogMessage(entry)}\n"
-            
+            val logLine = "${formatter.format(
+                Date(entry.timestamp),
+            )} ${entry.level.prefix}/${entry.category.category}/${entry.tag}: ${buildLogMessage(entry)}\n"
+
             // Write the log line to file
             CoroutineScope(Dispatchers.IO).launch {
                 try {
@@ -376,18 +455,36 @@ object StructuredLogger {
 /**
  * Extension functions for easy logging
  */
-fun Any.logDebug(category: StructuredLogger.LogCategory, message: String, metadata: Map<String, Any> = emptyMap()) {
+fun Any.logDebug(
+    category: StructuredLogger.LogCategory,
+    message: String,
+    metadata: Map<String, Any> = emptyMap(),
+) {
     StructuredLogger.debug(category, this::class.simpleName ?: "Unknown", message, metadata)
 }
 
-fun Any.logInfo(category: StructuredLogger.LogCategory, message: String, metadata: Map<String, Any> = emptyMap()) {
+fun Any.logInfo(
+    category: StructuredLogger.LogCategory,
+    message: String,
+    metadata: Map<String, Any> = emptyMap(),
+) {
     StructuredLogger.info(category, this::class.simpleName ?: "Unknown", message, metadata)
 }
 
-fun Any.logWarning(category: StructuredLogger.LogCategory, message: String, metadata: Map<String, Any> = emptyMap(), exception: Throwable? = null) {
+fun Any.logWarning(
+    category: StructuredLogger.LogCategory,
+    message: String,
+    metadata: Map<String, Any> = emptyMap(),
+    exception: Throwable? = null,
+) {
     StructuredLogger.warning(category, this::class.simpleName ?: "Unknown", message, metadata, exception)
 }
 
-fun Any.logError(category: StructuredLogger.LogCategory, message: String, metadata: Map<String, Any> = emptyMap(), exception: Throwable? = null) {
+fun Any.logError(
+    category: StructuredLogger.LogCategory,
+    message: String,
+    metadata: Map<String, Any> = emptyMap(),
+    exception: Throwable? = null,
+) {
     StructuredLogger.error(category, this::class.simpleName ?: "Unknown", message, metadata, exception)
 }

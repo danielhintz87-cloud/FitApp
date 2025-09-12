@@ -12,13 +12,39 @@ data class AiLog(
     val prompt: String,
     val result: String,
     val success: Boolean,
-    val tookMs: Long
+    val tookMs: Long,
 ) {
     companion object {
-        fun success(type: String, provider: String, prompt: String, result: String, took: Long) =
-            AiLog(ts = System.currentTimeMillis(), type = type, provider = provider, prompt = prompt, result = result, success = true, tookMs = took)
+        fun success(
+            type: String,
+            provider: String,
+            prompt: String,
+            result: String,
+            took: Long,
+        ) = AiLog(
+            ts = System.currentTimeMillis(),
+            type = type,
+            provider = provider,
+            prompt = prompt,
+            result = result,
+            success = true,
+            tookMs = took,
+        )
 
-        fun error(type: String, provider: String, prompt: String, error: String, took: Long) =
-            AiLog(ts = System.currentTimeMillis(), type = type, provider = provider, prompt = prompt, result = "ERROR: $error", success = false, tookMs = took)
+        fun error(
+            type: String,
+            provider: String,
+            prompt: String,
+            error: String,
+            took: Long,
+        ) = AiLog(
+            ts = System.currentTimeMillis(),
+            type = type,
+            provider = provider,
+            prompt = prompt,
+            result = "ERROR: $error",
+            success = false,
+            tookMs = took,
+        )
     }
 }

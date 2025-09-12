@@ -11,7 +11,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AIPersonalTrainerNavigationTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
@@ -20,28 +19,28 @@ class AIPersonalTrainerNavigationTest {
         var workoutClicked = false
         var nutritionClicked = false
         var analyticsClicked = false
-        
+
         composeTestRule.setContent {
             FitAppTheme {
                 AIPersonalTrainerScreen(
                     onNavigateToHiitBuilder = { workoutClicked = true },
                     onNavigateToNutrition = { nutritionClicked = true },
-                    onNavigateToAnalytics = { analyticsClicked = true }
+                    onNavigateToAnalytics = { analyticsClicked = true },
                 )
             }
         }
 
         // Wait for the screen to load
         composeTestRule.waitForIdle()
-        
+
         // Find and click workout quick action
         composeTestRule.onNodeWithContentDescription("Fitness Center Symbol").performClick()
         assert(workoutClicked) { "Workout quick action should trigger navigation" }
-        
+
         // Find and click nutrition quick action
         composeTestRule.onNodeWithContentDescription("Restaurant Symbol").performClick()
         assert(nutritionClicked) { "Nutrition quick action should trigger navigation" }
-        
+
         // Find and click analytics quick action
         composeTestRule.onNodeWithContentDescription("Analytics Symbol").performClick()
         assert(analyticsClicked) { "Analytics quick action should trigger navigation" }
@@ -50,11 +49,11 @@ class AIPersonalTrainerNavigationTest {
     @Test
     fun aiPersonalTrainer_backButtonWorks() {
         var backClicked = false
-        
+
         composeTestRule.setContent {
             FitAppTheme {
                 AIPersonalTrainerScreen(
-                    onBack = { backClicked = true }
+                    onBack = { backClicked = true },
                 )
             }
         }
@@ -74,7 +73,7 @@ class AIPersonalTrainerNavigationTest {
 
         // Verify title is displayed
         composeTestRule.onNodeWithText("AI Personal Trainer").assertIsDisplayed()
-        
+
         // Verify psychology icon is displayed
         composeTestRule.onNodeWithContentDescription("Psychologie Symbol").assertIsDisplayed()
     }
@@ -82,18 +81,18 @@ class AIPersonalTrainerNavigationTest {
     @Test
     fun aiPersonalTrainer_workoutPlanButtonWorks() {
         var workoutStarted = false
-        
+
         composeTestRule.setContent {
             FitAppTheme {
                 AIPersonalTrainerScreen(
-                    onNavigateToWorkout = { _, _ -> workoutStarted = true }
+                    onNavigateToWorkout = { _, _ -> workoutStarted = true },
                 )
             }
         }
 
         // Wait for loading to complete and check if workout plan button exists
         composeTestRule.waitForIdle()
-        
+
         // Note: The button might not be visible if AI data is not loaded
         // This test would need mock data to be fully effective
     }
@@ -101,18 +100,18 @@ class AIPersonalTrainerNavigationTest {
     @Test
     fun aiPersonalTrainer_mealPlanButtonWorks() {
         var mealPlanViewed = false
-        
+
         composeTestRule.setContent {
             FitAppTheme {
                 AIPersonalTrainerScreen(
-                    onNavigateToRecipeGeneration = { mealPlanViewed = true }
+                    onNavigateToRecipeGeneration = { mealPlanViewed = true },
                 )
             }
         }
 
         // Wait for loading to complete
         composeTestRule.waitForIdle()
-        
+
         // Note: The button might not be visible if AI data is not loaded
         // This test would need mock data to be fully effective
     }

@@ -21,37 +21,38 @@ fun EquipmentSelectionScreen(
     @Suppress("UNUSED_PARAMETER") selectedEquipment: List<String>,
     onEquipmentChanged: (List<String>) -> Unit,
     onBackPressed: () -> Unit,
-    viewModel: EquipmentSelectionViewModel = hiltViewModel()
+    viewModel: EquipmentSelectionViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
-    
+
     // Get current equipment selection from ViewModel
     val currentSelection by viewModel.selectedEquipment.collectAsState()
-    
-    val equipmentOptions = listOf(
-        "Hanteln",
-        "Langhantel",
-        "Kurzhanteln", 
-        "Klimmzugstange",
-        "Dip-Station",
-        "Trainingsbank",
-        "Verstellbare Bank",
-        "Kettlebells",
-        "Widerstandsbänder",
-        "TRX/Schlingen",
-        "Medizinbälle",
-        "Foam Roller",
-        "Yoga-Matte",
-        "Laufband",
-        "Crosstrainer", 
-        "Fahrradergometer",
-        "Rudergerät",
-        "Vollausstattung Fitnessstudio",
-        "Heimstudio komplett",
-        "Crossfit Equipment",
-        "Functional Training Setup"
-    )
-    
+
+    val equipmentOptions =
+        listOf(
+            "Hanteln",
+            "Langhantel",
+            "Kurzhanteln",
+            "Klimmzugstange",
+            "Dip-Station",
+            "Trainingsbank",
+            "Verstellbare Bank",
+            "Kettlebells",
+            "Widerstandsbänder",
+            "TRX/Schlingen",
+            "Medizinbälle",
+            "Foam Roller",
+            "Yoga-Matte",
+            "Laufband",
+            "Crosstrainer",
+            "Fahrradergometer",
+            "Rudergerät",
+            "Vollausstattung Fitnessstudio",
+            "Heimstudio komplett",
+            "Crossfit Equipment",
+            "Functional Training Setup",
+        )
+
     // Save selection when it changes
     LaunchedEffect(currentSelection) {
         val selectionList = currentSelection.toList()
@@ -66,72 +67,78 @@ fun EquipmentSelectionScreen(
                     IconButton(onClick = onBackPressed) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                     }
-                }
+                },
             )
-        }
+        },
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-                .padding(16.dp)
+            modifier =
+                Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+                    .padding(16.dp),
         ) {
             Text(
                 text = "Wähle deine verfügbaren Trainingsgeräte:",
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 16.dp),
             )
-            
+
             Text(
                 text = "${currentSelection.size} Geräte ausgewählt",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 16.dp),
             )
-            
+
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(equipmentOptions) { equipment ->
                     Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .toggleable(
-                                value = currentSelection.contains(equipment),
-                                onValueChange = { isSelected ->
-                                    val newSelection = if (isSelected) {
-                                        currentSelection + equipment
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .toggleable(
+                                    value = currentSelection.contains(equipment),
+                                    onValueChange = { isSelected ->
+                                        val newSelection =
+                                            if (isSelected) {
+                                                currentSelection + equipment
+                                            } else {
+                                                currentSelection - equipment
+                                            }
+                                        viewModel.updateSelection(newSelection)
+                                    },
+                                    role = Role.Checkbox,
+                                ),
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor =
+                                    if (currentSelection.contains(equipment)) {
+                                        MaterialTheme.colorScheme.primaryContainer
                                     } else {
-                                        currentSelection - equipment
-                                    }
-                                    viewModel.updateSelection(newSelection)
-                                },
-                                role = Role.Checkbox
+                                        MaterialTheme.colorScheme.surface
+                                    },
                             ),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (currentSelection.contains(equipment)) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.surface
-                            }
-                        )
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
                                 text = equipment,
                                 style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
                             )
-                            
+
                             Checkbox(
                                 checked = currentSelection.contains(equipment),
-                                onCheckedChange = null // handled by toggleable
+                                onCheckedChange = null, // handled by toggleable
                             )
                         }
                     }

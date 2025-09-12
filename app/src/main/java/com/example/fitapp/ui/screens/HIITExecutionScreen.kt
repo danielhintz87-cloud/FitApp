@@ -11,19 +11,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
-import com.example.fitapp.domain.entities.HIITWorkout
 import com.example.fitapp.domain.entities.HIITExercise
+import com.example.fitapp.domain.entities.HIITWorkout
+import kotlinx.coroutines.delay
 
 enum class HIITPhase {
     READY,
     WORK,
     REST,
-    COMPLETED
+    COMPLETED,
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,7 +30,7 @@ enum class HIITPhase {
 fun HIITExecutionScreen(
     workout: HIITWorkout,
     onBackPressed: () -> Unit,
-    onWorkoutCompleted: () -> Unit
+    onWorkoutCompleted: () -> Unit,
 ) {
     var currentRound by remember { mutableIntStateOf(1) }
     var currentExerciseIndex by remember { mutableIntStateOf(0) }
@@ -39,11 +38,14 @@ fun HIITExecutionScreen(
     var timeRemaining by remember { mutableIntStateOf(5) } // 5-second countdown to start
     var isPaused by remember { mutableStateOf(false) }
     var isWorkoutActive by remember { mutableStateOf(false) }
-    
-    val currentExercise = if (currentExerciseIndex < workout.exercises.size) {
-        workout.exercises[currentExerciseIndex]
-    } else null
-    
+
+    val currentExercise =
+        if (currentExerciseIndex < workout.exercises.size) {
+            workout.exercises[currentExerciseIndex]
+        } else {
+            null
+        }
+
     // Timer logic
     LaunchedEffect(isWorkoutActive, isPaused, timeRemaining, currentPhase) {
         if (isWorkoutActive && !isPaused && timeRemaining > 0) {
@@ -84,15 +86,15 @@ fun HIITExecutionScreen(
             }
         }
     }
-    
+
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { 
+            title = {
                 Column {
                     Text(workout.name, style = MaterialTheme.typography.titleMedium)
                     Text(
                         "Runde $currentRound/${workout.rounds}",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             },
@@ -106,13 +108,13 @@ fun HIITExecutionScreen(
                     IconButton(onClick = { isPaused = !isPaused }) {
                         Icon(
                             if (isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-                            contentDescription = if (isPaused) "Fortsetzen" else "Pausieren"
+                            contentDescription = if (isPaused) "Fortsetzen" else "Pausieren",
                         )
                     }
                 }
-            }
+            },
         )
-        
+
         when (currentPhase) {
             HIITPhase.READY -> {
                 ReadyScreen(
@@ -121,7 +123,7 @@ fun HIITExecutionScreen(
                         isWorkoutActive = true
                         currentPhase = HIITPhase.WORK
                         timeRemaining = workout.workInterval
-                    }
+                    },
                 )
             }
             HIITPhase.WORK, HIITPhase.REST -> {
@@ -135,14 +137,14 @@ fun HIITExecutionScreen(
                         totalRounds = workout.rounds,
                         exerciseIndex = currentExerciseIndex,
                         totalExercises = workout.exercises.size,
-                        isPaused = isPaused
+                        isPaused = isPaused,
                     )
                 }
             }
             HIITPhase.COMPLETED -> {
                 CompletedScreen(
                     workout = workout,
-                    onFinish = onWorkoutCompleted
+                    onFinish = onWorkoutCompleted,
                 )
             }
         }
@@ -152,49 +154,51 @@ fun HIITExecutionScreen(
 @Composable
 private fun ReadyScreen(
     timeRemaining: Int,
-    onStart: () -> Unit
+    onStart: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = "Bereit?",
             style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         if (timeRemaining > 0) {
             Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(120.dp)
+                        .clip(CircleShape),
+                contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(
                     progress = { timeRemaining / 5f },
                     modifier = Modifier.fillMaxSize(),
-                    strokeWidth = 8.dp
+                    strokeWidth = 8.dp,
                 )
                 Text(
                     text = "$timeRemaining",
                     style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
             Text("Workout startet in...")
         } else {
             Button(
                 onClick = onStart,
                 modifier = Modifier.size(120.dp),
-                shape = CircleShape
+                shape = CircleShape,
             ) {
                 Text("START", fontWeight = FontWeight.Bold)
             }
@@ -212,128 +216,132 @@ private fun WorkoutActiveScreen(
     totalRounds: Int,
     exerciseIndex: Int,
     totalExercises: Int,
-    isPaused: Boolean
+    isPaused: Boolean,
 ) {
     val isWorkPhase = phase == HIITPhase.WORK
-    val phaseColor = if (isWorkPhase) {
-        MaterialTheme.colorScheme.error
-    } else {
-        MaterialTheme.colorScheme.primary
-    }
-    
+    val phaseColor =
+        if (isWorkPhase) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.primary
+        }
+
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // Progress indicator
         LinearProgressIndicator(
-            progress = { 
+            progress = {
                 val totalWork = totalRounds * totalExercises
                 if (totalWork > 0) {
                     (totalWork - (totalRounds - currentRound) * totalExercises - (totalExercises - exerciseIndex)) / totalWork.toFloat()
-                } else 0f
+                } else {
+                    0f
+                }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         // Phase indicator
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = phaseColor.copy(alpha = 0.1f))
+            colors = CardDefaults.cardColors(containerColor = phaseColor.copy(alpha = 0.1f)),
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = if (isWorkPhase) "ARBEITEN" else "PAUSE",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = phaseColor
+                    color = phaseColor,
                 )
-                
+
                 if (isPaused) {
                     Text(
                         text = "PAUSIERT",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.outline
+                        color = MaterialTheme.colorScheme.outline,
                     )
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         // Timer
         Box(
             modifier = Modifier.size(200.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             CircularProgressIndicator(
                 progress = { (totalTime - timeRemaining) / totalTime.toFloat() },
                 modifier = Modifier.fillMaxSize(),
                 strokeWidth = 12.dp,
-                color = phaseColor
+                color = phaseColor,
             )
             Text(
                 text = "$timeRemaining",
                 style = MaterialTheme.typography.displayLarge,
                 fontWeight = FontWeight.Bold,
-                color = phaseColor
+                color = phaseColor,
             )
         }
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         // Exercise info (only during work phase)
         if (isWorkPhase) {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = exercise.bodyweightExercise.name,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     Text(
                         text = exercise.bodyweightExercise.description,
                         style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
-                    
+
                     if (exercise.targetReps != null) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Ziel: ${exercise.targetReps} Wiederholungen",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
                         )
                     }
-                    
+
                     // Instructions
                     if (exercise.bodyweightExercise.instructions.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "Anweisungen:",
                             style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         exercise.bodyweightExercise.instructions.forEach { instruction ->
                             Text(
                                 text = "• $instruction",
                                 style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(vertical = 2.dp)
+                                modifier = Modifier.padding(vertical = 2.dp),
                             )
                         }
                     }
@@ -343,43 +351,51 @@ private fun WorkoutActiveScreen(
             // Next exercise preview during rest
             val nextExerciseIndex = (exerciseIndex + 1) % totalExercises
             val nextExercise = exercise.bodyweightExercise // This would need to be passed from parent
-            
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = "Nächste Übung:",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.outline
+                        color = MaterialTheme.colorScheme.outline,
                     )
                     Text(
                         text = "Vorbereitung...",
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.weight(1f))
-        
+
         // Round and exercise info
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Runde", style = MaterialTheme.typography.bodySmall)
-                Text("$currentRound / $totalRounds", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    "$currentRound / $totalRounds",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Übung", style = MaterialTheme.typography.bodySmall)
-                Text("${exerciseIndex + 1} / $totalExercises", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    "${exerciseIndex + 1} / $totalExercises",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
             }
         }
     }
@@ -388,72 +404,81 @@ private fun WorkoutActiveScreen(
 @Composable
 private fun CompletedScreen(
     workout: HIITWorkout,
-    onFinish: () -> Unit
+    onFinish: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Icon(
             Icons.Filled.CheckCircle,
             contentDescription = "Abgeschlossen",
             modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colorScheme.primary
+            tint = MaterialTheme.colorScheme.primary,
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         Text(
             text = "Workout abgeschlossen!",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text(
             text = workout.name,
             style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text("Gesamtzeit:", style = MaterialTheme.typography.bodyMedium)
-                    Text("${workout.totalDuration / 60}min", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "${workout.totalDuration / 60}min",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text("Runden:", style = MaterialTheme.typography.bodyMedium)
                     Text("${workout.rounds}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text("Übungen:", style = MaterialTheme.typography.bodyMedium)
-                    Text("${workout.exercises.size}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "${workout.exercises.size}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         Button(
             onClick = onFinish,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Fertig")
         }

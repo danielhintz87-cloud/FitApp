@@ -13,13 +13,13 @@ private const val TEST_DB = "fitapp_migration_test.db"
 
 @RunWith(AndroidJUnit4::class)
 class Migration7to8Test {
-
     @get:Rule
-    val helper = MigrationTestHelper(
-        InstrumentationRegistry.getInstrumentation(),
-        AppDatabase::class.java.canonicalName,
-        FrameworkSQLiteOpenHelperFactory()
-    )
+    val helper =
+        MigrationTestHelper(
+            InstrumentationRegistry.getInstrumentation(),
+            AppDatabase::class.java.canonicalName,
+            FrameworkSQLiteOpenHelperFactory(),
+        )
 
     @Test
     fun migration_7_to_8_adds_recipe_indices() {
@@ -28,9 +28,10 @@ class Migration7to8Test {
 
         // 2) Run migration 7→8
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
-        val db = Room.databaseBuilder(ctx, AppDatabase::class.java, TEST_DB)
-            .addMigrations(AppDatabase.MIGRATION_7_8)
-            .build()
+        val db =
+            Room.databaseBuilder(ctx, AppDatabase::class.java, TEST_DB)
+                .addMigrations(AppDatabase.MIGRATION_7_8)
+                .build()
 
         // 3) Validate that indices exist
         db.openHelper.writableDatabase.use { sqlDb ->
@@ -43,7 +44,7 @@ class Migration7to8Test {
                 assert(names.contains("index_recipes_title")) { "Missing index_recipes_title" }
             }
         }
-        
+
         db.close()
     }
 
@@ -54,9 +55,10 @@ class Migration7to8Test {
 
         // 2) Run migration 7→8
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
-        val db = Room.databaseBuilder(ctx, AppDatabase::class.java, TEST_DB)
-            .addMigrations(AppDatabase.MIGRATION_7_8)
-            .build()
+        val db =
+            Room.databaseBuilder(ctx, AppDatabase::class.java, TEST_DB)
+                .addMigrations(AppDatabase.MIGRATION_7_8)
+                .build()
 
         // 3) Validate that weight_entries table exists
         db.openHelper.writableDatabase.use { sqlDb ->
@@ -64,7 +66,7 @@ class Migration7to8Test {
                 assert(c.moveToFirst()) { "weight_entries table should exist after migration" }
             }
         }
-        
+
         db.close()
     }
 }

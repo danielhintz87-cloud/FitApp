@@ -1,0 +1,246 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate configuration for FitApp Android project with Gradle version catalogs",
+  "extends": [
+    "config:base",
+    "group:allNonMajor",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":separatePatchReleases"
+  ],
+  "timezone": "Europe/Berlin",
+  "schedule": {
+    "schedule": ["after 7am and before 6pm every weekday", "every weekend"]
+  },
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 2,
+  "rebaseWhen": "conflicted",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "to {{newVersion}}",
+  "commitMessageSuffix": "",
+  "labels": ["dependencies", "renovate"],
+  "assignees": ["danielhintz87-cloud"],
+  "reviewers": ["danielhintz87-cloud"],
+  "packageRules": [
+    {
+      "description": "Android Gradle Plugin & Kotlin - Group major updates for review",
+      "groupName": "Android Gradle Plugin & Kotlin",
+      "matchPackageNames": [
+        "com.android.tools.build:gradle",
+        "org.jetbrains.kotlin:kotlin-gradle-plugin",
+        "org.jetbrains.kotlin.android",
+        "org.jetbrains.kotlin.plugin.serialization",
+        "org.jetbrains.kotlin.plugin.compose"
+      ],
+      "matchPackagePatterns": ["^org\\.jetbrains\\.kotlin:kotlin-"],
+      "labels": ["dependencies", "android-core", "renovate"],
+      "automerge": false,
+      "major": {
+        "automerge": false
+      },
+      "minor": {
+        "automerge": false
+      },
+      "patch": {
+        "automerge": true
+      }
+    },
+    {
+      "description": "Compose BOM and Compose libraries",
+      "groupName": "Jetpack Compose",
+      "matchPackageNames": ["androidx.compose:compose-bom"],
+      "matchPackagePatterns": ["^androidx\\.compose"],
+      "labels": ["dependencies", "compose", "renovate"],
+      "automerge": false,
+      "patch": {
+        "automerge": true
+      }
+    },
+    {
+      "description": "AndroidX Core libraries",
+      "groupName": "AndroidX Core",
+      "matchPackagePatterns": [
+        "^androidx\\.core",
+        "^androidx\\.lifecycle",
+        "^androidx\\.activity",
+        "^androidx\\.fragment",
+        "^androidx\\.navigation",
+        "^androidx\\.work",
+        "^androidx\\.appcompat",
+        "^androidx\\.browser"
+      ],
+      "labels": ["dependencies", "androidx", "renovate"],
+      "automerge": false,
+      "patch": {
+        "automerge": true
+      }
+    },
+    {
+      "description": "Room Database",
+      "groupName": "Room Database",
+      "matchPackagePatterns": ["^androidx\\.room"],
+      "labels": ["dependencies", "room", "renovate"],
+      "automerge": false,
+      "patch": {
+        "automerge": true
+      }
+    },
+    {
+      "description": "DataStore and Protobuf",
+      "groupName": "DataStore & Protobuf",
+      "matchPackagePatterns": [
+        "^androidx\\.datastore",
+        "^com\\.google\\.protobuf"
+      ],
+      "labels": ["dependencies", "datastore", "renovate"],
+      "automerge": false,
+      "patch": {
+        "automerge": true
+      }
+    },
+    {
+      "description": "Hilt Dependency Injection",
+      "groupName": "Hilt",
+      "matchPackagePatterns": [
+        "^com\\.google\\.dagger:hilt",
+        "^androidx\\.hilt"
+      ],
+      "labels": ["dependencies", "hilt", "renovate"],
+      "automerge": false,
+      "patch": {
+        "automerge": true
+      }
+    },
+    {
+      "description": "Networking libraries",
+      "groupName": "Networking",
+      "matchPackagePatterns": [
+        "^com\\.squareup\\.retrofit2",
+        "^com\\.squareup\\.okhttp3",
+        "^com\\.squareup\\.moshi"
+      ],
+      "labels": ["dependencies", "networking", "renovate"],
+      "automerge": false,
+      "patch": {
+        "automerge": true
+      }
+    },
+    {
+      "description": "Camera and ML libraries",
+      "groupName": "Camera & ML",
+      "matchPackagePatterns": [
+        "^androidx\\.camera",
+        "^com\\.google\\.mlkit",
+        "^org\\.tensorflow",
+        "^com\\.microsoft\\.onnxruntime",
+        "^androidx\\.health"
+      ],
+      "labels": ["dependencies", "ml", "renovate"],
+      "automerge": false,
+      "patch": {
+        "automerge": true
+      }
+    },
+    {
+      "description": "Wear OS libraries",
+      "groupName": "Wear OS",
+      "matchPackagePatterns": [
+        "^androidx\\.wear",
+        "^com\\.google\\.android\\.gms:play-services-wearable",
+        "^com\\.google\\.android\\.horologist"
+      ],
+      "labels": ["dependencies", "wear", "renovate"],
+      "automerge": false,
+      "patch": {
+        "automerge": true
+      }
+    },
+    {
+      "description": "Testing libraries - safe for automerge",
+      "groupName": "Testing",
+      "matchPackagePatterns": [
+        "^junit:junit",
+        "^androidx\\.test",
+        "^org\\.mockito",
+        "^org\\.robolectric",
+        "^org\\.jetbrains\\.kotlinx:kotlinx-coroutines-test"
+      ],
+      "labels": ["dependencies", "testing", "renovate"],
+      "automerge": true,
+      "patch": {
+        "automerge": true
+      },
+      "minor": {
+        "automerge": true
+      }
+    },
+    {
+      "description": "Build tools and plugins",
+      "groupName": "Build Tools",
+      "matchPackagePatterns": [
+        "^com\\.google\\.devtools\\.ksp",
+        "^com\\.google\\.protobuf.*gradle.*plugin",
+        "^pl\\.allegro\\.tech\\.build\\.axion-release"
+      ],
+      "labels": ["dependencies", "build-tools", "renovate"],
+      "automerge": false,
+      "patch": {
+        "automerge": true
+      }
+    },
+    {
+      "description": "GitHub Actions - safe for automerge",
+      "groupName": "GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "labels": ["dependencies", "github-actions", "renovate"],
+      "automerge": true,
+      "patch": {
+        "automerge": true
+      },
+      "minor": {
+        "automerge": true
+      }
+    },
+    {
+      "description": "Image and media libraries",
+      "groupName": "Media",
+      "matchPackagePatterns": [
+        "^io\\.coil-kt",
+        "^com\\.android\\.tools:desugar_jdk_libs"
+      ],
+      "labels": ["dependencies", "media", "renovate"],
+      "automerge": false,
+      "patch": {
+        "automerge": true
+      }
+    }
+  ],
+  "gradle": {
+    "enabled": true
+  },
+  "java": {
+    "enabled": true
+  },
+  "github-actions": {
+    "enabled": true
+  },
+  "ignoreTests": false,
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**"
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security", "vulnerabilities"],
+    "automerge": false
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": {
+      "schedule": ["before 6am on Monday"]
+    },
+    "automerge": true,
+    "commitMessageAction": "Lock file maintenance"
+  }
+}

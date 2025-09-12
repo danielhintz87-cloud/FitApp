@@ -13,34 +13,32 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 class SocialChallengesViewModel(application: Application) : AndroidViewModel(application) {
-    
     private val database = AppDatabase.get(application)
     private val repository = PersonalMotivationRepository(database)
     private val challengeManager = SocialChallengeManager(application, repository)
-    
+
     private val _challenges = MutableStateFlow<List<SocialChallengeEntity>>(emptyList())
     val challenges: StateFlow<List<SocialChallengeEntity>> = _challenges.asStateFlow()
-    
+
     private val _userParticipations = MutableStateFlow<List<ChallengeParticipationEntity>>(emptyList())
     val userParticipations: StateFlow<List<ChallengeParticipationEntity>> = _userParticipations.asStateFlow()
-    
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    
+
     // Filter state
     val selectedCategory = mutableStateOf("all")
     val categories = listOf("all", "fitness", "nutrition", "weight_loss", "endurance", "strength")
-    
+
     // Simple user ID for demo (in real app this would come from user session)
     private val userId = "demo_user_${android.os.Build.MODEL}"
-    
+
     init {
         initializeData()
     }
-    
+
     private fun initializeData() {
         viewModelScope.launch {
             // Initialize default challenges if none exist
@@ -49,17 +47,18 @@ class SocialChallengesViewModel(application: Application) : AndroidViewModel(app
             loadUserParticipations()
         }
     }
-    
+
     fun loadChallenges() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
                 challengeManager.getAllChallenges().collect { allChallenges ->
-                    _challenges.value = if (selectedCategory.value == "all") {
-                        allChallenges
-                    } else {
-                        allChallenges.filter { it.category == selectedCategory.value }
-                    }
+                    _challenges.value =
+                        if (selectedCategory.value == "all") {
+                            allChallenges
+                        } else {
+                            allChallenges.filter { it.category == selectedCategory.value }
+                        }
                 }
             } catch (e: Exception) {
                 // Handle error
@@ -69,7 +68,7 @@ class SocialChallengesViewModel(application: Application) : AndroidViewModel(app
             }
         }
     }
-    
+
     private fun loadUserParticipations() {
         viewModelScope.launch {
             try {
@@ -82,26 +81,27 @@ class SocialChallengesViewModel(application: Application) : AndroidViewModel(app
             }
         }
     }
-    
+
     fun selectCategory(category: String) {
         selectedCategory.value = category
         loadChallenges() // Reload with new filter
     }
-    
+
     fun refreshChallenges() {
         loadChallenges()
         loadUserParticipations()
     }
-    
+
     fun joinChallenge(challengeId: Long) {
         viewModelScope.launch {
             try {
-                val success = challengeManager.joinChallenge(
-                    challengeId = challengeId,
-                    userId = userId,
-                    userName = "Demo User" // In real app, get from user profile
-                )
-                
+                val success =
+                    challengeManager.joinChallenge(
+                        challengeId = challengeId,
+                        userId = userId,
+                        userName = "Demo User", // In real app, get from user profile
+                    )
+
                 if (success) {
                     // Refresh data to show updated state
                     loadUserParticipations()
@@ -112,12 +112,12 @@ class SocialChallengesViewModel(application: Application) : AndroidViewModel(app
             }
         }
     }
-    
+
     fun leaveChallenge(challengeId: Long) {
         viewModelScope.launch {
             try {
                 challengeManager.leaveChallenge(challengeId, userId)
-                
+
                 // Refresh data to show updated state
                 loadUserParticipations()
                 loadChallenges()
@@ -126,7 +126,7 @@ class SocialChallengesViewModel(application: Application) : AndroidViewModel(app
             }
         }
     }
-    
+
     fun logWorkoutProgress() {
         viewModelScope.launch {
             try {
@@ -136,7 +136,7 @@ class SocialChallengesViewModel(application: Application) : AndroidViewModel(app
             }
         }
     }
-    
+
     fun logNutritionProgress(calories: Int) {
         viewModelScope.launch {
             try {

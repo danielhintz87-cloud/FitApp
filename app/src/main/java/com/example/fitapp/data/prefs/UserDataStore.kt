@@ -1,7 +1,6 @@
 package com.example.fitapp.data.prefs
 
 import android.content.Context
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -14,11 +13,17 @@ import kotlinx.coroutines.flow.map
  */
 interface UserPreferencesServiceInterface {
     suspend fun clearWorkoutPreferences()
+
     suspend fun clearNutritionPreferences()
+
     suspend fun clearUserPreferences()
+
     suspend fun clearAchievementPreferences()
+
     suspend fun clearAllPreferences()
+
     suspend fun getSelectedEquipment(): Set<String>
+
     suspend fun saveSelectedEquipment(equipment: Set<String>)
 }
 
@@ -27,7 +32,7 @@ interface UserPreferencesServiceInterface {
  * Migriert sukzessive von SharedPreferences (Legacy) auf DataStore.
  */
 class UserDataStore(
-    private val context: Context
+    private val context: Context,
 ) : UserPreferencesServiceInterface {
     private val Context.dataStore by preferencesDataStore(name = "user_prefs")
 
@@ -35,10 +40,22 @@ class UserDataStore(
         val SELECTED_EQUIPMENT = stringSetPreferencesKey("selected_equipment")
     }
 
-    override suspend fun clearWorkoutPreferences() { clearAllPreferences() }
-    override suspend fun clearNutritionPreferences() { clearAllPreferences() }
-    override suspend fun clearUserPreferences() { clearAllPreferences() }
-    override suspend fun clearAchievementPreferences() { clearAllPreferences() }
+    override suspend fun clearWorkoutPreferences() {
+        clearAllPreferences()
+    }
+
+    override suspend fun clearNutritionPreferences() {
+        clearAllPreferences()
+    }
+
+    override suspend fun clearUserPreferences() {
+        clearAllPreferences()
+    }
+
+    override suspend fun clearAchievementPreferences() {
+        clearAllPreferences()
+    }
+
     override suspend fun clearAllPreferences() {
         context.dataStore.edit { it.clear() }
     }
@@ -58,9 +75,10 @@ class UserDataStore(
     /**
      * Helfer Flow für UI Reaktivität (optional verwendbar)
      */
-    val selectedEquipmentFlow: Flow<Set<String>> = context.dataStore.data.map { prefs ->
-        prefs[Keys.SELECTED_EQUIPMENT] ?: emptySet()
-    }
+    val selectedEquipmentFlow: Flow<Set<String>> =
+        context.dataStore.data.map { prefs ->
+            prefs[Keys.SELECTED_EQUIPMENT] ?: emptySet()
+        }
 }
 
 /**
@@ -69,7 +87,10 @@ class UserDataStore(
  */
 @Deprecated("Use UserPreferencesRepository with Dependency Injection instead")
 object UserPreferencesFactory {
-    fun create(context: Context, preferDataStore: Boolean = true): UserPreferencesServiceInterface {
+    fun create(
+        context: Context,
+        preferDataStore: Boolean = true,
+    ): UserPreferencesServiceInterface {
         return UserDataStore(context)
     }
 }

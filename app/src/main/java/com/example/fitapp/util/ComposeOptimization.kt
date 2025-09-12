@@ -1,10 +1,10 @@
 package com.example.fitapp.util
 
 import androidx.compose.runtime.*
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun <T> rememberStable(
     vararg keys: Any?,
-    calculation: () -> T
+    calculation: () -> T,
 ): T {
     return remember(*keys) { calculation() }
 }
@@ -34,25 +34,26 @@ fun <T> rememberStable(
 @Composable
 fun <T> rememberLifecycleAwareState(
     initialValue: T,
-    lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
+    lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
 ): MutableState<T> {
     val state = remember { mutableStateOf(initialValue) }
-    
+
     DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_DESTROY) {
-                // Reset to initial value to prevent memory leaks
-                state.value = initialValue
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_DESTROY) {
+                    // Reset to initial value to prevent memory leaks
+                    state.value = initialValue
+                }
             }
-        }
-        
+
         lifecycleOwner.lifecycle.addObserver(observer)
-        
+
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-    
+
     return state
 }
 
@@ -63,14 +64,14 @@ fun <T> rememberLifecycleAwareState(
 fun rememberSafeCoroutineScope(): CoroutineScope {
     val scope = rememberCoroutineScope()
     val jobs = remember { mutableListOf<Job>() }
-    
+
     DisposableEffect(Unit) {
         onDispose {
             jobs.forEach { it.cancel() }
             jobs.clear()
         }
     }
-    
+
     // Return the original scope, jobs will be tracked separately
     return scope
 }
@@ -81,25 +82,26 @@ fun rememberSafeCoroutineScope(): CoroutineScope {
 @Composable
 fun rememberDebouncedState(
     initialValue: String,
-    delayMs: Long = 300L
+    delayMs: Long = 300L,
 ): Pair<String, (String) -> Unit> {
     var currentValue by remember { mutableStateOf(initialValue) }
     var debouncedValue by remember { mutableStateOf(initialValue) }
     val scope = rememberCoroutineScope()
-    
-    val updateValue: (String) -> Unit = remember {
-        { newValue: String ->
-            currentValue = newValue
-            scope.launch {
-                delay(delayMs)
-                if (currentValue == newValue) {
-                    debouncedValue = newValue
+
+    val updateValue: (String) -> Unit =
+        remember {
+            { newValue: String ->
+                currentValue = newValue
+                scope.launch {
+                    delay(delayMs)
+                    if (currentValue == newValue) {
+                        debouncedValue = newValue
+                    }
                 }
+                Unit // Explicit return Unit
             }
-            Unit // Explicit return Unit
         }
-    }
-    
+
     return debouncedValue to updateValue
 }
 
@@ -109,21 +111,22 @@ fun rememberDebouncedState(
 @Composable
 fun rememberThrottledState(
     initialValue: String,
-    intervalMs: Long = 100L
+    intervalMs: Long = 100L,
 ): Pair<String, (String) -> Unit> {
     var value by remember { mutableStateOf(initialValue) }
     var lastUpdateTime by remember { mutableLongStateOf(0L) }
-    
-    val updateValue = remember {
-        { newValue: String ->
-            val currentTime = System.currentTimeMillis()
-            if (currentTime - lastUpdateTime >= intervalMs) {
-                value = newValue
-                lastUpdateTime = currentTime
+
+    val updateValue =
+        remember {
+            { newValue: String ->
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastUpdateTime >= intervalMs) {
+                    value = newValue
+                    lastUpdateTime = currentTime
+                }
             }
         }
-    }
-    
+
     return value to updateValue
 }
 
@@ -134,7 +137,7 @@ fun rememberThrottledState(
 @Composable
 fun <T> rememberDerivedState(
     vararg keys: Any?,
-    calculation: () -> T
+    calculation: () -> T,
 ): State<T> {
     return remember(*keys) {
         derivedStateOf { calculation() }
@@ -147,7 +150,7 @@ fun <T> rememberDerivedState(
 @Composable
 fun <T> rememberImmutableList(
     vararg keys: Any?,
-    calculation: () -> List<T>
+    calculation: () -> List<T>,
 ): List<T> {
     return remember(*keys) {
         calculation().toList() // Create immutable copy
@@ -160,7 +163,7 @@ fun <T> rememberImmutableList(
 @Composable
 fun <K, V> rememberImmutableMap(
     vararg keys: Any?,
-    calculation: () -> Map<K, V>
+    calculation: () -> Map<K, V>,
 ): Map<K, V> {
     return remember(*keys) {
         calculation().toMap() // Create immutable copy
@@ -187,11 +190,11 @@ fun <T> rememberStableCallback(callback: (T) -> Unit): StableCallback<T> {
 @Composable
 fun <T> rememberLazyState(
     key: Any? = null,
-    loader: suspend () -> T
+    loader: suspend () -> T,
 ): State<T?> {
     var state by remember(key) { mutableStateOf<T?>(null) }
     val scope = rememberCoroutineScope()
-    
+
     LaunchedEffect(key) {
         scope.launch {
             try {
@@ -202,7 +205,7 @@ fun <T> rememberLazyState(
             }
         }
     }
-    
+
     return remember { derivedStateOf { state } }
 }
 
@@ -212,11 +215,11 @@ fun <T> rememberLazyState(
 @Composable
 fun rememberAutoClearing(
     initialValue: String = "",
-    clearAfterMs: Long = 5000L
+    clearAfterMs: Long = 5000L,
 ): MutableState<String> {
     val state = remember { mutableStateOf(initialValue) }
     val scope = rememberCoroutineScope()
-    
+
     // Auto-clear after specified time
     LaunchedEffect(state.value) {
         if (state.value.isNotEmpty()) {
@@ -226,7 +229,7 @@ fun rememberAutoClearing(
             }
         }
     }
-    
+
     return state
 }
 
@@ -234,21 +237,19 @@ fun rememberAutoClearing(
  * Memory-safe image state for loading images without memory leaks
  */
 @Composable
-fun rememberImageState(
-    imageUrl: String?
-): State<String?> {
+fun rememberImageState(imageUrl: String?): State<String?> {
     var currentUrl by remember { mutableStateOf<String?>(null) }
-    
+
     LaunchedEffect(imageUrl) {
         currentUrl = imageUrl
     }
-    
+
     DisposableEffect(Unit) {
         onDispose {
             currentUrl = null // Clear reference on dispose
         }
     }
-    
+
     return remember { derivedStateOf { currentUrl } }
 }
 
@@ -257,11 +258,14 @@ fun rememberImageState(
  */
 class BatchStateUpdater {
     private val updates = mutableMapOf<String, () -> Unit>()
-    
-    fun addUpdate(key: String, update: () -> Unit) {
+
+    fun addUpdate(
+        key: String,
+        update: () -> Unit,
+    ) {
         updates[key] = update
     }
-    
+
     fun executeAll() {
         updates.values.forEach { it() }
         updates.clear()
@@ -282,7 +286,7 @@ fun rememberBatchStateUpdater(): BatchStateUpdater {
 @Composable
 fun <T> rememberOptimizedListState(
     list: List<T>,
-    maxVisible: Int = 50
+    maxVisible: Int = 50,
 ): State<List<T>> {
     return remember(list) {
         derivedStateOf {

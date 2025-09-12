@@ -24,7 +24,7 @@ data class FoodItem(
     val allergens: List<String> = emptyList(),
     val isVerified: Boolean = false,
     val source: String = "Manual", // "Open Food Facts", "Local Database", "Manual"
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
 ) {
     /**
      * Calculate nutrition values for a specific serving size
@@ -38,10 +38,10 @@ data class FoodItem(
             fat = fatPer100g * factor,
             fiber = fiberPer100g * factor,
             sugar = sugarPer100g * factor,
-            sodium = sodiumPer100g * factor
+            sodium = sodiumPer100g * factor,
         )
     }
-    
+
     /**
      * Get display name with brand if available
      */
@@ -64,7 +64,7 @@ data class NutritionValues(
     val fat: Float,
     val fiber: Float = 0f,
     val sugar: Float = 0f,
-    val sodium: Float = 0f // in mg
+    val sodium: Float = 0f, // in mg
 ) {
     /**
      * Add nutrition values together
@@ -77,10 +77,10 @@ data class NutritionValues(
             fat = fat + other.fat,
             fiber = fiber + other.fiber,
             sugar = sugar + other.sugar,
-            sodium = sodium + other.sodium
+            sodium = sodium + other.sodium,
         )
     }
-    
+
     /**
      * Multiply nutrition values by a factor
      */
@@ -92,7 +92,7 @@ data class NutritionValues(
             fat = fat * factor,
             fiber = fiber * factor,
             sugar = sugar * factor,
-            sodium = sodium * factor
+            sodium = sodium * factor,
         )
     }
 }

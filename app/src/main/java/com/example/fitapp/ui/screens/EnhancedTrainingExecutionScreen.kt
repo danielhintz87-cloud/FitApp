@@ -18,15 +18,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.data.db.PlanEntity
-import com.example.fitapp.services.WorkoutExecutionManager
-import com.example.fitapp.services.SmartRestTimer
 import com.example.fitapp.services.RestTimerState
+import com.example.fitapp.services.SmartRestTimer
+import com.example.fitapp.services.WorkoutExecutionManager
 import com.example.fitapp.ui.components.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
 
 /**
  * Enhanced Training Execution Screen
@@ -38,25 +36,25 @@ import kotlinx.coroutines.delay
 fun EnhancedTrainingExecutionScreen(
     planId: Long,
     onBackPressed: () -> Unit,
-    onTrainingCompleted: () -> Unit
+    onTrainingCompleted: () -> Unit,
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.get(context) }
     val scope = rememberCoroutineScope()
-    
+
     // Core state
     var plan by remember { mutableStateOf<PlanEntity?>(null) }
     var exercises by remember { mutableStateOf<List<ExerciseStep>>(emptyList()) }
-    
+
     // Workout execution state
     val smartRestTimer = remember { SmartRestTimer(context) }
     val workoutManager = remember { WorkoutExecutionManager(db, smartRestTimer) }
-    
+
     val workoutFlow by workoutManager.workoutFlow.collectAsState()
     val currentStep by workoutManager.currentStep.collectAsState()
     val isInWorkout by workoutManager.isInWorkout.collectAsState()
     val restTimerState by smartRestTimer.timerState.collectAsState()
-    
+
     // UI state
     var showOverview by remember { mutableStateOf(true) }
     var showFormTipsDialog by remember { mutableStateOf(false) }
@@ -64,7 +62,7 @@ fun EnhancedTrainingExecutionScreen(
     var showPauseDialog by remember { mutableStateOf(false) }
     var showFinishDialog by remember { mutableStateOf(false) }
     var workoutSummary by remember { mutableStateOf<WorkoutExecutionManager.WorkoutSummary?>(null) }
-    
+
     // Keep screen on during workout
     DisposableEffect(isInWorkout) {
         val activity = context as? Activity
@@ -90,10 +88,10 @@ fun EnhancedTrainingExecutionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         plan?.title ?: "Training",
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge,
                     )
                 },
                 navigationIcon = {
@@ -107,14 +105,15 @@ fun EnhancedTrainingExecutionScreen(
                             Icon(Icons.Filled.Pause, contentDescription = "Pausieren")
                         }
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding),
         ) {
             when {
                 // Show workout summary
@@ -124,10 +123,10 @@ fun EnhancedTrainingExecutionScreen(
                         onDismiss = {
                             workoutSummary = null
                             onTrainingCompleted()
-                        }
+                        },
                     )
                 }
-                
+
                 // Show training overview
                 showOverview && !isInWorkout -> {
                     TrainingOverviewScreen(
@@ -137,10 +136,10 @@ fun EnhancedTrainingExecutionScreen(
                                 workoutManager.startWorkoutFlow(planId, exercises)
                                 showOverview = false
                             }
-                        }
+                        },
                     )
                 }
-                
+
                 // Show workout execution
                 isInWorkout && currentStep != null -> {
                     WorkoutExecutionScreen(
@@ -150,7 +149,7 @@ fun EnhancedTrainingExecutionScreen(
                         onSetComplete = { weight, reps, rpe ->
                             scope.launch {
                                 workoutManager.logSet(weight.toDouble(), reps, rpe)
-                                
+
                                 // Start rest timer if needed
                                 if (currentStep!!.restTime > 0) {
                                     workoutManager.startRestTimer(currentStep!!.restTime)
@@ -184,15 +183,15 @@ fun EnhancedTrainingExecutionScreen(
                         },
                         onSkipRest = {
                             workoutManager.skipRestPeriod()
-                        }
+                        },
                     )
                 }
-                
+
                 // Loading state
                 else -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator()
                     }
@@ -206,7 +205,7 @@ fun EnhancedTrainingExecutionScreen(
         FormTipsDialog(
             formTips = currentStep!!.formTips,
             exerciseName = currentStep!!.exercise.name,
-            onDismiss = { showFormTipsDialog = false }
+            onDismiss = { showFormTipsDialog = false },
         )
     }
 
@@ -214,7 +213,7 @@ fun EnhancedTrainingExecutionScreen(
         VideoDialog(
             exerciseName = currentStep!!.exercise.name,
             videoReference = currentStep!!.videoReference,
-            onDismiss = { showVideoDialog = false }
+            onDismiss = { showVideoDialog = false },
         )
     }
 
@@ -228,7 +227,7 @@ fun EnhancedTrainingExecutionScreen(
                     showPauseDialog = false
                 }
             },
-            onDismiss = { showPauseDialog = false }
+            onDismiss = { showPauseDialog = false },
         )
     }
 
@@ -241,7 +240,7 @@ fun EnhancedTrainingExecutionScreen(
                     showFinishDialog = false
                 }
             },
-            onDismiss = { showFinishDialog = false }
+            onDismiss = { showFinishDialog = false },
         )
     }
 }
@@ -249,48 +248,50 @@ fun EnhancedTrainingExecutionScreen(
 @Composable
 private fun TrainingOverviewScreen(
     exercises: List<ExerciseStep>,
-    onStartTraining: () -> Unit
+    onStartTraining: () -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    ),
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Icon(
                         Icons.Filled.FitnessCenter,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
                         "Bereit für dein Training?",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
                         "${exercises.size} Übungen warten auf dich",
                         style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(20.dp))
                     Button(
                         onClick = onStartTraining,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Icon(Icons.Filled.PlayArrow, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
@@ -304,17 +305,18 @@ private fun TrainingOverviewScreen(
             Text(
                 "Übungen im Training:",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         }
 
         items(exercises.withIndex().toList()) { (index, exercise) ->
             Card {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         "${index + 1}",
@@ -322,25 +324,25 @@ private fun TrainingOverviewScreen(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.width(40.dp),
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             exercise.name,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
                         )
                         Text(
                             exercise.value,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline
+                            color = MaterialTheme.colorScheme.outline,
                         )
                     }
                     if (exercise.restTime > 0) {
                         Text(
                             "${exercise.restTime}s Pause",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.secondary
+                            color = MaterialTheme.colorScheme.secondary,
                         )
                     }
                 }
@@ -361,26 +363,31 @@ private fun WorkoutExecutionScreen(
     onFinishWorkout: () -> Unit,
     onShowVideo: () -> Unit,
     onShowFormTips: () -> Unit,
-    onSkipRest: () -> Unit
+    onSkipRest: () -> Unit,
 ) {
     val currentSet = workoutStep.sets[workoutStep.currentSet]
     val isLastSet = workoutStep.currentSet >= workoutStep.sets.size - 1
     val isLastExercise = workoutFlow.currentExerciseIndex >= workoutFlow.exercises.size - 1
-    
-    var weight by remember(currentSet) { mutableFloatStateOf(currentSet.actualWeight ?: currentSet.targetWeight ?: workoutStep.autoWeightSuggestion ?: 20f) }
+
+    var weight by remember(currentSet) {
+        mutableFloatStateOf(
+            currentSet.actualWeight ?: currentSet.targetWeight ?: workoutStep.autoWeightSuggestion ?: 20f,
+        )
+    }
     var reps by remember(currentSet) { mutableIntStateOf(currentSet.actualReps ?: currentSet.targetReps ?: 10) }
     var rpe by remember(currentSet) { mutableIntStateOf(currentSet.rpe ?: 5) }
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
             WorkoutProgressBar(
                 currentStep = workoutFlow.currentExerciseIndex + 1,
-                totalSteps = workoutFlow.exercises.size
+                totalSteps = workoutFlow.exercises.size,
             )
         }
 
@@ -388,7 +395,7 @@ private fun WorkoutExecutionScreen(
             ExerciseCard(
                 workoutStep = workoutStep,
                 onShowVideo = onShowVideo,
-                onShowFormTips = onShowFormTips
+                onShowFormTips = onShowFormTips,
             )
         }
 
@@ -396,36 +403,39 @@ private fun WorkoutExecutionScreen(
         when (restTimerState) {
             is RestTimerState.RUNNING -> {
                 item {
-                    val nextExercise = if (isLastSet && !isLastExercise) {
-                        workoutFlow.exercises[workoutFlow.currentExerciseIndex + 1].name
-                    } else {
-                        "Nächster Satz"
-                    }
-                    
+                    val nextExercise =
+                        if (isLastSet && !isLastExercise) {
+                            workoutFlow.exercises[workoutFlow.currentExerciseIndex + 1].name
+                        } else {
+                            "Nächster Satz"
+                        }
+
                     RestTimerOverlay(
                         timeRemaining = restTimerState.remaining,
                         nextExercise = nextExercise,
-                        onSkipRest = onSkipRest
+                        onSkipRest = onSkipRest,
                     )
                 }
             }
             is RestTimerState.COMPLETED -> {
                 item {
                     Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            ),
                     ) {
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Text(
                                 "Pause beendet! 🔥",
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
                             )
                             Spacer(Modifier.height(8.dp))
                             Button(onClick = onNextStep) {
@@ -446,7 +456,7 @@ private fun WorkoutExecutionScreen(
                         onRPEChange = { rpe = it },
                         onSetComplete = {
                             onSetComplete(weight, reps, rpe)
-                        }
+                        },
                     )
                 }
             }
@@ -460,7 +470,7 @@ private fun WorkoutExecutionScreen(
                 onPrevious = onPreviousStep,
                 onPause = onPauseWorkout,
                 onNext = onNextStep,
-                onFinish = onFinishWorkout
+                onFinish = onFinishWorkout,
             )
         }
     }
@@ -469,77 +479,80 @@ private fun WorkoutExecutionScreen(
 @Composable
 private fun WorkoutSummaryScreen(
     summary: WorkoutExecutionManager.WorkoutSummary,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                ),
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Icon(
                     Icons.Filled.CheckCircle,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
                     "Training abgeschlossen! 🎉",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(16.dp))
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     SummaryMetric(
                         label = "Dauer",
-                        value = "${summary.duration / 60} Min"
+                        value = "${summary.duration / 60} Min",
                     )
                     SummaryMetric(
                         label = "Volumen",
-                        value = "${summary.totalVolume.toInt()} kg"
+                        value = "${summary.totalVolume.toInt()} kg",
                     )
                     SummaryMetric(
                         label = "Übungen",
-                        value = "${summary.exercisesCompleted}"
+                        value = "${summary.exercisesCompleted}",
                     )
                 }
-                
+
                 if (summary.personalRecords > 0) {
                     Spacer(Modifier.height(16.dp))
                     Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                        )
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            ),
                     ) {
                         Text(
                             "🏆 ${summary.personalRecords} neuer Rekord!",
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(12.dp),
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                     }
                 }
-                
+
                 Spacer(Modifier.height(24.dp))
                 Button(
                     onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("Fertig")
                 }
@@ -549,18 +562,21 @@ private fun WorkoutSummaryScreen(
 }
 
 @Composable
-private fun SummaryMetric(label: String, value: String) {
+private fun SummaryMetric(
+    label: String,
+    value: String,
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             value,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
         Text(
             label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.outline
+            color = MaterialTheme.colorScheme.outline,
         )
     }
 }
@@ -570,51 +586,52 @@ private fun SummaryMetric(label: String, value: String) {
 private fun FormTipsDialog(
     formTips: List<String>,
     exerciseName: String,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
         ) {
             Column(
-                modifier = Modifier.padding(20.dp)
+                modifier = Modifier.padding(20.dp),
             ) {
                 Text(
                     "Technik-Tipps: $exerciseName",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 Spacer(Modifier.height(16.dp))
-                
+
                 formTips.forEach { tip ->
                     Row(
                         verticalAlignment = Alignment.Top,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Icon(
                             Icons.Filled.CheckCircle,
                             contentDescription = null,
                             modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                         Spacer(Modifier.width(12.dp))
                         Text(
                             tip,
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                     Spacer(Modifier.height(8.dp))
                 }
-                
+
                 Spacer(Modifier.height(16.dp))
                 Button(
                     onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("Verstanden")
                 }
@@ -627,60 +644,63 @@ private fun FormTipsDialog(
 private fun VideoDialog(
     exerciseName: String,
     videoReference: String?,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     "Video: $exerciseName",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 Spacer(Modifier.height(16.dp))
-                
+
                 // Placeholder for video player
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        ),
                 ) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Icon(
                                 Icons.Filled.PlayCircle,
                                 contentDescription = null,
                                 modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                             Spacer(Modifier.height(8.dp))
                             Text("Video Player")
                         }
                     }
                 }
-                
+
                 Spacer(Modifier.height(16.dp))
                 Button(
                     onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("Schließen")
                 }
@@ -693,7 +713,7 @@ private fun VideoDialog(
 private fun PauseWorkoutDialog(
     onResume: () -> Unit,
     onEndWorkout: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -715,14 +735,14 @@ private fun PauseWorkoutDialog(
             OutlinedButton(onClick = onEndWorkout) {
                 Text("Beenden")
             }
-        }
+        },
     )
 }
 
 @Composable
 private fun FinishWorkoutDialog(
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -744,7 +764,7 @@ private fun FinishWorkoutDialog(
             OutlinedButton(onClick = onDismiss) {
                 Text("Abbrechen")
             }
-        }
+        },
     )
 }
 
@@ -757,34 +777,39 @@ private fun parseTrainingContent(content: String): List<ExerciseStep> {
             if (parts.size >= 2) {
                 val name = parts[0].trim()
                 val description = parts[1].trim()
-                
+
                 // Extract rest time if specified
                 val restTimeMatch = Regex("Pause: (\\d+)").find(description)
                 val restTime = restTimeMatch?.groupValues?.get(1)?.toIntOrNull() ?: 60
-                
+
                 // Determine exercise type and value
-                val (type, value) = when {
-                    description.contains("mal", ignoreCase = true) || 
-                    description.contains("reps", ignoreCase = true) ||
-                    description.contains("x", ignoreCase = true) -> {
-                        val repsMatch = Regex("(\\d+)\\s*(?:mal|reps|x)").find(description)
-                        "reps" to (repsMatch?.groupValues?.get(1) ?: "10")
+                val (type, value) =
+                    when {
+                        description.contains("mal", ignoreCase = true) ||
+                            description.contains("reps", ignoreCase = true) ||
+                            description.contains("x", ignoreCase = true) -> {
+                            val repsMatch = Regex("(\\d+)\\s*(?:mal|reps|x)").find(description)
+                            "reps" to (repsMatch?.groupValues?.get(1) ?: "10")
+                        }
+                        description.contains("min", ignoreCase = true) ||
+                            description.contains("sek", ignoreCase = true) -> {
+                            "time" to description
+                        }
+                        else -> "reps" to "10"
                     }
-                    description.contains("min", ignoreCase = true) ||
-                    description.contains("sek", ignoreCase = true) -> {
-                        "time" to description
-                    }
-                    else -> "reps" to "10"
-                }
-                
+
                 ExerciseStep(
                     name = name,
                     type = type,
                     value = value,
                     description = description,
-                    restTime = restTime
+                    restTime = restTime,
                 )
-            } else null
-        } else null
+            } else {
+                null
+            }
+        } else {
+            null
+        }
     }
 }

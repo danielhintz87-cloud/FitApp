@@ -36,21 +36,21 @@ fun RecipePreviewGrid(
     onRecipeClick: (SavedRecipeEntity) -> Unit,
     onCookClick: (SavedRecipeEntity) -> Unit,
     onFavoriteClick: (SavedRecipeEntity) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 300.dp),
         modifier = modifier,
         contentPadding = PaddingValues(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         items(recipes) { recipe ->
             RecipePreviewCard(
                 recipe = recipe,
                 onRecipeClick = { onRecipeClick(recipe) },
                 onCookClick = { onCookClick(recipe) },
-                onFavoriteClick = { onFavoriteClick(recipe) }
+                onFavoriteClick = { onFavoriteClick(recipe) },
             )
         }
     }
@@ -67,71 +67,79 @@ fun RecipePreviewCard(
     onRecipeClick: () -> Unit,
     onCookClick: () -> Unit,
     onFavoriteClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var isExpanded by remember { mutableStateOf(false) }
-    
+
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { isExpanded = !isExpanded },
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clickable { isExpanded = !isExpanded },
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
     ) {
         Column {
             // Recipe Image with Overlay
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
             ) {
                 // Background Image
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(recipe.imageUrl ?: getDefaultRecipeImage(recipe))
-                        .crossfade(true)
-                        .build(),
+                    model =
+                        ImageRequest.Builder(LocalContext.current)
+                            .data(recipe.imageUrl ?: getDefaultRecipeImage(recipe))
+                            .crossfade(true)
+                            .build(),
                     contentDescription = recipe.title,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
-                    contentScale = ContentScale.Crop
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                    contentScale = ContentScale.Crop,
                 )
-                
+
                 // Gradient Overlay for Text Readability
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.7f)
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors =
+                                        listOf(
+                                            Color.Transparent,
+                                            Color.Black.copy(alpha = 0.7f),
+                                        ),
+                                    startY = 100f,
                                 ),
-                                startY = 100f
-                            )
-                        )
+                            ),
                 )
-                
+
                 // Favorite Button (Top Right)
                 IconButton(
                     onClick = onFavoriteClick,
-                    modifier = Modifier.align(Alignment.TopEnd)
+                    modifier = Modifier.align(Alignment.TopEnd),
                 ) {
                     Icon(
                         imageVector = if (recipe.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         contentDescription = if (recipe.isFavorite) "Aus Favoriten entfernen" else "Zu Favoriten hinzufügen",
-                        tint = if (recipe.isFavorite) Color.Red else Color.White
+                        tint = if (recipe.isFavorite) Color.Red else Color.White,
                     )
                 }
-                
+
                 // Recipe Title and Quick Stats (Bottom Overlay)
                 Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(16.dp)
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(16.dp),
                 ) {
                     Text(
                         text = recipe.title,
@@ -139,66 +147,67 @@ fun RecipePreviewCard(
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    
+
                     Spacer(modifier = Modifier.height(4.dp))
-                    
+
                     // Quick Stats Row
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         recipe.prepTime?.let { prepTime ->
                             QuickStatChip(
                                 icon = Icons.Filled.AccessTime,
                                 text = "$prepTime min",
-                                backgroundColor = Color.White.copy(alpha = 0.2f)
+                                backgroundColor = Color.White.copy(alpha = 0.2f),
                             )
                         }
-                        
+
                         recipe.calories?.let { calories ->
                             QuickStatChip(
                                 icon = Icons.Filled.LocalFireDepartment,
                                 text = "$calories kcal",
-                                backgroundColor = Color.White.copy(alpha = 0.2f)
+                                backgroundColor = Color.White.copy(alpha = 0.2f),
                             )
                         }
-                        
+
                         recipe.servings?.let { servings ->
                             QuickStatChip(
                                 icon = Icons.Filled.Group,
                                 text = "$servings Portionen",
-                                backgroundColor = Color.White.copy(alpha = 0.2f)
+                                backgroundColor = Color.White.copy(alpha = 0.2f),
                             )
                         }
                     }
                 }
-                
+
                 // Expand/Collapse Indicator
                 Icon(
                     imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                     contentDescription = if (isExpanded) "Weniger anzeigen" else "Mehr anzeigen",
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(16.dp)
-                        .background(
-                            Color.White.copy(alpha = 0.2f),
-                            RoundedCornerShape(50)
-                        )
-                        .padding(4.dp),
-                    tint = Color.White
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(16.dp)
+                            .background(
+                                Color.White.copy(alpha = 0.2f),
+                                RoundedCornerShape(50),
+                            )
+                            .padding(4.dp),
+                    tint = Color.White,
                 )
             }
-            
+
             // Expandable Content
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = slideInVertically() + expandVertically() + fadeIn(),
-                exit = slideOutVertically() + shrinkVertically() + fadeOut()
+                exit = slideOutVertically() + shrinkVertically() + fadeOut(),
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(16.dp),
                 ) {
                     // Recipe Preview Text
                     if (recipe.markdown.isNotBlank()) {
@@ -207,73 +216,74 @@ fun RecipePreviewCard(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 4,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
-                        
+
                         Spacer(modifier = Modifier.height(12.dp))
                     }
-                    
+
                     // Tags
                     if (recipe.tags.isNotBlank()) {
                         TagsRow(tags = recipe.tags.split(","))
                         Spacer(modifier = Modifier.height(12.dp))
                     }
-                    
+
                     // Action Buttons
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         FilledTonalButton(
                             onClick = onCookClick,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         ) {
                             Icon(
                                 Icons.Filled.Restaurant,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
                             )
                             Spacer(Modifier.width(4.dp))
                             Text("Kochen")
                         }
-                        
+
                         OutlinedButton(
                             onClick = onRecipeClick,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         ) {
                             Text("Details")
                         }
                     }
                 }
             }
-            
+
             // Collapsed State Footer
             if (!isExpanded) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     // Difficulty & Type Indicators
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         recipe.difficulty?.let { difficulty ->
                             DifficultyChip(difficulty = difficulty)
                         }
-                        
+
                         // Recipe Type from tags
                         getRecipeType(recipe.tags)?.let { type ->
                             TypeChip(type = type)
                         }
                     }
-                    
+
                     // Quick Cook Button
                     IconButton(onClick = onCookClick) {
                         Icon(
                             Icons.Filled.PlayArrow,
                             contentDescription = "Kochen starten",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
@@ -290,28 +300,28 @@ private fun QuickStatChip(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     text: String,
     backgroundColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier,
         color = backgroundColor,
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(14.dp),
-                tint = Color.White
+                tint = Color.White,
             )
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White
+                color = Color.White,
             )
         }
     }
@@ -323,11 +333,11 @@ private fun QuickStatChip(
 @Composable
 private fun TagsRow(
     tags: List<String>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         tags.take(3).forEach { tag ->
             AssistChip(
@@ -335,24 +345,25 @@ private fun TagsRow(
                 label = {
                     Text(
                         text = tag.trim(),
-                        style = MaterialTheme.typography.labelSmall
+                        style = MaterialTheme.typography.labelSmall,
                     )
                 },
-                colors = AssistChipDefaults.assistChipColors(
-                    containerColor = getTagColor(tag.trim())
-                )
+                colors =
+                    AssistChipDefaults.assistChipColors(
+                        containerColor = getTagColor(tag.trim()),
+                    ),
             )
         }
-        
+
         if (tags.size > 3) {
             AssistChip(
                 onClick = { },
                 label = {
                     Text(
                         text = "+${tags.size - 3}",
-                        style = MaterialTheme.typography.labelSmall
+                        style = MaterialTheme.typography.labelSmall,
                     )
-                }
+                },
             )
         }
     }
@@ -363,30 +374,31 @@ private fun TagsRow(
  */
 @Composable
 private fun DifficultyChip(difficulty: String) {
-    val (color, emoji) = when (difficulty.lowercase()) {
-        "easy", "einfach" -> Pair(Color(0xFF4CAF50), "😊")
-        "medium", "mittel" -> Pair(Color(0xFFFF9800), "🤔")
-        "hard", "schwer" -> Pair(Color(0xFFF44336), "😰")
-        else -> Pair(MaterialTheme.colorScheme.outline, "🍳")
-    }
-    
+    val (color, emoji) =
+        when (difficulty.lowercase()) {
+            "easy", "einfach" -> Pair(Color(0xFF4CAF50), "😊")
+            "medium", "mittel" -> Pair(Color(0xFFFF9800), "🤔")
+            "hard", "schwer" -> Pair(Color(0xFFF44336), "😰")
+            else -> Pair(MaterialTheme.colorScheme.outline, "🍳")
+        }
+
     Surface(
         color = color.copy(alpha = 0.1f),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = emoji,
-                style = MaterialTheme.typography.labelSmall
+                style = MaterialTheme.typography.labelSmall,
             )
             Spacer(Modifier.width(4.dp))
             Text(
                 text = difficulty,
                 style = MaterialTheme.typography.labelSmall,
-                color = color
+                color = color,
             )
         }
     }
@@ -398,24 +410,24 @@ private fun DifficultyChip(difficulty: String) {
 @Composable
 private fun TypeChip(type: String) {
     val (emoji, displayName) = getTypeInfo(type)
-    
+
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = emoji,
-                style = MaterialTheme.typography.labelSmall
+                style = MaterialTheme.typography.labelSmall,
             )
             Spacer(Modifier.width(4.dp))
             Text(
                 text = displayName,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
     }
@@ -425,10 +437,11 @@ private fun TypeChip(type: String) {
 private fun getRecipePreview(markdown: String): String {
     // Extract first meaningful paragraph as preview
     val lines = markdown.split("\n").filter { it.trim().isNotEmpty() }
-    val preview = lines.find { line ->
-        !line.startsWith("#") && !line.startsWith("-") && !line.startsWith("*") && line.length > 50
-    } ?: lines.firstOrNull() ?: ""
-    
+    val preview =
+        lines.find { line ->
+            !line.startsWith("#") && !line.startsWith("-") && !line.startsWith("*") && line.length > 50
+        } ?: lines.firstOrNull() ?: ""
+
     return if (preview.length > 150) {
         preview.take(150) + "..."
     } else {

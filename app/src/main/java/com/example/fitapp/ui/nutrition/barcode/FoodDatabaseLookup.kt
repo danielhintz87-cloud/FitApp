@@ -7,70 +7,69 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import java.net.URLEncoder
 
 /**
  * Food Database Lookup Service
  * Searches multiple food databases for product information by barcode
  */
 class FoodDatabaseLookup {
-    
     companion object {
         private const val TAG = "FoodDatabaseLookup"
-        
+
         // Open Food Facts API
         private const val OPEN_FOOD_FACTS_BASE = "https://world.openfoodfacts.org/api/v0/product/"
-        
+
         // Fallback German database
         private const val FDDB_SEARCH_BASE = "https://fddb.info/api/product/"
     }
-    
+
     /**
      * Look up food product by barcode
      * Tries multiple databases for best coverage
      */
-    suspend fun lookupByBarcode(barcode: String): FoodItem? = withContext(Dispatchers.IO) {
-        Log.d(TAG, "Looking up barcode: $barcode")
-        
-        // Try Open Food Facts first (largest database)
-        try {
-            val openFoodFactsResult = lookupOpenFoodFacts(barcode)
-            if (openFoodFactsResult != null) {
-                Log.d(TAG, "Found product in Open Food Facts: ${openFoodFactsResult.name}")
-                return@withContext openFoodFactsResult
+    suspend fun lookupByBarcode(barcode: String): FoodItem? =
+        withContext(Dispatchers.IO) {
+            Log.d(TAG, "Looking up barcode: $barcode")
+
+            // Try Open Food Facts first (largest database)
+            try {
+                val openFoodFactsResult = lookupOpenFoodFacts(barcode)
+                if (openFoodFactsResult != null) {
+                    Log.d(TAG, "Found product in Open Food Facts: ${openFoodFactsResult.name}")
+                    return@withContext openFoodFactsResult
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Open Food Facts lookup failed for $barcode", e)
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "Open Food Facts lookup failed for $barcode", e)
-        }
-        
-        // Try local database fallback
-        try {
-            val localResult = lookupLocalDatabase(barcode)
-            if (localResult != null) {
-                Log.d(TAG, "Found product in local database: ${localResult.name}")
-                return@withContext localResult
+
+            // Try local database fallback
+            try {
+                val localResult = lookupLocalDatabase(barcode)
+                if (localResult != null) {
+                    Log.d(TAG, "Found product in local database: ${localResult.name}")
+                    return@withContext localResult
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Local database lookup failed for $barcode", e)
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "Local database lookup failed for $barcode", e)
+
+            Log.d(TAG, "No product found for barcode: $barcode")
+            return@withContext null
         }
-        
-        Log.d(TAG, "No product found for barcode: $barcode")
-        return@withContext null
-    }
-    
+
     /**
      * Look up product in Open Food Facts database
      */
     private suspend fun lookupOpenFoodFacts(barcode: String): FoodItem? {
         val url = URL("$OPEN_FOOD_FACTS_BASE$barcode.json")
         val connection = url.openConnection() as HttpURLConnection
-        
+
         try {
             connection.requestMethod = "GET"
             connection.setRequestProperty("User-Agent", "FitApp/1.0")
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
-            
+
             if (connection.responseCode == 200) {
                 val response = connection.inputStream.bufferedReader().readText()
                 return parseOpenFoodFactsResponse(response)
@@ -78,29 +77,29 @@ class FoodDatabaseLookup {
         } finally {
             connection.disconnect()
         }
-        
+
         return null
     }
-    
+
     /**
      * Parse Open Food Facts API response
      */
     private fun parseOpenFoodFactsResponse(jsonResponse: String): FoodItem? {
         try {
             val json = JSONObject(jsonResponse)
-            
+
             if (json.getInt("status") != 1) {
                 return null // Product not found
             }
-            
+
             val product = json.getJSONObject("product")
             val productName = product.optString("product_name", "")
             val brand = product.optString("brands", "")
-            
+
             if (productName.isBlank()) {
                 return null // No valid product name
             }
-            
+
             // Extract nutrition data
             val nutriments = product.optJSONObject("nutriments")
             val calories = nutriments?.optDouble("energy-kcal_100g", 0.0) ?: 0.0
@@ -110,17 +109,18 @@ class FoodDatabaseLookup {
             val fiber = nutriments?.optDouble("fiber_100g", 0.0) ?: 0.0
             val sugar = nutriments?.optDouble("sugars_100g", 0.0) ?: 0.0
             val sodium = nutriments?.optDouble("sodium_100g", 0.0) ?: 0.0
-            
+
             // Categories and allergens
             val categories = product.optString("categories", "")
             val allergens = product.optString("allergens", "")
-            
-            val displayName = if (brand.isNotBlank()) {
-                "$brand $productName"
-            } else {
-                productName
-            }
-            
+
+            val displayName =
+                if (brand.isNotBlank()) {
+                    "$brand $productName"
+                } else {
+                    productName
+                }
+
             return FoodItem(
                 id = 0, // Will be generated by database
                 name = displayName.trim(),
@@ -136,35 +136,36 @@ class FoodDatabaseLookup {
                 category = extractMainCategory(categories),
                 allergens = parseAllergens(allergens),
                 isVerified = true,
-                source = "Open Food Facts"
+                source = "Open Food Facts",
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing Open Food Facts response", e)
             return null
         }
     }
-    
+
     /**
      * Extract main category from categories string
      */
     private fun extractMainCategory(categories: String): String {
         if (categories.isBlank()) return "Unbekannt"
-        
+
         val categoryList = categories.split(",").map { it.trim() }
-        
+
         // Priority mapping for German categories
-        val priorityCategories = mapOf(
-            "milchprodukte" to "Milchprodukte",
-            "fleisch" to "Fleisch & Wurst",
-            "brot" to "Brot & Backwaren",
-            "getränke" to "Getränke",
-            "obst" to "Obst",
-            "gemüse" to "Gemüse",
-            "süßwaren" to "Süßwaren",
-            "snacks" to "Snacks",
-            "fertiggerichte" to "Fertiggerichte"
-        )
-        
+        val priorityCategories =
+            mapOf(
+                "milchprodukte" to "Milchprodukte",
+                "fleisch" to "Fleisch & Wurst",
+                "brot" to "Brot & Backwaren",
+                "getränke" to "Getränke",
+                "obst" to "Obst",
+                "gemüse" to "Gemüse",
+                "süßwaren" to "Süßwaren",
+                "snacks" to "Snacks",
+                "fertiggerichte" to "Fertiggerichte",
+            )
+
         for (category in categoryList) {
             val lowerCategory = category.lowercase()
             for ((key, value) in priorityCategories) {
@@ -173,23 +174,23 @@ class FoodDatabaseLookup {
                 }
             }
         }
-        
+
         // Return first category if no priority match
         return categoryList.firstOrNull()?.take(50) ?: "Unbekannt"
     }
-    
+
     /**
      * Parse allergens string into list
      */
     private fun parseAllergens(allergens: String): List<String> {
         if (allergens.isBlank()) return emptyList()
-        
+
         return allergens.split(",")
             .map { it.trim() }
             .filter { it.isNotBlank() }
             .take(10) // Limit to reasonable number
     }
-    
+
     /**
      * Fallback lookup in local/cached database
      * This would typically query a local Room database
@@ -197,31 +198,33 @@ class FoodDatabaseLookup {
     private fun lookupLocalDatabase(barcode: String): FoodItem? {
         // TODO: Implement local database lookup
         // This would query the local Room database for previously scanned products
-        
+
         // For now, return a mock result for common German products
         return when (barcode) {
-            "4001724819400" -> FoodItem(
-                id = 0,
-                name = "Coca-Cola Classic",
-                brand = "Coca-Cola",
-                barcode = barcode,
-                caloriesPer100g = 42f,
-                carbsPer100g = 10.6f,
-                category = "Getränke",
-                source = "Local Database"
-            )
-            "4006381333931" -> FoodItem(
-                id = 0,
-                name = "Vollmilch 3,8%",
-                brand = "Müller",
-                barcode = barcode,
-                caloriesPer100g = 64f,
-                proteinPer100g = 3.4f,
-                carbsPer100g = 4.8f,
-                fatPer100g = 3.8f,
-                category = "Milchprodukte",
-                source = "Local Database"
-            )
+            "4001724819400" ->
+                FoodItem(
+                    id = 0,
+                    name = "Coca-Cola Classic",
+                    brand = "Coca-Cola",
+                    barcode = barcode,
+                    caloriesPer100g = 42f,
+                    carbsPer100g = 10.6f,
+                    category = "Getränke",
+                    source = "Local Database",
+                )
+            "4006381333931" ->
+                FoodItem(
+                    id = 0,
+                    name = "Vollmilch 3,8%",
+                    brand = "Müller",
+                    barcode = barcode,
+                    caloriesPer100g = 64f,
+                    proteinPer100g = 3.4f,
+                    carbsPer100g = 4.8f,
+                    fatPer100g = 3.8f,
+                    category = "Milchprodukte",
+                    source = "Local Database",
+                )
             else -> null
         }
     }

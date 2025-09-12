@@ -34,7 +34,7 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        
+
         // BuildConfig fields for API keys
         buildConfigField("String", "GEMINI_API_KEY", "\"\"")
         buildConfigField("String", "PERPLEXITY_API_KEY", "\"\"")
@@ -55,7 +55,7 @@ android {
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -68,11 +68,12 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
-        freeCompilerArgs += listOf(
-            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
-            "-opt-in=androidx.camera.core.ExperimentalGetImage"
-        )
+        freeCompilerArgs +=
+            listOf(
+                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+                "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+                "-opt-in=androidx.camera.core.ExperimentalGetImage",
+            )
     }
 
     composeOptions {
@@ -83,6 +84,13 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+
+    lint {
+        baseline = file("lint-baseline.xml")
+        abortOnError = true
+        checkReleaseBuilds = false
+        disable += "GradleDependency"
     }
 
     ksp {
@@ -101,26 +109,23 @@ dependencies {
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
-    // Feature modules
-    implementation(project(":feature:hydration"))
-    implementation(project(":feature:tracking"))
-    
-    // Core modules
+    // Core Module Dependencies
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
     implementation(project(":core:ui"))
+    implementation(project(":core:navigation"))
 
     // Core Android Bundle
     implementation(libs.bundles.core)
-    
+
     // Compose Bundle
     implementation(libs.bundles.compose)
-    
+
     // Room Database Bundle
     implementation(libs.bundles.room)
     ksp(libs.room.compiler)
 
-    // Networking Bundle  
+    // Networking Bundle
     implementation(libs.bundles.networking)
 
     // DataStore - KORREKTE DOT NOTATION!
@@ -172,8 +177,11 @@ dependencies {
     testImplementation(libs.bundles.test)
     androidTestImplementation(libs.bundles.android.test)
     debugImplementation(libs.bundles.debug)
-    
+
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")
+
+    // Compose Lint Checks for accessibility - use version from BOM
+    lintChecks("androidx.compose.ui:ui-lint")
 }
 
 // Protobuf configuration
@@ -224,35 +232,44 @@ ktlint {
 tasks.register("checkNavGraphReachability") {
     group = "verification"
     description = "Checks that all navigation destinations are reachable"
-    
+
     doLast {
-        val navGraphFiles = fileTree("src/main/res/navigation") {
-            include("**/*.xml")
-        }
-        
+        val navGraphFiles =
+            fileTree("src/main/res/navigation") {
+                include("**/*.xml")
+            }
+
         if (navGraphFiles.isEmpty) {
             println("No navigation graph files found - skipping reachability check")
             return@doLast
         }
-        
+
         navGraphFiles.forEach { file ->
             println("Checking navigation graph: ${file.name}")
             val content = file.readText()
-            
+
             // Basic check for unreferenced destinations
-            val destinations = Regex("<(fragment|activity)\\s+[^>]*android:id=\"@\\+?id/([^\"]+)\"").findAll(content)
-                .map { it.groupValues[2] }.toSet()
-            val actions = Regex("android:destination=\"@\\+?id/([^\"]+)\"").findAll(content)
-                .map { it.groupValues[1] }.toSet()
-            
+            val destinations =
+                Regex("<(fragment|activity)\\s+[^>]*android:id=\"@\\+?id/([^\"]+)\"").findAll(content)
+                    .map { it.groupValues[2] }.toSet()
+            val actions =
+                Regex("android:destination=\"@\\+?id/([^\"]+)\"").findAll(content)
+                    .map { it.groupValues[1] }.toSet()
+
             val unreachable = destinations - actions
             if (unreachable.isNotEmpty()) {
                 // Remove start destination from unreachable list
-                val startDestination = Regex("app:startDestination=\"@\\+?id/([^\"]+)\"").find(content)?.groupValues?.get(1)
-                val actualUnreachable = if (startDestination != null) {
-                    unreachable - startDestination
-                } else unreachable
-                
+                val startDestination =
+                    Regex(
+                        "app:startDestination=\"@\\+?id/([^\"]+)\"",
+                    ).find(content)?.groupValues?.get(1)
+                val actualUnreachable =
+                    if (startDestination != null) {
+                        unreachable - startDestination
+                    } else {
+                        unreachable
+                    }
+
                 if (actualUnreachable.isNotEmpty()) {
                     throw GradleException("Unreachable destinations found in ${file.name}: $actualUnreachable")
                 }

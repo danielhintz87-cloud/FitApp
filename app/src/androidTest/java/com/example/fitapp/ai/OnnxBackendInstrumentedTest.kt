@@ -14,10 +14,11 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class OnnxBackendInstrumentedTest {
     @Test
-    fun onnxOrTfliteFallbackLoads() = runBlocking {
-        val ctx = InstrumentationRegistry.getInstrumentation().targetContext
-        val ml = AdvancedMLModels.getInstance(ctx)
-        val ok = ml.initialize(AdvancedMLModels.PoseModelType.MOVENET_LIGHTNING)
-        assertTrue("Initialisierung (ONNX oder Fallback TFLite) muss erfolgreich sein", ok)
-    }
+    fun onnxOrTfliteFallbackLoads() =
+        runBlocking {
+            val ctx = InstrumentationRegistry.getInstrumentation().targetContext
+            val ml = AdvancedMLModels.getInstance(ctx)
+            val ok = ml.initialize(AdvancedMLModels.PoseModelType.MOVENET_LIGHTNING)
+            assertTrue("Initialisierung (ONNX oder Fallback TFLite) muss erfolgreich sein", ok)
+        }
 }

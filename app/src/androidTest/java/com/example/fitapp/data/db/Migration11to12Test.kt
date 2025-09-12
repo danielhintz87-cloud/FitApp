@@ -13,13 +13,13 @@ private const val TEST_DB = "fitapp_migration_11_to_12_test.db"
 
 @RunWith(AndroidJUnit4::class)
 class Migration11to12Test {
-
     @get:Rule
-    val helper = MigrationTestHelper(
-        InstrumentationRegistry.getInstrumentation(),
-        AppDatabase::class.java.canonicalName,
-        FrameworkSQLiteOpenHelperFactory()
-    )
+    val helper =
+        MigrationTestHelper(
+            InstrumentationRegistry.getInstrumentation(),
+            AppDatabase::class.java.canonicalName,
+            FrameworkSQLiteOpenHelperFactory(),
+        )
 
     @Test
     fun migration_11_to_12_creates_cooking_tables() {
@@ -28,9 +28,10 @@ class Migration11to12Test {
 
         // 2) Run migration 11→12
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
-        val db = Room.databaseBuilder(ctx, AppDatabase::class.java, TEST_DB)
-            .addMigrations(AppDatabase.MIGRATION_11_12)
-            .build()
+        val db =
+            Room.databaseBuilder(ctx, AppDatabase::class.java, TEST_DB)
+                .addMigrations(AppDatabase.MIGRATION_11_12)
+                .build()
 
         // 3) Validate that cooking_sessions table exists
         db.openHelper.writableDatabase.use { sqlDb ->
@@ -69,7 +70,9 @@ class Migration11to12Test {
                 val nameIdx = c.getColumnIndexOrThrow("name")
                 while (c.moveToNext()) names += c.getString(nameIdx)
                 assert(names.contains("index_cooking_sessions_recipeId")) { "Missing index_cooking_sessions_recipeId" }
-                assert(names.contains("index_cooking_sessions_startTime")) { "Missing index_cooking_sessions_startTime" }
+                assert(
+                    names.contains("index_cooking_sessions_startTime"),
+                ) { "Missing index_cooking_sessions_startTime" }
                 assert(names.contains("index_cooking_sessions_status")) { "Missing index_cooking_sessions_status" }
             }
         }
@@ -84,7 +87,7 @@ class Migration11to12Test {
                 assert(names.contains("index_cooking_timers_isActive")) { "Missing index_cooking_timers_isActive" }
             }
         }
-        
+
         db.close()
     }
 }

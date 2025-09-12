@@ -11,7 +11,7 @@ import com.squareup.moshi.JsonClass
 data class ProductResponse(
     @Json(name = "status") val status: Int,
     @Json(name = "status_verbose") val statusVerbose: String?,
-    @Json(name = "product") val product: Product?
+    @Json(name = "product") val product: Product?,
 )
 
 @JsonClass(generateAdapter = true)
@@ -20,7 +20,7 @@ data class SearchResponse(
     @Json(name = "page") val page: Int,
     @Json(name = "page_count") val pageCount: Int,
     @Json(name = "page_size") val pageSize: Int,
-    @Json(name = "products") val products: List<Product>
+    @Json(name = "products") val products: List<Product>,
 )
 
 @JsonClass(generateAdapter = true)
@@ -48,7 +48,7 @@ data class Product(
     @Json(name = "nutrition_grades") val nutritionGrades: String?,
     @Json(name = "nova_group") val novaGroup: Int?,
     @Json(name = "ecoscore_grade") val ecoscoreGrade: String?,
-    @Json(name = "nutriscore_grade") val nutriscoreGrade: String?
+    @Json(name = "nutriscore_grade") val nutriscoreGrade: String?,
 )
 
 @JsonClass(generateAdapter = true)
@@ -57,7 +57,6 @@ data class Nutriments(
     @Json(name = "energy-kcal_100g") val energyKcal100g: Double?,
     @Json(name = "energy-kj_100g") val energyKj100g: Double?,
     @Json(name = "energy_100g") val energy100g: Double?,
-    
     // Macronutrients per 100g
     @Json(name = "carbohydrates_100g") val carbohydrates100g: Double?,
     @Json(name = "sugars_100g") val sugars100g: Double?,
@@ -67,7 +66,6 @@ data class Nutriments(
     @Json(name = "saturated-fat_100g") val saturatedFat100g: Double?,
     @Json(name = "trans-fat_100g") val transFat100g: Double?,
     @Json(name = "cholesterol_100g") val cholesterol100g: Double?,
-    
     // Minerals per 100g
     @Json(name = "sodium_100g") val sodium100g: Double?,
     @Json(name = "salt_100g") val salt100g: Double?,
@@ -76,7 +74,6 @@ data class Nutriments(
     @Json(name = "magnesium_100g") val magnesium100g: Double?,
     @Json(name = "potassium_100g") val potassium100g: Double?,
     @Json(name = "zinc_100g") val zinc100g: Double?,
-    
     // Vitamins per 100g
     @Json(name = "vitamin-a_100g") val vitaminA100g: Double?,
     @Json(name = "vitamin-c_100g") val vitaminC100g: Double?,
@@ -88,14 +85,13 @@ data class Nutriments(
     @Json(name = "vitamin-b6_100g") val vitaminB6100g: Double?,
     @Json(name = "vitamin-b12_100g") val vitaminB12100g: Double?,
     @Json(name = "folates_100g") val folates100g: Double?,
-    
     // Per serving values (if available)
     @Json(name = "energy-kcal_serving") val energyKcalServing: Double?,
     @Json(name = "carbohydrates_serving") val carbohydratesServing: Double?,
     @Json(name = "proteins_serving") val proteinsServing: Double?,
     @Json(name = "fat_serving") val fatServing: Double?,
     @Json(name = "fiber_serving") val fiberServing: Double?,
-    @Json(name = "sodium_serving") val sodiumServing: Double?
+    @Json(name = "sodium_serving") val sodiumServing: Double?,
 )
 
 /**
@@ -133,8 +129,8 @@ fun Nutriments?.getSodiumPer100g(): Float {
  * Extension function to get display name in German or fallback to default
  */
 fun Product.getDisplayName(): String {
-    return productNameDe?.takeIf { it.isNotBlank() } 
-        ?: productName?.takeIf { it.isNotBlank() } 
+    return productNameDe?.takeIf { it.isNotBlank() }
+        ?: productName?.takeIf { it.isNotBlank() }
         ?: "Unbekanntes Produkt"
 }
 
@@ -142,6 +138,6 @@ fun Product.getDisplayName(): String {
  * Extension function to get localized ingredients text
  */
 fun Product.getLocalizedIngredients(): String? {
-    return ingredientsTextDe?.takeIf { it.isNotBlank() } 
+    return ingredientsTextDe?.takeIf { it.isNotBlank() }
         ?: ingredientsText?.takeIf { it.isNotBlank() }
 }

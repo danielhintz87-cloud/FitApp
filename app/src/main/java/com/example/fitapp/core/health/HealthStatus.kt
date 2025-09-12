@@ -9,7 +9,7 @@ data class HealthStatus(
     val responseTimeMs: Long? = null,
     val errorMessage: String? = null,
     val lastChecked: Long = System.currentTimeMillis(),
-    val additionalData: Map<String, Any> = emptyMap()
+    val additionalData: Map<String, Any> = emptyMap(),
 ) {
     val status: String get() = if (isHealthy) "OK" else "ERROR"
 }
