@@ -150,6 +150,9 @@ class MainActivity : ComponentActivity() {
                     "weight" -> "weight_tracking"
                     "help" -> "help"
                     "about" -> "about"
+                    "fasting" -> "fasting"
+                    "barcode" -> "barcode_scanner"
+                    "shopping" -> "shopping_list"
                     else -> {
                         StructuredLogger.warning(StructuredLogger.LogCategory.SYSTEM, "MainActivity", "Unknown deep link host: ${uri.host}")
                         "unified_dashboard" // Default fallback

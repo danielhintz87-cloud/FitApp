@@ -403,6 +403,15 @@ fun MainScaffold(navController: NavController? = null) {
                         
                     )
                 }
+                // Add route for recipe_edit without parameters (for creating new recipes)
+                composable("recipe_edit") {
+                    RecipeEditFromId(
+                        recipeId = null,
+                        onBackPressed = { nav.popBackStack() },
+                        onSaveRecipe = { nav.popBackStack() },
+                        
+                    )
+                }
                 composable("cooking_mode/{recipeId}") { backStackEntry ->
                     val recipeId = backStackEntry.arguments?.getString("recipeId") ?: ""
                     // We need to get the recipe from the database
