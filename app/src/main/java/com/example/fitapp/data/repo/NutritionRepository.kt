@@ -13,10 +13,14 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import java.time.LocalDate
 import java.time.ZoneId
+import javax.inject.Inject
+import javax.inject.Singleton
+import dagger.hilt.android.qualifiers.ApplicationContext
 
-class NutritionRepository(private val db: AppDatabase, private val context: Context? = null) {
-    private val streakManager: StreakManager? by lazy {
-        context?.let { StreakManager(it, db) }
+@Singleton
+class NutritionRepository @Inject constructor(private val db: AppDatabase, @ApplicationContext private val context: Context) {
+    private val streakManager: StreakManager by lazy {
+        StreakManager(context, db)
     }
 
     fun favorites(): Flow<List<RecipeEntity>> = db.recipeDao().favoritesFlow()
@@ -591,7 +595,7 @@ class NutritionRepository(private val db: AppDatabase, private val context: Cont
         // Update meal logging streak
         try {
             val mealDate = LocalDate.parse(mealEntry.date)
-            streakManager?.onMealLogged(mealDate)
+            streakManager.onMealLogged(mealDate)
         } catch (e: Exception) {
             // Log error but don't fail the meal entry insertion
             android.util.Log.w("NutritionRepository", "Failed to update meal logging streak", e)
