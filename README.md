@@ -82,6 +82,7 @@ Eine konsolidierte, kategorisierte Liste aller im Code hinterlegten TODO-Komment
 - **✅ Instrumented Tests**: UI-Tests auf Android Emulatoren
 - **✅ Code Quality**: Lint-Prüfung und Stilvalidierung
 - **✅ Artifact Upload**: Test-Reports und Build-Ergebnisse
+- **🔄 Dependency Updates**: Automatisierte Updates via [Renovate](docs/renovate.md)
 
 ### Workflow-Status
 | Workflow | Status | Beschreibung |
