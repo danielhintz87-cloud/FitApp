@@ -66,6 +66,11 @@ cp local.properties.sample local.properties
 ./gradlew check
 ```
 
+### Entwickler-Dokumentation
+- **[Migrations Guide](docs/migrations.md)** - Room migrations, schema export, and testing
+- **[Navigation Standards](docs/navigation.md)** - Route naming, argument passing, and deep links
+- **[Threading Policy](docs/threading.md)** - Dispatcher injection and anti-patterns
+
 ### Offene Aufgaben / TODO Übersicht
 Eine konsolidierte, kategorisierte Liste aller im Code hinterlegten TODO-Kommentare befindet sich in `TODO_INDEX.md`.
 
