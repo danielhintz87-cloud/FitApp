@@ -1,105 +1,110 @@
+# Dependabot configuration - DISABLED in favor of Renovate
+# This file is kept for reference but dependency updates are now handled by Renovate
+# See renovate.json in the repository root for current automation configuration
+
 version: 2
-updates:
-  - package-ecosystem: "gradle"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "07:00" # UTC (~09:00 Berlin)
-    open-pull-requests-limit: 10
-    reviewers:
-      - "danielhintz87-cloud"
-    assignees:
-      - "danielhintz87-cloud"
-    commit-message:
-      prefix: "deps"
-      prefix-development: "deps-dev"
-      include: "scope"
-    labels:
-      - "dependencies"
-      - "automated"
-    rebase-strategy: "disabled"
-
-    groups:
-      android-gradle:
-        patterns:
-          - "com.android.tools.build:gradle"
-          - "org.jetbrains.kotlin:kotlin-gradle-plugin"
-      compose:
-        patterns:
-          - "androidx.compose:compose-bom"
-          - "androidx.compose*:*"
-      androidx-core:
-        patterns:
-          - "androidx.core:*"
-          - "androidx.lifecycle:*"
-          - "androidx.activity:*"
-          - "androidx.fragment:*"
-          - "androidx.work:*"
-      room-database:
-        patterns:
-          - "androidx.room:*"
-      networking:
-        patterns:
-          - "com.squareup.retrofit2:*"
-          - "com.squareup.okhttp3:*"
-          - "com.squareup.moshi:*"
-          - "com.google.code.gson:gson"
-      ai-ml:
-        patterns:
-          - "com.google.mlkit:*"
-          - "org.tensorflow:*"
-          - "androidx.health*:*"
-      wear:
-        patterns:
-          - "com.google.android.gms:play-services-wearable"
-          - "androidx.wear*:*"
-          - "com.google.android.horologist:*"
-      testing:
-        patterns:
-          - "junit:junit"
-          - "androidx.test:*"
-          - "androidx.test.ext:*"
-          - "androidx.test.espresso:*"
-          - "org.mockito:*"
-          - "org.robolectric:*"
-
-    ignore:
-      - dependency-name: "com.android.tools.build:gradle"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "org.jetbrains.kotlin:kotlin-gradle-plugin"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "08:00" # UTC (~10:00 Berlin)
-    open-pull-requests-limit: 5
-    reviewers:
-      - "danielhintz87-cloud"
-    assignees:
-      - "danielhintz87-cloud"
-    commit-message:
-      prefix: "ci"
-      include: "scope"
-    labels:
-      - "ci/cd"
-      - "github-actions"
-      - "automated"
-    groups:
-      setup-actions:
-        patterns:
-          - "actions/checkout"
-          - "actions/setup-java"
-          - "actions/setup-node"
-          - "actions/cache"
-          - "actions/upload-artifact"
-      android-actions:
-        patterns:
-          - "reactivecircus/android-emulator-runner"
-          - "android-actions/setup-android"
-          - "gradle/gradle-build-action"
-          - "dependabot/fetch-metadata"
-          - "nick-invision/retry"
+# Commented out to disable Dependabot in favor of Renovate
+# updates:
+#   - package-ecosystem: "gradle"
+#     directory: "/"
+#     schedule:
+#       interval: "weekly"
+#       day: "monday"
+#       time: "07:00" # UTC (~09:00 Berlin)
+#     open-pull-requests-limit: 10
+#     reviewers:
+#       - "danielhintz87-cloud"
+#     assignees:
+#       - "danielhintz87-cloud"
+#     commit-message:
+#       prefix: "deps"
+#       prefix-development: "deps-dev"
+#       include: "scope"
+#     labels:
+#       - "dependencies"
+#       - "automated"
+#     rebase-strategy: "disabled"
+#
+#     groups:
+#       android-gradle:
+#         patterns:
+#           - "com.android.tools.build:gradle"
+#           - "org.jetbrains.kotlin:kotlin-gradle-plugin"
+#       compose:
+#         patterns:
+#           - "androidx.compose:compose-bom"
+#           - "androidx.compose*:*"
+#       androidx-core:
+#         patterns:
+#           - "androidx.core:*"
+#           - "androidx.lifecycle:*"
+#           - "androidx.activity:*"
+#           - "androidx.fragment:*"
+#           - "androidx.work:*"
+#       room-database:
+#         patterns:
+#           - "androidx.room:*"
+#       networking:
+#         patterns:
+#           - "com.squareup.retrofit2:*"
+#           - "com.squareup.okhttp3:*"
+#           - "com.squareup.moshi:*"
+#           - "com.google.code.gson:gson"
+#       ai-ml:
+#         patterns:
+#           - "com.google.mlkit:*"
+#           - "org.tensorflow:*"
+#           - "androidx.health*:*"
+#       wear:
+#         patterns:
+#           - "com.google.android.gms:play-services-wearable"
+#           - "androidx.wear*:*"
+#           - "com.google.android.horologist:*"
+#       testing:
+#         patterns:
+#           - "junit:junit"
+#           - "androidx.test:*"
+#           - "androidx.test.ext:*"
+#           - "androidx.test.espresso:*"
+#           - "org.mockito:*"
+#           - "org.robolectric:*"
+#
+#     ignore:
+#       - dependency-name: "com.android.tools.build:gradle"
+#         update-types: ["version-update:semver-major"]
+#       - dependency-name: "org.jetbrains.kotlin:kotlin-gradle-plugin"
+#         update-types: ["version-update:semver-major"]
+#
+#   - package-ecosystem: "github-actions"
+#     directory: "/"
+#     schedule:
+#       interval: "weekly"
+#       day: "monday"
+#       time: "08:00" # UTC (~10:00 Berlin)
+#     open-pull-requests-limit: 5
+#     reviewers:
+#       - "danielhintz87-cloud"
+#     assignees:
+#       - "danielhintz87-cloud"
+#     commit-message:
+#       prefix: "ci"
+#       include: "scope"
+#     labels:
+#       - "ci/cd"
+#       - "github-actions"
+#       - "automated"
+#     groups:
+#       setup-actions:
+#         patterns:
+#           - "actions/checkout"
+#           - "actions/setup-java"
+#           - "actions/setup-node"
+#           - "actions/cache"
+#           - "actions/upload-artifact"
+#       android-actions:
+#         patterns:
+#           - "reactivecircus/android-emulator-runner"
+#           - "android-actions/setup-android"
+#           - "gradle/gradle-build-action"
+#           - "dependabot/fetch-metadata"
+#           - "nick-invision/retry"
