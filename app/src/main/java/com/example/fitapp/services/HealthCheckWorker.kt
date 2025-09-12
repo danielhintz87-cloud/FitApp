@@ -1,24 +1,23 @@
 package com.example.fitapp.services
 
 import android.content.Context
-import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import com.example.fitapp.core.health.ApiHealthRegistry
+import com.example.fitapp.core.health.GeminiHealthChecker
 import com.example.fitapp.core.health.HealthStatusRepository
+import com.example.fitapp.core.threading.DefaultDispatcherProvider
+import com.example.fitapp.data.db.AppDatabase
 import com.example.fitapp.util.StructuredLogger
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
+import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
 /**
- * Worker to perform periodic health checks on all API providers
+ * Simplified Worker for health checks that doesn't rely on Hilt
+ * This provides a working implementation while avoiding DI compilation issues
  */
-@HiltWorker
-class HealthCheckWorker @AssistedInject constructor(
-    @Assisted context: Context,
-    @Assisted workerParams: WorkerParameters,
-    private val apiHealthRegistry: ApiHealthRegistry,
-    private val healthStatusRepository: HealthStatusRepository
+class HealthCheckWorker(
+    context: Context,
+    workerParams: WorkerParameters
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -29,9 +28,22 @@ class HealthCheckWorker @AssistedInject constructor(
                 "Starting API health checks"
             )
 
+            // Create dependencies manually (in production, use proper DI)
+            val database = AppDatabase.get(applicationContext)
+            val dispatchers = DefaultDispatcherProvider()
+            val httpClient = OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .build()
+            
+            val geminiHealthChecker = GeminiHealthChecker(applicationContext, httpClient, dispatchers)
+            val apiHealthRegistry = ApiHealthRegistry(geminiHealthChecker)
+            val healthStatusRepository = HealthStatusRepository(database, dispatchers)
+            
+            // Perform health checks
             val allStatus = apiHealthRegistry.checkAllHealth()
             
-            // Persist results to database
+            // Persist results
             healthStatusRepository.saveHealthStatuses(allStatus.values.toList())
 
             val healthyCount = allStatus.values.count { it.isHealthy }
