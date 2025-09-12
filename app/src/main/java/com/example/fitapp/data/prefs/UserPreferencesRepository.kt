@@ -108,6 +108,10 @@ class UserPreferencesRepository(private val context: Context) {
         val sharedPrefs = context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
         val legacyPrefs = context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
         
+        // Also migrate from other SharedPreferences files
+        val userExperiencePrefs = context.getSharedPreferences("fitapp_user_experience", Context.MODE_PRIVATE)
+        val fastingPrefs = context.getSharedPreferences("fasting_prefs", Context.MODE_PRIVATE)
+        
         // Migrate data
         dataStore.updateData { prefs ->
             prefs.toBuilder()
@@ -136,8 +140,23 @@ class UserPreferencesRepository(private val context: Context) {
                 .setLanguage(sharedPrefs.getString("language", "de") ?: "de")
                 .setAchievementNotificationsEnabled(sharedPrefs.getBoolean("achievement_notifications", true))
                 
+                // User experience settings (from UserExperienceManager)
+                .setOnboardingCompleted(userExperiencePrefs.getBoolean("onboarding_completed", false))
+                .setFirstLaunch(userExperiencePrefs.getBoolean("first_launch", true))
+                .setUnifiedDashboardShown(userExperiencePrefs.getBoolean("unified_dashboard_shown", false))
+                .addAllFeaturesDiscovered(
+                    userExperiencePrefs.getStringSet("features_discovered", emptySet())?.toList() ?: emptyList()
+                )
+                .setAppVersionSeen(userExperiencePrefs.getString("app_version_seen", "1.0.0") ?: "1.0.0")
+                
+                // Fasting settings (from FastingManager)
+                .setFastingEnabled(fastingPrefs.getBoolean("is_fasting", false))
+                .setFastingStartTimeMillis(fastingPrefs.getLong("fast_start_time", 0L) * 1000) // Convert to millis
+                .setFastingDurationHours(16) // Default to 16:8 if not specified
+                .setFastingNotificationsEnabled(true) // Default to enabled
+                
                 // Migration metadata
-                .setPreferencesVersion(1)
+                .setPreferencesVersion(2) // Increment version for new migration
                 .setMigratedFromSharedPrefs(true)
                 .build()
         }
