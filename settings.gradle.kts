@@ -40,3 +40,12 @@ dependencyResolutionManagement {
 rootProject.name = "FitApp"
 include(":app")
 include(":wear")
+
+// Core modules
+include(":core:domain")
+include(":core:data")
+include(":core:ui")
+
+// Feature modules
+include(":feature:hydration")
+include(":feature:tracking")

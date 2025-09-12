@@ -101,6 +101,15 @@ dependencies {
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
+    // Feature modules
+    implementation(project(":feature:hydration"))
+    implementation(project(":feature:tracking"))
+    
+    // Core modules
+    implementation(project(":core:domain"))
+    implementation(project(":core:data"))
+    implementation(project(":core:ui"))
+
     // Core Android Bundle
     implementation(libs.bundles.core)
     
