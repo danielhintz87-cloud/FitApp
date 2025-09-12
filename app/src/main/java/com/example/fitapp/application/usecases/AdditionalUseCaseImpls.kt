@@ -366,7 +366,7 @@ class AnalyzeProgressUseCaseImpl(
             - Aktuelles Gewicht: ${currentWeight}kg
 
             **Gewichtsverlauf (neueste zuerst):**
-            $progressStringprogressString
+            $progressString
 
             **Gewichtsveränderung:** ${String.format("%.1f", weightChange)}kg
 
