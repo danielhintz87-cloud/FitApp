@@ -1,59 +1,38 @@
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    id("com.android.library")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
-    namespace = "com.example.fitapp.core.ui"
-    compileSdk = 35
+    namespace = "de.hhn.fitapp.core.ui"
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 28
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles("consumer-rules.pro")
     }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
+    
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+    
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
+    
     buildFeatures {
         compose = true
     }
 }
 
 dependencies {
-    api(project(":core:domain"))
-
-    // Core Android dependencies
-    implementation(libs.bundles.core)
-    implementation(libs.bundles.compose)
-    
-    // BOM for Compose
+    implementation(project(":core:navigation"))
     implementation(platform(libs.compose.bom))
-    
-    // Navigation
+    implementation(libs.compose.ui)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.activity.compose)
     implementation(libs.navigation.compose)
-
-    // Testing
-    testImplementation(libs.bundles.test)
-    androidTestImplementation(libs.bundles.android.test)
-    androidTestImplementation(platform(libs.compose.bom))
-    
-    // Debug
-    debugImplementation(libs.bundles.debug)
+    implementation(libs.kotlin.stdlib)
 }

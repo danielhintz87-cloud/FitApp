@@ -109,6 +109,12 @@ dependencies {
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
+    // Core Module Dependencies
+    implementation(project(":core:domain"))
+    implementation(project(":core:data"))
+    implementation(project(":core:ui"))
+    implementation(project(":core:navigation"))
+
     // Core Android Bundle
     implementation(libs.bundles.core)
 
