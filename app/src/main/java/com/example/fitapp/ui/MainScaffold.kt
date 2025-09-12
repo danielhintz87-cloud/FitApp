@@ -22,6 +22,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navDeepLink
 import com.example.fitapp.R
 import com.example.fitapp.ui.AiLogsScreen
 import com.example.fitapp.ui.food.FoodScanScreen
@@ -51,6 +52,8 @@ import com.example.fitapp.ui.screens.AIPersonalTrainerScreen
 import com.example.fitapp.ui.screens.HIITBuilderScreen
 import com.example.fitapp.ui.screens.HIITExecutionScreen
 import com.example.fitapp.ui.screens.SocialChallengesScreen
+import com.example.fitapp.ui.screens.FeedbackScreen
+import com.example.fitapp.ui.screens.QuickActionsScreen
 import com.example.fitapp.ui.settings.ApiKeysScreen
 import com.example.fitapp.ui.settings.NotificationSettingsScreen
 import com.example.fitapp.ui.settings.HealthConnectSettingsScreen
@@ -154,6 +157,17 @@ fun MainScaffold() {
                     
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
                     
+                    // Quick Actions and Tools
+                    NavigationDrawerItem(
+                        label = { Text("⚡ Schnellaktionen") }, 
+                        selected = currentRoute == "quick_actions", 
+                        onClick = { scope.launch { drawerState.close() }; nav.navigate("quick_actions") },
+                        icon = { Icon(Icons.Filled.Bolt, contentDescription = null) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                    
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+                    
                     // Settings - Consolidated
                     NavigationDrawerItem(
                         label = { Text("⚙️ ${ctx.getString(R.string.settings)}") }, 
@@ -199,6 +213,9 @@ fun MainScaffold() {
                                 IconButton(onClick = { nav.navigate("food_search") }) {
                                     Icon(Icons.Filled.Search, contentDescription = ctx.getString(R.string.search_food))
                                 }
+                                IconButton(onClick = { nav.navigate("quick_actions") }) {
+                                    Icon(Icons.Filled.Bolt, contentDescription = "Schnellaktionen")
+                                }
                             }
                         }
                         
@@ -238,6 +255,16 @@ fun MainScaffold() {
                                 },
                                 leadingIcon = {
                                     Icon(Icons.AutoMirrored.Filled.Help, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Feedback senden") },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    nav.navigate("feedback")
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Feedback, contentDescription = null)
                                 }
                             )
                             DropdownMenuItem(
@@ -359,7 +386,9 @@ fun MainScaffold() {
                         
                     )
                 }
-                composable("recipe_generation") {
+                composable("recipe_generation",
+                    deepLinks = listOf(navDeepLink { uriPattern = "fitapp://recipe_generation" })
+                ) {
                     RecipeGenerationScreen(
                         onBackPressed = { nav.popBackStack() },
                         onNavigateToApiKeys = { nav.navigate("apikeys") },
@@ -463,7 +492,9 @@ fun MainScaffold() {
                         
                     )
                 }
-                composable("hiit_builder") {
+                composable("hiit_builder",
+                    deepLinks = listOf(navDeepLink { uriPattern = "fitapp://hiit_builder" })
+                ) {
                     HIITBuilderScreen(
                         onBackPressed = { nav.popBackStack() },
                         onWorkoutCreated = { workout ->
@@ -566,17 +597,35 @@ fun MainScaffold() {
                     WeightLossProgramScreen(onBack = { nav.popBackStack() }, initialBMI = bmi, initialTargetWeight = targetWeight)
                 }
                 composable("weight_loss_program") { WeightLossProgramScreen(onBack = { nav.popBackStack() }) }
-                composable("ai_personal_trainer") {
+                composable("ai_personal_trainer",
+                    deepLinks = listOf(navDeepLink { uriPattern = "fitapp://ai_personal_trainer" })
+                ) {
                     AIPersonalTrainerScreen(
                         onBack = { nav.popBackStack() },
                         onNavigateToApiKeys = { nav.navigate("apikeys") },
-                        onNavigateToHiitBuilder = { nav.navigate("hiit_builder") },
+                        onNavigateToWorkout = { nav.navigate("todaytraining") },
                         onNavigateToNutrition = { nav.navigate("nutrition") },
+                        onNavigateToProgress = { nav.navigate("enhanced_analytics") },
+                        onNavigateToHiitBuilder = { nav.navigate("hiit_builder") },
                         onNavigateToAnalytics = { nav.navigate("enhanced_analytics") },
-                        onNavigateToWorkout = { goal, minutes -> 
-                            nav.navigate("daily_workout/$goal/$minutes") 
-                        },
                         onNavigateToRecipeGeneration = { nav.navigate("recipe_generation") }
+                    )
+                }
+                composable("feedback",
+                    deepLinks = listOf(navDeepLink { uriPattern = "fitapp://feedback" })
+                ) {
+                    FeedbackScreen(
+                        onBack = { nav.popBackStack() }
+                    )
+                }
+                composable("quick_actions",
+                    deepLinks = listOf(navDeepLink { uriPattern = "fitapp://quick_actions" })
+                ) {
+                    QuickActionsScreen(
+                        onBack = { nav.popBackStack() },
+                        onNavigateToAction = { route ->
+                            nav.navigate(route)
+                        }
                     )
                 }
                 
