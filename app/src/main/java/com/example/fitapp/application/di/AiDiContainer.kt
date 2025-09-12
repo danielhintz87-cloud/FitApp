@@ -74,7 +74,7 @@ class AiDiContainer private constructor(context: Context) {
                 com.example.fitapp.infrastructure.providers.api.PerplexityApiService::class.java,
             )
 
-        PerplexityAiProvider()
+        PerplexityAiProvider(context, perplexityApiService, dispatchers.io)
     }
 
     private val providers: Map<com.example.fitapp.domain.entities.AiProvider, AiProvider> by lazy {
