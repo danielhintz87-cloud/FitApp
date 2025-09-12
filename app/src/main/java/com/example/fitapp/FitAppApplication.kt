@@ -23,11 +23,10 @@ class FitAppApplication : Application(), Configuration.Provider {
     // Application-level coroutine scope with SupervisorJob for safe background operations
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     
-    override fun getWorkManagerConfiguration(): Configuration {
-        return Configuration.Builder()
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
             .build()
-    }
     
     override fun onCreate() {
         super.onCreate()

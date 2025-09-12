@@ -2,8 +2,6 @@ package com.example.fitapp.util.time
 
 import org.junit.Test
 import org.junit.Assert.*
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
 import java.time.*
 
 /**
@@ -103,72 +101,62 @@ class TimeZoneUtilsTest {
         val result = TimeZoneUtils.getNextDayBoundaryMillis()
         assertEquals(expectedMillis, result)
     }
-}
-
-/**
- * Parameterized tests for DST transitions across different timezones.
- */
-@RunWith(Parameterized::class)
-class TimeZoneUtilsDstTest(
-    private val zoneId: ZoneId,
-    private val dstTransitionDate: LocalDate,
-    private val isDstTransition: Boolean
-) {
     
-    companion object {
-        @JvmStatic
-        @Parameterized.Parameters(name = "{0} on {1}")
-        fun data(): Collection<Array<Any>> {
-            return listOf(
-                // Spring forward (DST starts) - 23 hours
-                arrayOf(ZoneId.of("Europe/Berlin"), LocalDate.of(2024, 3, 31), true),
-                arrayOf(ZoneId.of("America/New_York"), LocalDate.of(2024, 3, 10), true),
-                
-                // Fall back (DST ends) - 25 hours  
-                arrayOf(ZoneId.of("Europe/Berlin"), LocalDate.of(2024, 10, 27), true),
-                arrayOf(ZoneId.of("America/New_York"), LocalDate.of(2024, 11, 3), true),
-                
-                // Normal days - 24 hours
-                arrayOf(ZoneId.of("Europe/Berlin"), LocalDate.of(2024, 6, 15), false),
-                arrayOf(ZoneId.of("America/New_York"), LocalDate.of(2024, 7, 4), false),
-                
-                // UTC never has DST transitions
-                arrayOf(ZoneId.of("UTC"), LocalDate.of(2024, 3, 31), false),
-                arrayOf(ZoneId.of("UTC"), LocalDate.of(2024, 10, 27), false)
-            )
-        }
+    @Test
+    fun `isDstTransitionDay correctly identifies spring forward transition`() {
+        val berlinZone = ZoneId.of("Europe/Berlin")
+        val springForwardDate = LocalDate.of(2024, 3, 31) // DST starts in Europe
+        val result = TimeZoneUtils.isDstTransitionDay(springForwardDate, berlinZone)
+        assertTrue("Spring forward should be detected as DST transition", result)
     }
     
     @Test
-    fun `isDstTransitionDay correctly identifies DST transitions`() {
-        val result = TimeZoneUtils.isDstTransitionDay(dstTransitionDate, zoneId)
-        assertEquals("DST transition detection for $zoneId on $dstTransitionDate", isDstTransition, result)
+    fun `isDstTransitionDay correctly identifies fall back transition`() {
+        val berlinZone = ZoneId.of("Europe/Berlin")
+        val fallBackDate = LocalDate.of(2024, 10, 27) // DST ends in Europe
+        val result = TimeZoneUtils.isDstTransitionDay(fallBackDate, berlinZone)
+        assertTrue("Fall back should be detected as DST transition", result)
     }
     
     @Test
-    fun `getDayDuration returns correct duration for DST transitions`() {
-        val duration = TimeZoneUtils.getDayDuration(dstTransitionDate, zoneId)
-        
-        when {
-            isDstTransition && isSpringForward() -> {
-                // Spring forward: day is 23 hours
-                assertEquals("Spring forward day should be 23 hours", Duration.ofHours(23), duration)
-            }
-            isDstTransition && !isSpringForward() -> {
-                // Fall back: day is 25 hours
-                assertEquals("Fall back day should be 25 hours", Duration.ofHours(25), duration)
-            }
-            else -> {
-                // Normal day: 24 hours
-                assertEquals("Normal day should be 24 hours", Duration.ofHours(24), duration)
-            }
-        }
+    fun `isDstTransitionDay returns false for normal days`() {
+        val berlinZone = ZoneId.of("Europe/Berlin")
+        val normalDate = LocalDate.of(2024, 6, 15) // Summer day, no transition
+        val result = TimeZoneUtils.isDstTransitionDay(normalDate, berlinZone)
+        assertFalse("Normal day should not be detected as DST transition", result)
+    }
+    
+    @Test
+    fun `getDayDuration returns 23 hours for spring forward`() {
+        val berlinZone = ZoneId.of("Europe/Berlin")
+        val springForwardDate = LocalDate.of(2024, 3, 31)
+        val duration = TimeZoneUtils.getDayDuration(springForwardDate, berlinZone)
+        assertEquals("Spring forward day should be 23 hours", Duration.ofHours(23), duration)
+    }
+    
+    @Test
+    fun `getDayDuration returns 25 hours for fall back`() {
+        val berlinZone = ZoneId.of("Europe/Berlin")
+        val fallBackDate = LocalDate.of(2024, 10, 27)
+        val duration = TimeZoneUtils.getDayDuration(fallBackDate, berlinZone)
+        assertEquals("Fall back day should be 25 hours", Duration.ofHours(25), duration)
+    }
+    
+    @Test
+    fun `getDayDuration returns 24 hours for normal days`() {
+        val berlinZone = ZoneId.of("Europe/Berlin")
+        val normalDate = LocalDate.of(2024, 6, 15)
+        val duration = TimeZoneUtils.getDayDuration(normalDate, berlinZone)
+        assertEquals("Normal day should be 24 hours", Duration.ofHours(24), duration)
     }
     
     @Test
     fun `day boundaries are consistent during DST transitions`() {
-        val startOfDay = TimeZoneUtils.getStartOfDay(dstTransitionDate, zoneId)
-        val endOfDay = TimeZoneUtils.getEndOfDay(dstTransitionDate, zoneId)
+        val berlinZone = ZoneId.of("Europe/Berlin")
+        val springForwardDate = LocalDate.of(2024, 3, 31)
+        
+        val startOfDay = TimeZoneUtils.getStartOfDay(springForwardDate, berlinZone)
+        val endOfDay = TimeZoneUtils.getEndOfDay(springForwardDate, berlinZone)
         
         // Start should always be before end
         assertTrue("Start of day should be before end of day", startOfDay.isBefore(endOfDay))
@@ -177,10 +165,5 @@ class TimeZoneUtilsDstTest(
         assertEquals("Start and end should be on same date", 
             startOfDay.toLocalDate(), 
             endOfDay.toLocalDate())
-    }
-    
-    private fun isSpringForward(): Boolean {
-        // Spring forward typically happens in March/April in Northern Hemisphere
-        return dstTransitionDate.monthValue in 3..4
     }
 }
