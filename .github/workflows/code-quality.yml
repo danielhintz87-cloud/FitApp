@@ -1,8 +1,14 @@
-name: Code Quality
+name: Code Quality - DEPRECATED
+# DEPRECATED: This workflow is being replaced by ci-lint.yml
+# Will be removed in future PR once ci-lint.yml is validated
+
+# TEMPORARILY DISABLED - testing new ci-lint.yml workflow
+# on:
+#   pull_request:
+#   workflow_dispatch:
 
 on:
-  pull_request:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger only
 
 permissions:
   contents: read
@@ -49,19 +55,19 @@ jobs:
       - uses: gradle/gradle-build-action@v3
 
       - name: ktlint
-        run: ./gradlew ktlintCheck --stacktrace || true
+        run: ./gradlew ktlintCheck --stacktrace
 
       - name: detekt
-        run: ./gradlew detekt --stacktrace || true
+        run: ./gradlew detekt --stacktrace
 
       - name: Verify ML Models
-        run: ./gradlew :app:verifyModels --stacktrace || true
+        run: ./gradlew :app:verifyModels --stacktrace
 
       - name: Unit Coverage
-        run: ./gradlew jacocoTestReport --stacktrace || true
+        run: ./gradlew jacocoTestReport --stacktrace
 
       - name: Quality Gate (Coverage + Static Analysis)
-        run: ./gradlew qualityCheck -Pcoverage.min=0.35 --stacktrace || true
+        run: ./gradlew qualityCheck -Pcoverage.min=0.35 --stacktrace
 
       - name: Upload quality reports
         if: always()

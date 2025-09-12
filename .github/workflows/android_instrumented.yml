@@ -1,11 +1,17 @@
-name: Android Instrumented Tests
+name: Android Instrumented Tests - DEPRECATED
+# DEPRECATED: This workflow is being replaced by ci-instrumentation.yml
+# Will be removed in future PR once ci-instrumentation.yml is validated
 # Runs Android instrumentation tests on emulator
 # Includes migration tests, UI tests, and integration tests
 
+# TEMPORARILY DISABLED - testing new ci-instrumentation.yml workflow
+# on:
+#   pull_request:
+#     branches: [ main ]
+#   workflow_dispatch:
+
 on:
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger only
 
 permissions:
   contents: read
