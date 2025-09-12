@@ -24,6 +24,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import com.example.fitapp.R
+import com.example.fitapp.feature.hydration.navigation.hydrationGraph
+import com.example.fitapp.feature.tracking.navigation.trackingGraph
 import com.example.fitapp.ui.AiLogsScreen
 import com.example.fitapp.ui.food.FoodScanScreen
 import com.example.fitapp.ui.nutrition.CookingModeScreen
@@ -660,6 +662,10 @@ fun MainScaffold(navController: NavController? = null) {
                         onCreateRecipe = { nav.navigate("recipe_edit") }
                     )
                 }
+                
+                // Feature module navigation graphs
+                hydrationGraph(nav)
+                trackingGraph(nav)
 
             }
         }
