@@ -9,12 +9,16 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.IOException
+import javax.inject.Inject
+import javax.inject.Singleton
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 /**
  * DataStore-based repository for user preferences.
  * Provides migration from SharedPreferences and type-safe preference access.
  */
-class UserPreferencesRepository(private val context: Context) {
+@Singleton
+class UserPreferencesRepository @Inject constructor(@ApplicationContext private val context: Context) {
     companion object {
         private const val DATA_STORE_FILE_NAME = "user_preferences.pb"
         private const val SHARED_PREFS_NAME = "user_prefs"

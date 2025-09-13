@@ -43,7 +43,7 @@ fun FoodSearchScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val repo = remember { NutritionRepository(AppDatabase.get(context)) }
+    val repo = remember { NutritionRepository(AppDatabase.get(context), context) }
     val keyboardController = LocalSoftwareKeyboardController.current
 
     var searchQuery by remember { mutableStateOf("") }
