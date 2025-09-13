@@ -58,7 +58,7 @@ fun UnifiedDashboardScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val database = remember { AppDatabase.get(context) }
-    val nutritionRepo = remember { NutritionRepository(database) }
+    val nutritionRepo = remember { NutritionRepository(database, context) }
     val motivationRepo = remember { PersonalMotivationRepository(database) }
 
     // Collect all data streams

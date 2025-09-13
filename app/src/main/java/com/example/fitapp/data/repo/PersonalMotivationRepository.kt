@@ -2,8 +2,11 @@ package com.example.fitapp.data.repo
 
 import com.example.fitapp.data.db.*
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class PersonalMotivationRepository(private val db: AppDatabase) {
+@Singleton
+class PersonalMotivationRepository @Inject constructor(private val db: AppDatabase) {
     // Achievement methods
     fun allAchievementsFlow(): Flow<List<PersonalAchievementEntity>> = db.personalAchievementDao().allAchievementsFlow()
 

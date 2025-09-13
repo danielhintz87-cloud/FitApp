@@ -34,7 +34,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun ProgressScreen(contentPadding: PaddingValues) {
     val ctx = LocalContext.current
-    val nutritionRepo = remember { NutritionRepository(AppDatabase.get(ctx)) }
+    val nutritionRepo = remember { NutritionRepository(AppDatabase.get(ctx), ctx) }
     val planDao = remember { AppDatabase.get(ctx).planDao() }
     val motivationRepo = remember { PersonalMotivationRepository(AppDatabase.get(ctx)) }
 

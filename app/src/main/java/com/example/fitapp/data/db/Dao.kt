@@ -1887,3 +1887,33 @@ interface LeaderboardEntryDao {
     @Query("DELETE FROM leaderboard_entries WHERE challengeId = :challengeId")
     suspend fun clearLeaderboard(challengeId: Long)
 }
+
+@Dao
+interface HealthStatusDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertHealthStatus(status: HealthStatusEntity)
+
+    @Query("SELECT * FROM health_status ORDER BY lastChecked DESC")
+    fun getAllHealthStatusFlow(): Flow<List<HealthStatusEntity>>
+
+    @Query("SELECT * FROM health_status WHERE provider = :provider")
+    suspend fun getHealthStatus(provider: String): HealthStatusEntity?
+
+    @Query("SELECT * FROM health_status WHERE provider = :provider")
+    fun getHealthStatusFlow(provider: String): Flow<HealthStatusEntity?>
+
+    @Query("SELECT * FROM health_status ORDER BY lastChecked DESC")
+    suspend fun getAllHealthStatus(): List<HealthStatusEntity>
+
+    @Query("DELETE FROM health_status WHERE provider = :provider")
+    suspend fun deleteHealthStatus(provider: String)
+
+    @Query("DELETE FROM health_status")
+    suspend fun deleteAllHealthStatus()
+
+    @Query("SELECT COUNT(*) FROM health_status WHERE isHealthy = 1")
+    suspend fun getHealthyCount(): Int
+
+    @Query("SELECT COUNT(*) FROM health_status WHERE isHealthy = 0")
+    suspend fun getUnhealthyCount(): Int
+}

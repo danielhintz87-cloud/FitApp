@@ -1,20 +1,25 @@
 plugins {
-    alias(libs.plugins.android.library)
+    id("com.android.library")
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
+    id("org.jetbrains.kotlin.kapt")
 }
 
 android {
     namespace = "com.example.fitapp.feature.tracking"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 28
+        targetSdk = 36
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
+    }
+
+    buildFeatures {
+        compose = true
     }
 
     buildTypes {
@@ -26,42 +31,59 @@ android {
             )
         }
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
+        freeCompilerArgs += listOf(
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
+        )
     }
-    buildFeatures {
-        compose = true
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
     }
 }
 
-dependencies {
-    implementation(project(":core:ui"))
-    implementation(project(":core:domain"))
+kapt {
+    correctErrorTypes = true
+}
 
-    // Core Android dependencies
-    implementation(libs.bundles.core)
+dependencies {
+    // Core modules
+    implementation(project(":core:domain"))
+    implementation(project(":core:data"))
+    implementation(project(":core:ui"))
+    
+    // Compose BOM
+    val composeBom = platform(libs.compose.bom)
+    implementation(composeBom)
+    
+    // Core dependencies
+    implementation(libs.kotlin.stdlib)
+    implementation(libs.kotlinx.coroutines.android)
+    
+    // Compose Bundle
     implementation(libs.bundles.compose)
     
-    // BOM for Compose
-    implementation(platform(libs.compose.bom))
+    // Lifecycle
+    implementation(libs.lifecycle.runtime.ktx)
     
     // Hilt
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
-    ksp(libs.hilt.compiler)
+    kapt(libs.hilt.compiler)
     
-    // Navigation
-    implementation(libs.navigation.compose)
-
-    // Testing
+    // WorkManager for workout reminders
+    implementation(libs.work.runtime.ktx)
+    
+    // Test dependencies
     testImplementation(libs.bundles.test)
     androidTestImplementation(libs.bundles.android.test)
-    androidTestImplementation(platform(libs.compose.bom))
-    
-    // Debug
     debugImplementation(libs.bundles.debug)
 }
