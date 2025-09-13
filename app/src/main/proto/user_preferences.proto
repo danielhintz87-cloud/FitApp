@@ -44,4 +44,17 @@ message UserPreferencesProto {
   // Migration info
   int32 preferences_version = 18;
   bool migrated_from_shared_prefs = 19;
+  
+  // User experience settings (migrated from SharedPreferences)
+  bool onboarding_completed = 21;
+  bool first_launch = 22;
+  bool unified_dashboard_shown = 23;
+  repeated string features_discovered = 24;
+  string app_version_seen = 25;
+  
+  // Fasting settings (migrated from SharedPreferences)
+  bool fasting_enabled = 26;
+  int64 fasting_start_time_millis = 27;
+  int32 fasting_duration_hours = 28;
+  bool fasting_notifications_enabled = 29;
 }
