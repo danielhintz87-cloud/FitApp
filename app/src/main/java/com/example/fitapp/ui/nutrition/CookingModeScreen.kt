@@ -36,7 +36,7 @@ fun CookingModeScreen(
 ) {
     val ctx = LocalContext.current
     val db = remember { AppDatabase.get(ctx) }
-    val repo = remember { NutritionRepository(db) }
+        val repo = remember { NutritionRepository(db, ctx) }
     val cookingManager = remember { CookingModeManager(db) }
     val scope = rememberCoroutineScope()
 
