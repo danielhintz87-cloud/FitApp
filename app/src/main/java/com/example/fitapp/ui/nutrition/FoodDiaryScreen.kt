@@ -59,6 +59,7 @@ fun FoodDiaryScreen(
     var totalProtein by remember { mutableFloatStateOf(0f) }
     var totalFat by remember { mutableFloatStateOf(0f) }
     var totalWater by remember { mutableIntStateOf(0) }
+    var burnedCalories by remember { mutableIntStateOf(0) }
 
     // Use reactive flow for hydration goal - updates automatically when goal changes
     val hydrationGoal by hydrationGoalUseCase.getHydrationGoalMlFlow(today).collectAsState(initial = 2000)
@@ -86,6 +87,9 @@ fun FoodDiaryScreen(
             totalProtein = repo.getTotalProteinForDate(todayString)
             totalFat = repo.getTotalFatForDate(todayString)
             totalWater = repo.getTotalWaterForDate(todayString)
+            
+            // Load burned calories from workout sessions
+            burnedCalories = repo.getTotalWorkoutCaloriesBurnedForDate(todayString)
 
             // Note: hydrationGoal is now automatically updated via reactive flow
         }
@@ -126,7 +130,7 @@ fun FoodDiaryScreen(
         CaloriesOverviewCard(
             consumedCalories = totalCalories.toInt(),
             targetCalories = goal?.targetKcal ?: 2000,
-            burnedCalories = 0, // TODO: Connect with workout tracking
+            burnedCalories = burnedCalories, // Now dynamically loaded from workout tracking
         )
 
         // Macros Overview Card
@@ -165,6 +169,9 @@ fun FoodDiaryScreen(
                     totalCarbs = repo.getTotalCarbsForDate(todayString)
                     totalProtein = repo.getTotalProteinForDate(todayString)
                     totalFat = repo.getTotalFatForDate(todayString)
+                    
+                    // Reload burned calories in case workout sessions changed
+                    burnedCalories = repo.getTotalWorkoutCaloriesBurnedForDate(todayString)
                 }
             },
         )

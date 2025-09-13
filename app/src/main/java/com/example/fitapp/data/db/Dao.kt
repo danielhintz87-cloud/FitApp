@@ -1099,6 +1099,15 @@ interface WorkoutSessionDao {
         sinceTimestamp: Long,
     ): Int?
 
+    @Query(
+        """
+        SELECT COALESCE(SUM(caloriesBurned), 0) FROM workout_sessions 
+        WHERE DATE(startTime / 1000, 'unixepoch') = :dateIso 
+        AND caloriesBurned IS NOT NULL
+    """,
+    )
+    suspend fun getTotalCaloriesBurnedForDate(dateIso: String): Int
+
     @Query("DELETE FROM workout_sessions")
     suspend fun deleteAll()
 }

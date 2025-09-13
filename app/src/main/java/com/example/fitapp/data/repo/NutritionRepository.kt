@@ -789,4 +789,8 @@ class NutritionRepository @Inject constructor(private val db: AppDatabase, @Appl
             val history = getMacroHistoryForPeriod(days)
             emit(history)
         }
+
+    // Workout calorie integration methods
+    suspend fun getTotalWorkoutCaloriesBurnedForDate(dateIso: String): Int =
+        db.workoutSessionDao().getTotalCaloriesBurnedForDate(dateIso)
 }
