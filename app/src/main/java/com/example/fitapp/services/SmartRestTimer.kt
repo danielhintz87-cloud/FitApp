@@ -1,6 +1,8 @@
 package com.example.fitapp.services
 
 import android.content.Context
+import com.example.fitapp.core.threading.DefaultDispatcherProvider
+import com.example.fitapp.core.threading.DispatcherProvider
 import com.example.fitapp.util.StructuredLogger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -11,7 +13,10 @@ import kotlin.math.min
  * Smart Rest Timer with AI-powered adaptive rest calculation
  * Integrates with existing workout execution system
  */
-class SmartRestTimer(private val context: Context) {
+class SmartRestTimer(
+    private val context: Context,
+    private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider(),
+) {
     companion object {
         private const val TAG = "SmartRestTimer"
         private const val DEFAULT_REST_SECONDS = 90
@@ -75,7 +80,7 @@ class SmartRestTimer(private val context: Context) {
         timerJob?.cancel()
 
         timerJob =
-            CoroutineScope(Dispatchers.Main).launch {
+            CoroutineScope(dispatcherProvider.main).launch {
                 _timerState.value = RestTimerState.RUNNING(seconds, seconds)
 
                 for (remaining in seconds downTo 0) {

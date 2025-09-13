@@ -32,9 +32,6 @@ class WorkoutExecutionManager(
     private val _isInWorkout = MutableStateFlow(false)
     val isInWorkout: StateFlow<Boolean> = _isInWorkout.asStateFlow()
 
-    private val _restTimeRemaining = MutableStateFlow(0L)
-    val restTimeRemaining: StateFlow<Long> = _restTimeRemaining.asStateFlow()
-
     // Timing state
     private var workoutStartTime: Long = 0L
     private var currentExerciseStartTime: Long = 0L
@@ -216,17 +213,6 @@ class WorkoutExecutionManager(
             TAG,
             "Started set for exercise: $exerciseName",
         )
-    }
-
-    /**
-     * Start rest period - record rest timing
-     */
-    fun startRest(durationSeconds: Int) {
-        restStartTime = System.currentTimeMillis()
-        _restTimeRemaining.value = durationSeconds.toLong()
-
-        // Start countdown timer
-        // TODO: Implement proper countdown timer with coroutines
     }
 
     /**
