@@ -53,5 +53,5 @@ include(":core:ui")
 include(":core:navigation")
 
 // Feature Module (Beispiele, können später aktiviert werden)
-// include(":feature:hydration")
-// include(":feature:tracking")
+include(":feature:hydration")
+include(":feature:tracking")
