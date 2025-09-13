@@ -863,6 +863,32 @@ data class SyncConflictEntity(
     val resolvedAt: Long? = null,
 )
 
+// Offline Sync Queue Entity for persisting sync operations
+@Entity(
+    tableName = "sync_operations",
+    indices = [
+        Index(value = ["status", "priority", "timestamp"]), // For efficient queue processing
+        Index(value = ["operationType"]),
+        Index(value = ["retryCount"]),
+        Index(value = ["createdAt"]),
+    ],
+)
+data class SyncOperationEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val operationType: String, // Maps to SyncOperationType enum values
+    val operationData: String, // JSON with operation-specific data
+    val timestamp: Long, // When the operation should be executed
+    val retryCount: Int = 0,
+    val maxRetries: Int = 3,
+    val status: String = "pending", // "pending", "processing", "completed", "failed", "cancelled"
+    val priority: Int = 0, // Higher number = higher priority
+    val errorMessage: String? = null,
+    val lastAttemptAt: Long? = null,
+    val nextRetryAt: Long? = null, // For exponential backoff
+    val createdAt: Long = System.currentTimeMillis() / 1000,
+    val completedAt: Long? = null,
+)
+
 // Social Challenge Entities for Freeletics-style gamification
 
 // Recipe Analytics (YAZIO-style usage tracking)

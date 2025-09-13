@@ -3,11 +3,14 @@ package com.example.fitapp.services
 import android.content.Context
 import androidx.work.*
 import com.example.fitapp.data.db.AppDatabase
+import com.example.fitapp.data.db.SyncOperationEntity
 import com.example.fitapp.util.ApiCallWrapper
 import com.example.fitapp.util.StructuredLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
+import kotlin.math.min
+import kotlin.math.pow
 
 /**
  * Offline sync manager that handles data synchronization when network is available
@@ -161,17 +164,34 @@ class OfflineSyncManager(private val context: Context) {
                         syncQueue.removeOperation(operation.id)
                     } catch (e: Exception) {
                         failureCount++
-                        errors.add("${operation.type}: ${e.message}")
-
-                        // Update retry count
-                        syncQueue.incrementRetryCount(operation.id)
-
-                        StructuredLogger.warning(
-                            StructuredLogger.LogCategory.SYNC,
-                            TAG,
-                            "Failed to process operation ${operation.id}",
-                            exception = e,
-                        )
+                        
+                        val errorMessage = e.message ?: "Unknown error"
+                        errors.add("${operation.type}: $errorMessage")
+                        
+                        // Classify error type for retry strategy
+                        val shouldRetry = classifyErrorForRetry(e)
+                        
+                        if (shouldRetry && operation.retryCount < 3) {
+                            // Update retry count with exponential backoff
+                            syncQueue.incrementRetryCount(operation.id)
+                            
+                            StructuredLogger.warning(
+                                StructuredLogger.LogCategory.SYNC,
+                                TAG,
+                                "Retryable failure for operation ${operation.id} (retry ${operation.retryCount + 1}/3): $errorMessage",
+                                exception = e,
+                            )
+                        } else {
+                            // Permanent failure or max retries reached - mark as failed
+                            syncQueue.markOperationPermanentlyFailed(operation.id, errorMessage)
+                            
+                            StructuredLogger.error(
+                                StructuredLogger.LogCategory.SYNC,
+                                TAG,
+                                "Permanent failure for operation ${operation.id}: $errorMessage",
+                                exception = e,
+                            )
+                        }
                     }
                 }
 
@@ -441,6 +461,38 @@ class OfflineSyncManager(private val context: Context) {
             else -> "Unknown"
         }
     }
+
+    /**
+     * Classify error types to determine retry strategy
+     */
+    private fun classifyErrorForRetry(error: Exception): Boolean {
+        return when {
+            // Network-related errors are typically transient
+            error is java.net.UnknownHostException -> true
+            error is java.net.SocketTimeoutException -> true
+            error is java.net.ConnectException -> true
+            error.message?.contains("timeout", ignoreCase = true) == true -> true
+            
+            // HTTP errors - some are retryable, some are not
+            error.message?.contains("500", ignoreCase = true) == true -> true // Server error
+            error.message?.contains("502", ignoreCase = true) == true -> true // Bad gateway
+            error.message?.contains("503", ignoreCase = true) == true -> true // Service unavailable
+            error.message?.contains("504", ignoreCase = true) == true -> true // Gateway timeout
+            
+            // Client errors are typically permanent
+            error.message?.contains("400", ignoreCase = true) == true -> false // Bad request
+            error.message?.contains("401", ignoreCase = true) == true -> false // Unauthorized
+            error.message?.contains("403", ignoreCase = true) == true -> false // Forbidden
+            error.message?.contains("404", ignoreCase = true) == true -> false // Not found
+            
+            // Database errors are typically transient
+            error.message?.contains("database", ignoreCase = true) == true -> true
+            error.message?.contains("sqlite", ignoreCase = true) == true -> true
+            
+            // Other errors - be conservative and retry
+            else -> true
+        }
+    }
 }
 
 /**
@@ -485,20 +537,22 @@ class OfflineSyncWorker(
 }
 
 /**
- * Queue for managing sync operations
+ * Queue for managing sync operations with Room persistence
  */
 class SyncQueue(private val context: Context) {
     private val database = AppDatabase.get(context)
+    private val syncOperationDao = database.syncOperationDao()
 
     suspend fun addOperation(operation: SyncOperation) =
         withContext(Dispatchers.IO) {
             try {
-                // Store operation in local database for persistence
-                // For now, just log - would implement proper persistence with Room
+                val entity = operation.toEntity()
+                syncOperationDao.insert(entity)
+                
                 StructuredLogger.info(
                     StructuredLogger.LogCategory.SYNC,
                     "SyncQueue",
-                    "Added operation ${operation.id} to queue",
+                    "Added operation ${operation.id} to persistent queue",
                 )
             } catch (e: Exception) {
                 StructuredLogger.error(
@@ -514,9 +568,9 @@ class SyncQueue(private val context: Context) {
     suspend fun getPendingOperations(): List<SyncOperation> =
         withContext(Dispatchers.IO) {
             try {
-                // Retrieve pending operations from database
-                // This would query the sync queue table
-                emptyList() // Placeholder
+                val currentTime = System.currentTimeMillis() / 1000
+                val entities = syncOperationDao.getOperationsReadyForRetry(currentTime)
+                entities.map { it.toSyncOperation() }
             } catch (e: Exception) {
                 StructuredLogger.error(
                     StructuredLogger.LogCategory.SYNC,
@@ -531,11 +585,13 @@ class SyncQueue(private val context: Context) {
     suspend fun removeOperation(operationId: String) =
         withContext(Dispatchers.IO) {
             try {
-                // Remove operation from database
+                val currentTime = System.currentTimeMillis() / 1000
+                syncOperationDao.markCompleted(operationId, currentTime)
+                
                 StructuredLogger.info(
                     StructuredLogger.LogCategory.SYNC,
                     "SyncQueue",
-                    "Removed operation $operationId from queue",
+                    "Marked operation $operationId as completed",
                 )
             } catch (e: Exception) {
                 StructuredLogger.error(
@@ -550,12 +606,24 @@ class SyncQueue(private val context: Context) {
     suspend fun incrementRetryCount(operationId: String) =
         withContext(Dispatchers.IO) {
             try {
-                // Increment retry count in database
-                StructuredLogger.info(
-                    StructuredLogger.LogCategory.SYNC,
-                    "SyncQueue",
-                    "Incremented retry count for operation $operationId",
-                )
+                val entity = syncOperationDao.getById(operationId)
+                if (entity != null) {
+                    val currentTime = System.currentTimeMillis() / 1000
+                    val nextRetryAt = calculateNextRetryTime(entity.retryCount + 1)
+                    
+                    syncOperationDao.incrementRetryCount(
+                        id = operationId,
+                        errorMessage = "Retry attempt ${entity.retryCount + 1}",
+                        timestamp = currentTime,
+                        nextRetryAt = nextRetryAt
+                    )
+                    
+                    StructuredLogger.info(
+                        StructuredLogger.LogCategory.SYNC,
+                        "SyncQueue",
+                        "Incremented retry count for operation $operationId to ${entity.retryCount + 1}, next retry at $nextRetryAt",
+                    )
+                }
             } catch (e: Exception) {
                 StructuredLogger.error(
                     StructuredLogger.LogCategory.SYNC,
@@ -565,6 +633,41 @@ class SyncQueue(private val context: Context) {
                 )
             }
         }
+    
+    suspend fun markOperationPermanentlyFailed(operationId: String, errorMessage: String) =
+        withContext(Dispatchers.IO) {
+            try {
+                val currentTime = System.currentTimeMillis() / 1000
+                syncOperationDao.updateStatus(
+                    id = operationId,
+                    status = "failed",
+                    timestamp = currentTime,
+                    errorMessage = errorMessage
+                )
+                
+                StructuredLogger.info(
+                    StructuredLogger.LogCategory.SYNC,
+                    "SyncQueue",
+                    "Marked operation $operationId as permanently failed: $errorMessage",
+                )
+            } catch (e: Exception) {
+                StructuredLogger.error(
+                    StructuredLogger.LogCategory.SYNC,
+                    "SyncQueue",
+                    "Failed to mark operation as permanently failed",
+                    exception = e,
+                )
+            }
+        }
+    
+    private fun calculateNextRetryTime(retryCount: Int): Long {
+        // Exponential backoff: 2^retryCount * 30 seconds (minimum 30s, maximum 30 minutes)
+        val backoffSeconds = min(
+            2.0.pow(retryCount.toDouble()).toInt() * 30,
+            30 * 60 // Max 30 minutes
+        )
+        return (System.currentTimeMillis() / 1000) + backoffSeconds
+    }
 }
 
 /**
@@ -576,7 +679,47 @@ data class SyncOperation(
     val data: Map<String, String>,
     val timestamp: Long,
     val retryCount: Int = 0,
-)
+) {
+    fun toEntity(): SyncOperationEntity {
+        return SyncOperationEntity(
+            id = id,
+            operationType = type.name,
+            operationData = data.entries.joinToString(separator = ",") { "${it.key}=${it.value}" },
+            timestamp = timestamp,
+            retryCount = retryCount,
+            maxRetries = 3,
+            status = "pending",
+            priority = when(type) {
+                SyncOperationType.CLOUD_CONFLICT_RESOLUTION -> 1
+                SyncOperationType.NUTRITION_ENTRY, SyncOperationType.WORKOUT_COMPLETION -> 0
+                else -> -1
+            },
+            createdAt = System.currentTimeMillis() / 1000
+        )
+    }
+}
+
+/**
+ * Extension function to convert SyncOperationEntity to SyncOperation
+ */
+fun SyncOperationEntity.toSyncOperation(): SyncOperation {
+    val dataMap = if (operationData.isNotEmpty()) {
+        operationData.split(",").associate { 
+            val parts = it.split("=", limit = 2)
+            if (parts.size == 2) parts[0] to parts[1] else parts[0] to ""
+        }
+    } else {
+        emptyMap()
+    }
+    
+    return SyncOperation(
+        id = id,
+        type = try { SyncOperationType.valueOf(operationType) } catch (e: Exception) { SyncOperationType.NUTRITION_ENTRY },
+        data = dataMap,
+        timestamp = timestamp,
+        retryCount = retryCount
+    )
+}
 
 enum class SyncOperationType {
     NUTRITION_ENTRY,

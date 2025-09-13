@@ -51,6 +51,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CloudSyncEntity::class,
         UserProfileEntity::class,
         SyncConflictEntity::class,
+        SyncOperationEntity::class,
         // Social Challenge Entities
         SocialChallengeEntity::class,
         ChallengeParticipationEntity::class,
@@ -71,7 +72,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         // API Health Status
         HealthStatusEntity::class
     ],
-    version = 18,
+    version = 19,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -147,6 +148,8 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun syncConflictDao(): SyncConflictDao
 
+    abstract fun syncOperationDao(): SyncOperationDao
+
     // Social Challenge DAOs
     abstract fun socialChallengeDao(): SocialChallengeDao
 
@@ -162,6 +165,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun mealDao(): MealDao
 
     abstract fun groceryDao(): GroceryDao
+
+    abstract fun recipeCollectionDao(): RecipeCollectionDao
     // API Health Status DAO
     abstract fun healthStatusDao(): HealthStatusDao
 
@@ -1580,6 +1585,37 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add sync_operations table for persistent offline sync queue
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `sync_operations` (
+                        `id` TEXT PRIMARY KEY NOT NULL,
+                        `operationType` TEXT NOT NULL,
+                        `operationData` TEXT NOT NULL,
+                        `timestamp` INTEGER NOT NULL,
+                        `retryCount` INTEGER NOT NULL DEFAULT 0,
+                        `maxRetries` INTEGER NOT NULL DEFAULT 3,
+                        `status` TEXT NOT NULL DEFAULT 'pending',
+                        `priority` INTEGER NOT NULL DEFAULT 0,
+                        `errorMessage` TEXT,
+                        `lastAttemptAt` INTEGER,
+                        `nextRetryAt` INTEGER,
+                        `createdAt` INTEGER NOT NULL,
+                        `completedAt` INTEGER
+                    )
+                """)
+                
+                // Create indices for efficient queue processing
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_operations_status_priority_timestamp` ON `sync_operations` (`status`, `priority`, `timestamp`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_operations_operationType` ON `sync_operations` (`operationType`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_operations_retryCount` ON `sync_operations` (`retryCount`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_sync_operations_createdAt` ON `sync_operations` (`createdAt`)")
+                
+                android.util.Log.i("Migration", "Successfully created sync_operations table for offline sync queue persistence")
+            }
+        }
+
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: buildDatabase(context)
@@ -1588,7 +1624,7 @@ abstract class AppDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): AppDatabase {
             return try {
                 Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "fitapp.db")
-                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19)
                     .apply {
                         // Only allow destructive migration in debug builds
                         if (com.example.fitapp.BuildConfig.DEBUG) {

@@ -174,16 +174,38 @@ class RecipeFavoritesManager(
         description: String,
         recipeIds: List<String> = emptyList(),
     ): RecipeCollection {
-        val collection =
-            RecipeCollection(
-                id = java.util.UUID.randomUUID().toString(),
-                name = name,
-                description = description,
-                recipes = recipeIds,
-                createdAt = System.currentTimeMillis() / 1000,
-            )
+        val collectionEntity = RecipeCollectionEntity(
+            id = java.util.UUID.randomUUID().toString(),
+            name = name,
+            description = description,
+            isOfficial = false,
+            isPremium = false,
+            sortOrder = 0,
+            createdAt = System.currentTimeMillis() / 1000
+        )
 
-        // TODO: Store in database (would need new entity)
+        // Insert collection into database
+        database.recipeCollectionDao().insertCollection(collectionEntity)
+
+        // Add recipes to collection if provided
+        recipeIds.forEachIndexed { index, recipeId ->
+            val itemEntity = RecipeCollectionItemEntity(
+                collectionId = collectionEntity.id,
+                recipeId = recipeId,
+                sortOrder = index,
+                addedAt = System.currentTimeMillis() / 1000
+            )
+            database.recipeCollectionDao().insertCollectionItem(itemEntity)
+        }
+
+        val collection = RecipeCollection(
+            id = collectionEntity.id,
+            name = collectionEntity.name,
+            description = collectionEntity.description ?: "",
+            recipes = recipeIds,
+            isPublic = !collectionEntity.isPremium,
+            createdAt = collectionEntity.createdAt
+        )
 
         StructuredLogger.info(
             StructuredLogger.LogCategory.NUTRITION,
@@ -202,15 +224,141 @@ class RecipeFavoritesManager(
         recipeId: String,
         collectionId: String,
     ) {
-        // TODO: Implement database operations for collections
+        try {
+            // Check if collection exists
+            val collection = database.recipeCollectionDao().getCollectionById(collectionId)
+            if (collection == null) {
+                StructuredLogger.warning(
+                    StructuredLogger.LogCategory.NUTRITION,
+                    TAG,
+                    "Collection $collectionId not found"
+                )
+                return
+            }
 
-        StructuredLogger.info(
-            StructuredLogger.LogCategory.NUTRITION,
-            TAG,
-            "Added recipe $recipeId to collection $collectionId",
-        )
+            // Check if recipe is already in collection
+            val isAlreadyInCollection = database.recipeCollectionDao().isRecipeInCollection(collectionId, recipeId)
+            if (isAlreadyInCollection) {
+                StructuredLogger.info(
+                    StructuredLogger.LogCategory.NUTRITION,
+                    TAG,
+                    "Recipe $recipeId is already in collection $collectionId"
+                )
+                return
+            }
 
-        refreshCollections()
+            // Get current item count for sort order
+            val currentCount = database.recipeCollectionDao().getCollectionRecipeCount(collectionId)
+            
+            val itemEntity = RecipeCollectionItemEntity(
+                collectionId = collectionId,
+                recipeId = recipeId,
+                sortOrder = currentCount,
+                addedAt = System.currentTimeMillis() / 1000
+            )
+            
+            database.recipeCollectionDao().insertCollectionItem(itemEntity)
+
+            StructuredLogger.info(
+                StructuredLogger.LogCategory.NUTRITION,
+                TAG,
+                "Added recipe $recipeId to collection $collectionId",
+            )
+
+            refreshCollections()
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.NUTRITION,
+                TAG,
+                "Failed to add recipe to collection",
+                exception = e
+            )
+        }
+    }
+
+    /**
+     * Remove recipe from collection
+     */
+    suspend fun removeFromCollection(
+        recipeId: String,
+        collectionId: String,
+    ) {
+        try {
+            database.recipeCollectionDao().removeRecipeFromCollection(collectionId, recipeId)
+            
+            StructuredLogger.info(
+                StructuredLogger.LogCategory.NUTRITION,
+                TAG,
+                "Removed recipe $recipeId from collection $collectionId",
+            )
+
+            refreshCollections()
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.NUTRITION,
+                TAG,
+                "Failed to remove recipe from collection",
+                exception = e
+            )
+        }
+    }
+
+    /**
+     * Delete a collection
+     */
+    suspend fun deleteCollection(collectionId: String) {
+        try {
+            database.recipeCollectionDao().deleteCollection(collectionId)
+            
+            StructuredLogger.info(
+                StructuredLogger.LogCategory.NUTRITION,
+                TAG,
+                "Deleted collection $collectionId",
+            )
+
+            refreshCollections()
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.NUTRITION,
+                TAG,
+                "Failed to delete collection",
+                exception = e
+            )
+        }
+    }
+
+    /**
+     * Get recipes in a specific collection
+     */
+    suspend fun getRecipesInCollection(collectionId: String): List<SavedRecipeEntity> {
+        return try {
+            val recipeEntities = database.recipeCollectionDao().getRecipesInCollection(collectionId)
+            // Convert RecipeEntity to SavedRecipeEntity
+            recipeEntities.map { recipe ->
+                SavedRecipeEntity(
+                    id = recipe.id,
+                    title = recipe.title,
+                    markdown = recipe.markdown,
+                    calories = recipe.calories,
+                    imageUrl = recipe.imageUrl,
+                    ingredients = "", // Would need to fetch from RecipeIngredientEntity
+                    tags = recipe.categories ?: "",
+                    prepTime = recipe.prepTime,
+                    difficulty = recipe.difficulty,
+                    servings = recipe.servings,
+                    isFavorite = true, // Assume recipes in collections are favorites
+                    createdAt = recipe.createdAt
+                )
+            }
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.NUTRITION,
+                TAG,
+                "Failed to get recipes in collection",
+                exception = e
+            )
+            emptyList()
+        }
     }
 
     /**
@@ -352,8 +500,48 @@ class RecipeFavoritesManager(
     }
 
     private suspend fun loadCollections() {
-        // TODO: Load from database when collection entity is implemented
-        _recipeCollections.value = getDefaultCollections()
+        try {
+            val collectionsFromDb = database.recipeCollectionDao().getAllCollections()
+            
+            val collections = collectionsFromDb.map { entity ->
+                val recipeIds = database.recipeCollectionDao().getCollectionItems(entity.id)
+                    .map { it.recipeId }
+                
+                RecipeCollection(
+                    id = entity.id,
+                    name = entity.name,
+                    description = entity.description ?: "",
+                    recipes = recipeIds,
+                    isPublic = !entity.isPremium,
+                    createdAt = entity.createdAt,
+                    coverImageUrl = entity.imageUrl
+                )
+            }
+
+            // Merge with default collections if database is empty
+            val allCollections = if (collections.isEmpty()) {
+                getDefaultCollections()
+            } else {
+                collections
+            }
+            
+            _recipeCollections.value = allCollections
+            
+            StructuredLogger.debug(
+                StructuredLogger.LogCategory.NUTRITION,
+                TAG,
+                "Loaded collections: ${allCollections.size} total"
+            )
+        } catch (e: Exception) {
+            StructuredLogger.error(
+                StructuredLogger.LogCategory.NUTRITION,
+                TAG,
+                "Failed to load collections",
+                exception = e
+            )
+            // Fallback to default collections
+            _recipeCollections.value = getDefaultCollections()
+        }
     }
 
     private suspend fun refreshFavorites() {

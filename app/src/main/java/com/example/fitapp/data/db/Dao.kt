@@ -1917,3 +1917,115 @@ interface HealthStatusDao {
     @Query("SELECT COUNT(*) FROM health_status WHERE isHealthy = 0")
     suspend fun getUnhealthyCount(): Int
 }
+
+@Dao
+interface SyncOperationDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(operation: SyncOperationEntity)
+
+    @Update
+    suspend fun update(operation: SyncOperationEntity)
+
+    @Query("DELETE FROM sync_operations WHERE id = :id")
+    suspend fun delete(id: String)
+
+    @Query("SELECT * FROM sync_operations WHERE id = :id")
+    suspend fun getById(id: String): SyncOperationEntity?
+
+    @Query("SELECT * FROM sync_operations WHERE status = 'pending' ORDER BY priority DESC, timestamp ASC")
+    suspend fun getPendingOperations(): List<SyncOperationEntity>
+
+    @Query("SELECT * FROM sync_operations WHERE status IN ('pending', 'failed') AND (nextRetryAt IS NULL OR nextRetryAt <= :currentTime) ORDER BY priority DESC, timestamp ASC")
+    suspend fun getOperationsReadyForRetry(currentTime: Long): List<SyncOperationEntity>
+
+    @Query("SELECT * FROM sync_operations WHERE operationType = :type AND status = 'pending'")
+    suspend fun getPendingOperationsByType(type: String): List<SyncOperationEntity>
+
+    @Query("UPDATE sync_operations SET status = :status, lastAttemptAt = :timestamp, errorMessage = :errorMessage WHERE id = :id")
+    suspend fun updateStatus(id: String, status: String, timestamp: Long, errorMessage: String? = null)
+
+    @Query("UPDATE sync_operations SET retryCount = retryCount + 1, status = 'failed', errorMessage = :errorMessage, lastAttemptAt = :timestamp, nextRetryAt = :nextRetryAt WHERE id = :id")
+    suspend fun incrementRetryCount(id: String, errorMessage: String, timestamp: Long, nextRetryAt: Long)
+
+    @Query("UPDATE sync_operations SET status = 'completed', completedAt = :timestamp WHERE id = :id")
+    suspend fun markCompleted(id: String, timestamp: Long)
+
+    @Query("UPDATE sync_operations SET status = 'cancelled' WHERE id = :id")
+    suspend fun markCancelled(id: String)
+
+    @Query("DELETE FROM sync_operations WHERE status IN ('completed', 'cancelled') AND createdAt < :cutoffTime")
+    suspend fun cleanupOldOperations(cutoffTime: Long)
+
+    @Query("DELETE FROM sync_operations WHERE status = 'failed' AND retryCount >= maxRetries AND createdAt < :cutoffTime")
+    suspend fun cleanupFailedOperations(cutoffTime: Long)
+
+    @Query("SELECT COUNT(*) FROM sync_operations WHERE status = 'pending'")
+    suspend fun getPendingCount(): Int
+
+    @Query("SELECT COUNT(*) FROM sync_operations WHERE status = 'failed' AND retryCount < maxRetries")
+    suspend fun getRetryableFailedCount(): Int
+}
+
+@Dao
+interface RecipeCollectionDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCollection(collection: RecipeCollectionEntity)
+
+    @Update
+    suspend fun updateCollection(collection: RecipeCollectionEntity)
+
+    @Query("DELETE FROM recipe_collections WHERE id = :id")
+    suspend fun deleteCollection(id: String)
+
+    @Query("SELECT * FROM recipe_collections WHERE id = :id")
+    suspend fun getCollectionById(id: String): RecipeCollectionEntity?
+
+    @Query("SELECT * FROM recipe_collections ORDER BY sortOrder ASC, createdAt DESC")
+    suspend fun getAllCollections(): List<RecipeCollectionEntity>
+
+    @Query("SELECT * FROM recipe_collections ORDER BY sortOrder ASC, createdAt DESC")
+    fun getAllCollectionsFlow(): Flow<List<RecipeCollectionEntity>>
+
+    @Query("SELECT * FROM recipe_collections WHERE isOfficial = 1 ORDER BY sortOrder ASC")
+    suspend fun getOfficialCollections(): List<RecipeCollectionEntity>
+
+    @Query("SELECT * FROM recipe_collections WHERE isPremium = 0 ORDER BY sortOrder ASC, createdAt DESC")
+    suspend fun getFreeCollections(): List<RecipeCollectionEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCollectionItem(item: RecipeCollectionItemEntity)
+
+    @Query("DELETE FROM recipe_collection_items WHERE collectionId = :collectionId AND recipeId = :recipeId")
+    suspend fun removeRecipeFromCollection(collectionId: String, recipeId: String)
+
+    @Query("DELETE FROM recipe_collection_items WHERE collectionId = :collectionId")
+    suspend fun clearCollection(collectionId: String)
+
+    @Query("SELECT * FROM recipe_collection_items WHERE collectionId = :collectionId ORDER BY sortOrder ASC, addedAt DESC")
+    suspend fun getCollectionItems(collectionId: String): List<RecipeCollectionItemEntity>
+
+    @Query("""
+        SELECT r.* FROM recipes r 
+        INNER JOIN recipe_collection_items rci ON r.id = rci.recipeId 
+        WHERE rci.collectionId = :collectionId 
+        ORDER BY rci.sortOrder ASC, rci.addedAt DESC
+    """)
+    suspend fun getRecipesInCollection(collectionId: String): List<RecipeEntity>
+
+    @Query("""
+        SELECT r.* FROM recipes r 
+        INNER JOIN recipe_collection_items rci ON r.id = rci.recipeId 
+        WHERE rci.collectionId = :collectionId 
+        ORDER BY rci.sortOrder ASC, rci.addedAt DESC
+    """)
+    fun getRecipesInCollectionFlow(collectionId: String): Flow<List<RecipeEntity>>
+
+    @Query("SELECT COUNT(*) FROM recipe_collection_items WHERE collectionId = :collectionId")
+    suspend fun getCollectionRecipeCount(collectionId: String): Int
+
+    @Query("SELECT DISTINCT collectionId FROM recipe_collection_items WHERE recipeId = :recipeId")
+    suspend fun getCollectionsContainingRecipe(recipeId: String): List<String>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM recipe_collection_items WHERE collectionId = :collectionId AND recipeId = :recipeId)")
+    suspend fun isRecipeInCollection(collectionId: String, recipeId: String): Boolean
+}
